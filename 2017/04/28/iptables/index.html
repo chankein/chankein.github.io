@@ -6,18 +6,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="generator" content="Kein&#39;s blog">
-    <title>Kein&#39;s blog</title>
+    <title>iptables - Kein&#39;s blog</title>
     <meta name="author" content="Kein Chan">
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"Website","@id":"https://chankein.github.io","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"name":"Kein's blog","description":"","url":"https://chankein.github.io"}</script>
-    <meta property="og:type" content="blog">
-<meta property="og:title" content="Kein&#39;s blog">
-<meta property="og:url" content="https://chankein.github.io/index.html">
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"基本操作\n查看iptable版本1rpm -q iptables\n查看iptables 规则123service iptables status# 或service -L --line-numbers\n表iptables的4个表分别是：\n\nfilter（过滤）：数据包过滤&#x2F;拦截，可以包含INPUT、FORWARD、OUTPUT这3个内置chain。\nnat（地址转换）：IP地址或端口号转换，可以包含PREROUTING、OUTPUT、POSTROUTING 3个内置chain，nat table在会话建立时会记录转换的对应关系，同一会话的回包和后续报文会自动地址转换，这是因为nat使用了ip_conntrack模块。\nmangle（包管理）：用来修改IP报文，可以包含PREROUTING、OUTPUT、INPUT、FORWARD、POSTROUTING 5个内置chain。\nraw：此表的优先级高于ip_conntrack模块和其它的table，主要用于将有会话状态的连接（比如tcp）的数据包排除在会话外。可以包含POSTROUTING、OUTPUT两个内置chain。\n\n看到这里肯定会有这样的疑问，为什么table只能包含一些而不是全部的chain呢？我想这个构架是按需设计而不是按功能设计的，尽管table不是包含所有的chain，但是每种功能的table都包含了实现这种功能所需的chain，即使包含更多的chain也是累赘或者无用的，而且实际上用起来也的确如此，够用了。\n还有就是不同table生效优先顺序问题，先后优先级是这样的：\nraw &gt; mangle &gt; nat &gt; filter\n所以，如果有filter禁止ping目的地址2.2.2.2，而nat又有策略将目的地址1.1.1.1转换成2.2.2.2，那么ping 1.1.1.1是ping不通的。\n不过一般情况下filter是不会和nat的策略打起架来，比如INPUT chain能做filter，却不能做nat，PREROUTING能做nat却不能做filter，而且PREROUTING只能做目的地址转换，不会对源地址过滤的需求造成麻烦，所以通常是不会相互干扰的。\n规则链(chain)iptables内置的5个chain：PREROUTING、INPUT、OUPUT、FORWARD、POSTROUGING，这5个chain分别与netfilter中数据转发路径上的5个不同的位置挂钩，以匹配筛选不同类型的数据流，如下图所示：\n其中：\n\nPREROUTING链：应用于所有进入机器的ip包，包括目的地址是本机和目的地址非本机的包。\nINPUT链：应用于所有目的是本机的包，也就是目的IP是本机接口地址，所有发给本地socket的数据都经过它。\nOUPUT链：应用于所有由本机产生的包，所有应用程序发出的数据都经过它。\nFORWARD链：应用于所有经过路由决策被转发的包，也就是目的地址不是本机的数据包。\nPOSTROUGING链：应用于所有发出机器的IP包，包括本机发出的和从本机转发的数据包。\n\n策略匹配按照重上到下的顺序进行，当测试到某策略匹配时执行target并跳出，不再向下匹配，当测试到最后一条策略仍不匹配时，则采用policy指定的动作，如下图：\n除了内置chain外，还可以自定义chain，自定义chain并不能利用netfilter的hook来捕捉数据包，但是可用于策略的分类，比如有3类不同的用户访问主机上的不同服务，如果所有策略都放在INPUT chain中策略会多而难以维护，这个时候就可以定义3个自定义chain，分别配置不同的策略，同时在INPUT chain中添加策略对来访者分类并将目标指向3个自定义chain。\n自定义chain大显神威的地方在于动态生成策略，例如VPN服务器上，需要对不同分组的用户区别对待管理，但是用户IP是随机分配的，不能根据IP来区分用户组，这时候可以预先定义好各组chain，利用VPN服务端软件的一些钩子，当用户登陆时自动添加策略引导到自定义chain上来匹配。如果这时候没有自定义chain，那么策略的数量将是（用户数×所属组策略数），每增加一个用户，都要把所属组的全部策略添加一遍，这样大量的时间花费在策略匹配上，性能下降很快。\n\n各指令的含义\n-APPEND -A1iptables -A chain firewall-rule\n将规则添加到末尾。\n一般情况下,iptables 中最后的规则是丢弃所有数据包。\n于是使用-A参数添加的规则在丢弃规则后，将不起作用。\n\n-DELETE -D12345iptables -D chain firewall-rule# 删除对应规则direwall-rule的那一条# 或iptables -D chain rulenum# 删除chain中编号为rulenum的那一条.1表示第一条。\n\n\n-INSERT -I1iptables -I chain [rulenum] firewall-rule.\n将firewall-rule添加为chain中的第rulenum条规则,原先的第rulenum条规则及以后的各条顺次+1。如未指定rulenum,则默认为1.\n\n-REPLACE -R1iptables -R chain [rulenum] firewall-rule.\n将firewall-rule添加为chain中的第rulenum条规则,原先的第rulenum条规则及以后的各条顺次+1。如未指定rulenum,则默认为1.\n\n-LIST -L1iptables -L chain [rulenum] firewall-rule.\n\n列出chain或所有chain的第rulenum条规则或所有规则，在-L后再加上–lube-numbers，则显示序号\n\n-LIST-RULES -S1iptables -S chain [rulenum] \n\n打印全部规则\n\n-FLUSH -F1iptables -F chain\n\n情况chain(或全部chain)中的规则\n\n-ZERO -Z1iptables -Z chain [rulenum] \n\n清空chain或所有chain的包和字节计数器\n\n-NEW -N1iptables -N chain [rulenum] \n\n创建名称为chain的新链\n\n-DELETE-CHAIN -X1iptables -X [chain] \n\n删除用户自定义chain或所有用户定义的chain,该指令不影响预设规则\n\n-POLICY -P1iptables -P chain target \n\n改变chain的策略为target\n\n-RENAME-CHAIN -E1iptables -E old-chain new-chain\n\n将old-chain名更换为new-chain,使得old-chain的规则失效\n\n各参数的含义\n-P 代表协议（PROTOCOL）\n指明当前规则针对的传输协议（如 TCP、UDP、ICMP 等）\n可能的参数值有：tcp, udp, icmp, all\n使用 “all” 表示适用于所有协议。而如果在规则中不指定 -p 参数，则默认使用 “all” 参数。一般不使用 “all” 这个值，要么指定某个特定的协议，要么就指定 -p 参数。\n-p 的参数值既可以用名称（如 tcp）也可以用协议对应的数值（如 6 代表 tcp 协议）\n&#x2F;etc&#x2F;protocols 文件中包含了所有允许的协议名称和相应数值\n也可以用长的参数名 –protocol\n\n-S 代表源地址（SOURCE）\n指定数据包的源地址\n可以是 ip 地址，或者网络地址，或者主机名（hostname）\n例如：-s 192.168.1.101 表示针对特定的 ip 地址\n对于网络掩码，使用 &#x2F;mask。例如，“-s 192.168.1.0&#x2F;24″ 表示网络掩码为 255.255.255.0 的所有 192.168.1.x 地址都匹配。\n如果不指定 -s 参数，默认匹配所有源地址\n也可以用长参数名 –src 或者 –source\n\n-D 代表目的地址（DESTINATION）\n指定数据包的目的地址\n使用方式与上面的 “-s” 一样（不同之处仅在于 -s 指源，而 -d 表示目的地址）\n也可以用长参数名 –dst 或者 –destination\n\n-J 代表跳转（TARGET）\nj 的意思是 “jump”（跳转） 到目标\n指定当某个数据包满足该规则的时候的就跳转到的下一个处理规则，而不再顺序执行后面的规则判断\n可能的值有：ACCEPT, DROP, QUEUE, RETURN，分别表示接受、丢弃、进入队列，返回（跳出，通常是从某个 chain 中跳回到调用该 chain 的上层 chain）\n也可以跳转到某个自定义的 chain 中，使用该 chain 的名称做为跳转目标\n\n-I 代表 IN INTERFACE（入站接口）\ni 表示 “input interface”（输入接口，即，指定网络数据处理的网卡，一般 eth0 即表示第一块有线网卡的外网接口，lo 表示局域网接口）\n可以直接理解为 “-i” 表示接口。不过，-i 和 -o 都表示接口，-i 表示输入时的接口，而 -o 特指输出用的接口。\n指定数据包进入 INPUT、FORWARD 和 PREROUTING 链时经由的接口。\n例如：-i eth0 表示该规则应该针对从 eth0 接口进来的数据包。\n如果不指定 -i 参数，则经由系统中所有可用的接口进入的数据包都可以匹配该规则。\n也可以使用长参数 –in-interface\n\n-O 代表 OUT INTERFACE（出站接口）\no 表示 “output interface”（出站经由接口）\n指定发送出去的数据包进入 INPUT、FORWARD 和 PREROUTING 链时经由的接口。\n如果不指定 -o 参数，则经由系统中所有可用的接口发出的数据包都可以匹配该规则。\n也可以使用长参数 –out-interface\n\n\n其它防火墙参数选项上面某些防火墙参数还有属于它自己的参数选项，可以与其配合使用。下面是一些常用的选项。\n要使用这些参数选项，需要指定相应的参数，例如，要使用 “–sport” 选项，应该在规则中指定 “-p tcp” （或者 “-p udp”）等参数。\n注意：所有这些选项前面都是 –（2个短横线 – ）。\n–SPORT 表示 SOURCE PORT (源端口，用于 -P TCP, 或者 -P UDP)\n默认匹配所有端口（未特别指定时）\n可以指定端口号（数字），也可以指定端口名称。例如，默认的 SSH 端口号码为 22，名称为 ssh，可以表示为 “–sport 22″ 或者 “–sport ssh”。\n&#x2F;etc&#x2F;services 文件包含了所有允许的端口名称和对应的端口号码。\n在规则中使用号码比使用名称要好（效率高些）\n要匹配一个端口范围，使用英文半角冒号（:），如 22:100 匹配从 22 到 100 的所有端口号。\n也可以使用长名称 –source-port\n\n–DPORT 表示 DESTINATION PORT (目的端口，-P TCP, 或者 -P UDP)\n与 –sport 的用法相同，区别仅在于对象是目的端口\n也可以使用长名称 –destination-port\n\n–TCP-FLAGS 表示 TCP FLAGS (用于 -P TCP)\n可以使用英文半角逗号（,）来指定多个 TCP 状态标识\n可能值有：SYN, ACK, FIN, RST, URG, PSH。可以全用，也可以不用。\n\n–ICMP-TYPE 表示 ICMP TYPE (ICMP 类型，用于 -P ICMP)\n当使用 icmp 协议 “-p icmp” 的时候，可以使用 “–icmp-type” 特别指定 ICMP 类型\n例如，使用 “–icmp-type 0″ 表示 “Echo Reply”，“–icmp-type 8″ 表示 “Echo”。\n\n添加VIP:\n1ifconfig eth0:1 192.168.1.22 broadcast 192.168.1.2 netmask 255.255.255.0 up\n\n","dateCreated":"2017-04-28T23:08:51+08:00","dateModified":"2025-04-28T23:18:59+08:00","datePublished":"2017-04-28T23:08:51+08:00","description":"","headline":"iptables","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2017/04/28/iptables/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2017/04/28/iptables/","keywords":"linux"}</script>
+    <meta name="description" content="基本操作 查看iptable版本1rpm -q iptables 查看iptables 规则123service iptables status# 或service -L --line-numbers 表iptables的4个表分别是：  filter（过滤）：数据包过滤&#x2F;拦截，可以包含INPUT、FORWARD、OUTPUT这3个内置chain。 nat（地址转换）：IP地址或端口号转">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="iptables">
+<meta property="og:url" content="https://chankein.github.io/2017/04/28/iptables/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="基本操作 查看iptable版本1rpm -q iptables 查看iptables 规则123service iptables status# 或service -L --line-numbers 表iptables的4个表分别是：  filter（过滤）：数据包过滤&#x2F;拦截，可以包含INPUT、FORWARD、OUTPUT这3个内置chain。 nat（地址转换）：IP地址或端口号转">
 <meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2017-04-28T15:08:51.000Z">
+<meta property="article:modified_time" content="2025-04-28T15:18:59.300Z">
 <meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="linux">
 <meta name="twitter:card" content="summary">
     
     
@@ -39,6 +44,8 @@
     
 
     
+        
+    
 </head>
 
     <body>
@@ -52,7 +59,7 @@
         
     
 
-<header id="header" data-behavior="1">
+<header id="header" data-behavior="4">
     <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
     <div class="header-title">
         <a
@@ -85,7 +92,7 @@
         
     
 
-<nav id="sidebar" data-behavior="1">
+<nav id="sidebar" data-behavior="4">
     <div class="sidebar-container">
         
             <div class="sidebar-profile">
@@ -265,269 +272,22 @@
 </nav>
 
             
-            <div id="main" data-behavior="1"
+            <div id="main" data-behavior="4"
                  class="
                         hasCoverMetaIn
                         ">
-                <section class="postShorten-group main-content-wrap">
+                
+<article class="post">
     
     
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="/2025/04/28/Java%E5%8F%98%E9%87%8F%E7%B1%BB%E5%9E%8B/"
-                            aria-label=": Java变量类型"
-                        >
-                            Java变量类型
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2025-04-28T23:17:36+08:00">
-	
-		    2025 年 4 月 28 日
-    	
-    </time>
+        <div class="post-header main-content-wrap text-left">
     
-        <span>分類 </span>
-        
-    <a class="category-link" href="/categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="/categories/%E5%90%8E%E7%AB%AF/Java/">Java</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h3 id="变量类型"><a href="#变量类型" class="headerlink" title="变量类型"></a>变量类型</h3><hr>
-<p>在Java语言中，所有的变量在使用前必须声明。声明变量的基本格式如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">type identifier [ = value][, identifier [= value] ...] ;</span><br></pre></td></tr></table></figure>
-<p>格式说明：type为Java数据类型。identifier是变量名。可以使用逗号隔开来声明多个同类型变量。<br>以下列出了一些变量的声明实例。注意有些包含了初始化过程。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">int a, b, c;         // 声明三个int型整数：a、 b、c</span><br><span class="line">int d = 3, e = 4, f = 5; // 声明三个整数并赋予初值</span><br><span class="line">byte z = 22;         // 声明并初始化 z</span><br><span class="line">String s = &quot;runoob&quot;;  // 声明并初始化字符串 s</span><br><span class="line">double pi = 3.14159; // 声明了双精度浮点型变量 pi</span><br><span class="line">char x = &#x27;x&#x27;;        // 声明变量 x 的值是字符 &#x27;x&#x27;。</span><br></pre></td></tr></table></figure>
-<h1 id=""><a href="#" class="headerlink" title=""></a></h1><p>Java语言支持的变量类型有：</p>
-<ul>
-<li>类变量：独立于方法之外的变量，用 static 修饰。</li>
-<li>实例变量：独立于方法之外的变量，不过没有 static 修饰。</li>
-<li>局部变量：类的方法中的变量。</li>
-</ul>
-<h1 id="-1"><a href="#-1" class="headerlink" title=""></a></h1><h4 id="Java-局部变量"><a href="#Java-局部变量" class="headerlink" title="Java 局部变量"></a>Java 局部变量</h4><ul>
-<li>局部变量声明在方法、构造方法或者语句块中；</li>
-<li>局部变量在方法、构造方法、或者语句块被执行的时候创建，当它们执行完成后，变量将会被销毁；</li>
-<li>&#x3D;&#x3D;访问修饰符不能用于局部变量；&#x3D;&#x3D;</li>
-<li>局部变量只在声明它的方法、构造方法或者语句块中可见；</li>
-<li>局部变量是在栈上分配的。</li>
-<li>局部变量没有默认值，所以局部变量被声明后，必须经过初始化，才可以使用。</li>
-</ul>
-<h1 id="-2"><a href="#-2" class="headerlink" title=""></a></h1><h4 id="Java-实例变量"><a href="#Java-实例变量" class="headerlink" title="Java 实例变量"></a>Java 实例变量</h4><ul>
-<li>实例变量声明在一个类中，但在方法、构造方法和语句块之外；</li>
-<li>当一个对象被实例化之后，每个实例变量的值就跟着确定；</li>
-<li>实例变量在对象创建的时候创建，在对象被销毁的时候销毁；</li>
-<li>实例变量的值应该至少被一个方法、构造方法或者语句块引用，使得外部能够通过这些方式获取实例变量信息；</li>
-<li>实例变量可以声明在使用前或者使用后；</li>
-<li>&#x3D;&#x3D;访问修饰符可以修饰实例变量；&#x3D;&#x3D;</li>
-<li>实例变量对于类中的方法、构造方法或者语句块是可见的。一般情况下应该把实例变量设为私有。通过使用访问修饰符可以使实例变量对子类可见；</li>
-<li>实例变量具有默认值。数值型变量的默认值是0，布尔型变量的默认值是false，引用类型变量的默认值是null。变量的值可以在声明时指定，也可以在构造方法中指定；</li>
-<li>实例变量可以直接通过变量名访问。但在静态方法以及其他类中，就应该使用完全限定名：ObejectReference.VariableName。</li>
-</ul>
-<h1 id="-3"><a href="#-3" class="headerlink" title=""></a></h1><h4 id="类变量（静态变量）"><a href="#类变量（静态变量）" class="headerlink" title="类变量（静态变量）"></a>类变量（静态变量）</h4><ul>
-<li>类变量也称为静态变量，在类中以static关键字声明，但必须在方法构造方法和语句块之外。</li>
-<li>无论一个类创建了多少个对象，类只拥有类变量的一份拷贝。</li>
-<li>静态变量除了被声明为常量外很少使用。常量是指声明为public&#x2F;private，final和static类型的变量。常量初始化后不可改变。</li>
-<li>&#x3D;&#x3D;静态变量储存在静态存储区。&#x3D;&#x3D;经常被声明为常量，很少单独使用static声明变量。</li>
-<li>静态变量在第一次被访问时创建，在程序结束时销毁。</li>
-<li>与实例变量具有相似的可见性。但为了对类的使用者可见，大多数静态变量声明为public类型。</li>
-<li>默认值和实例变量相似。数值型变量默认值是0，布尔型默认值是false，引用类型默认值是null。变量的值可以在声明的时候指定，也可以在构造方法中指定。此外，静态变量还可以在静态语句块中初始化。</li>
-<li>静态变量可以通过：ClassName.VariableName的方式访问。</li>
-<li>类变量被声明为public static final类型时，类变量名称一般建议使用大写字母。如果静态变量不是public和final类型，其命名方式与实例变量以及局部变量的命名方式一致。</li>
-</ul>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="/2025/04/28/Java%E5%8F%98%E9%87%8F%E7%B1%BB%E5%9E%8B/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
+        <h1 class="post-title">
+            iptables
+        </h1>
     
     
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="/2025/04/28/VPC/"
-                            aria-label=": VPC"
-                        >
-                            VPC
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2025-04-28T23:15:39+08:00">
-	
-		    2025 年 4 月 28 日
-    	
-    </time>
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="/2025/04/28/VPC/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="/2025/04/23/test_tranquil/"
-                            aria-label=": test_tranquil"
-                        >
-                            test_tranquil
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2025-04-23T20:27:04+08:00">
-	
-		    2025 年 4 月 23 日
-    	
-    </time>
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <p>aaa</p>
-
-                    
-                        
-
-    
-    <div class="image-gallery">
-        <div class="image-gallery-metabar">
-            <span>畫廊: 圖片</span>
-        </div>
-        <div class="image-gallery-photos ">
-            
-            
-            <div class="photo-box">
-                <a
-                    class="photo-box-inner fancybox"
-                    data-fancybox="gallery-cma18bi9600098oye1y7vdswc"
-                    data-caption="New York"
-                    title="New York"
-                    target="_blank" rel="noopener" href="http://d1u9biwaxjngwg.cloudfront.net/elements-showcase/vintage-140.jpg"
-                    aria-label=""
-                >
-                    
-
-                        <img
-                                class="photo" src="http://d1u9biwaxjngwg.cloudfront.net/elements-showcase/vintage-140.jpg"
-                        >
-                    
-                </a>
-            </div>
-            
-        </div>
-    </div>
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="/2025/04/23/test_tranquil/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-            <a
-                href="/2025/04/23/test_tranquil/"
-                aria-label=": test_tranquil"
-            >
-                <div class="postShorten-thumbnailimg">
-                    <img alt="" src="https://chankein.github.io/2025/04/23/test_tranquil/image-1.jpg"/>
-                </div>
-            </a>
-            
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="/2017/04/28/iptables/"
-                            aria-label=": iptables"
-                        >
-                            iptables
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
+        <div class="post-meta">
     <time datetime="2017-04-28T23:08:51+08:00">
 	
 		    2017 年 4 月 28 日
@@ -542,10 +302,13 @@
     
 </div>
 
-            </div>
-            
-                <div class="postShorten-content">
-                    <h2 id="基本操作"><a href="#基本操作" class="headerlink" title="基本操作"></a>基本操作</h2><hr>
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="基本操作"><a href="#基本操作" class="headerlink" title="基本操作"></a>基本操作</h2><hr>
 <h3 id="查看iptable版本"><a href="#查看iptable版本" class="headerlink" title="查看iptable版本"></a>查看iptable版本</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpm -q iptables</span><br></pre></td></tr></table></figure>
 <h3 id="查看iptables-规则"><a href="#查看iptables-规则" class="headerlink" title="查看iptables 规则"></a>查看iptables 规则</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">service iptables status</span><br><span class="line"># 或</span><br><span class="line">service -L --line-numbers</span><br></pre></td></tr></table></figure>
 <h2 id="表"><a href="#表" class="headerlink" title="表"></a>表</h2><p>iptables的4个表分别是：</p>
@@ -690,191 +453,138 @@
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ifconfig eth0:1 192.168.1.22 broadcast 192.168.1.2 netmask 255.255.255.0 up</span><br></pre></td></tr></table></figure>
 
 
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="/2017/04/28/iptables/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
             
+
+
         </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
         
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
-                            aria-label=": linux基础"
-                        >
-                            linux基础
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2017-04-28T22:06:40+08:00">
-	
-		    2017 年 4 月 28 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="/categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="/categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
-
-
-    
-</div>
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="/tags/linux/" rel="tag">linux</a>
 
             </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="/2025/04/23/test_tranquil/"
+                    data-tooltip="test_tranquil"
+                    aria-label="上一篇: test_tranquil"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                    data-tooltip="linux基础"
+                    aria-label="下一篇: linux基础"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
             
-                <div class="postShorten-content">
-                    <h1 id="Linux-基础操作笔记"><a href="#Linux-基础操作笔记" class="headerlink" title="Linux 基础操作笔记"></a>Linux 基础操作笔记</h1><h2 id="1-文件操作"><a href="#1-文件操作" class="headerlink" title="1. 文件操作"></a>1. 文件操作</h2><h3 id="1-1-创建文件"><a href="#1-1-创建文件" class="headerlink" title="1.1 创建文件"></a>1.1 创建文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建单个文件</span></span><br><span class="line"><span class="built_in">touch</span> file</span><br><span class="line"></span><br><span class="line"><span class="comment"># 批量创建文件（创建love_1_linux.txt到love_10_linux.txt）</span></span><br><span class="line"><span class="built_in">touch</span> love_&#123;1..10&#125;_linux.txt</span><br></pre></td></tr></table></figure>
-
-<h3 id="1-2-文件权限查看"><a href="#1-2-文件权限查看" class="headerlink" title="1.2 文件权限查看"></a>1.2 文件权限查看</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ls</span> -l  <span class="comment"># 详细列表显示文件权限</span></span><br></pre></td></tr></table></figure>
-<p>输出示例：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-rw-r--r-- 1 user group 1024 Mar 1 10:00 example.txt</span><br></pre></td></tr></table></figure>
-<p>权限字段说明：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[文件类型][所有者权限][组权限][其他用户权限]</span><br><span class="line">d rwx r-x r-x</span><br></pre></td></tr></table></figure>
-<ul>
-<li>文件类型：<code>-</code>普通文件，<code>d</code>目录，<code>l</code>链接文件</li>
-<li>权限组成：<code>r</code>读(4) + <code>w</code>写(2) + <code>x</code>执行(1)</li>
-</ul>
-<h2 id="2-帮助系统"><a href="#2-帮助系统" class="headerlink" title="2. 帮助系统"></a>2. 帮助系统</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">man &lt;<span class="built_in">command</span>&gt;  <span class="comment"># 查看命令手册</span></span><br><span class="line">man <span class="built_in">ls</span>         <span class="comment"># 示例：查看ls命令手册</span></span><br></pre></td></tr></table></figure>
-<p>常用操作键：</p>
-<ul>
-<li>空格键：向下翻页</li>
-<li><code>q</code>：退出手册</li>
-<li><code>/</code>：搜索内容</li>
-</ul>
-<h2 id="3-用户管理"><a href="#3-用户管理" class="headerlink" title="3. 用户管理"></a>3. 用户管理</h2><h3 id="3-1-用户查看命令"><a href="#3-1-用户查看命令" class="headerlink" title="3.1 用户查看命令"></a>3.1 用户查看命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">whoami</span>        <span class="comment"># 显示当前用户名</span></span><br><span class="line"><span class="built_in">who</span> am i      <span class="comment"># 显示登录信息</span></span><br><span class="line"><span class="built_in">who</span> -m        <span class="comment"># 同&quot;who am i&quot;</span></span><br><span class="line"><span class="built_in">who</span> mom likes <span class="comment"># 显示特定用户信息（需实际用户存在）</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="3-2-用户操作"><a href="#3-2-用户操作" class="headerlink" title="3.2 用户操作"></a>3.2 用户操作</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建用户（自动创建home目录）</span></span><br><span class="line"><span class="built_in">sudo</span> adduser lilei</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看已创建用户</span></span><br><span class="line"><span class="built_in">ls</span> /home</span><br><span class="line"></span><br><span class="line"><span class="comment"># 切换用户</span></span><br><span class="line">su -l lilei   <span class="comment"># &quot;-l&quot;模拟完整登录环境</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除用户及home目录</span></span><br><span class="line"><span class="built_in">sudo</span> deluser lilei --remove-home</span><br></pre></td></tr></table></figure>
-
-<h2 id="4-用户组管理"><a href="#4-用户组管理" class="headerlink" title="4. 用户组管理"></a>4. 用户组管理</h2><h3 id="4-1-用户组查看"><a href="#4-1-用户组查看" class="headerlink" title="4.1 用户组查看"></a>4.1 用户组查看</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看指定用户所属组</span></span><br><span class="line"><span class="built_in">groups</span> shiyanlou</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看所有组（按字母排序）</span></span><br><span class="line"><span class="built_in">cat</span> /etc/group | <span class="built_in">sort</span></span><br></pre></td></tr></table></figure>
-<p><code>/etc/group</code> 文件格式：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">group_name:password:GID:user_list</span><br></pre></td></tr></table></figure>
-
-<h3 id="4-2-用户组操作"><a href="#4-2-用户组操作" class="headerlink" title="4.2 用户组操作"></a>4.2 用户组操作</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 添加用户到组（需要root权限）</span></span><br><span class="line"><span class="built_in">sudo</span> usermod -aG <span class="built_in">sudo</span> lilei  <span class="comment"># 示例：添加sudo组</span></span><br></pre></td></tr></table></figure>
-
-<h2 id="5-权限管理"><a href="#5-权限管理" class="headerlink" title="5. 权限管理"></a>5. 权限管理</h2><h3 id="5-1-文件权限修改"><a href="#5-1-文件权限修改" class="headerlink" title="5.1 文件权限修改"></a>5.1 文件权限修改</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 变更文件所有者</span></span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">chown</span> shiyanlou iphone6</span><br><span class="line"></span><br><span class="line"><span class="comment"># 变更文件所属组</span></span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">chgrp</span> group_name file</span><br><span class="line"></span><br><span class="line"><span class="comment"># 修改所有权限（所有者/组/其他用户）</span></span><br><span class="line"><span class="built_in">chmod</span> 755 filename  <span class="comment"># rwxr-xr-x</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="5-2-权限数字表示法"><a href="#5-2-权限数字表示法" class="headerlink" title="5.2 权限数字表示法"></a>5.2 权限数字表示法</h3><table>
-<thead>
-<tr>
-<th>权限</th>
-<th>数字</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>r–</td>
-<td>4</td>
-</tr>
-<tr>
-<td>-w-</td>
-<td>2</td>
-</tr>
-<tr>
-<td>–x</td>
-<td>1</td>
-</tr>
-<tr>
-<td>rwx</td>
-<td>7 (4+2+1)</td>
-</tr>
-</tbody></table>
-<h2 id="6-文件类型说明"><a href="#6-文件类型说明" class="headerlink" title="6. 文件类型说明"></a>6. 文件类型说明</h2><p>Linux 一切皆文件，主要类型包括：</p>
-<ul>
-<li><code>-</code>：普通文件</li>
-<li><code>d</code>：目录文件</li>
-<li><code>l</code>：符号链接（相当于快捷方式）</li>
-<li><code>c</code>：字符设备文件</li>
-<li><code>b</code>：块设备文件</li>
-<li><code>s</code>：套接字文件</li>
-<li><code>p</code>：管道文件</li>
-</ul>
-<h2 id="7-重要补充说明"><a href="#7-重要补充说明" class="headerlink" title="7. 重要补充说明"></a>7. 重要补充说明</h2><ol>
-<li><p>目录权限特殊含义：</p>
-<ul>
-<li>读权限：可查看目录内容</li>
-<li>写权限：可创建&#x2F;删除文件</li>
-<li>执行权限：可进入目录</li>
-</ul>
-</li>
-<li><p>新建用户默认会：</p>
-<ul>
-<li>创建同名用户组</li>
-<li>在<code>/home</code>下创建用户目录</li>
-<li>基本配置文件从<code>/etc/skel</code>复制</li>
-</ul>
-</li>
-<li><p>sudo权限配置路径：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/etc/sudoers</span><br><span class="line">/etc/sudoers.d/</span><br></pre></td></tr></table></figure></li>
-</ol>
-<p>这份笔记已：</p>
-<ol>
-<li>将零散命令按功能模块分类</li>
-<li>补充了命令输出示例和参数说明</li>
-<li>添加了权限数字表示法等实用表格</li>
-<li>增加了关键概念的注意事项</li>
-<li>保持所有命令可直接复制执行</li>
-</ol>
-<p>建议后续可补充：</p>
-<ul>
-<li>实际权限修改案例</li>
-<li>用户组管理实验</li>
-<li>sudoers文件的配置方法</li>
-<li>ACL高级权限控制</li>
-</ul>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="/2017/04/28/linux%E5%9F%BA%E7%A1%80/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
             
-        </div>
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2017/04/28/iptables/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
         
-    </article>
-    
-    <div class="pagination-bar">
-    <ul class="pagination">
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2017/04/28/iptables/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2017/04/28/iptables/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2017/04/28/iptables/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
         
         
-        <li class="pagination-number">第 1 頁 共 1 頁</li>
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
     </ul>
 </div>
 
-</section>
+
+        
+        
+            
+        
+    </div>
+</article>
+
 
 
                 <footer id="footer" class="main-content-wrap">
@@ -884,6 +594,180 @@
 </footer>
 
             </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="/2025/04/23/test_tranquil/"
+                    data-tooltip="test_tranquil"
+                    aria-label="上一篇: test_tranquil"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                    data-tooltip="linux基础"
+                    aria-label="下一篇: linux基础"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2017/04/28/iptables/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2017/04/28/iptables/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2017/04/28/iptables/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2017/04/28/iptables/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2017/04/28/iptables/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2017/04/28/iptables/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2017/04/28/iptables/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2017/04/28/iptables/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
             
         </div>
         
@@ -933,6 +817,8 @@
 
 <!--SCRIPTS END-->
 
+
+    
 
 
 

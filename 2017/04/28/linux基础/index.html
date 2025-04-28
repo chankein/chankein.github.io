@@ -1,0 +1,774 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>linux基础 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"Linux 基础操作笔记1. 文件操作1.1 创建文件12345# 创建单个文件touch file# 批量创建文件（创建love_1_linux.txt到love_10_linux.txt）touch love_&#123;1..10&#125;_linux.txt\n\n1.2 文件权限查看1ls -l  # 详细列表显示文件权限\n输出示例：\n1-rw-r--r-- 1 user group 1024 Mar 1 10:00 example.txt\n权限字段说明：\n12[文件类型][所有者权限][组权限][其他用户权限]d rwx r-x r-x\n\n文件类型：-普通文件，d目录，l链接文件\n权限组成：r读(4) + w写(2) + x执行(1)\n\n2. 帮助系统12man &lt;command&gt;  # 查看命令手册man ls         # 示例：查看ls命令手册\n常用操作键：\n\n空格键：向下翻页\nq：退出手册\n/：搜索内容\n\n3. 用户管理3.1 用户查看命令1234whoami        # 显示当前用户名who am i      # 显示登录信息who -m        # 同&quot;who am i&quot;who mom likes # 显示特定用户信息（需实际用户存在）\n\n3.2 用户操作1234567891011# 创建用户（自动创建home目录）sudo adduser lilei# 查看已创建用户ls /home# 切换用户su -l lilei   # &quot;-l&quot;模拟完整登录环境# 删除用户及home目录sudo deluser lilei --remove-home\n\n4. 用户组管理4.1 用户组查看12345# 查看指定用户所属组groups shiyanlou# 查看所有组（按字母排序）cat /etc/group | sort\n/etc/group 文件格式：\n1group_name:password:GID:user_list\n\n4.2 用户组操作12# 添加用户到组（需要root权限）sudo usermod -aG sudo lilei  # 示例：添加sudo组\n\n5. 权限管理5.1 文件权限修改12345678# 变更文件所有者sudo chown shiyanlou iphone6# 变更文件所属组sudo chgrp group_name file# 修改所有权限（所有者/组/其他用户）chmod 755 filename  # rwxr-xr-x\n\n5.2 权限数字表示法\n\n\n权限\n数字\n\n\n\nr–\n4\n\n\n-w-\n2\n\n\n–x\n1\n\n\nrwx\n7 (4+2+1)\n\n\n6. 文件类型说明Linux 一切皆文件，主要类型包括：\n\n-：普通文件\nd：目录文件\nl：符号链接（相当于快捷方式）\nc：字符设备文件\nb：块设备文件\ns：套接字文件\np：管道文件\n\n7. 重要补充说明\n目录权限特殊含义：\n\n读权限：可查看目录内容\n写权限：可创建&#x2F;删除文件\n执行权限：可进入目录\n\n\n新建用户默认会：\n\n创建同名用户组\n在/home下创建用户目录\n基本配置文件从/etc/skel复制\n\n\nsudo权限配置路径：\n12/etc/sudoers/etc/sudoers.d/\n\n这份笔记已：\n\n将零散命令按功能模块分类\n补充了命令输出示例和参数说明\n添加了权限数字表示法等实用表格\n增加了关键概念的注意事项\n保持所有命令可直接复制执行\n\n建议后续可补充：\n\n实际权限修改案例\n用户组管理实验\nsudoers文件的配置方法\nACL高级权限控制\n\n","dateCreated":"2017-04-28T22:06:40+08:00","dateModified":"2025-04-28T23:10:40+08:00","datePublished":"2017-04-28T22:06:40+08:00","description":"","headline":"linux基础","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/","keywords":"linux"}</script>
+    <meta name="description" content="Linux 基础操作笔记1. 文件操作1.1 创建文件12345# 创建单个文件touch file# 批量创建文件（创建love_1_linux.txt到love_10_linux.txt）touch love_&#123;1..10&#125;_linux.txt  1.2 文件权限查看1ls -l  # 详细列表显示文件权限 输出示例： 1-rw-r--r-- 1 user group 10">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="linux基础">
+<meta property="og:url" content="https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="Linux 基础操作笔记1. 文件操作1.1 创建文件12345# 创建单个文件touch file# 批量创建文件（创建love_1_linux.txt到love_10_linux.txt）touch love_&#123;1..10&#125;_linux.txt  1.2 文件权限查看1ls -l  # 详细列表显示文件权限 输出示例： 1-rw-r--r-- 1 user group 10">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2017-04-28T14:06:40.000Z">
+<meta property="article:modified_time" content="2025-04-28T15:10:40.666Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io/assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="/assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="/"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: /#about"
+            >
+        
+        
+            <img class="header-picture" src="/assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="/#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="/assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="/"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="/all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="/all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="/all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="/atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            linux基础
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2017-04-28T22:06:40+08:00">
+	
+		    2017 年 4 月 28 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="/categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="/categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h1 id="Linux-基础操作笔记"><a href="#Linux-基础操作笔记" class="headerlink" title="Linux 基础操作笔记"></a>Linux 基础操作笔记</h1><h2 id="1-文件操作"><a href="#1-文件操作" class="headerlink" title="1. 文件操作"></a>1. 文件操作</h2><h3 id="1-1-创建文件"><a href="#1-1-创建文件" class="headerlink" title="1.1 创建文件"></a>1.1 创建文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建单个文件</span></span><br><span class="line"><span class="built_in">touch</span> file</span><br><span class="line"></span><br><span class="line"><span class="comment"># 批量创建文件（创建love_1_linux.txt到love_10_linux.txt）</span></span><br><span class="line"><span class="built_in">touch</span> love_&#123;1..10&#125;_linux.txt</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-2-文件权限查看"><a href="#1-2-文件权限查看" class="headerlink" title="1.2 文件权限查看"></a>1.2 文件权限查看</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ls</span> -l  <span class="comment"># 详细列表显示文件权限</span></span><br></pre></td></tr></table></figure>
+<p>输出示例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-rw-r--r-- 1 user group 1024 Mar 1 10:00 example.txt</span><br></pre></td></tr></table></figure>
+<p>权限字段说明：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[文件类型][所有者权限][组权限][其他用户权限]</span><br><span class="line">d rwx r-x r-x</span><br></pre></td></tr></table></figure>
+<ul>
+<li>文件类型：<code>-</code>普通文件，<code>d</code>目录，<code>l</code>链接文件</li>
+<li>权限组成：<code>r</code>读(4) + <code>w</code>写(2) + <code>x</code>执行(1)</li>
+</ul>
+<h2 id="2-帮助系统"><a href="#2-帮助系统" class="headerlink" title="2. 帮助系统"></a>2. 帮助系统</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">man &lt;<span class="built_in">command</span>&gt;  <span class="comment"># 查看命令手册</span></span><br><span class="line">man <span class="built_in">ls</span>         <span class="comment"># 示例：查看ls命令手册</span></span><br></pre></td></tr></table></figure>
+<p>常用操作键：</p>
+<ul>
+<li>空格键：向下翻页</li>
+<li><code>q</code>：退出手册</li>
+<li><code>/</code>：搜索内容</li>
+</ul>
+<h2 id="3-用户管理"><a href="#3-用户管理" class="headerlink" title="3. 用户管理"></a>3. 用户管理</h2><h3 id="3-1-用户查看命令"><a href="#3-1-用户查看命令" class="headerlink" title="3.1 用户查看命令"></a>3.1 用户查看命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">whoami</span>        <span class="comment"># 显示当前用户名</span></span><br><span class="line"><span class="built_in">who</span> am i      <span class="comment"># 显示登录信息</span></span><br><span class="line"><span class="built_in">who</span> -m        <span class="comment"># 同&quot;who am i&quot;</span></span><br><span class="line"><span class="built_in">who</span> mom likes <span class="comment"># 显示特定用户信息（需实际用户存在）</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-用户操作"><a href="#3-2-用户操作" class="headerlink" title="3.2 用户操作"></a>3.2 用户操作</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建用户（自动创建home目录）</span></span><br><span class="line"><span class="built_in">sudo</span> adduser lilei</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看已创建用户</span></span><br><span class="line"><span class="built_in">ls</span> /home</span><br><span class="line"></span><br><span class="line"><span class="comment"># 切换用户</span></span><br><span class="line">su -l lilei   <span class="comment"># &quot;-l&quot;模拟完整登录环境</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除用户及home目录</span></span><br><span class="line"><span class="built_in">sudo</span> deluser lilei --remove-home</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-用户组管理"><a href="#4-用户组管理" class="headerlink" title="4. 用户组管理"></a>4. 用户组管理</h2><h3 id="4-1-用户组查看"><a href="#4-1-用户组查看" class="headerlink" title="4.1 用户组查看"></a>4.1 用户组查看</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看指定用户所属组</span></span><br><span class="line"><span class="built_in">groups</span> shiyanlou</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看所有组（按字母排序）</span></span><br><span class="line"><span class="built_in">cat</span> /etc/group | <span class="built_in">sort</span></span><br></pre></td></tr></table></figure>
+<p><code>/etc/group</code> 文件格式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">group_name:password:GID:user_list</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-2-用户组操作"><a href="#4-2-用户组操作" class="headerlink" title="4.2 用户组操作"></a>4.2 用户组操作</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 添加用户到组（需要root权限）</span></span><br><span class="line"><span class="built_in">sudo</span> usermod -aG <span class="built_in">sudo</span> lilei  <span class="comment"># 示例：添加sudo组</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="5-权限管理"><a href="#5-权限管理" class="headerlink" title="5. 权限管理"></a>5. 权限管理</h2><h3 id="5-1-文件权限修改"><a href="#5-1-文件权限修改" class="headerlink" title="5.1 文件权限修改"></a>5.1 文件权限修改</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 变更文件所有者</span></span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">chown</span> shiyanlou iphone6</span><br><span class="line"></span><br><span class="line"><span class="comment"># 变更文件所属组</span></span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">chgrp</span> group_name file</span><br><span class="line"></span><br><span class="line"><span class="comment"># 修改所有权限（所有者/组/其他用户）</span></span><br><span class="line"><span class="built_in">chmod</span> 755 filename  <span class="comment"># rwxr-xr-x</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="5-2-权限数字表示法"><a href="#5-2-权限数字表示法" class="headerlink" title="5.2 权限数字表示法"></a>5.2 权限数字表示法</h3><table>
+<thead>
+<tr>
+<th>权限</th>
+<th>数字</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>r–</td>
+<td>4</td>
+</tr>
+<tr>
+<td>-w-</td>
+<td>2</td>
+</tr>
+<tr>
+<td>–x</td>
+<td>1</td>
+</tr>
+<tr>
+<td>rwx</td>
+<td>7 (4+2+1)</td>
+</tr>
+</tbody></table>
+<h2 id="6-文件类型说明"><a href="#6-文件类型说明" class="headerlink" title="6. 文件类型说明"></a>6. 文件类型说明</h2><p>Linux 一切皆文件，主要类型包括：</p>
+<ul>
+<li><code>-</code>：普通文件</li>
+<li><code>d</code>：目录文件</li>
+<li><code>l</code>：符号链接（相当于快捷方式）</li>
+<li><code>c</code>：字符设备文件</li>
+<li><code>b</code>：块设备文件</li>
+<li><code>s</code>：套接字文件</li>
+<li><code>p</code>：管道文件</li>
+</ul>
+<h2 id="7-重要补充说明"><a href="#7-重要补充说明" class="headerlink" title="7. 重要补充说明"></a>7. 重要补充说明</h2><ol>
+<li><p>目录权限特殊含义：</p>
+<ul>
+<li>读权限：可查看目录内容</li>
+<li>写权限：可创建&#x2F;删除文件</li>
+<li>执行权限：可进入目录</li>
+</ul>
+</li>
+<li><p>新建用户默认会：</p>
+<ul>
+<li>创建同名用户组</li>
+<li>在<code>/home</code>下创建用户目录</li>
+<li>基本配置文件从<code>/etc/skel</code>复制</li>
+</ul>
+</li>
+<li><p>sudo权限配置路径：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/etc/sudoers</span><br><span class="line">/etc/sudoers.d/</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>这份笔记已：</p>
+<ol>
+<li>将零散命令按功能模块分类</li>
+<li>补充了命令输出示例和参数说明</li>
+<li>添加了权限数字表示法等实用表格</li>
+<li>增加了关键概念的注意事项</li>
+<li>保持所有命令可直接复制执行</li>
+</ol>
+<p>建议后续可补充：</p>
+<ul>
+<li>实际权限修改案例</li>
+<li>用户组管理实验</li>
+<li>sudoers文件的配置方法</li>
+<li>ACL高级权限控制</li>
+</ul>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="/tags/linux/" rel="tag">linux</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="/2017/04/28/iptables/"
+                    data-tooltip="iptables"
+                    aria-label="上一篇: iptables"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    <a
+                        class="post-action-btn btn btn--disabled"
+                        aria-hidden="true"
+                    >
+                        
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="/2017/04/28/iptables/"
+                    data-tooltip="iptables"
+                    aria-label="上一篇: iptables"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    <a
+                        class="post-action-btn btn btn--disabled"
+                        aria-hidden="true"
+                    >
+                        
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="/assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macao
+            </div>
+        
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('/assets/images/cover3.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="/assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>
