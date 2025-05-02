@@ -1,7 +1,9 @@
 
 <!DOCTYPE html>
 <html lang="zh-tw">
-    
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -39,7 +41,9 @@
     
 
     
-</head>
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
 
     <body>
         <div id="blog">
@@ -306,12 +310,16 @@
             </div>
             
                 <div class="postShorten-content">
-                    <h2 id="基本操作"><a href="#基本操作" class="headerlink" title="基本操作"></a>基本操作</h2><hr>
-<h3 id="查看iptable版本"><a href="#查看iptable版本" class="headerlink" title="查看iptable版本"></a>查看iptable版本</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpm -q iptables</span><br></pre></td></tr></table></figure>
-<h3 id="查看iptables-规则"><a href="#查看iptables-规则" class="headerlink" title="查看iptables 规则"></a>查看iptables 规则</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">service iptables status</span><br><span class="line"># 或</span><br><span class="line">service -L --line-numbers</span><br></pre></td></tr></table></figure>
-<h2 id="表"><a href="#表" class="headerlink" title="表"></a>表</h2><p>iptables的4个表分别是：</p>
+                    <h2 id="基本操作">基本操作</h2>
+<hr>
+<h3 id="查看iptable版本">查看iptable版本</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpm -q iptables</span><br></pre></td></tr></table></figure>
+<h3 id="查看iptables-规则">查看iptables 规则</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">service iptables status</span><br><span class="line"># 或</span><br><span class="line">service -L --line-numbers</span><br></pre></td></tr></table></figure>
+<h2 id="表">表</h2>
+<p>iptables的4个表分别是：</p>
 <ul>
-<li>filter（过滤）：数据包过滤&#x2F;拦截，可以包含INPUT、FORWARD、OUTPUT这3个内置chain。</li>
+<li>filter（过滤）：数据包过滤/拦截，可以包含INPUT、FORWARD、OUTPUT这3个内置chain。</li>
 <li>nat（地址转换）：IP地址或端口号转换，可以包含PREROUTING、OUTPUT、POSTROUTING 3个内置chain，nat table在会话建立时会记录转换的对应关系，同一会话的回包和后续报文会自动地址转换，这是因为nat使用了ip_conntrack模块。</li>
 <li>mangle（包管理）：用来修改IP报文，可以包含PREROUTING、OUTPUT、INPUT、FORWARD、POSTROUTING 5个内置chain。</li>
 <li>raw：此表的优先级高于ip_conntrack模块和其它的table，主要用于将有会话状态的连接（比如tcp）的数据包排除在会话外。可以包含POSTROUTING、OUTPUT两个内置chain。</li>
@@ -321,7 +329,8 @@
 <p>raw &gt; mangle &gt; nat &gt; filter</p>
 <p>所以，如果有filter禁止ping目的地址2.2.2.2，而nat又有策略将目的地址1.1.1.1转换成2.2.2.2，那么ping 1.1.1.1是ping不通的。</p>
 <p>不过一般情况下filter是不会和nat的策略打起架来，比如INPUT chain能做filter，却不能做nat，PREROUTING能做nat却不能做filter，而且PREROUTING只能做目的地址转换，不会对源地址过滤的需求造成麻烦，所以通常是不会相互干扰的。</p>
-<h2 id="规则链-chain"><a href="#规则链-chain" class="headerlink" title="规则链(chain)"></a>规则链(chain)</h2><p>iptables内置的5个chain：PREROUTING、INPUT、OUPUT、FORWARD、POSTROUGING，这5个chain分别与netfilter中数据转发路径上的5个不同的位置挂钩，以匹配筛选不同类型的数据流，如下图所示：</p>
+<h2 id="规则链-chain">规则链(chain)</h2>
+<p>iptables内置的5个chain：PREROUTING、INPUT、OUPUT、FORWARD、POSTROUGING，这5个chain分别与netfilter中数据转发路径上的5个不同的位置挂钩，以匹配筛选不同类型的数据流，如下图所示：</p>
 <p>其中：</p>
 <ul>
 <li>PREROUTING链：应用于所有进入机器的ip包，包括目的地址是本机和目的地址非本机的包。</li>
@@ -334,82 +343,92 @@
 <p>除了内置chain外，还可以自定义chain，自定义chain并不能利用netfilter的hook来捕捉数据包，但是可用于策略的分类，比如有3类不同的用户访问主机上的不同服务，如果所有策略都放在INPUT chain中策略会多而难以维护，这个时候就可以定义3个自定义chain，分别配置不同的策略，同时在INPUT chain中添加策略对来访者分类并将目标指向3个自定义chain。</p>
 <p>自定义chain大显神威的地方在于动态生成策略，例如VPN服务器上，需要对不同分组的用户区别对待管理，但是用户IP是随机分配的，不能根据IP来区分用户组，这时候可以预先定义好各组chain，利用VPN服务端软件的一些钩子，当用户登陆时自动添加策略引导到自定义chain上来匹配。如果这时候没有自定义chain，那么策略的数量将是（用户数×所属组策略数），每增加一个用户，都要把所属组的全部策略添加一遍，这样大量的时间花费在策略匹配上，性能下降很快。</p>
 <hr>
-<h2 id="各指令的含义"><a href="#各指令的含义" class="headerlink" title="各指令的含义"></a>各指令的含义</h2><hr>
-<h3 id="APPEND-A"><a href="#APPEND-A" class="headerlink" title="-APPEND -A"></a>-APPEND -A</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -A chain firewall-rule</span><br></pre></td></tr></table></figure>
+<h2 id="各指令的含义">各指令的含义</h2>
+<hr>
+<h3 id="APPEND-A">-APPEND -A</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -A chain firewall-rule</span><br></pre></td></tr></table></figure>
 <p>将规则添加到末尾。</p>
 <p>一般情况下,iptables 中最后的规则是丢弃所有数据包。</p>
 <p>于是使用-A参数添加的规则在丢弃规则后，将不起作用。</p>
 <hr>
-<h3 id="DELETE-D"><a href="#DELETE-D" class="headerlink" title="-DELETE -D"></a>-DELETE -D</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">iptables -D chain firewall-rule</span><br><span class="line"># 删除对应规则direwall-rule的那一条</span><br><span class="line"># 或</span><br><span class="line">iptables -D chain rulenum</span><br><span class="line"># 删除chain中编号为rulenum的那一条.1表示第一条。</span><br></pre></td></tr></table></figure>
-
+<h3 id="DELETE-D">-DELETE -D</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">iptables -D chain firewall-rule</span><br><span class="line"># 删除对应规则direwall-rule的那一条</span><br><span class="line"># 或</span><br><span class="line">iptables -D chain rulenum</span><br><span class="line"># 删除chain中编号为rulenum的那一条.1表示第一条。</span><br></pre></td></tr></table></figure>
 <hr>
-<h3 id="INSERT-I"><a href="#INSERT-I" class="headerlink" title="-INSERT -I"></a>-INSERT -I</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -I chain [rulenum] firewall-rule.</span><br></pre></td></tr></table></figure>
+<h3 id="INSERT-I">-INSERT -I</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -I chain [rulenum] firewall-rule.</span><br></pre></td></tr></table></figure>
 <p>将firewall-rule添加为chain中的第rulenum条规则,原先的第rulenum条规则及以后的各条顺次+1。如未指定rulenum,则默认为1.</p>
 <hr>
-<h3 id="REPLACE-R"><a href="#REPLACE-R" class="headerlink" title="-REPLACE -R"></a>-REPLACE -R</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -R chain [rulenum] firewall-rule.</span><br></pre></td></tr></table></figure>
+<h3 id="REPLACE-R">-REPLACE -R</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -R chain [rulenum] firewall-rule.</span><br></pre></td></tr></table></figure>
 <p>将firewall-rule添加为chain中的第rulenum条规则,原先的第rulenum条规则及以后的各条顺次+1。如未指定rulenum,则默认为1.</p>
 <hr>
-<h3 id="LIST-L"><a href="#LIST-L" class="headerlink" title="-LIST -L"></a>-LIST -L</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -L chain [rulenum] firewall-rule.</span><br></pre></td></tr></table></figure>
-
+<h3 id="LIST-L">-LIST -L</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -L chain [rulenum] firewall-rule.</span><br></pre></td></tr></table></figure>
 <p>列出chain或所有chain的第rulenum条规则或所有规则，在-L后再加上–lube-numbers，则显示序号</p>
 <hr>
-<h3 id="LIST-RULES-S"><a href="#LIST-RULES-S" class="headerlink" title="-LIST-RULES -S"></a>-LIST-RULES -S</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -S chain [rulenum] </span><br></pre></td></tr></table></figure>
-
+<h3 id="LIST-RULES-S">-LIST-RULES -S</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -S chain [rulenum] </span><br></pre></td></tr></table></figure>
 <p>打印全部规则</p>
 <hr>
-<h3 id="FLUSH-F"><a href="#FLUSH-F" class="headerlink" title="-FLUSH -F"></a>-FLUSH -F</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -F chain</span><br></pre></td></tr></table></figure>
-
+<h3 id="FLUSH-F">-FLUSH -F</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -F chain</span><br></pre></td></tr></table></figure>
 <p>情况chain(或全部chain)中的规则</p>
 <hr>
-<h3 id="ZERO-Z"><a href="#ZERO-Z" class="headerlink" title="-ZERO -Z"></a>-ZERO -Z</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -Z chain [rulenum] </span><br></pre></td></tr></table></figure>
-
+<h3 id="ZERO-Z">-ZERO -Z</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -Z chain [rulenum] </span><br></pre></td></tr></table></figure>
 <p>清空chain或所有chain的包和字节计数器</p>
 <hr>
-<h3 id="NEW-N"><a href="#NEW-N" class="headerlink" title="-NEW -N"></a>-NEW -N</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -N chain [rulenum] </span><br></pre></td></tr></table></figure>
-
+<h3 id="NEW-N">-NEW -N</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -N chain [rulenum] </span><br></pre></td></tr></table></figure>
 <p>创建名称为chain的新链</p>
 <hr>
-<h3 id="DELETE-CHAIN-X"><a href="#DELETE-CHAIN-X" class="headerlink" title="-DELETE-CHAIN -X"></a>-DELETE-CHAIN -X</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -X [chain] </span><br></pre></td></tr></table></figure>
-
+<h3 id="DELETE-CHAIN-X">-DELETE-CHAIN -X</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -X [chain] </span><br></pre></td></tr></table></figure>
 <p>删除用户自定义chain或所有用户定义的chain,该指令不影响预设规则</p>
 <hr>
-<h3 id="POLICY-P"><a href="#POLICY-P" class="headerlink" title="-POLICY -P"></a>-POLICY -P</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -P chain target </span><br></pre></td></tr></table></figure>
-
+<h3 id="POLICY-P">-POLICY -P</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -P chain target </span><br></pre></td></tr></table></figure>
 <p>改变chain的策略为target</p>
 <hr>
-<h3 id="RENAME-CHAIN-E"><a href="#RENAME-CHAIN-E" class="headerlink" title="-RENAME-CHAIN -E"></a>-RENAME-CHAIN -E</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -E old-chain new-chain</span><br></pre></td></tr></table></figure>
-
+<h3 id="RENAME-CHAIN-E">-RENAME-CHAIN -E</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -E old-chain new-chain</span><br></pre></td></tr></table></figure>
 <p>将old-chain名更换为new-chain,使得old-chain的规则失效</p>
 <hr>
-<h2 id="各参数的含义"><a href="#各参数的含义" class="headerlink" title="各参数的含义"></a>各参数的含义</h2><hr>
-<h3 id="P-代表协议（PROTOCOL）"><a href="#P-代表协议（PROTOCOL）" class="headerlink" title="-P 代表协议（PROTOCOL）"></a>-P 代表协议（PROTOCOL）</h3><ul>
+<h2 id="各参数的含义">各参数的含义</h2>
+<hr>
+<h3 id="P-代表协议（PROTOCOL）">-P 代表协议（PROTOCOL）</h3>
+<ul>
 <li>指明当前规则针对的传输协议（如 TCP、UDP、ICMP 等）</li>
 <li>可能的参数值有：tcp, udp, icmp, all</li>
 <li>使用 “all” 表示适用于所有协议。而如果在规则中不指定 -p 参数，则默认使用 “all” 参数。一般不使用 “all” 这个值，要么指定某个特定的协议，要么就指定 -p 参数。</li>
 <li>-p 的参数值既可以用名称（如 tcp）也可以用协议对应的数值（如 6 代表 tcp 协议）</li>
-<li>&#x2F;etc&#x2F;protocols 文件中包含了所有允许的协议名称和相应数值</li>
+<li>/etc/protocols 文件中包含了所有允许的协议名称和相应数值</li>
 <li>也可以用长的参数名 –protocol</li>
 </ul>
-<h3 id="S-代表源地址（SOURCE）"><a href="#S-代表源地址（SOURCE）" class="headerlink" title="-S 代表源地址（SOURCE）"></a>-S 代表源地址（SOURCE）</h3><ul>
+<h3 id="S-代表源地址（SOURCE）">-S 代表源地址（SOURCE）</h3>
+<ul>
 <li>指定数据包的源地址</li>
 <li>可以是 ip 地址，或者网络地址，或者主机名（hostname）</li>
 <li>例如：-s 192.168.1.101 表示针对特定的 ip 地址</li>
-<li>对于网络掩码，使用 &#x2F;mask。例如，“-s 192.168.1.0&#x2F;24″ 表示网络掩码为 255.255.255.0 的所有 192.168.1.x 地址都匹配。</li>
+<li>对于网络掩码，使用 /mask。例如，“-s 192.168.1.0/24″ 表示网络掩码为 255.255.255.0 的所有 192.168.1.x 地址都匹配。</li>
 <li>如果不指定 -s 参数，默认匹配所有源地址</li>
 <li>也可以用长参数名 –src 或者 –source</li>
 </ul>
-<h3 id="D-代表目的地址（DESTINATION）"><a href="#D-代表目的地址（DESTINATION）" class="headerlink" title="-D 代表目的地址（DESTINATION）"></a>-D 代表目的地址（DESTINATION）</h3><ul>
+<h3 id="D-代表目的地址（DESTINATION）">-D 代表目的地址（DESTINATION）</h3>
+<ul>
 <li>指定数据包的目的地址</li>
 <li>使用方式与上面的 “-s” 一样（不同之处仅在于 -s 指源，而 -d 表示目的地址）</li>
 <li>也可以用长参数名 –dst 或者 –destination</li>
 </ul>
-<h3 id="J-代表跳转（TARGET）"><a href="#J-代表跳转（TARGET）" class="headerlink" title="-J 代表跳转（TARGET）"></a>-J 代表跳转（TARGET）</h3><ul>
+<h3 id="J-代表跳转（TARGET）">-J 代表跳转（TARGET）</h3>
+<ul>
 <li>j 的意思是 “jump”（跳转） 到目标</li>
 <li>指定当某个数据包满足该规则的时候的就跳转到的下一个处理规则，而不再顺序执行后面的规则判断</li>
 <li>可能的值有：ACCEPT, DROP, QUEUE, RETURN，分别表示接受、丢弃、进入队列，返回（跳出，通常是从某个 chain 中跳回到调用该 chain 的上层 chain）</li>
 <li>也可以跳转到某个自定义的 chain 中，使用该 chain 的名称做为跳转目标</li>
 </ul>
-<h3 id="I-代表-IN-INTERFACE（入站接口）"><a href="#I-代表-IN-INTERFACE（入站接口）" class="headerlink" title="-I 代表 IN INTERFACE（入站接口）"></a>-I 代表 IN INTERFACE（入站接口）</h3><ul>
+<h3 id="I-代表-IN-INTERFACE（入站接口）">-I 代表 IN INTERFACE（入站接口）</h3>
+<ul>
 <li>i 表示 “input interface”（输入接口，即，指定网络数据处理的网卡，一般 eth0 即表示第一块有线网卡的外网接口，lo 表示局域网接口）</li>
 <li>可以直接理解为 “-i” 表示接口。不过，-i 和 -o 都表示接口，-i 表示输入时的接口，而 -o 特指输出用的接口。</li>
 <li>指定数据包进入 INPUT、FORWARD 和 PREROUTING 链时经由的接口。</li>
@@ -417,39 +436,44 @@
 <li>如果不指定 -i 参数，则经由系统中所有可用的接口进入的数据包都可以匹配该规则。</li>
 <li>也可以使用长参数 –in-interface</li>
 </ul>
-<h3 id="O-代表-OUT-INTERFACE（出站接口）"><a href="#O-代表-OUT-INTERFACE（出站接口）" class="headerlink" title="-O 代表 OUT INTERFACE（出站接口）"></a>-O 代表 OUT INTERFACE（出站接口）</h3><ul>
+<h3 id="O-代表-OUT-INTERFACE（出站接口）">-O 代表 OUT INTERFACE（出站接口）</h3>
+<ul>
 <li>o 表示 “output interface”（出站经由接口）</li>
 <li>指定发送出去的数据包进入 INPUT、FORWARD 和 PREROUTING 链时经由的接口。</li>
 <li>如果不指定 -o 参数，则经由系统中所有可用的接口发出的数据包都可以匹配该规则。</li>
 <li>也可以使用长参数 –out-interface</li>
 </ul>
 <hr>
-<h2 id="其它防火墙参数选项"><a href="#其它防火墙参数选项" class="headerlink" title="其它防火墙参数选项"></a>其它防火墙参数选项</h2><p>上面某些防火墙参数还有属于它自己的参数选项，可以与其配合使用。下面是一些常用的选项。</p>
+<h2 id="其它防火墙参数选项">其它防火墙参数选项</h2>
+<p>上面某些防火墙参数还有属于它自己的参数选项，可以与其配合使用。下面是一些常用的选项。</p>
 <p>要使用这些参数选项，需要指定相应的参数，例如，要使用 “–sport” 选项，应该在规则中指定 “-p tcp” （或者 “-p udp”）等参数。</p>
 <p>注意：所有这些选项前面都是 –（2个短横线 – ）。</p>
-<h3 id="–SPORT-表示-SOURCE-PORT-源端口，用于-P-TCP-或者-P-UDP"><a href="#–SPORT-表示-SOURCE-PORT-源端口，用于-P-TCP-或者-P-UDP" class="headerlink" title="–SPORT 表示 SOURCE PORT (源端口，用于 -P TCP, 或者 -P UDP)"></a>–SPORT 表示 SOURCE PORT (源端口，用于 -P TCP, 或者 -P UDP)</h3><ul>
+<h3 id="–SPORT-表示-SOURCE-PORT-源端口，用于-P-TCP-或者-P-UDP">–SPORT 表示 SOURCE PORT (源端口，用于 -P TCP, 或者 -P UDP)</h3>
+<ul>
 <li>默认匹配所有端口（未特别指定时）</li>
 <li>可以指定端口号（数字），也可以指定端口名称。例如，默认的 SSH 端口号码为 22，名称为 ssh，可以表示为 “–sport 22″ 或者 “–sport ssh”。</li>
-<li>&#x2F;etc&#x2F;services 文件包含了所有允许的端口名称和对应的端口号码。</li>
+<li>/etc/services 文件包含了所有允许的端口名称和对应的端口号码。</li>
 <li>在规则中使用号码比使用名称要好（效率高些）</li>
 <li>要匹配一个端口范围，使用英文半角冒号（:），如 22:100 匹配从 22 到 100 的所有端口号。</li>
 <li>也可以使用长名称 –source-port</li>
 </ul>
-<h3 id="–DPORT-表示-DESTINATION-PORT-目的端口，-P-TCP-或者-P-UDP"><a href="#–DPORT-表示-DESTINATION-PORT-目的端口，-P-TCP-或者-P-UDP" class="headerlink" title="–DPORT 表示 DESTINATION PORT (目的端口，-P TCP, 或者 -P UDP)"></a>–DPORT 表示 DESTINATION PORT (目的端口，-P TCP, 或者 -P UDP)</h3><ul>
+<h3 id="–DPORT-表示-DESTINATION-PORT-目的端口，-P-TCP-或者-P-UDP">–DPORT 表示 DESTINATION PORT (目的端口，-P TCP, 或者 -P UDP)</h3>
+<ul>
 <li>与 –sport 的用法相同，区别仅在于对象是目的端口</li>
 <li>也可以使用长名称 –destination-port</li>
 </ul>
-<h3 id="–TCP-FLAGS-表示-TCP-FLAGS-用于-P-TCP"><a href="#–TCP-FLAGS-表示-TCP-FLAGS-用于-P-TCP" class="headerlink" title="–TCP-FLAGS 表示 TCP FLAGS (用于 -P TCP)"></a>–TCP-FLAGS 表示 TCP FLAGS (用于 -P TCP)</h3><ul>
+<h3 id="–TCP-FLAGS-表示-TCP-FLAGS-用于-P-TCP">–TCP-FLAGS 表示 TCP FLAGS (用于 -P TCP)</h3>
+<ul>
 <li>可以使用英文半角逗号（,）来指定多个 TCP 状态标识</li>
 <li>可能值有：SYN, ACK, FIN, RST, URG, PSH。可以全用，也可以不用。</li>
 </ul>
-<h3 id="–ICMP-TYPE-表示-ICMP-TYPE-ICMP-类型，用于-P-ICMP"><a href="#–ICMP-TYPE-表示-ICMP-TYPE-ICMP-类型，用于-P-ICMP" class="headerlink" title="–ICMP-TYPE 表示 ICMP TYPE (ICMP 类型，用于 -P ICMP)"></a>–ICMP-TYPE 表示 ICMP TYPE (ICMP 类型，用于 -P ICMP)</h3><ul>
+<h3 id="–ICMP-TYPE-表示-ICMP-TYPE-ICMP-类型，用于-P-ICMP">–ICMP-TYPE 表示 ICMP TYPE (ICMP 类型，用于 -P ICMP)</h3>
+<ul>
 <li>当使用 icmp 协议 “-p icmp” 的时候，可以使用 “–icmp-type” 特别指定 ICMP 类型</li>
 <li>例如，使用 “–icmp-type 0″ 表示 “Echo Reply”，“–icmp-type 8″ 表示 “Echo”。</li>
 </ul>
 <p>添加VIP:</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ifconfig eth0:1 192.168.1.22 broadcast 192.168.1.2 netmask 255.255.255.0 up</span><br></pre></td></tr></table></figure>
-
 
                     
                         
@@ -507,9 +531,12 @@
             </div>
             
                 <div class="postShorten-content">
-                    <h1 id="Linux-基础操作笔记"><a href="#Linux-基础操作笔记" class="headerlink" title="Linux 基础操作笔记"></a>Linux 基础操作笔记</h1><h2 id="1-文件操作"><a href="#1-文件操作" class="headerlink" title="1. 文件操作"></a>1. 文件操作</h2><h3 id="1-1-创建文件"><a href="#1-1-创建文件" class="headerlink" title="1.1 创建文件"></a>1.1 创建文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建单个文件</span></span><br><span class="line"><span class="built_in">touch</span> file</span><br><span class="line"></span><br><span class="line"><span class="comment"># 批量创建文件（创建love_1_linux.txt到love_10_linux.txt）</span></span><br><span class="line"><span class="built_in">touch</span> love_&#123;1..10&#125;_linux.txt</span><br></pre></td></tr></table></figure>
-
-<h3 id="1-2-文件权限查看"><a href="#1-2-文件权限查看" class="headerlink" title="1.2 文件权限查看"></a>1.2 文件权限查看</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ls</span> -l  <span class="comment"># 详细列表显示文件权限</span></span><br></pre></td></tr></table></figure>
+                    <h1>Linux 基础操作笔记</h1>
+<h2 id="1-文件操作">1. 文件操作</h2>
+<h3 id="1-1-创建文件">1.1 创建文件</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建单个文件</span></span><br><span class="line"><span class="built_in">touch</span> file</span><br><span class="line"></span><br><span class="line"><span class="comment"># 批量创建文件（创建love_1_linux.txt到love_10_linux.txt）</span></span><br><span class="line"><span class="built_in">touch</span> love_&#123;1..10&#125;_linux.txt</span><br></pre></td></tr></table></figure>
+<h3 id="1-2-文件权限查看">1.2 文件权限查看</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ls</span> -l  <span class="comment"># 详细列表显示文件权限</span></span><br></pre></td></tr></table></figure>
 <p>输出示例：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-rw-r--r-- 1 user group 1024 Mar 1 10:00 example.txt</span><br></pre></td></tr></table></figure>
 <p>权限字段说明：</p>
@@ -518,33 +545,39 @@
 <li>文件类型：<code>-</code>普通文件，<code>d</code>目录，<code>l</code>链接文件</li>
 <li>权限组成：<code>r</code>读(4) + <code>w</code>写(2) + <code>x</code>执行(1)</li>
 </ul>
-<h2 id="2-帮助系统"><a href="#2-帮助系统" class="headerlink" title="2. 帮助系统"></a>2. 帮助系统</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">man &lt;<span class="built_in">command</span>&gt;  <span class="comment"># 查看命令手册</span></span><br><span class="line">man <span class="built_in">ls</span>         <span class="comment"># 示例：查看ls命令手册</span></span><br></pre></td></tr></table></figure>
+<h2 id="2-帮助系统">2. 帮助系统</h2>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">man &lt;<span class="built_in">command</span>&gt;  <span class="comment"># 查看命令手册</span></span><br><span class="line">man <span class="built_in">ls</span>         <span class="comment"># 示例：查看ls命令手册</span></span><br></pre></td></tr></table></figure>
 <p>常用操作键：</p>
 <ul>
 <li>空格键：向下翻页</li>
 <li><code>q</code>：退出手册</li>
 <li><code>/</code>：搜索内容</li>
 </ul>
-<h2 id="3-用户管理"><a href="#3-用户管理" class="headerlink" title="3. 用户管理"></a>3. 用户管理</h2><h3 id="3-1-用户查看命令"><a href="#3-1-用户查看命令" class="headerlink" title="3.1 用户查看命令"></a>3.1 用户查看命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">whoami</span>        <span class="comment"># 显示当前用户名</span></span><br><span class="line"><span class="built_in">who</span> am i      <span class="comment"># 显示登录信息</span></span><br><span class="line"><span class="built_in">who</span> -m        <span class="comment"># 同&quot;who am i&quot;</span></span><br><span class="line"><span class="built_in">who</span> mom likes <span class="comment"># 显示特定用户信息（需实际用户存在）</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="3-2-用户操作"><a href="#3-2-用户操作" class="headerlink" title="3.2 用户操作"></a>3.2 用户操作</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建用户（自动创建home目录）</span></span><br><span class="line"><span class="built_in">sudo</span> adduser lilei</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看已创建用户</span></span><br><span class="line"><span class="built_in">ls</span> /home</span><br><span class="line"></span><br><span class="line"><span class="comment"># 切换用户</span></span><br><span class="line">su -l lilei   <span class="comment"># &quot;-l&quot;模拟完整登录环境</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除用户及home目录</span></span><br><span class="line"><span class="built_in">sudo</span> deluser lilei --remove-home</span><br></pre></td></tr></table></figure>
-
-<h2 id="4-用户组管理"><a href="#4-用户组管理" class="headerlink" title="4. 用户组管理"></a>4. 用户组管理</h2><h3 id="4-1-用户组查看"><a href="#4-1-用户组查看" class="headerlink" title="4.1 用户组查看"></a>4.1 用户组查看</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看指定用户所属组</span></span><br><span class="line"><span class="built_in">groups</span> shiyanlou</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看所有组（按字母排序）</span></span><br><span class="line"><span class="built_in">cat</span> /etc/group | <span class="built_in">sort</span></span><br></pre></td></tr></table></figure>
+<h2 id="3-用户管理">3. 用户管理</h2>
+<h3 id="3-1-用户查看命令">3.1 用户查看命令</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">whoami</span>        <span class="comment"># 显示当前用户名</span></span><br><span class="line"><span class="built_in">who</span> am i      <span class="comment"># 显示登录信息</span></span><br><span class="line"><span class="built_in">who</span> -m        <span class="comment"># 同&quot;who am i&quot;</span></span><br><span class="line"><span class="built_in">who</span> mom likes <span class="comment"># 显示特定用户信息（需实际用户存在）</span></span><br></pre></td></tr></table></figure>
+<h3 id="3-2-用户操作">3.2 用户操作</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建用户（自动创建home目录）</span></span><br><span class="line"><span class="built_in">sudo</span> adduser lilei</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看已创建用户</span></span><br><span class="line"><span class="built_in">ls</span> /home</span><br><span class="line"></span><br><span class="line"><span class="comment"># 切换用户</span></span><br><span class="line">su -l lilei   <span class="comment"># &quot;-l&quot;模拟完整登录环境</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除用户及home目录</span></span><br><span class="line"><span class="built_in">sudo</span> deluser lilei --remove-home</span><br></pre></td></tr></table></figure>
+<h2 id="4-用户组管理">4. 用户组管理</h2>
+<h3 id="4-1-用户组查看">4.1 用户组查看</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看指定用户所属组</span></span><br><span class="line"><span class="built_in">groups</span> shiyanlou</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看所有组（按字母排序）</span></span><br><span class="line"><span class="built_in">cat</span> /etc/group | <span class="built_in">sort</span></span><br></pre></td></tr></table></figure>
 <p><code>/etc/group</code> 文件格式：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">group_name:password:GID:user_list</span><br></pre></td></tr></table></figure>
-
-<h3 id="4-2-用户组操作"><a href="#4-2-用户组操作" class="headerlink" title="4.2 用户组操作"></a>4.2 用户组操作</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 添加用户到组（需要root权限）</span></span><br><span class="line"><span class="built_in">sudo</span> usermod -aG <span class="built_in">sudo</span> lilei  <span class="comment"># 示例：添加sudo组</span></span><br></pre></td></tr></table></figure>
-
-<h2 id="5-权限管理"><a href="#5-权限管理" class="headerlink" title="5. 权限管理"></a>5. 权限管理</h2><h3 id="5-1-文件权限修改"><a href="#5-1-文件权限修改" class="headerlink" title="5.1 文件权限修改"></a>5.1 文件权限修改</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 变更文件所有者</span></span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">chown</span> shiyanlou iphone6</span><br><span class="line"></span><br><span class="line"><span class="comment"># 变更文件所属组</span></span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">chgrp</span> group_name file</span><br><span class="line"></span><br><span class="line"><span class="comment"># 修改所有权限（所有者/组/其他用户）</span></span><br><span class="line"><span class="built_in">chmod</span> 755 filename  <span class="comment"># rwxr-xr-x</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="5-2-权限数字表示法"><a href="#5-2-权限数字表示法" class="headerlink" title="5.2 权限数字表示法"></a>5.2 权限数字表示法</h3><table>
+<h3 id="4-2-用户组操作">4.2 用户组操作</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 添加用户到组（需要root权限）</span></span><br><span class="line"><span class="built_in">sudo</span> usermod -aG <span class="built_in">sudo</span> lilei  <span class="comment"># 示例：添加sudo组</span></span><br></pre></td></tr></table></figure>
+<h2 id="5-权限管理">5. 权限管理</h2>
+<h3 id="5-1-文件权限修改">5.1 文件权限修改</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 变更文件所有者</span></span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">chown</span> shiyanlou iphone6</span><br><span class="line"></span><br><span class="line"><span class="comment"># 变更文件所属组</span></span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">chgrp</span> group_name file</span><br><span class="line"></span><br><span class="line"><span class="comment"># 修改所有权限（所有者/组/其他用户）</span></span><br><span class="line"><span class="built_in">chmod</span> 755 filename  <span class="comment"># rwxr-xr-x</span></span><br></pre></td></tr></table></figure>
+<h3 id="5-2-权限数字表示法">5.2 权限数字表示法</h3>
+<table>
 <thead>
 <tr>
 <th>权限</th>
 <th>数字</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>r–</td>
 <td>4</td>
 </tr>
@@ -560,8 +593,10 @@
 <td>rwx</td>
 <td>7 (4+2+1)</td>
 </tr>
-</tbody></table>
-<h2 id="6-文件类型说明"><a href="#6-文件类型说明" class="headerlink" title="6. 文件类型说明"></a>6. 文件类型说明</h2><p>Linux 一切皆文件，主要类型包括：</p>
+</tbody>
+</table>
+<h2 id="6-文件类型说明">6. 文件类型说明</h2>
+<p>Linux 一切皆文件，主要类型包括：</p>
 <ul>
 <li><code>-</code>：普通文件</li>
 <li><code>d</code>：目录文件</li>
@@ -571,23 +606,28 @@
 <li><code>s</code>：套接字文件</li>
 <li><code>p</code>：管道文件</li>
 </ul>
-<h2 id="7-重要补充说明"><a href="#7-重要补充说明" class="headerlink" title="7. 重要补充说明"></a>7. 重要补充说明</h2><ol>
-<li><p>目录权限特殊含义：</p>
+<h2 id="7-重要补充说明">7. 重要补充说明</h2>
+<ol>
+<li>
+<p>目录权限特殊含义：</p>
 <ul>
 <li>读权限：可查看目录内容</li>
-<li>写权限：可创建&#x2F;删除文件</li>
+<li>写权限：可创建/删除文件</li>
 <li>执行权限：可进入目录</li>
 </ul>
 </li>
-<li><p>新建用户默认会：</p>
+<li>
+<p>新建用户默认会：</p>
 <ul>
 <li>创建同名用户组</li>
 <li>在<code>/home</code>下创建用户目录</li>
 <li>基本配置文件从<code>/etc/skel</code>复制</li>
 </ul>
 </li>
-<li><p>sudo权限配置路径：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/etc/sudoers</span><br><span class="line">/etc/sudoers.d/</span><br></pre></td></tr></table></figure></li>
+<li>
+<p>sudo权限配置路径：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/etc/sudoers</span><br><span class="line">/etc/sudoers.d/</span><br></pre></td></tr></table></figure>
+</li>
 </ol>
 <p>这份笔记已：</p>
 <ol>
@@ -688,7 +728,7 @@
 
         
         
-<div id="cover" style="background-image:url('/assets/images/cover3.jpeg');"></div>
+<div id="cover" style="background-image:url('/assets/images/cover.jpeg');"></div>
         <!--SCRIPTS-->
 
 <script src="/assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
