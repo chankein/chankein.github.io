@@ -1,0 +1,970 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>15.高度的存储管理 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. RAID (冗余磁盘阵列)\nRAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。\nLinux 上的 RAID\n在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。\nRAID 各个等级：\n\n\nRAID 0 (条带化)\n\n多个硬盘组合成一个大磁盘，没有备份，提供较好的性能但没有容灾能力。\n示例：三台 100GB 硬盘组成一个 300GB 的 RAID 0。\n\n\n\nRAID 1 (镜像)\n\n多台硬盘写入相同数据，提供冗余备份。\n示例：三个 100GB 硬盘组成一个 100GB 的 RAID 1。\n\n\n\nRAID 4\n\n至少需要 3 台硬盘，其中一台用作备份分区。性能瓶颈在于备份分区。\n示例：三个 100GB 硬盘组成一个 200GB 的 RAID 4。\n\n\n\nRAID 5\n\n使用分布式备份技术，性能较 RAID 4 好，且不需要专门的备份硬盘。\n示例：三个 100GB 硬盘组成一个 200GB 的 RAID 5。\n\n\n\n其他 RAID 等级：\n\nRAID LINEAR：类似 RAID 0。\nRAID 0+1 (RAID01)：RAID 0 组成的 RAID 1。\nRAID 10 (RAID+0)：RAID 1 组成的 RAID 0。\nRAID 6：比 RAID 5 多一台备份区。\n\n\n\nmdadm 命令控制 RAID 阵列\nmdadm [option] [设备名]\n常用选项：\n\n\n\n选项\n描述\n\n\n\n\n-C, --create\n创建 RAID 阵列并生成相关设备\n\n\n-a\n自动生成必要的设备文件\n\n\n-c\n指定 Chunk 大小\n\n\n-l, --level\n指定 RAID 级别\n\n\n-n, --raid-devices\n指定 RAID 阵列中的设备数量\n\n\n-x, --spare-devices\n指定备用设备数量\n\n\n--manage\n管理 RAID 阵列\n\n\n-a, --add\n添加设备\n\n\n-r, --remove\n删除设备\n\n\n-f, --fail\n标记设备为失效\n\n\n--query\n查询 RAID 状态\n\n\n--detail\n查看 RAID 详细状态\n\n\n--stop\n停止指定的 RAID 阵列\n\n\n--stop --scan\n停止所有 RAID 阵列\n\n\n\n\n2. LVM (逻辑卷管理)\nLVM 是 Linux 下的一种磁盘管理工具，可以灵活地管理硬盘、分区和逻辑卷。\nLVM 结构：\n\nPV (Physical Volume)：一个硬盘或一个分区作为物理空间。\nPE (Physical Extent)：PV 组成 PE。\nVG (Volume Group)：PE 组成 VG。\nLV (Logical Volume)：VG 内的 PE 分配为 LV。\n\n创建 LVM：\n\n\n准备 LVM 用的分区：\n12fdisk /dev/sdafdisk /dev/sdb\n\n\n初始化 PV：\n1pvcreate /dev/sda1 /dev/sdb1\n\n\n创建 VG：\n1vgcreate testvg /dev/sda1 /dev/sdb1\n\n\n创建 LV：\n1lvcreate -L 1G -n lv01 testvg\n\n\n创建文件系统并挂载：\n12mke2fs -j /dev/testvg/lv01mount /dev/testvg/lv01 /mnt\n\n\n管理 LVM：\n\n\n\n命令\n说明\n\n\n\n\npvdisplay\n显示物理 PV 信息\n\n\npvscan\n显示 PV 状态\n\n\npvmove\n移动 PV 中的 PE\n\n\npvremove\n删除 PV\n\n\nvgextend\n扩展 VG\n\n\nvgreduce\n缩小 VG\n\n\nvgdisplay\n显示 VG 详情\n\n\nlvdisplay\n显示 LV 详情\n\n\nlvextend\n扩展 LV\n\n\nlvreduce\n缩小 LV\n\n\nlvremove\n删除 LV\n\n\nlvcreate -s\n创建快照\n\n\n\n\n3. 访问记忆装置\n设备文件说明：\n\n\n\n设备文件\n说明\n\n\n\n\n/dev/hda\nIDE 主硬盘\n\n\n/dev/hdb\nIDE 从硬盘\n\n\n/dev/sda\n第一个 SCSI/STAT/USB 硬盘\n\n\n/dev/sdb\n第二个 SCSI/STAT/USB 硬盘\n\n\n/dev/sr0\n第一个 SCSI/STAT/USB CD/DVD\n\n\n/dev/st0\n第一个 SCSI 磁带设备\n\n\n\n硬盘管理：\nLinux 将 IDE 以外的硬盘识别为 SCSI 设备。硬盘的数据传送模式有 PIO（Programmed I/O）和 DMA（Direct Memory Access）模式。通常使用 DMA 模式。\n检查 DMA 模式：\n1hdparm -i /dev/sda\n硬盘控制：\n1hdparm -d1 /dev/sda  # 启用 DMA 模式\n使用 SCSI/STAT/USB：\n1sdparm [option] [设备文件]\n\n4. iSCSI (Internet Small Computer System Interface)\niSCSI 是基于 TCP/IP 的 SCSI 协议，可以使远程存储设备像本地设备一样使用。\niSCSI 配置步骤：\n\n\n配置 targets.conf 文件：\n123456&lt;target iqn.2014.01.com.example.lpic:target0&gt;   backing-store /dev/sdb2   initiator-address 192.168.11.2   initiator-address 192.168.11.4   incominguser centuser password&lt;/target&gt;\n\n\n启动 iSCSI target 服务：\n1service tgtd start\n\n\n使用 tgtadm 命令查看 target 状态：\n1tgtadm --mode target --op show\n\n\n使用 iscsiadm 从 initiator 查询 target：\n1iscsiadm -m discovery -t sendtargets -p 192.168.11.3\n\n\n配置认证方式：\n修改 /etc/iscsi/iscid.conf：\n123node.session.auth.authmethod = CHAPnode.session.auth.username = centusernode.session.auth.password = password\n\n\n登录 iSCSI：\n1iscsiadm -m node --login\n登录后，使用 cat /proc/partitions 查看 iSCSI 目标是否添加成功。\n\n\n","dateCreated":"2020-11-15T14:01:30+08:00","dateModified":"2025-05-12T15:05:38+08:00","datePublished":"2020-11-15T14:01:30+08:00","description":"","headline":"15.高度的存储管理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/","keywords":"linux, LPIC"}</script>
+    <meta name="description" content="1. RAID (冗余磁盘阵列) RAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。 Linux 上的 RAID 在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。 RAID 各个等级：   RAID 0 (条带化)  多个硬盘组合成一个大磁">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="15.高度的存储管理">
+<meta property="og:url" content="https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="1. RAID (冗余磁盘阵列) RAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。 Linux 上的 RAID 在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。 RAID 各个等级：   RAID 0 (条带化)  多个硬盘组合成一个大磁">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2020-11-15T06:01:30.000Z">
+<meta property="article:modified_time" content="2025-05-12T07:05:38.152Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="LPIC">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            15.高度的存储管理
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2020-11-15T14:01:30+08:00">
+	
+		    2020 年 11 月 15 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../../../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h1>1. RAID (冗余磁盘阵列)</h1>
+<p>RAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。</p>
+<h2 id="Linux-上的-RAID">Linux 上的 RAID</h2>
+<p>在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。</p>
+<h2 id="RAID-各个等级：">RAID 各个等级：</h2>
+<ul>
+<li>
+<p><strong>RAID 0 (条带化)</strong></p>
+<ul>
+<li>多个硬盘组合成一个大磁盘，没有备份，提供较好的性能但没有容灾能力。</li>
+<li>示例：三台 100GB 硬盘组成一个 300GB 的 RAID 0。</li>
+</ul>
+</li>
+<li>
+<p><strong>RAID 1 (镜像)</strong></p>
+<ul>
+<li>多台硬盘写入相同数据，提供冗余备份。</li>
+<li>示例：三个 100GB 硬盘组成一个 100GB 的 RAID 1。</li>
+</ul>
+</li>
+<li>
+<p><strong>RAID 4</strong></p>
+<ul>
+<li>至少需要 3 台硬盘，其中一台用作备份分区。性能瓶颈在于备份分区。</li>
+<li>示例：三个 100GB 硬盘组成一个 200GB 的 RAID 4。</li>
+</ul>
+</li>
+<li>
+<p><strong>RAID 5</strong></p>
+<ul>
+<li>使用分布式备份技术，性能较 RAID 4 好，且不需要专门的备份硬盘。</li>
+<li>示例：三个 100GB 硬盘组成一个 200GB 的 RAID 5。</li>
+</ul>
+</li>
+<li>
+<p><strong>其他 RAID 等级：</strong></p>
+<ul>
+<li><strong>RAID LINEAR</strong>：类似 RAID 0。</li>
+<li><strong>RAID 0+1 (RAID01)</strong>：RAID 0 组成的 RAID 1。</li>
+<li><strong>RAID 10 (RAID+0)</strong>：RAID 1 组成的 RAID 0。</li>
+<li><strong>RAID 6</strong>：比 RAID 5 多一台备份区。</li>
+</ul>
+</li>
+</ul>
+<h2 id="mdadm-命令控制-RAID-阵列"><code>mdadm</code> 命令控制 RAID 阵列</h2>
+<p><code>mdadm [option] [设备名]</code></p>
+<h3 id="常用选项：">常用选项：</h3>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-C</code>, <code>--create</code></td>
+<td>创建 RAID 阵列并生成相关设备</td>
+</tr>
+<tr>
+<td><code>-a</code></td>
+<td>自动生成必要的设备文件</td>
+</tr>
+<tr>
+<td><code>-c</code></td>
+<td>指定 Chunk 大小</td>
+</tr>
+<tr>
+<td><code>-l</code>, <code>--level</code></td>
+<td>指定 RAID 级别</td>
+</tr>
+<tr>
+<td><code>-n</code>, <code>--raid-devices</code></td>
+<td>指定 RAID 阵列中的设备数量</td>
+</tr>
+<tr>
+<td><code>-x</code>, <code>--spare-devices</code></td>
+<td>指定备用设备数量</td>
+</tr>
+<tr>
+<td><code>--manage</code></td>
+<td>管理 RAID 阵列</td>
+</tr>
+<tr>
+<td><code>-a</code>, <code>--add</code></td>
+<td>添加设备</td>
+</tr>
+<tr>
+<td><code>-r</code>, <code>--remove</code></td>
+<td>删除设备</td>
+</tr>
+<tr>
+<td><code>-f</code>, <code>--fail</code></td>
+<td>标记设备为失效</td>
+</tr>
+<tr>
+<td><code>--query</code></td>
+<td>查询 RAID 状态</td>
+</tr>
+<tr>
+<td><code>--detail</code></td>
+<td>查看 RAID 详细状态</td>
+</tr>
+<tr>
+<td><code>--stop</code></td>
+<td>停止指定的 RAID 阵列</td>
+</tr>
+<tr>
+<td><code>--stop --scan</code></td>
+<td>停止所有 RAID 阵列</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h1>2. LVM (逻辑卷管理)</h1>
+<p>LVM 是 Linux 下的一种磁盘管理工具，可以灵活地管理硬盘、分区和逻辑卷。</p>
+<h3 id="LVM-结构：">LVM 结构：</h3>
+<ol>
+<li><strong>PV (Physical Volume)</strong>：一个硬盘或一个分区作为物理空间。</li>
+<li><strong>PE (Physical Extent)</strong>：PV 组成 PE。</li>
+<li><strong>VG (Volume Group)</strong>：PE 组成 VG。</li>
+<li><strong>LV (Logical Volume)</strong>：VG 内的 PE 分配为 LV。</li>
+</ol>
+<h3 id="创建-LVM：">创建 LVM：</h3>
+<ol>
+<li>
+<p>准备 LVM 用的分区：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fdisk /dev/sda</span><br><span class="line">fdisk /dev/sdb</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>初始化 PV：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pvcreate /dev/sda1 /dev/sdb1</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>创建 VG：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vgcreate testvg /dev/sda1 /dev/sdb1</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>创建 LV：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lvcreate -L 1G -n lv01 testvg</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>创建文件系统并挂载：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mke2fs -j /dev/testvg/lv01</span><br><span class="line">mount /dev/testvg/lv01 /mnt</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h3 id="管理-LVM：">管理 LVM：</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pvdisplay</code></td>
+<td>显示物理 PV 信息</td>
+</tr>
+<tr>
+<td><code>pvscan</code></td>
+<td>显示 PV 状态</td>
+</tr>
+<tr>
+<td><code>pvmove</code></td>
+<td>移动 PV 中的 PE</td>
+</tr>
+<tr>
+<td><code>pvremove</code></td>
+<td>删除 PV</td>
+</tr>
+<tr>
+<td><code>vgextend</code></td>
+<td>扩展 VG</td>
+</tr>
+<tr>
+<td><code>vgreduce</code></td>
+<td>缩小 VG</td>
+</tr>
+<tr>
+<td><code>vgdisplay</code></td>
+<td>显示 VG 详情</td>
+</tr>
+<tr>
+<td><code>lvdisplay</code></td>
+<td>显示 LV 详情</td>
+</tr>
+<tr>
+<td><code>lvextend</code></td>
+<td>扩展 LV</td>
+</tr>
+<tr>
+<td><code>lvreduce</code></td>
+<td>缩小 LV</td>
+</tr>
+<tr>
+<td><code>lvremove</code></td>
+<td>删除 LV</td>
+</tr>
+<tr>
+<td><code>lvcreate -s</code></td>
+<td>创建快照</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h1>3. 访问记忆装置</h1>
+<h3 id="设备文件说明：">设备文件说明：</h3>
+<table>
+<thead>
+<tr>
+<th>设备文件</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/dev/hda</code></td>
+<td>IDE 主硬盘</td>
+</tr>
+<tr>
+<td><code>/dev/hdb</code></td>
+<td>IDE 从硬盘</td>
+</tr>
+<tr>
+<td><code>/dev/sda</code></td>
+<td>第一个 SCSI/STAT/USB 硬盘</td>
+</tr>
+<tr>
+<td><code>/dev/sdb</code></td>
+<td>第二个 SCSI/STAT/USB 硬盘</td>
+</tr>
+<tr>
+<td><code>/dev/sr0</code></td>
+<td>第一个 SCSI/STAT/USB CD/DVD</td>
+</tr>
+<tr>
+<td><code>/dev/st0</code></td>
+<td>第一个 SCSI 磁带设备</td>
+</tr>
+</tbody>
+</table>
+<h3 id="硬盘管理：">硬盘管理：</h3>
+<p>Linux 将 IDE 以外的硬盘识别为 SCSI 设备。硬盘的数据传送模式有 PIO（Programmed I/O）和 DMA（Direct Memory Access）模式。通常使用 DMA 模式。</p>
+<h3 id="检查-DMA-模式：">检查 DMA 模式：</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdparm -i /dev/sda</span><br></pre></td></tr></table></figure>
+<h3 id="硬盘控制：">硬盘控制：</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdparm -d1 /dev/sda  <span class="comment"># 启用 DMA 模式</span></span><br></pre></td></tr></table></figure>
+<h3 id="使用-SCSI-STAT-USB：">使用 SCSI/STAT/USB：</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sdparm [option] [设备文件]</span><br></pre></td></tr></table></figure>
+<hr>
+<h1>4. iSCSI (Internet Small Computer System Interface)</h1>
+<p>iSCSI 是基于 TCP/IP 的 SCSI 协议，可以使远程存储设备像本地设备一样使用。</p>
+<h2 id="iSCSI-配置步骤：">iSCSI 配置步骤：</h2>
+<ol>
+<li>
+<p>配置 <code>targets.conf</code> 文件：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">target</span> <span class="attr">iqn.2014.01.com.example.lpic:target0</span>&gt;</span></span><br><span class="line">   backing-store /dev/sdb2</span><br><span class="line">   initiator-address 192.168.11.2</span><br><span class="line">   initiator-address 192.168.11.4</span><br><span class="line">   incominguser centuser password</span><br><span class="line"><span class="tag">&lt;/<span class="name">target</span>&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>启动 iSCSI target 服务：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service tgtd start</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>使用 <code>tgtadm</code> 命令查看 target 状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tgtadm --mode target --op show</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>使用 <code>iscsiadm</code> 从 initiator 查询 target：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iscsiadm -m discovery -t sendtargets -p 192.168.11.3</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>配置认证方式：<br>
+修改 <code>/etc/iscsi/iscid.conf</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">node.session.auth.authmethod = CHAP</span><br><span class="line">node.session.auth.username = centuser</span><br><span class="line">node.session.auth.password = password</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>登录 iSCSI：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iscsiadm -m node --login</span><br></pre></td></tr></table></figure>
+<p>登录后，使用 <code>cat /proc/partitions</code> 查看 iSCSI 目标是否添加成功。</p>
+</li>
+</ol>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/LPIC/" rel="tag">LPIC</a> <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/linux/" rel="tag">linux</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../16/linux/16-%E7%BD%91%E7%BB%9C/"
+                    data-tooltip="16.网络"
+                    aria-label="上一篇: 16.网络"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    data-tooltip="14.设备和文件系统"
+                    aria-label="下一篇: 14.设备和文件系统"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../16/linux/16-%E7%BD%91%E7%BB%9C/"
+                    data-tooltip="16.网络"
+                    aria-label="上一篇: 16.网络"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    data-tooltip="14.设备和文件系统"
+                    aria-label="下一篇: 14.设备和文件系统"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macao
+            </div>
+        
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

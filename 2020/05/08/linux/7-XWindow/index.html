@@ -1,0 +1,953 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>7.XWindow - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"123# X Window 系统架构详解## 基础架构\nlocalhost(X server) --X protocol-- remotehost(X client)\n12345678910111213141516171819202122232425262728### 核心组件说明1. **X Server**：   - 负责硬件管理（显卡、显示器、输入设备等）   - 屏幕绘制与渲染   - 提供字体服务功能   - 典型实现：Xorg2. **X Client**：   - 应用程序逻辑处理   - 响应X Server的事件请求   - 例如：xterm、Firefox等GUI程序3. **X Window Manager**：   - 特殊的X Client   - 负责管理窗口布局、装饰和交互   - 常见WM：twm、KWin、Metacity等4. **Display Manager**：   - 提供图形化登录界面   - 负责加载用户选择的WM和语言环境   - 常见实现：GDM、KDM、XDM## startx 启动流程### 命令语法```bashstartx [X client 参数] -- [X server 参数]\nX server 参数查找顺序\n\nstartx 命令行参数\n用户主目录 ~/.xserverrc\n系统默认 /etc/X11/xinit/xserverrc\n最终回退 /usr/bin/X (X server可执行文件)\n\nX client 参数查找顺序\n\nstartx 命令行参数\n用户主目录 ~/.xinitrc\n系统默认 /etc/X11/xinit/xinitrc\n最终回退 xterm (基础终端模拟器)\n\n底层调用\nstartx 最终调用 xinit 启动X系统：\n1xinit [client option] -- [server or display option]\n默认等效命令：\n1xinit /etc/X11/xinit/xinitrc -- /usr/bin/X\n最小化启动示例：\n1xinit xterm -geometry +1+1 -n login -display :0 -- X :0\n配置文件体系\n核心配置文件\n\n主配置文件：/etc/X11/xorg.conf\n模块目录：/usr/lib64/xorg/modules/\n字体目录：/usr/share/X11/fonts/\n显卡驱动：/usr/lib64/xorg/modules/drivers/\n\n配置段落(Section)\n\n\n\nSection名称\n功能描述\n\n\n\n\nModule\nX Server加载的功能模块\n\n\nInputDevice\n输入设备配置（键盘/鼠标）\n\n\nFiles\n字体和颜色资源路径\n\n\nMonitor\n显示器参数（刷新率等）\n\n\nDevice\n显卡芯片组配置\n\n\nScreen\n显示分辨率和色深设置\n\n\nServerLayout\n各模块的组合配置\n\n\n\n配置生成工具\n123Xorg -configure# 生成测试配置文件：/root/xorg.conf.new# 测试命令：X -config /root/xorg.conf.new\n实用命令工具\n显示调节\n\nxvidtune：GUI显示器频率调节工具\nxhost：X server访问控制1234xhost +hostname  # 添加访问权限xhost -hostname  # 移除访问权限xhost +          # 允许所有主机xhost -          # 禁用所有远程访问\n\n\n环境变量\n12DISPLAY=localhost:0  # 指定显示目标export DISPLAY\n信息查询\n\n\n\n命令\n功能描述\n\n\n\n\nshowrgb\n显示可用RGB颜色值\n\n\nxlsclients\n列出运行中的X客户端\n\n\nxwininfo\n查询窗口几何属性\n\n\nxdpyinfo\n显示X Server详细信息\n\n\n\n显示管理器(XDM)\n类型对比\n\n\n\n类型\n描述\n\n\n\n\nXDM\n基础X Display Manager\n\n\nGDM\nGNOME显示管理器\n\n\nKDM\nKDE显示管理器\n\n\n\nXDM启动流程\n\n启动XDM服务\n加载 /etc/X11/Xsession\n执行 /etc/X11/xinit/xinitrc.d/ 下脚本\n读取用户配置 ~/.xsession\n加载 ~/.Xclients 或 /etc/X11/xinit/Xclients\n\n关键配置文件\n\n\n\n文件名\n用途描述\n\n\n\n\nxdm-config\n基础配置和访问控制\n\n\nXaccess\n主机访问权限设置\n\n\nXresources\n登录界面样式和X资源定义\n\n\nXservers\nX Server与Display映射\n\n\nXsetup_0\n登录前环境设置（如壁纸）\n\n\nXsession\n会话启动流程控制\n\n\n\n窗口管理器列表\n\n\n\n名称\n特点描述\n\n\n\n\ntwm\n最基本的窗口管理器\n\n\nfvwm\n轻量级窗口管理器\n\n\nsawfish\nGNOME集成WM\n\n\nenlightenment\n高定制化WM\n\n\nmetacity\nGNOME默认WM\n\n\nfluxbox\n轻量级高自由度WM\n\n\nWindowMaker\nNeXTSTEP风格WM\n\n\nKWin\nKDE标准窗口管理器\n\n\n\n辅助功能技术\nAccessX 功能\n\n\n\n功能\n描述\n\n\n\n\n粘滞键\n分离组合键输入\n\n\n慢速键\n调整按键响应时间\n\n\n防反弹键\n防止重复输入\n\n\n切换键\n切换状态声音反馈\n\n\n鼠标键\n键盘模拟鼠标操作\n\n\n\n其他辅助工具\n\n高对比度显示：增强视觉可读性\n屏幕阅读器：Orca等文本转语音工具\n盲文显示器：触觉输出设备\n屏幕放大镜：视觉辅助工具\n屏幕键盘：GOK等虚拟输入工具\n\n专用软件\n\nOrca：GNOME屏幕阅读器和放大镜\nGOK：GNOME屏幕键盘\nemacspeak：为Emacs添加语音功能\n\n","dateCreated":"2020-05-08T20:06:24+08:00","dateModified":"2025-05-09T18:35:47+08:00","datePublished":"2020-05-08T20:06:24+08:00","description":"","headline":"7.XWindow","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/05/08/linux/7-XWindow/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/05/08/linux/7-XWindow/","keywords":"linux, LPIC"}</script>
+    <meta name="description" content="123# X Window 系统架构详解## 基础架构 localhost(X server) --X protocol-- remotehost(X client) 12345678910111213141516171819202122232425262728### 核心组件说明1. **X Server**：   - 负责硬件管理（显卡、显示器、输入设备等）   - 屏幕绘制与渲染   - 提">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="7.XWindow">
+<meta property="og:url" content="https://chankein.github.io/2020/05/08/linux/7-XWindow/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="123# X Window 系统架构详解## 基础架构 localhost(X server) --X protocol-- remotehost(X client) 12345678910111213141516171819202122232425262728### 核心组件说明1. **X Server**：   - 负责硬件管理（显卡、显示器、输入设备等）   - 屏幕绘制与渲染   - 提">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2020-05-08T12:06:24.000Z">
+<meta property="article:modified_time" content="2025-05-09T10:35:47.125Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="LPIC">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            7.XWindow
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2020-05-08T20:06:24+08:00">
+	
+		    2020 年 5 月 8 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../../../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="section"># X Window 系统架构详解</span></span><br><span class="line"></span><br><span class="line"><span class="section">## 基础架构</span></span><br></pre></td></tr></table></figure>
+<p>localhost(X server) --X protocol-- remotehost(X client)</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">### 核心组件说明</span><br><span class="line">1. **X Server**：</span><br><span class="line">   - 负责硬件管理（显卡、显示器、输入设备等）</span><br><span class="line">   - 屏幕绘制与渲染</span><br><span class="line">   - 提供字体服务功能</span><br><span class="line">   - 典型实现：Xorg</span><br><span class="line"></span><br><span class="line">2. **X Client**：</span><br><span class="line">   - 应用程序逻辑处理</span><br><span class="line">   - 响应X Server的事件请求</span><br><span class="line">   - 例如：xterm、Firefox等GUI程序</span><br><span class="line"></span><br><span class="line">3. **X Window Manager**：</span><br><span class="line">   - 特殊的X Client</span><br><span class="line">   - 负责管理窗口布局、装饰和交互</span><br><span class="line">   - 常见WM：twm、KWin、Metacity等</span><br><span class="line"></span><br><span class="line">4. **Display Manager**：</span><br><span class="line">   - 提供图形化登录界面</span><br><span class="line">   - 负责加载用户选择的WM和语言环境</span><br><span class="line">   - 常见实现：GDM、KDM、XDM</span><br><span class="line"></span><br><span class="line">## startx 启动流程</span><br><span class="line"></span><br><span class="line">### 命令语法</span><br><span class="line">```bash</span><br><span class="line">startx [X client 参数] -- [X server 参数]</span><br></pre></td></tr></table></figure>
+<h3 id="X-server-参数查找顺序">X server 参数查找顺序</h3>
+<ol>
+<li>startx 命令行参数</li>
+<li>用户主目录 <code>~/.xserverrc</code></li>
+<li>系统默认 <code>/etc/X11/xinit/xserverrc</code></li>
+<li>最终回退 <code>/usr/bin/X</code> (X server可执行文件)</li>
+</ol>
+<h3 id="X-client-参数查找顺序">X client 参数查找顺序</h3>
+<ol>
+<li>startx 命令行参数</li>
+<li>用户主目录 <code>~/.xinitrc</code></li>
+<li>系统默认 <code>/etc/X11/xinit/xinitrc</code></li>
+<li>最终回退 <code>xterm</code> (基础终端模拟器)</li>
+</ol>
+<h3 id="底层调用">底层调用</h3>
+<p>startx 最终调用 <code>xinit</code> 启动X系统：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xinit [client option] -- [server or display option]</span><br></pre></td></tr></table></figure>
+<p>默认等效命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xinit /etc/X11/xinit/xinitrc -- /usr/bin/X</span><br></pre></td></tr></table></figure>
+<p>最小化启动示例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xinit xterm -geometry +1+1 -n login -display :0 -- X :0</span><br></pre></td></tr></table></figure>
+<h2 id="配置文件体系">配置文件体系</h2>
+<h3 id="核心配置文件">核心配置文件</h3>
+<ul>
+<li>主配置文件：<code>/etc/X11/xorg.conf</code></li>
+<li>模块目录：<code>/usr/lib64/xorg/modules/</code></li>
+<li>字体目录：<code>/usr/share/X11/fonts/</code></li>
+<li>显卡驱动：<code>/usr/lib64/xorg/modules/drivers/</code></li>
+</ul>
+<h3 id="配置段落-Section">配置段落(Section)</h3>
+<table>
+<thead>
+<tr>
+<th>Section名称</th>
+<th>功能描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Module</td>
+<td>X Server加载的功能模块</td>
+</tr>
+<tr>
+<td>InputDevice</td>
+<td>输入设备配置（键盘/鼠标）</td>
+</tr>
+<tr>
+<td>Files</td>
+<td>字体和颜色资源路径</td>
+</tr>
+<tr>
+<td>Monitor</td>
+<td>显示器参数（刷新率等）</td>
+</tr>
+<tr>
+<td>Device</td>
+<td>显卡芯片组配置</td>
+</tr>
+<tr>
+<td>Screen</td>
+<td>显示分辨率和色深设置</td>
+</tr>
+<tr>
+<td>ServerLayout</td>
+<td>各模块的组合配置</td>
+</tr>
+</tbody>
+</table>
+<h3 id="配置生成工具">配置生成工具</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Xorg -configure</span><br><span class="line"><span class="comment"># 生成测试配置文件：/root/xorg.conf.new</span></span><br><span class="line"><span class="comment"># 测试命令：X -config /root/xorg.conf.new</span></span><br></pre></td></tr></table></figure>
+<h2 id="实用命令工具">实用命令工具</h2>
+<h3 id="显示调节">显示调节</h3>
+<ul>
+<li><code>xvidtune</code>：GUI显示器频率调节工具</li>
+<li><code>xhost</code>：X server访问控制<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">xhost +hostname  <span class="comment"># 添加访问权限</span></span><br><span class="line">xhost -hostname  <span class="comment"># 移除访问权限</span></span><br><span class="line">xhost +          <span class="comment"># 允许所有主机</span></span><br><span class="line">xhost -          <span class="comment"># 禁用所有远程访问</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="环境变量">环境变量</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">DISPLAY=localhost:0  <span class="comment"># 指定显示目标</span></span><br><span class="line"><span class="built_in">export</span> DISPLAY</span><br></pre></td></tr></table></figure>
+<h3 id="信息查询">信息查询</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>功能描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>showrgb</td>
+<td>显示可用RGB颜色值</td>
+</tr>
+<tr>
+<td>xlsclients</td>
+<td>列出运行中的X客户端</td>
+</tr>
+<tr>
+<td>xwininfo</td>
+<td>查询窗口几何属性</td>
+</tr>
+<tr>
+<td>xdpyinfo</td>
+<td>显示X Server详细信息</td>
+</tr>
+</tbody>
+</table>
+<h2 id="显示管理器-XDM">显示管理器(XDM)</h2>
+<h3 id="类型对比">类型对比</h3>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>XDM</td>
+<td>基础X Display Manager</td>
+</tr>
+<tr>
+<td>GDM</td>
+<td>GNOME显示管理器</td>
+</tr>
+<tr>
+<td>KDM</td>
+<td>KDE显示管理器</td>
+</tr>
+</tbody>
+</table>
+<h3 id="XDM启动流程">XDM启动流程</h3>
+<ol>
+<li>启动XDM服务</li>
+<li>加载 <code>/etc/X11/Xsession</code></li>
+<li>执行 <code>/etc/X11/xinit/xinitrc.d/</code> 下脚本</li>
+<li>读取用户配置 <code>~/.xsession</code></li>
+<li>加载 <code>~/.Xclients</code> 或 <code>/etc/X11/xinit/Xclients</code></li>
+</ol>
+<h3 id="关键配置文件">关键配置文件</h3>
+<table>
+<thead>
+<tr>
+<th>文件名</th>
+<th>用途描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>xdm-config</td>
+<td>基础配置和访问控制</td>
+</tr>
+<tr>
+<td>Xaccess</td>
+<td>主机访问权限设置</td>
+</tr>
+<tr>
+<td>Xresources</td>
+<td>登录界面样式和X资源定义</td>
+</tr>
+<tr>
+<td>Xservers</td>
+<td>X Server与Display映射</td>
+</tr>
+<tr>
+<td>Xsetup_0</td>
+<td>登录前环境设置（如壁纸）</td>
+</tr>
+<tr>
+<td>Xsession</td>
+<td>会话启动流程控制</td>
+</tr>
+</tbody>
+</table>
+<h2 id="窗口管理器列表">窗口管理器列表</h2>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>特点描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>twm</td>
+<td>最基本的窗口管理器</td>
+</tr>
+<tr>
+<td>fvwm</td>
+<td>轻量级窗口管理器</td>
+</tr>
+<tr>
+<td>sawfish</td>
+<td>GNOME集成WM</td>
+</tr>
+<tr>
+<td>enlightenment</td>
+<td>高定制化WM</td>
+</tr>
+<tr>
+<td>metacity</td>
+<td>GNOME默认WM</td>
+</tr>
+<tr>
+<td>fluxbox</td>
+<td>轻量级高自由度WM</td>
+</tr>
+<tr>
+<td>WindowMaker</td>
+<td>NeXTSTEP风格WM</td>
+</tr>
+<tr>
+<td>KWin</td>
+<td>KDE标准窗口管理器</td>
+</tr>
+</tbody>
+</table>
+<h2 id="辅助功能技术">辅助功能技术</h2>
+<h3 id="AccessX-功能">AccessX 功能</h3>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>粘滞键</td>
+<td>分离组合键输入</td>
+</tr>
+<tr>
+<td>慢速键</td>
+<td>调整按键响应时间</td>
+</tr>
+<tr>
+<td>防反弹键</td>
+<td>防止重复输入</td>
+</tr>
+<tr>
+<td>切换键</td>
+<td>切换状态声音反馈</td>
+</tr>
+<tr>
+<td>鼠标键</td>
+<td>键盘模拟鼠标操作</td>
+</tr>
+</tbody>
+</table>
+<h3 id="其他辅助工具">其他辅助工具</h3>
+<ul>
+<li><strong>高对比度显示</strong>：增强视觉可读性</li>
+<li><strong>屏幕阅读器</strong>：Orca等文本转语音工具</li>
+<li><strong>盲文显示器</strong>：触觉输出设备</li>
+<li><strong>屏幕放大镜</strong>：视觉辅助工具</li>
+<li><strong>屏幕键盘</strong>：GOK等虚拟输入工具</li>
+</ul>
+<h3 id="专用软件">专用软件</h3>
+<ul>
+<li><strong>Orca</strong>：GNOME屏幕阅读器和放大镜</li>
+<li><strong>GOK</strong>：GNOME屏幕键盘</li>
+<li><strong>emacspeak</strong>：为Emacs添加语音功能</li>
+</ul>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/LPIC/" rel="tag">LPIC</a> <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/linux/" rel="tag">linux</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../24/linux/8-%E7%B3%BB%E7%BB%9F%E7%AE%A1%E7%90%86/"
+                    data-tooltip="8.系统管理"
+                    aria-label="上一篇: 8.系统管理"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../6-Shell%E5%8F%98%E9%87%8F%E4%B8%8EShell%E8%84%9A%E6%9C%AC/"
+                    data-tooltip="6.Shell变量与Shell脚本"
+                    aria-label="下一篇: 6.Shell变量与Shell脚本"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../24/linux/8-%E7%B3%BB%E7%BB%9F%E7%AE%A1%E7%90%86/"
+                    data-tooltip="8.系统管理"
+                    aria-label="上一篇: 8.系统管理"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../6-Shell%E5%8F%98%E9%87%8F%E4%B8%8EShell%E8%84%9A%E6%9C%AC/"
+                    data-tooltip="6.Shell变量与Shell脚本"
+                    aria-label="下一篇: 6.Shell变量与Shell脚本"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macao
+            </div>
+        
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

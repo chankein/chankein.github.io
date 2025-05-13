@@ -1,0 +1,1026 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>14.设备和文件系统 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. 文件系统基础\n/etc/fstab 文件格式解析\n1设备/标签/UUID  挂载点  文件系统类型  挂载选项  dump标志  fsck顺序\n字段说明：\n\n\n\n字段\n说明\n示例\n\n\n\n\n1\n设备标识\n/dev/sda1, UUID=xxxx, LABEL=root\n\n\n2\n挂载路径\n/, /home, /boot\n\n\n3\n文件系统类型\next4, xfs, nfs\n\n\n4\n挂载选项\ndefaults, noatime\n\n\n5\ndump备份标志\n0(不备份), 1(备份)\n\n\n6\nfsck检查顺序\n0(不检查), 1(优先), 2(次级)\n\n\n\n文件系统类型对比\n\n\n\n类型\n特点\n适用场景\n\n\n\n\next4\n日志式, 最大16TB文件\n通用Linux系统\n\n\nXFS\n高性能, 最大8EB文件\n大文件处理\n\n\nBtrfs\n写时复制, 快照功能\n高级存储需求\n\n\nFAT32\n兼容性好\nU盘/移动设备\n\n\nNTFS\nWindows兼容\n双系统共享分区\n\n\n\n常用挂载选项\n\n\n\n选项\n作用\n性能影响\n\n\n\n\nasync\n异步写入\n提升性能\n\n\nnoatime\n不更新访问时间\n显著提升\n\n\nnodiratime\n不更新目录访问时间\n小幅提升\n\n\ndiscard\nTRIM支持(SSD)\n延长SSD寿命\n\n\ndata=writeback\next4日志模式\n性能最佳\n\n\n\n查看支持的文件系统：\n1cat /proc/filesystems\n查看已挂载文件系统：\n12cat /etc/mtab   # 或cat /proc/mounts\n2. 挂载管理命令\nmount 命令详解\n1mount [选项] [设备] [挂载点]\n常用选项：\n\n\n\n选项\n说明\n\n\n\n\n-t\n指定文件系统类型\n\n\n-o\n指定挂载选项(多选项用逗号分隔)\n\n\n-a\n挂载/etc/fstab中所有文件系统\n\n\n–bind\n目录绑定挂载\n\n\n-l\n显示标签\n\n\n\n示例：\n1mount -t ext4 -o noatime /dev/sdb1 /mnt/data\numount 命令\n1umount [选项] [设备|挂载点]\n\n\n\n选项\n说明\n\n\n\n\n-a\n卸载所有文件系统\n\n\n-t\n按类型卸载\n\n\n-l\n延迟卸载(强制)\n\n\n-f\n强制卸载\n\n\n\n强制卸载流程：\n\nfuser -vm /mountpoint 查看占用进程\nkill -9 PID 结束进程\numount -f /mountpoint\n\n3. SWAP 管理\n创建SWAP文件\n12345# 创建1GB交换文件dd if=/dev/zero of=/swapfile bs=1M count=1024chmod 600 /swapfilemkswap /swapfileswapon /swapfile\nSWAP管理命令\n\n\n\n命令\n功能\n\n\n\n\nswapon -a\n启用所有swap\n\n\nswapon -s\n查看swap使用\n\n\nswapoff -a\n禁用所有swap\n\n\n\n优化建议：\n\n物理内存&lt;8GB时，SWAP=1.5倍内存\n物理内存≥8GB时，SWAP=8GB\n\n4. 文件系统创建与维护\n创建工具对比\n\n\n\n命令\n对应文件系统\n特点\n\n\n\n\nmkfs.ext4\next4\n默认日志模式\n\n\nmkfs.xfs\nXFS\n高性能大文件\n\n\nmkfs.btrfs\nBtrfs\n高级功能支持\n\n\n\next4创建示例：\n1mkfs.ext4 -b 4096 -m 1 -L DATA /dev/sdb1\nXFS创建示例：\n1mkfs.xfs -f -L BIGDATA /dev/sdc1\n文件系统检查\next系列检查：\n12fsck -y /dev/sda1   # 自动修复e2fsck -f /dev/sda1 # 强制检查\nXFS检查：\n1xfs_repair /dev/sdb1\n检查时机：\n\n异常关机后\n定期维护时(建议每6个月)\n出现I/O错误时\n\n5. 高级文件系统特性\next4 特性管理\n转换ext3→ext4：\n12tune2fs -O extent,uninit_bg,dir_index /dev/sda1fsck -pf /dev/sda1\n调整参数：\n12tune2fs -c 30 -i 7d /dev/sda1  # 每30次挂载或7天检查tune2fs -m 5 /dev/sda1         # 保留5%空间\nXFS 高级功能\n查看信息：\n12xfs_info /dev/sdb1xfs_admin -l /dev/sdb1\n备份恢复：\n12xfsdump -l 0 -f /backup/root.xfsdump /dev/sda1xfsrestore -f /backup/root.xfsdump /mnt/restore\n6. 光盘与加密文件系统\n光盘制作\n12345# 创建ISOmkisofs -JR -V &quot;BACKUP_2023&quot; -o backup.iso /backup# 刻录光盘cdrecord -v dev=1,0,0 speed=24 backup.iso\n加密文件系统\nLUKS加密：\n1234cryptsetup luksFormat /dev/sdb1cryptsetup luksOpen /dev/sdb1 secretmkfs.ext4 /dev/mapper/secretmount /dev/mapper/secret /mnt/secure\n关闭加密卷：\n12umount /mnt/securecryptsetup luksClose secret\n7. 磁盘健康监控\nS.M.A.R.T. 监控\n123smartctl -a /dev/sda          # 查看详细信息smartctl -H /dev/sda          # 健康状态smartctl -t long /dev/sda     # 启动长测试\n关键监控指标：\n\nReallocated_Sector_Ct\nCurrent_Pending_Sector\nTemperature_Celsius\n\n8. 故障处理流程\n文件系统修复步骤\n\n\n卸载文件系统：\n1umount /dev/sda1\n\n\n进入单用户模式：\n1init 1\n\n\n执行检查修复：\n1fsck -y /dev/sda1\n\n\n严重损坏时：\n123debugfs /dev/sda1&gt; lsdel      # 查看已删除inode&gt; dump &lt;inode&gt; /tmp/recover_file\n\n\n应急恢复方案\n\n\n\n问题现象\n解决方案\n\n\n\n\n无法挂载\nfsck -y /dev/sdX\n\n\nSuperblock损坏\ne2fsck -b 32768 /dev/sdX\n\n\n只读文件系统\nmount -o remount,rw /\n\n\n\n","dateCreated":"2020-11-14T14:01:10+08:00","dateModified":"2025-05-12T14:57:46+08:00","datePublished":"2020-11-14T14:01:10+08:00","description":"","headline":"14.设备和文件系统","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/","keywords":"linux, LPIC"}</script>
+    <meta name="description" content="1. 文件系统基础 &#x2F;etc&#x2F;fstab 文件格式解析 1设备&#x2F;标签&#x2F;UUID  挂载点  文件系统类型  挂载选项  dump标志  fsck顺序 字段说明：    字段 说明 示例     1 设备标识 &#x2F;dev&#x2F;sda1, UUID&#x3D;xxxx, LABEL&#x3D;root   2 挂载路径 &#x2F;, &#x2F;home, &#x2F;boot   3 文件系统类型 ext4, xfs, nfs   4 挂载选项 def">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="14.设备和文件系统">
+<meta property="og:url" content="https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="1. 文件系统基础 &#x2F;etc&#x2F;fstab 文件格式解析 1设备&#x2F;标签&#x2F;UUID  挂载点  文件系统类型  挂载选项  dump标志  fsck顺序 字段说明：    字段 说明 示例     1 设备标识 &#x2F;dev&#x2F;sda1, UUID&#x3D;xxxx, LABEL&#x3D;root   2 挂载路径 &#x2F;, &#x2F;home, &#x2F;boot   3 文件系统类型 ext4, xfs, nfs   4 挂载选项 def">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2020-11-14T06:01:10.000Z">
+<meta property="article:modified_time" content="2025-05-12T06:57:46.453Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="LPIC">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            14.设备和文件系统
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2020-11-14T14:01:10+08:00">
+	
+		    2020 年 11 月 14 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../../../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="1-文件系统基础">1. 文件系统基础</h2>
+<h3 id="etc-fstab-文件格式解析">/etc/fstab 文件格式解析</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">设备/标签/UUID  挂载点  文件系统类型  挂载选项  dump标志  fsck顺序</span><br></pre></td></tr></table></figure>
+<p><strong>字段说明：</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>说明</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>设备标识</td>
+<td>/dev/sda1, UUID=xxxx, LABEL=root</td>
+</tr>
+<tr>
+<td>2</td>
+<td>挂载路径</td>
+<td>/, /home, /boot</td>
+</tr>
+<tr>
+<td>3</td>
+<td>文件系统类型</td>
+<td>ext4, xfs, nfs</td>
+</tr>
+<tr>
+<td>4</td>
+<td>挂载选项</td>
+<td>defaults, noatime</td>
+</tr>
+<tr>
+<td>5</td>
+<td>dump备份标志</td>
+<td>0(不备份), 1(备份)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>fsck检查顺序</td>
+<td>0(不检查), 1(优先), 2(次级)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="文件系统类型对比">文件系统类型对比</h3>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>特点</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ext4</td>
+<td>日志式, 最大16TB文件</td>
+<td>通用Linux系统</td>
+</tr>
+<tr>
+<td>XFS</td>
+<td>高性能, 最大8EB文件</td>
+<td>大文件处理</td>
+</tr>
+<tr>
+<td>Btrfs</td>
+<td>写时复制, 快照功能</td>
+<td>高级存储需求</td>
+</tr>
+<tr>
+<td>FAT32</td>
+<td>兼容性好</td>
+<td>U盘/移动设备</td>
+</tr>
+<tr>
+<td>NTFS</td>
+<td>Windows兼容</td>
+<td>双系统共享分区</td>
+</tr>
+</tbody>
+</table>
+<h3 id="常用挂载选项">常用挂载选项</h3>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>作用</th>
+<th>性能影响</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>async</td>
+<td>异步写入</td>
+<td>提升性能</td>
+</tr>
+<tr>
+<td>noatime</td>
+<td>不更新访问时间</td>
+<td>显著提升</td>
+</tr>
+<tr>
+<td>nodiratime</td>
+<td>不更新目录访问时间</td>
+<td>小幅提升</td>
+</tr>
+<tr>
+<td>discard</td>
+<td>TRIM支持(SSD)</td>
+<td>延长SSD寿命</td>
+</tr>
+<tr>
+<td>data=writeback</td>
+<td>ext4日志模式</td>
+<td>性能最佳</td>
+</tr>
+</tbody>
+</table>
+<p><strong>查看支持的文件系统：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /proc/filesystems</span><br></pre></td></tr></table></figure>
+<p><strong>查看已挂载文件系统：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /etc/mtab   <span class="comment"># 或</span></span><br><span class="line"><span class="built_in">cat</span> /proc/mounts</span><br></pre></td></tr></table></figure>
+<h2 id="2-挂载管理命令">2. 挂载管理命令</h2>
+<h3 id="mount-命令详解">mount 命令详解</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount [选项] [设备] [挂载点]</span><br></pre></td></tr></table></figure>
+<p><strong>常用选项：</strong></p>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-t</td>
+<td>指定文件系统类型</td>
+</tr>
+<tr>
+<td>-o</td>
+<td>指定挂载选项(多选项用逗号分隔)</td>
+</tr>
+<tr>
+<td>-a</td>
+<td>挂载/etc/fstab中所有文件系统</td>
+</tr>
+<tr>
+<td>–bind</td>
+<td>目录绑定挂载</td>
+</tr>
+<tr>
+<td>-l</td>
+<td>显示标签</td>
+</tr>
+</tbody>
+</table>
+<p><strong>示例：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t ext4 -o noatime /dev/sdb1 /mnt/data</span><br></pre></td></tr></table></figure>
+<h3 id="umount-命令">umount 命令</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">umount [选项] [设备|挂载点]</span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-a</td>
+<td>卸载所有文件系统</td>
+</tr>
+<tr>
+<td>-t</td>
+<td>按类型卸载</td>
+</tr>
+<tr>
+<td>-l</td>
+<td>延迟卸载(强制)</td>
+</tr>
+<tr>
+<td>-f</td>
+<td>强制卸载</td>
+</tr>
+</tbody>
+</table>
+<p><strong>强制卸载流程：</strong></p>
+<ol>
+<li><code>fuser -vm /mountpoint</code> 查看占用进程</li>
+<li><code>kill -9 PID</code> 结束进程</li>
+<li><code>umount -f /mountpoint</code></li>
+</ol>
+<h2 id="3-SWAP-管理">3. SWAP 管理</h2>
+<h3 id="创建SWAP文件">创建SWAP文件</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建1GB交换文件</span></span><br><span class="line"><span class="built_in">dd</span> <span class="keyword">if</span>=/dev/zero of=/swapfile bs=1M count=1024</span><br><span class="line"><span class="built_in">chmod</span> 600 /swapfile</span><br><span class="line">mkswap /swapfile</span><br><span class="line">swapon /swapfile</span><br></pre></td></tr></table></figure>
+<h3 id="SWAP管理命令">SWAP管理命令</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>swapon -a</code></td>
+<td>启用所有swap</td>
+</tr>
+<tr>
+<td><code>swapon -s</code></td>
+<td>查看swap使用</td>
+</tr>
+<tr>
+<td><code>swapoff -a</code></td>
+<td>禁用所有swap</td>
+</tr>
+</tbody>
+</table>
+<p><strong>优化建议：</strong></p>
+<ul>
+<li>物理内存&lt;8GB时，SWAP=1.5倍内存</li>
+<li>物理内存≥8GB时，SWAP=8GB</li>
+</ul>
+<h2 id="4-文件系统创建与维护">4. 文件系统创建与维护</h2>
+<h3 id="创建工具对比">创建工具对比</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>对应文件系统</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>mkfs.ext4</td>
+<td>ext4</td>
+<td>默认日志模式</td>
+</tr>
+<tr>
+<td>mkfs.xfs</td>
+<td>XFS</td>
+<td>高性能大文件</td>
+</tr>
+<tr>
+<td>mkfs.btrfs</td>
+<td>Btrfs</td>
+<td>高级功能支持</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ext4创建示例：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkfs.ext4 -b 4096 -m 1 -L DATA /dev/sdb1</span><br></pre></td></tr></table></figure>
+<p><strong>XFS创建示例：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkfs.xfs -f -L BIGDATA /dev/sdc1</span><br></pre></td></tr></table></figure>
+<h3 id="文件系统检查">文件系统检查</h3>
+<p><strong>ext系列检查：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fsck -y /dev/sda1   <span class="comment"># 自动修复</span></span><br><span class="line">e2fsck -f /dev/sda1 <span class="comment"># 强制检查</span></span><br></pre></td></tr></table></figure>
+<p><strong>XFS检查：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xfs_repair /dev/sdb1</span><br></pre></td></tr></table></figure>
+<p><strong>检查时机：</strong></p>
+<ul>
+<li>异常关机后</li>
+<li>定期维护时(建议每6个月)</li>
+<li>出现I/O错误时</li>
+</ul>
+<h2 id="5-高级文件系统特性">5. 高级文件系统特性</h2>
+<h3 id="ext4-特性管理">ext4 特性管理</h3>
+<p><strong>转换ext3→ext4：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tune2fs -O extent,uninit_bg,dir_index /dev/sda1</span><br><span class="line">fsck -pf /dev/sda1</span><br></pre></td></tr></table></figure>
+<p><strong>调整参数：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tune2fs -c 30 -i 7d /dev/sda1  <span class="comment"># 每30次挂载或7天检查</span></span><br><span class="line">tune2fs -m 5 /dev/sda1         <span class="comment"># 保留5%空间</span></span><br></pre></td></tr></table></figure>
+<h3 id="XFS-高级功能">XFS 高级功能</h3>
+<p><strong>查看信息：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">xfs_info /dev/sdb1</span><br><span class="line">xfs_admin -l /dev/sdb1</span><br></pre></td></tr></table></figure>
+<p><strong>备份恢复：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">xfsdump -l 0 -f /backup/root.xfsdump /dev/sda1</span><br><span class="line">xfsrestore -f /backup/root.xfsdump /mnt/restore</span><br></pre></td></tr></table></figure>
+<h2 id="6-光盘与加密文件系统">6. 光盘与加密文件系统</h2>
+<h3 id="光盘制作">光盘制作</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建ISO</span></span><br><span class="line">mkisofs -JR -V <span class="string">&quot;BACKUP_2023&quot;</span> -o backup.iso /backup</span><br><span class="line"></span><br><span class="line"><span class="comment"># 刻录光盘</span></span><br><span class="line">cdrecord -v dev=1,0,0 speed=24 backup.iso</span><br></pre></td></tr></table></figure>
+<h3 id="加密文件系统">加密文件系统</h3>
+<p><strong>LUKS加密：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cryptsetup luksFormat /dev/sdb1</span><br><span class="line">cryptsetup luksOpen /dev/sdb1 secret</span><br><span class="line">mkfs.ext4 /dev/mapper/secret</span><br><span class="line">mount /dev/mapper/secret /mnt/secure</span><br></pre></td></tr></table></figure>
+<p><strong>关闭加密卷：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">umount /mnt/secure</span><br><span class="line">cryptsetup luksClose secret</span><br></pre></td></tr></table></figure>
+<h2 id="7-磁盘健康监控">7. 磁盘健康监控</h2>
+<h3 id="S-M-A-R-T-监控">S.M.A.R.T. 监控</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">smartctl -a /dev/sda          <span class="comment"># 查看详细信息</span></span><br><span class="line">smartctl -H /dev/sda          <span class="comment"># 健康状态</span></span><br><span class="line">smartctl -t long /dev/sda     <span class="comment"># 启动长测试</span></span><br></pre></td></tr></table></figure>
+<p><strong>关键监控指标：</strong></p>
+<ul>
+<li>Reallocated_Sector_Ct</li>
+<li>Current_Pending_Sector</li>
+<li>Temperature_Celsius</li>
+</ul>
+<h2 id="8-故障处理流程">8. 故障处理流程</h2>
+<h3 id="文件系统修复步骤">文件系统修复步骤</h3>
+<ol>
+<li>
+<p><strong>卸载文件系统</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">umount /dev/sda1</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>进入单用户模式</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">init 1</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>执行检查修复</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fsck -y /dev/sda1</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>严重损坏时</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">debugfs /dev/sda1</span><br><span class="line">&gt; lsdel      <span class="comment"># 查看已删除inode</span></span><br><span class="line">&gt; dump &lt;inode&gt; /tmp/recover_file</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h3 id="应急恢复方案">应急恢复方案</h3>
+<table>
+<thead>
+<tr>
+<th>问题现象</th>
+<th>解决方案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>无法挂载</td>
+<td><code>fsck -y /dev/sdX</code></td>
+</tr>
+<tr>
+<td>Superblock损坏</td>
+<td><code>e2fsck -b 32768 /dev/sdX</code></td>
+</tr>
+<tr>
+<td>只读文件系统</td>
+<td><code>mount -o remount,rw /</code></td>
+</tr>
+</tbody>
+</table>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/LPIC/" rel="tag">LPIC</a> <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/linux/" rel="tag">linux</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    data-tooltip="15.高度的存储管理"
+                    aria-label="上一篇: 15.高度的存储管理"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../10/linux/13-%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8/"
+                    data-tooltip="13.系统启动"
+                    aria-label="下一篇: 13.系统启动"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    data-tooltip="15.高度的存储管理"
+                    aria-label="上一篇: 15.高度的存储管理"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../10/linux/13-%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8/"
+                    data-tooltip="13.系统启动"
+                    aria-label="下一篇: 13.系统启动"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macao
+            </div>
+        
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

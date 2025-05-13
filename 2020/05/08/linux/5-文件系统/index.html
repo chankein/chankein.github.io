@@ -1,0 +1,923 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>5.文件系统与存储管理 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. 磁盘配额管理\n1.1 配额概念与类型\n配额类型说明\n\n硬限制(Hard Limit)：用户绝对不能超过的磁盘空间限制\n软限制(Soft Limit)：允许用户暂时超过的限制，系统会发出警告\n宽限期(Grace Period)：超过软限制后允许保留的时间（默认7天）\n\n1.2 配额实施完整步骤\n\n\n修改fstab文件：\n12# 在/etc/fstab中添加usrquota和/或grpquota选项/dev/sda1 /home ext4 defaults,usrquota,grpquota 0 2\n\n\n重新挂载文件系统：\n12umount /homemount -o remount /home\n\n\n创建配额文件：\n12touch /home/aquota.user /home/aquota.groupchmod 600 /home/aquota.*\n\n\n初始化配额数据库：\n1quotacheck -cugm /home\n\n\n启用配额系统：\n1quotaon -avug\n\n\n为用户设置配额：\n1edquota username\n\n\n1.3 配额管理命令详解\nquota - 显示配额信息\n123quota -u username  # 显示用户配额quota -g groupname # 显示组配额quota -v           # 显示详细信息\nquotacheck - 检查配额\n12quotacheck -avug  # 检查所有文件系统配额quotacheck -cug /home  # 检查指定文件系统\nquotaon/quotaoff - 启用/禁用配额\n12quotaon -avug     # 启用所有配额quotaoff /home    # 禁用指定文件系统配额\nedquota - 编辑配额\n123edquota -u username  # 编辑用户配额edquota -p template_user new_user  # 复制配额设置edquota -t           # 修改宽限期\nrepquota - 报告配额状态\n12repquota -a       # 报告所有文件系统配额状态repquota -u /home # 报告/home的用户配额\n2. 文件系统层次标准(FHS)\n2.1 核心目录结构\n\n\n\n目录\n完整描述\n典型内容\n\n\n\n\n/bin\n基础命令二进制文件\nls, cp, mv等基本命令\n\n\n/sbin\n系统管理二进制文件\nfdisk, fsck, ifconfig等\n\n\n/etc\n系统配置文件\npasswd, fstab, network等配置文件\n\n\n/dev\n设备文件\nsda, tty, null等设备节点\n\n\n/lib\n系统库文件\n系统运行所需共享库\n\n\n/mnt\n临时挂载点\n临时挂载文件系统的目录\n\n\n/opt\n可选应用软件包\n第三方应用程序\n\n\n/proc\n进程和内核信息\n虚拟文件系统，提供系统信息\n\n\n/root\nroot用户主目录\nroot用户的个人文件和配置\n\n\n/boot\n启动加载文件\nvmlinuz, initramfs, grub等\n\n\n/home\n用户主目录\n普通用户的个人目录\n\n\n/tmp\n临时文件\n系统重启后通常清空\n\n\n/var\n可变数据文件\n日志、邮件、数据库等\n\n\n/usr\n用户程序资源\n应用程序、文档、库文件等\n\n\n\n3. 分区与文件系统管理\n3.1 分区管理\nfdisk 完整操作流程\n1fdisk /dev/sdb\n交互命令列表：\n\nn：创建新分区\nd：删除分区\np：显示分区表\nt：更改分区类型\na：切换启动标志\nw：写入并退出\nq：不保存退出\nm：显示帮助菜单\n\n3.2 文件系统创建与管理\nmkfs 命令集\n1234mkfs -t ext4 /dev/sdb1      # 创建ext4文件系统mkfs.ext4 /dev/sdb1         # 同上mkfs.xfs /dev/sdb2          # 创建XFS文件系统mkfs.btrfs /dev/sdb3        # 创建Btrfs文件系统\n交换空间管理\n1234mkswap /dev/sdb4            # 创建交换分区swapon /dev/sdb4            # 启用交换分区swapon -s                   # 显示交换空间状态swapoff /dev/sdb4           # 禁用交换分区\n3.3 文件系统检查与维护\nfsck 系列命令\n1234fsck /dev/sdb1              # 基本文件系统检查fsck -y /dev/sdb1           # 自动修复错误e2fsck -p /dev/sdb1         # ext文件系统自动修复xfs_repair /dev/sdb2        # XFS文件系统修复\ntune2fs 调整参数\n123tune2fs -c 30 /dev/sdb1     # 设置每30次挂载后检查tune2fs -i 15d /dev/sdb1    # 设置15天间隔检查tune2fs -L DATA /dev/sdb1   # 设置卷标为DATA\n3.4 空间监控命令\ndf 详细用法\n1234df -h                       # 人类可读格式df -i                       # 显示inode使用情况df -T                       # 显示文件系统类型df --total                  # 显示总计信息\ndu 详细用法\n1234du -sh /var/log             # 显示目录总大小du -ah /home                # 显示所有文件和目录大小du -csh *                   # 显示当前目录各项目大小和总计du --max-depth=1 /usr       # 只显示一级子目录大小\n4. 文件搜索命令\n4.1 find 命令完整用法\n基本语法\n1find [路径] [选项] [操作]\n常用示例\n123456find / -name &quot;*.conf&quot;               # 按名称查找find /home -user alice              # 按属主查找find /var/log -mtime -7             # 查找7天内修改的文件find /tmp -size +10M                # 查找大于10MB的文件find . -perm 644                    # 查找权限为644的文件find /etc -type f -exec grep -l &quot;error&quot; &#123;&#125; \\;  # 结合grep\n4.2 locate/updatedb 系统\n123locate passwd              # 快速查找文件updatedb                   # 更新数据库updatedb -e /mnt           # 排除/mnt目录\n4.3 which/whereis/type\n123which ls                   # 查找命令路径whereis python             # 查找命令相关文件type -a cd                 # 显示命令类型\n5. 挂载管理\n5.1 挂载选项详解\n\n\n\n选项\n完整描述\n\n\n\n\nasync/sync\n异步/同步写入\n\n\nauto/noauto\n是否允许mount -a自动挂载\n\n\nexec/noexec\n是否允许执行二进制文件\n\n\nro/rw\n只读/读写模式\n\n\nsuid/nosuid\n是否允许SUID/SGID\n\n\nuser/nouser\n是否允许普通用户挂载\n\n\ndefaults\n默认选项(rw,suid,dev,exec,auto,nouser,async)\n\n\n\n5.2 mount/umount 完整用法\n12345mount /dev/sdb1 /mnt/data           # 基本挂载mount -o remount,ro /mnt/data       # 重新挂载为只读mount -t nfs server:/share /mnt/nfs # 挂载NFSumount /mnt/data                    # 卸载umount -l /mnt/data                 # 延迟卸载\n5.3 /etc/fstab 文件格式\n123# 设备文件/挂载点/文件系统类型/选项/备份标记/检查顺序/dev/sdb1  /data  ext4  defaults  0  2UUID=xxxx  /home  xfs   defaults  0  1\n6. 逻辑卷管理(LVM)\n6.1 LVM 基本概念\n\nPV(Physical Volume)：物理卷，实际存储设备\nVG(Volume Group)：卷组，由PV组成的存储池\nLV(Logical Volume)：逻辑卷，从VG划分的可挂载空间\nPE(Physical Extent)：物理块，LVM最小分配单元(默认4MB)\nLE(Logical Extent)：逻辑块，与PE一一对应\n\n6.2 LVM 完整操作流程\n物理卷(PV)管理\n1234pvcreate /dev/sdb /dev/sdc          # 创建PVpvdisplay                           # 显示PV信息pvmove /dev/sdb                     # 迁移PV数据pvremove /dev/sdb                   # 删除PV\n卷组(VG)管理\n12345vgcreate vg_data /dev/sdb /dev/sdc  # 创建VGvgextend vg_data /dev/sdd           # 扩展VGvgreduce vg_data /dev/sdb           # 缩减VGvgdisplay                           # 显示VG信息vgremove vg_data                    # 删除VG\n逻辑卷(LV)管理\n123456lvcreate -L 50G -n lv_home vg_data  # 创建50G逻辑卷lvextend -L +10G /dev/vg_data/lv_home # 扩展10Glvreduce -L -5G /dev/vg_data/lv_home # 缩减5Glvresize -L 60G /dev/vg_data/lv_home # 调整到60Glvdisplay                           # 显示LV信息lvremove /dev/vg_data/lv_home       # 删除LV\n文件系统扩展\n12345# 对于ext2/3/4文件系统resize2fs /dev/vg_data/lv_home# 对于XFS文件系统xfs_growfs /dev/vg_data/lv_home\n6.3 LVM 快照功能\n1234lvcreate -L 10G -s -n snap_home /dev/vg_data/lv_home  # 创建快照mount /dev/vg_data/snap_home /mnt/snapshot           # 挂载快照umount /mnt/snapshot                                 # 卸载快照lvremove /dev/vg_data/snap_home                      # 删除快照\n6.4 LVM 信息查看命令\n1234567pvs        # 简要PV信息vgs        # 简要VG信息lvs        # 简要LV信息pvdisplay  # 详细PV信息vgdisplay  # 详细VG信息lvdisplay  # 详细LV信息lsblk      # 块设备层次结构\n","dateCreated":"2020-05-08T19:06:24+08:00","dateModified":"2025-05-09T15:44:52+08:00","datePublished":"2020-05-08T19:06:24+08:00","description":"","headline":"5.文件系统与存储管理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/","keywords":"linux, LPIC"}</script>
+    <meta name="description" content="1. 磁盘配额管理 1.1 配额概念与类型 配额类型说明  硬限制(Hard Limit)：用户绝对不能超过的磁盘空间限制 软限制(Soft Limit)：允许用户暂时超过的限制，系统会发出警告 宽限期(Grace Period)：超过软限制后允许保留的时间（默认7天）  1.2 配额实施完整步骤   修改fstab文件： 12# 在&#x2F;etc&#x2F;fstab中添加usrquota和&#x2F;或grpquota">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="5.文件系统与存储管理">
+<meta property="og:url" content="https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="1. 磁盘配额管理 1.1 配额概念与类型 配额类型说明  硬限制(Hard Limit)：用户绝对不能超过的磁盘空间限制 软限制(Soft Limit)：允许用户暂时超过的限制，系统会发出警告 宽限期(Grace Period)：超过软限制后允许保留的时间（默认7天）  1.2 配额实施完整步骤   修改fstab文件： 12# 在&#x2F;etc&#x2F;fstab中添加usrquota和&#x2F;或grpquota">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2020-05-08T11:06:24.000Z">
+<meta property="article:modified_time" content="2025-05-09T07:44:52.352Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="LPIC">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            5.文件系统与存储管理
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2020-05-08T19:06:24+08:00">
+	
+		    2020 年 5 月 8 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../../../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="1-磁盘配额管理">1. 磁盘配额管理</h2>
+<h3 id="1-1-配额概念与类型">1.1 配额概念与类型</h3>
+<h4 id="配额类型说明">配额类型说明</h4>
+<ul>
+<li><strong>硬限制(Hard Limit)</strong>：用户绝对不能超过的磁盘空间限制</li>
+<li><strong>软限制(Soft Limit)</strong>：允许用户暂时超过的限制，系统会发出警告</li>
+<li><strong>宽限期(Grace Period)</strong>：超过软限制后允许保留的时间（默认7天）</li>
+</ul>
+<h3 id="1-2-配额实施完整步骤">1.2 配额实施完整步骤</h3>
+<ol>
+<li>
+<p><strong>修改fstab文件</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在/etc/fstab中添加usrquota和/或grpquota选项</span></span><br><span class="line">/dev/sda1 /home ext4 defaults,usrquota,grpquota 0 2</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>重新挂载文件系统</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">umount /home</span><br><span class="line">mount -o remount /home</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>创建配额文件</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">touch</span> /home/aquota.user /home/aquota.group</span><br><span class="line"><span class="built_in">chmod</span> 600 /home/aquota.*</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>初始化配额数据库</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">quotacheck -cugm /home</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>启用配额系统</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">quotaon -avug</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>为用户设置配额</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">edquota username</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h3 id="1-3-配额管理命令详解">1.3 配额管理命令详解</h3>
+<h4 id="quota-显示配额信息">quota - 显示配额信息</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">quota -u username  <span class="comment"># 显示用户配额</span></span><br><span class="line">quota -g groupname <span class="comment"># 显示组配额</span></span><br><span class="line">quota -v           <span class="comment"># 显示详细信息</span></span><br></pre></td></tr></table></figure>
+<h4 id="quotacheck-检查配额">quotacheck - 检查配额</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">quotacheck -avug  <span class="comment"># 检查所有文件系统配额</span></span><br><span class="line">quotacheck -cug /home  <span class="comment"># 检查指定文件系统</span></span><br></pre></td></tr></table></figure>
+<h4 id="quotaon-quotaoff-启用-禁用配额">quotaon/quotaoff - 启用/禁用配额</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">quotaon -avug     <span class="comment"># 启用所有配额</span></span><br><span class="line">quotaoff /home    <span class="comment"># 禁用指定文件系统配额</span></span><br></pre></td></tr></table></figure>
+<h4 id="edquota-编辑配额">edquota - 编辑配额</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">edquota -u username  <span class="comment"># 编辑用户配额</span></span><br><span class="line">edquota -p template_user new_user  <span class="comment"># 复制配额设置</span></span><br><span class="line">edquota -t           <span class="comment"># 修改宽限期</span></span><br></pre></td></tr></table></figure>
+<h4 id="repquota-报告配额状态">repquota - 报告配额状态</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">repquota -a       <span class="comment"># 报告所有文件系统配额状态</span></span><br><span class="line">repquota -u /home <span class="comment"># 报告/home的用户配额</span></span><br></pre></td></tr></table></figure>
+<h2 id="2-文件系统层次标准-FHS">2. 文件系统层次标准(FHS)</h2>
+<h3 id="2-1-核心目录结构">2.1 核心目录结构</h3>
+<table>
+<thead>
+<tr>
+<th>目录</th>
+<th>完整描述</th>
+<th>典型内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/bin</code></td>
+<td>基础命令二进制文件</td>
+<td>ls, cp, mv等基本命令</td>
+</tr>
+<tr>
+<td><code>/sbin</code></td>
+<td>系统管理二进制文件</td>
+<td>fdisk, fsck, ifconfig等</td>
+</tr>
+<tr>
+<td><code>/etc</code></td>
+<td>系统配置文件</td>
+<td>passwd, fstab, network等配置文件</td>
+</tr>
+<tr>
+<td><code>/dev</code></td>
+<td>设备文件</td>
+<td>sda, tty, null等设备节点</td>
+</tr>
+<tr>
+<td><code>/lib</code></td>
+<td>系统库文件</td>
+<td>系统运行所需共享库</td>
+</tr>
+<tr>
+<td><code>/mnt</code></td>
+<td>临时挂载点</td>
+<td>临时挂载文件系统的目录</td>
+</tr>
+<tr>
+<td><code>/opt</code></td>
+<td>可选应用软件包</td>
+<td>第三方应用程序</td>
+</tr>
+<tr>
+<td><code>/proc</code></td>
+<td>进程和内核信息</td>
+<td>虚拟文件系统，提供系统信息</td>
+</tr>
+<tr>
+<td><code>/root</code></td>
+<td>root用户主目录</td>
+<td>root用户的个人文件和配置</td>
+</tr>
+<tr>
+<td><code>/boot</code></td>
+<td>启动加载文件</td>
+<td>vmlinuz, initramfs, grub等</td>
+</tr>
+<tr>
+<td><code>/home</code></td>
+<td>用户主目录</td>
+<td>普通用户的个人目录</td>
+</tr>
+<tr>
+<td><code>/tmp</code></td>
+<td>临时文件</td>
+<td>系统重启后通常清空</td>
+</tr>
+<tr>
+<td><code>/var</code></td>
+<td>可变数据文件</td>
+<td>日志、邮件、数据库等</td>
+</tr>
+<tr>
+<td><code>/usr</code></td>
+<td>用户程序资源</td>
+<td>应用程序、文档、库文件等</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-分区与文件系统管理">3. 分区与文件系统管理</h2>
+<h3 id="3-1-分区管理">3.1 分区管理</h3>
+<h4 id="fdisk-完整操作流程">fdisk 完整操作流程</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fdisk /dev/sdb</span><br></pre></td></tr></table></figure>
+<p>交互命令列表：</p>
+<ul>
+<li><code>n</code>：创建新分区</li>
+<li><code>d</code>：删除分区</li>
+<li><code>p</code>：显示分区表</li>
+<li><code>t</code>：更改分区类型</li>
+<li><code>a</code>：切换启动标志</li>
+<li><code>w</code>：写入并退出</li>
+<li><code>q</code>：不保存退出</li>
+<li><code>m</code>：显示帮助菜单</li>
+</ul>
+<h3 id="3-2-文件系统创建与管理">3.2 文件系统创建与管理</h3>
+<h4 id="mkfs-命令集">mkfs 命令集</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkfs -t ext4 /dev/sdb1      <span class="comment"># 创建ext4文件系统</span></span><br><span class="line">mkfs.ext4 /dev/sdb1         <span class="comment"># 同上</span></span><br><span class="line">mkfs.xfs /dev/sdb2          <span class="comment"># 创建XFS文件系统</span></span><br><span class="line">mkfs.btrfs /dev/sdb3        <span class="comment"># 创建Btrfs文件系统</span></span><br></pre></td></tr></table></figure>
+<h4 id="交换空间管理">交换空间管理</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkswap /dev/sdb4            <span class="comment"># 创建交换分区</span></span><br><span class="line">swapon /dev/sdb4            <span class="comment"># 启用交换分区</span></span><br><span class="line">swapon -s                   <span class="comment"># 显示交换空间状态</span></span><br><span class="line">swapoff /dev/sdb4           <span class="comment"># 禁用交换分区</span></span><br></pre></td></tr></table></figure>
+<h3 id="3-3-文件系统检查与维护">3.3 文件系统检查与维护</h3>
+<h4 id="fsck-系列命令">fsck 系列命令</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">fsck /dev/sdb1              <span class="comment"># 基本文件系统检查</span></span><br><span class="line">fsck -y /dev/sdb1           <span class="comment"># 自动修复错误</span></span><br><span class="line">e2fsck -p /dev/sdb1         <span class="comment"># ext文件系统自动修复</span></span><br><span class="line">xfs_repair /dev/sdb2        <span class="comment"># XFS文件系统修复</span></span><br></pre></td></tr></table></figure>
+<h4 id="tune2fs-调整参数">tune2fs 调整参数</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">tune2fs -c 30 /dev/sdb1     <span class="comment"># 设置每30次挂载后检查</span></span><br><span class="line">tune2fs -i 15d /dev/sdb1    <span class="comment"># 设置15天间隔检查</span></span><br><span class="line">tune2fs -L DATA /dev/sdb1   <span class="comment"># 设置卷标为DATA</span></span><br></pre></td></tr></table></figure>
+<h3 id="3-4-空间监控命令">3.4 空间监控命令</h3>
+<h4 id="df-详细用法">df 详细用法</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">df</span> -h                       <span class="comment"># 人类可读格式</span></span><br><span class="line"><span class="built_in">df</span> -i                       <span class="comment"># 显示inode使用情况</span></span><br><span class="line"><span class="built_in">df</span> -T                       <span class="comment"># 显示文件系统类型</span></span><br><span class="line"><span class="built_in">df</span> --total                  <span class="comment"># 显示总计信息</span></span><br></pre></td></tr></table></figure>
+<h4 id="du-详细用法">du 详细用法</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">du</span> -sh /var/log             <span class="comment"># 显示目录总大小</span></span><br><span class="line"><span class="built_in">du</span> -ah /home                <span class="comment"># 显示所有文件和目录大小</span></span><br><span class="line"><span class="built_in">du</span> -csh *                   <span class="comment"># 显示当前目录各项目大小和总计</span></span><br><span class="line"><span class="built_in">du</span> --max-depth=1 /usr       <span class="comment"># 只显示一级子目录大小</span></span><br></pre></td></tr></table></figure>
+<h2 id="4-文件搜索命令">4. 文件搜索命令</h2>
+<h3 id="4-1-find-命令完整用法">4.1 find 命令完整用法</h3>
+<h4 id="基本语法">基本语法</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find [路径] [选项] [操作]</span><br></pre></td></tr></table></figure>
+<h4 id="常用示例">常用示例</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">find / -name <span class="string">&quot;*.conf&quot;</span>               <span class="comment"># 按名称查找</span></span><br><span class="line">find /home -user alice              <span class="comment"># 按属主查找</span></span><br><span class="line">find /var/log -mtime -7             <span class="comment"># 查找7天内修改的文件</span></span><br><span class="line">find /tmp -size +10M                <span class="comment"># 查找大于10MB的文件</span></span><br><span class="line">find . -perm 644                    <span class="comment"># 查找权限为644的文件</span></span><br><span class="line">find /etc -<span class="built_in">type</span> f -<span class="built_in">exec</span> grep -l <span class="string">&quot;error&quot;</span> &#123;&#125; \;  <span class="comment"># 结合grep</span></span><br></pre></td></tr></table></figure>
+<h3 id="4-2-locate-updatedb-系统">4.2 locate/updatedb 系统</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">locate passwd              <span class="comment"># 快速查找文件</span></span><br><span class="line">updatedb                   <span class="comment"># 更新数据库</span></span><br><span class="line">updatedb -e /mnt           <span class="comment"># 排除/mnt目录</span></span><br></pre></td></tr></table></figure>
+<h3 id="4-3-which-whereis-type">4.3 which/whereis/type</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">which</span> <span class="built_in">ls</span>                   <span class="comment"># 查找命令路径</span></span><br><span class="line">whereis python             <span class="comment"># 查找命令相关文件</span></span><br><span class="line"><span class="built_in">type</span> -a <span class="built_in">cd</span>                 <span class="comment"># 显示命令类型</span></span><br></pre></td></tr></table></figure>
+<h2 id="5-挂载管理">5. 挂载管理</h2>
+<h3 id="5-1-挂载选项详解">5.1 挂载选项详解</h3>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>完整描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>async/sync</code></td>
+<td>异步/同步写入</td>
+</tr>
+<tr>
+<td><code>auto/noauto</code></td>
+<td>是否允许mount -a自动挂载</td>
+</tr>
+<tr>
+<td><code>exec/noexec</code></td>
+<td>是否允许执行二进制文件</td>
+</tr>
+<tr>
+<td><code>ro/rw</code></td>
+<td>只读/读写模式</td>
+</tr>
+<tr>
+<td><code>suid/nosuid</code></td>
+<td>是否允许SUID/SGID</td>
+</tr>
+<tr>
+<td><code>user/nouser</code></td>
+<td>是否允许普通用户挂载</td>
+</tr>
+<tr>
+<td><code>defaults</code></td>
+<td>默认选项(rw,suid,dev,exec,auto,nouser,async)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-2-mount-umount-完整用法">5.2 mount/umount 完整用法</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mount /dev/sdb1 /mnt/data           <span class="comment"># 基本挂载</span></span><br><span class="line">mount -o remount,ro /mnt/data       <span class="comment"># 重新挂载为只读</span></span><br><span class="line">mount -t nfs server:/share /mnt/nfs <span class="comment"># 挂载NFS</span></span><br><span class="line">umount /mnt/data                    <span class="comment"># 卸载</span></span><br><span class="line">umount -l /mnt/data                 <span class="comment"># 延迟卸载</span></span><br></pre></td></tr></table></figure>
+<h3 id="5-3-etc-fstab-文件格式">5.3 /etc/fstab 文件格式</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># 设备文件/挂载点/文件系统类型/选项/备份标记/检查顺序</span><br><span class="line">/dev/sdb1  /data  ext4  defaults  0  2</span><br><span class="line">UUID=xxxx  /home  xfs   defaults  0  1</span><br></pre></td></tr></table></figure>
+<h2 id="6-逻辑卷管理-LVM">6. 逻辑卷管理(LVM)</h2>
+<h3 id="6-1-LVM-基本概念">6.1 LVM 基本概念</h3>
+<ol>
+<li><strong>PV(Physical Volume)</strong>：物理卷，实际存储设备</li>
+<li><strong>VG(Volume Group)</strong>：卷组，由PV组成的存储池</li>
+<li><strong>LV(Logical Volume)</strong>：逻辑卷，从VG划分的可挂载空间</li>
+<li><strong>PE(Physical Extent)</strong>：物理块，LVM最小分配单元(默认4MB)</li>
+<li><strong>LE(Logical Extent)</strong>：逻辑块，与PE一一对应</li>
+</ol>
+<h3 id="6-2-LVM-完整操作流程">6.2 LVM 完整操作流程</h3>
+<h4 id="物理卷-PV-管理">物理卷(PV)管理</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pvcreate /dev/sdb /dev/sdc          <span class="comment"># 创建PV</span></span><br><span class="line">pvdisplay                           <span class="comment"># 显示PV信息</span></span><br><span class="line">pvmove /dev/sdb                     <span class="comment"># 迁移PV数据</span></span><br><span class="line">pvremove /dev/sdb                   <span class="comment"># 删除PV</span></span><br></pre></td></tr></table></figure>
+<h4 id="卷组-VG-管理">卷组(VG)管理</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vgcreate vg_data /dev/sdb /dev/sdc  <span class="comment"># 创建VG</span></span><br><span class="line">vgextend vg_data /dev/sdd           <span class="comment"># 扩展VG</span></span><br><span class="line">vgreduce vg_data /dev/sdb           <span class="comment"># 缩减VG</span></span><br><span class="line">vgdisplay                           <span class="comment"># 显示VG信息</span></span><br><span class="line">vgremove vg_data                    <span class="comment"># 删除VG</span></span><br></pre></td></tr></table></figure>
+<h4 id="逻辑卷-LV-管理">逻辑卷(LV)管理</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">lvcreate -L 50G -n lv_home vg_data  <span class="comment"># 创建50G逻辑卷</span></span><br><span class="line">lvextend -L +10G /dev/vg_data/lv_home <span class="comment"># 扩展10G</span></span><br><span class="line">lvreduce -L -5G /dev/vg_data/lv_home <span class="comment"># 缩减5G</span></span><br><span class="line">lvresize -L 60G /dev/vg_data/lv_home <span class="comment"># 调整到60G</span></span><br><span class="line">lvdisplay                           <span class="comment"># 显示LV信息</span></span><br><span class="line">lvremove /dev/vg_data/lv_home       <span class="comment"># 删除LV</span></span><br></pre></td></tr></table></figure>
+<h4 id="文件系统扩展">文件系统扩展</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 对于ext2/3/4文件系统</span></span><br><span class="line">resize2fs /dev/vg_data/lv_home</span><br><span class="line"></span><br><span class="line"><span class="comment"># 对于XFS文件系统</span></span><br><span class="line">xfs_growfs /dev/vg_data/lv_home</span><br></pre></td></tr></table></figure>
+<h3 id="6-3-LVM-快照功能">6.3 LVM 快照功能</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">lvcreate -L 10G -s -n snap_home /dev/vg_data/lv_home  <span class="comment"># 创建快照</span></span><br><span class="line">mount /dev/vg_data/snap_home /mnt/snapshot           <span class="comment"># 挂载快照</span></span><br><span class="line">umount /mnt/snapshot                                 <span class="comment"># 卸载快照</span></span><br><span class="line">lvremove /dev/vg_data/snap_home                      <span class="comment"># 删除快照</span></span><br></pre></td></tr></table></figure>
+<h3 id="6-4-LVM-信息查看命令">6.4 LVM 信息查看命令</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">pvs        <span class="comment"># 简要PV信息</span></span><br><span class="line">vgs        <span class="comment"># 简要VG信息</span></span><br><span class="line">lvs        <span class="comment"># 简要LV信息</span></span><br><span class="line">pvdisplay  <span class="comment"># 详细PV信息</span></span><br><span class="line">vgdisplay  <span class="comment"># 详细VG信息</span></span><br><span class="line">lvdisplay  <span class="comment"># 详细LV信息</span></span><br><span class="line">lsblk      <span class="comment"># 块设备层次结构</span></span><br></pre></td></tr></table></figure>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/LPIC/" rel="tag">LPIC</a> <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/linux/" rel="tag">linux</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../6-Shell%E5%8F%98%E9%87%8F%E4%B8%8EShell%E8%84%9A%E6%9C%AC/"
+                    data-tooltip="6.Shell变量与Shell脚本"
+                    aria-label="上一篇: 6.Shell变量与Shell脚本"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                    data-tooltip="4.文件和程序管理"
+                    aria-label="下一篇: 4.文件和程序管理"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../6-Shell%E5%8F%98%E9%87%8F%E4%B8%8EShell%E8%84%9A%E6%9C%AC/"
+                    data-tooltip="6.Shell变量与Shell脚本"
+                    aria-label="上一篇: 6.Shell变量与Shell脚本"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                    data-tooltip="4.文件和程序管理"
+                    aria-label="下一篇: 4.文件和程序管理"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macao
+            </div>
+        
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>
