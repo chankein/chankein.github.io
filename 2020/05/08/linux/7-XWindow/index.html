@@ -13,13 +13,13 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"123# X Window 系统架构详解## 基础架构\nlocalhost(X server) --X protocol-- remotehost(X client)\n12345678910111213141516171819202122232425262728### 核心组件说明1. **X Server**：   - 负责硬件管理（显卡、显示器、输入设备等）   - 屏幕绘制与渲染   - 提供字体服务功能   - 典型实现：Xorg2. **X Client**：   - 应用程序逻辑处理   - 响应X Server的事件请求   - 例如：xterm、Firefox等GUI程序3. **X Window Manager**：   - 特殊的X Client   - 负责管理窗口布局、装饰和交互   - 常见WM：twm、KWin、Metacity等4. **Display Manager**：   - 提供图形化登录界面   - 负责加载用户选择的WM和语言环境   - 常见实现：GDM、KDM、XDM## startx 启动流程### 命令语法```bashstartx [X client 参数] -- [X server 参数]\nX server 参数查找顺序\n\nstartx 命令行参数\n用户主目录 ~/.xserverrc\n系统默认 /etc/X11/xinit/xserverrc\n最终回退 /usr/bin/X (X server可执行文件)\n\nX client 参数查找顺序\n\nstartx 命令行参数\n用户主目录 ~/.xinitrc\n系统默认 /etc/X11/xinit/xinitrc\n最终回退 xterm (基础终端模拟器)\n\n底层调用\nstartx 最终调用 xinit 启动X系统：\n1xinit [client option] -- [server or display option]\n默认等效命令：\n1xinit /etc/X11/xinit/xinitrc -- /usr/bin/X\n最小化启动示例：\n1xinit xterm -geometry +1+1 -n login -display :0 -- X :0\n配置文件体系\n核心配置文件\n\n主配置文件：/etc/X11/xorg.conf\n模块目录：/usr/lib64/xorg/modules/\n字体目录：/usr/share/X11/fonts/\n显卡驱动：/usr/lib64/xorg/modules/drivers/\n\n配置段落(Section)\n\n\n\nSection名称\n功能描述\n\n\n\n\nModule\nX Server加载的功能模块\n\n\nInputDevice\n输入设备配置（键盘/鼠标）\n\n\nFiles\n字体和颜色资源路径\n\n\nMonitor\n显示器参数（刷新率等）\n\n\nDevice\n显卡芯片组配置\n\n\nScreen\n显示分辨率和色深设置\n\n\nServerLayout\n各模块的组合配置\n\n\n\n配置生成工具\n123Xorg -configure# 生成测试配置文件：/root/xorg.conf.new# 测试命令：X -config /root/xorg.conf.new\n实用命令工具\n显示调节\n\nxvidtune：GUI显示器频率调节工具\nxhost：X server访问控制1234xhost +hostname  # 添加访问权限xhost -hostname  # 移除访问权限xhost +          # 允许所有主机xhost -          # 禁用所有远程访问\n\n\n环境变量\n12DISPLAY=localhost:0  # 指定显示目标export DISPLAY\n信息查询\n\n\n\n命令\n功能描述\n\n\n\n\nshowrgb\n显示可用RGB颜色值\n\n\nxlsclients\n列出运行中的X客户端\n\n\nxwininfo\n查询窗口几何属性\n\n\nxdpyinfo\n显示X Server详细信息\n\n\n\n显示管理器(XDM)\n类型对比\n\n\n\n类型\n描述\n\n\n\n\nXDM\n基础X Display Manager\n\n\nGDM\nGNOME显示管理器\n\n\nKDM\nKDE显示管理器\n\n\n\nXDM启动流程\n\n启动XDM服务\n加载 /etc/X11/Xsession\n执行 /etc/X11/xinit/xinitrc.d/ 下脚本\n读取用户配置 ~/.xsession\n加载 ~/.Xclients 或 /etc/X11/xinit/Xclients\n\n关键配置文件\n\n\n\n文件名\n用途描述\n\n\n\n\nxdm-config\n基础配置和访问控制\n\n\nXaccess\n主机访问权限设置\n\n\nXresources\n登录界面样式和X资源定义\n\n\nXservers\nX Server与Display映射\n\n\nXsetup_0\n登录前环境设置（如壁纸）\n\n\nXsession\n会话启动流程控制\n\n\n\n窗口管理器列表\n\n\n\n名称\n特点描述\n\n\n\n\ntwm\n最基本的窗口管理器\n\n\nfvwm\n轻量级窗口管理器\n\n\nsawfish\nGNOME集成WM\n\n\nenlightenment\n高定制化WM\n\n\nmetacity\nGNOME默认WM\n\n\nfluxbox\n轻量级高自由度WM\n\n\nWindowMaker\nNeXTSTEP风格WM\n\n\nKWin\nKDE标准窗口管理器\n\n\n\n辅助功能技术\nAccessX 功能\n\n\n\n功能\n描述\n\n\n\n\n粘滞键\n分离组合键输入\n\n\n慢速键\n调整按键响应时间\n\n\n防反弹键\n防止重复输入\n\n\n切换键\n切换状态声音反馈\n\n\n鼠标键\n键盘模拟鼠标操作\n\n\n\n其他辅助工具\n\n高对比度显示：增强视觉可读性\n屏幕阅读器：Orca等文本转语音工具\n盲文显示器：触觉输出设备\n屏幕放大镜：视觉辅助工具\n屏幕键盘：GOK等虚拟输入工具\n\n专用软件\n\nOrca：GNOME屏幕阅读器和放大镜\nGOK：GNOME屏幕键盘\nemacspeak：为Emacs添加语音功能\n\n","dateCreated":"2020-05-08T20:06:24+08:00","dateModified":"2025-05-09T18:35:47+08:00","datePublished":"2020-05-08T20:06:24+08:00","description":"","headline":"7.XWindow","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/05/08/linux/7-XWindow/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/05/08/linux/7-XWindow/","keywords":"linux, LPIC"}</script>
-    <meta name="description" content="123# X Window 系统架构详解## 基础架构 localhost(X server) --X protocol-- remotehost(X client) 12345678910111213141516171819202122232425262728### 核心组件说明1. **X Server**：   - 负责硬件管理（显卡、显示器、输入设备等）   - 屏幕绘制与渲染   - 提">
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"123# X Window 系统架构详解## 基础架构\nlocalhost(X server) –X protocol– remotehost(X client)\n12345678910111213141516171819202122232425262728### 核心组件说明1. **X Server**：   - 负责硬件管理（显卡、显示器、输入设备等）   - 屏幕绘制与渲染   - 提供字体服务功能   - 典型实现：Xorg2. **X Client**：   - 应用程序逻辑处理   - 响应X Server的事件请求   - 例如：xterm、Firefox等GUI程序3. **X Window Manager**：   - 特殊的X Client   - 负责管理窗口布局、装饰和交互   - 常见WM：twm、KWin、Metacity等4. **Display Manager**：   - 提供图形化登录界面   - 负责加载用户选择的WM和语言环境   - 常见实现：GDM、KDM、XDM## startx 启动流程### 命令语法```bashstartx [X client 参数] -- [X server 参数]\n\nX server 参数查找顺序\nstartx 命令行参数\n用户主目录 ~/.xserverrc\n系统默认 /etc/X11/xinit/xserverrc\n最终回退 /usr/bin/X (X server可执行文件)\n\nX client 参数查找顺序\nstartx 命令行参数\n用户主目录 ~/.xinitrc\n系统默认 /etc/X11/xinit/xinitrc\n最终回退 xterm (基础终端模拟器)\n\n底层调用startx 最终调用 xinit 启动X系统：\n1xinit [client option] -- [server or display option]\n\n默认等效命令：\n1xinit /etc/X11/xinit/xinitrc -- /usr/bin/X\n\n最小化启动示例：\n1xinit xterm -geometry +1+1 -n login -display :0 -- X :0\n\n配置文件体系核心配置文件\n主配置文件：/etc/X11/xorg.conf\n模块目录：/usr/lib64/xorg/modules/\n字体目录：/usr/share/X11/fonts/\n显卡驱动：/usr/lib64/xorg/modules/drivers/\n\n配置段落(Section)\n\n\nSection名称\n功能描述\n\n\n\nModule\nX Server加载的功能模块\n\n\nInputDevice\n输入设备配置（键盘&#x2F;鼠标）\n\n\nFiles\n字体和颜色资源路径\n\n\nMonitor\n显示器参数（刷新率等）\n\n\nDevice\n显卡芯片组配置\n\n\nScreen\n显示分辨率和色深设置\n\n\nServerLayout\n各模块的组合配置\n\n\n配置生成工具123Xorg -configure# 生成测试配置文件：/root/xorg.conf.new# 测试命令：X -config /root/xorg.conf.new\n\n实用命令工具显示调节\nxvidtune：GUI显示器频率调节工具\nxhost：X server访问控制1234xhost +hostname  # 添加访问权限xhost -hostname  # 移除访问权限xhost +          # 允许所有主机xhost -          # 禁用所有远程访问\n\n环境变量12DISPLAY=localhost:0  # 指定显示目标export DISPLAY\n\n信息查询\n\n\n命令\n功能描述\n\n\n\nshowrgb\n显示可用RGB颜色值\n\n\nxlsclients\n列出运行中的X客户端\n\n\nxwininfo\n查询窗口几何属性\n\n\nxdpyinfo\n显示X Server详细信息\n\n\n显示管理器(XDM)类型对比\n\n\n类型\n描述\n\n\n\nXDM\n基础X Display Manager\n\n\nGDM\nGNOME显示管理器\n\n\nKDM\nKDE显示管理器\n\n\nXDM启动流程\n启动XDM服务\n加载 /etc/X11/Xsession\n执行 /etc/X11/xinit/xinitrc.d/ 下脚本\n读取用户配置 ~/.xsession\n加载 ~/.Xclients 或 /etc/X11/xinit/Xclients\n\n关键配置文件\n\n\n文件名\n用途描述\n\n\n\nxdm-config\n基础配置和访问控制\n\n\nXaccess\n主机访问权限设置\n\n\nXresources\n登录界面样式和X资源定义\n\n\nXservers\nX Server与Display映射\n\n\nXsetup_0\n登录前环境设置（如壁纸）\n\n\nXsession\n会话启动流程控制\n\n\n窗口管理器列表\n\n\n名称\n特点描述\n\n\n\ntwm\n最基本的窗口管理器\n\n\nfvwm\n轻量级窗口管理器\n\n\nsawfish\nGNOME集成WM\n\n\nenlightenment\n高定制化WM\n\n\nmetacity\nGNOME默认WM\n\n\nfluxbox\n轻量级高自由度WM\n\n\nWindowMaker\nNeXTSTEP风格WM\n\n\nKWin\nKDE标准窗口管理器\n\n\n辅助功能技术AccessX 功能\n\n\n功能\n描述\n\n\n\n粘滞键\n分离组合键输入\n\n\n慢速键\n调整按键响应时间\n\n\n防反弹键\n防止重复输入\n\n\n切换键\n切换状态声音反馈\n\n\n鼠标键\n键盘模拟鼠标操作\n\n\n其他辅助工具\n高对比度显示：增强视觉可读性\n屏幕阅读器：Orca等文本转语音工具\n盲文显示器：触觉输出设备\n屏幕放大镜：视觉辅助工具\n屏幕键盘：GOK等虚拟输入工具\n\n专用软件\nOrca：GNOME屏幕阅读器和放大镜\nGOK：GNOME屏幕键盘\nemacspeak：为Emacs添加语音功能\n\n","dateCreated":"2020-05-08T20:06:24+08:00","dateModified":"2025-05-09T18:35:47+08:00","datePublished":"2020-05-08T20:06:24+08:00","description":"","headline":"7.XWindow","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/05/08/linux/7-XWindow/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/05/08/linux/7-XWindow/","keywords":"linux, LPIC"}</script>
+    <meta name="description" content="123# X Window 系统架构详解## 基础架构 localhost(X server) –X protocol– remotehost(X client) 12345678910111213141516171819202122232425262728### 核心组件说明1. **X Server**：   - 负责硬件管理（显卡、显示器、输入设备等）   - 屏幕绘制与渲染   - 提供字">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="7.XWindow">
 <meta property="og:url" content="https://chankein.github.io/2020/05/08/linux/7-XWindow/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
-<meta property="og:description" content="123# X Window 系统架构详解## 基础架构 localhost(X server) --X protocol-- remotehost(X client) 12345678910111213141516171819202122232425262728### 核心组件说明1. **X Server**：   - 负责硬件管理（显卡、显示器、输入设备等）   - 屏幕绘制与渲染   - 提">
+<meta property="og:description" content="123# X Window 系统架构详解## 基础架构 localhost(X server) –X protocol– remotehost(X client) 12345678910111213141516171819202122232425262728### 核心组件说明1. **X Server**：   - 负责硬件管理（显卡、显示器、输入设备等）   - 屏幕绘制与渲染   - 提供字">
 <meta property="og:locale" content="zh_TW">
 <meta property="article:published_time" content="2020-05-08T12:06:24.000Z">
 <meta property="article:modified_time" content="2025-05-09T10:35:47.125Z">
@@ -314,53 +314,50 @@
     <div class="post-content markdown">
         <div class="main-content-wrap">
             <figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="section"># X Window 系统架构详解</span></span><br><span class="line"></span><br><span class="line"><span class="section">## 基础架构</span></span><br></pre></td></tr></table></figure>
-<p>localhost(X server) --X protocol-- remotehost(X client)</p>
+<p>localhost(X server) –X protocol– remotehost(X client)</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">### 核心组件说明</span><br><span class="line">1. **X Server**：</span><br><span class="line">   - 负责硬件管理（显卡、显示器、输入设备等）</span><br><span class="line">   - 屏幕绘制与渲染</span><br><span class="line">   - 提供字体服务功能</span><br><span class="line">   - 典型实现：Xorg</span><br><span class="line"></span><br><span class="line">2. **X Client**：</span><br><span class="line">   - 应用程序逻辑处理</span><br><span class="line">   - 响应X Server的事件请求</span><br><span class="line">   - 例如：xterm、Firefox等GUI程序</span><br><span class="line"></span><br><span class="line">3. **X Window Manager**：</span><br><span class="line">   - 特殊的X Client</span><br><span class="line">   - 负责管理窗口布局、装饰和交互</span><br><span class="line">   - 常见WM：twm、KWin、Metacity等</span><br><span class="line"></span><br><span class="line">4. **Display Manager**：</span><br><span class="line">   - 提供图形化登录界面</span><br><span class="line">   - 负责加载用户选择的WM和语言环境</span><br><span class="line">   - 常见实现：GDM、KDM、XDM</span><br><span class="line"></span><br><span class="line">## startx 启动流程</span><br><span class="line"></span><br><span class="line">### 命令语法</span><br><span class="line">```bash</span><br><span class="line">startx [X client 参数] -- [X server 参数]</span><br></pre></td></tr></table></figure>
-<h3 id="X-server-参数查找顺序">X server 参数查找顺序</h3>
-<ol>
+
+<h3 id="X-server-参数查找顺序"><a href="#X-server-参数查找顺序" class="headerlink" title="X server 参数查找顺序"></a>X server 参数查找顺序</h3><ol>
 <li>startx 命令行参数</li>
 <li>用户主目录 <code>~/.xserverrc</code></li>
 <li>系统默认 <code>/etc/X11/xinit/xserverrc</code></li>
 <li>最终回退 <code>/usr/bin/X</code> (X server可执行文件)</li>
 </ol>
-<h3 id="X-client-参数查找顺序">X client 参数查找顺序</h3>
-<ol>
+<h3 id="X-client-参数查找顺序"><a href="#X-client-参数查找顺序" class="headerlink" title="X client 参数查找顺序"></a>X client 参数查找顺序</h3><ol>
 <li>startx 命令行参数</li>
 <li>用户主目录 <code>~/.xinitrc</code></li>
 <li>系统默认 <code>/etc/X11/xinit/xinitrc</code></li>
 <li>最终回退 <code>xterm</code> (基础终端模拟器)</li>
 </ol>
-<h3 id="底层调用">底层调用</h3>
-<p>startx 最终调用 <code>xinit</code> 启动X系统：</p>
+<h3 id="底层调用"><a href="#底层调用" class="headerlink" title="底层调用"></a>底层调用</h3><p>startx 最终调用 <code>xinit</code> 启动X系统：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xinit [client option] -- [server or display option]</span><br></pre></td></tr></table></figure>
+
 <p>默认等效命令：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xinit /etc/X11/xinit/xinitrc -- /usr/bin/X</span><br></pre></td></tr></table></figure>
+
 <p>最小化启动示例：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xinit xterm -geometry +1+1 -n login -display :0 -- X :0</span><br></pre></td></tr></table></figure>
-<h2 id="配置文件体系">配置文件体系</h2>
-<h3 id="核心配置文件">核心配置文件</h3>
-<ul>
+
+<h2 id="配置文件体系"><a href="#配置文件体系" class="headerlink" title="配置文件体系"></a>配置文件体系</h2><h3 id="核心配置文件"><a href="#核心配置文件" class="headerlink" title="核心配置文件"></a>核心配置文件</h3><ul>
 <li>主配置文件：<code>/etc/X11/xorg.conf</code></li>
 <li>模块目录：<code>/usr/lib64/xorg/modules/</code></li>
 <li>字体目录：<code>/usr/share/X11/fonts/</code></li>
 <li>显卡驱动：<code>/usr/lib64/xorg/modules/drivers/</code></li>
 </ul>
-<h3 id="配置段落-Section">配置段落(Section)</h3>
-<table>
+<h3 id="配置段落-Section"><a href="#配置段落-Section" class="headerlink" title="配置段落(Section)"></a>配置段落(Section)</h3><table>
 <thead>
 <tr>
 <th>Section名称</th>
 <th>功能描述</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>Module</td>
 <td>X Server加载的功能模块</td>
 </tr>
 <tr>
 <td>InputDevice</td>
-<td>输入设备配置（键盘/鼠标）</td>
+<td>输入设备配置（键盘&#x2F;鼠标）</td>
 </tr>
 <tr>
 <td>Files</td>
@@ -382,29 +379,23 @@
 <td>ServerLayout</td>
 <td>各模块的组合配置</td>
 </tr>
-</tbody>
-</table>
-<h3 id="配置生成工具">配置生成工具</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Xorg -configure</span><br><span class="line"><span class="comment"># 生成测试配置文件：/root/xorg.conf.new</span></span><br><span class="line"><span class="comment"># 测试命令：X -config /root/xorg.conf.new</span></span><br></pre></td></tr></table></figure>
-<h2 id="实用命令工具">实用命令工具</h2>
-<h3 id="显示调节">显示调节</h3>
-<ul>
+</tbody></table>
+<h3 id="配置生成工具"><a href="#配置生成工具" class="headerlink" title="配置生成工具"></a>配置生成工具</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Xorg -configure</span><br><span class="line"><span class="comment"># 生成测试配置文件：/root/xorg.conf.new</span></span><br><span class="line"><span class="comment"># 测试命令：X -config /root/xorg.conf.new</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="实用命令工具"><a href="#实用命令工具" class="headerlink" title="实用命令工具"></a>实用命令工具</h2><h3 id="显示调节"><a href="#显示调节" class="headerlink" title="显示调节"></a>显示调节</h3><ul>
 <li><code>xvidtune</code>：GUI显示器频率调节工具</li>
-<li><code>xhost</code>：X server访问控制<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">xhost +hostname  <span class="comment"># 添加访问权限</span></span><br><span class="line">xhost -hostname  <span class="comment"># 移除访问权限</span></span><br><span class="line">xhost +          <span class="comment"># 允许所有主机</span></span><br><span class="line">xhost -          <span class="comment"># 禁用所有远程访问</span></span><br></pre></td></tr></table></figure>
-</li>
+<li><code>xhost</code>：X server访问控制<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">xhost +hostname  <span class="comment"># 添加访问权限</span></span><br><span class="line">xhost -hostname  <span class="comment"># 移除访问权限</span></span><br><span class="line">xhost +          <span class="comment"># 允许所有主机</span></span><br><span class="line">xhost -          <span class="comment"># 禁用所有远程访问</span></span><br></pre></td></tr></table></figure></li>
 </ul>
-<h3 id="环境变量">环境变量</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">DISPLAY=localhost:0  <span class="comment"># 指定显示目标</span></span><br><span class="line"><span class="built_in">export</span> DISPLAY</span><br></pre></td></tr></table></figure>
-<h3 id="信息查询">信息查询</h3>
-<table>
+<h3 id="环境变量"><a href="#环境变量" class="headerlink" title="环境变量"></a>环境变量</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">DISPLAY=localhost:0  <span class="comment"># 指定显示目标</span></span><br><span class="line"><span class="built_in">export</span> DISPLAY</span><br></pre></td></tr></table></figure>
+
+<h3 id="信息查询"><a href="#信息查询" class="headerlink" title="信息查询"></a>信息查询</h3><table>
 <thead>
 <tr>
 <th>命令</th>
 <th>功能描述</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>showrgb</td>
 <td>显示可用RGB颜色值</td>
 </tr>
@@ -420,19 +411,15 @@
 <td>xdpyinfo</td>
 <td>显示X Server详细信息</td>
 </tr>
-</tbody>
-</table>
-<h2 id="显示管理器-XDM">显示管理器(XDM)</h2>
-<h3 id="类型对比">类型对比</h3>
-<table>
+</tbody></table>
+<h2 id="显示管理器-XDM"><a href="#显示管理器-XDM" class="headerlink" title="显示管理器(XDM)"></a>显示管理器(XDM)</h2><h3 id="类型对比"><a href="#类型对比" class="headerlink" title="类型对比"></a>类型对比</h3><table>
 <thead>
 <tr>
 <th>类型</th>
 <th>描述</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>XDM</td>
 <td>基础X Display Manager</td>
 </tr>
@@ -444,26 +431,22 @@
 <td>KDM</td>
 <td>KDE显示管理器</td>
 </tr>
-</tbody>
-</table>
-<h3 id="XDM启动流程">XDM启动流程</h3>
-<ol>
+</tbody></table>
+<h3 id="XDM启动流程"><a href="#XDM启动流程" class="headerlink" title="XDM启动流程"></a>XDM启动流程</h3><ol>
 <li>启动XDM服务</li>
 <li>加载 <code>/etc/X11/Xsession</code></li>
 <li>执行 <code>/etc/X11/xinit/xinitrc.d/</code> 下脚本</li>
 <li>读取用户配置 <code>~/.xsession</code></li>
 <li>加载 <code>~/.Xclients</code> 或 <code>/etc/X11/xinit/Xclients</code></li>
 </ol>
-<h3 id="关键配置文件">关键配置文件</h3>
-<table>
+<h3 id="关键配置文件"><a href="#关键配置文件" class="headerlink" title="关键配置文件"></a>关键配置文件</h3><table>
 <thead>
 <tr>
 <th>文件名</th>
 <th>用途描述</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>xdm-config</td>
 <td>基础配置和访问控制</td>
 </tr>
@@ -487,18 +470,15 @@
 <td>Xsession</td>
 <td>会话启动流程控制</td>
 </tr>
-</tbody>
-</table>
-<h2 id="窗口管理器列表">窗口管理器列表</h2>
-<table>
+</tbody></table>
+<h2 id="窗口管理器列表"><a href="#窗口管理器列表" class="headerlink" title="窗口管理器列表"></a>窗口管理器列表</h2><table>
 <thead>
 <tr>
 <th>名称</th>
 <th>特点描述</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>twm</td>
 <td>最基本的窗口管理器</td>
 </tr>
@@ -530,19 +510,15 @@
 <td>KWin</td>
 <td>KDE标准窗口管理器</td>
 </tr>
-</tbody>
-</table>
-<h2 id="辅助功能技术">辅助功能技术</h2>
-<h3 id="AccessX-功能">AccessX 功能</h3>
-<table>
+</tbody></table>
+<h2 id="辅助功能技术"><a href="#辅助功能技术" class="headerlink" title="辅助功能技术"></a>辅助功能技术</h2><h3 id="AccessX-功能"><a href="#AccessX-功能" class="headerlink" title="AccessX 功能"></a>AccessX 功能</h3><table>
 <thead>
 <tr>
 <th>功能</th>
 <th>描述</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>粘滞键</td>
 <td>分离组合键输入</td>
 </tr>
@@ -562,18 +538,15 @@
 <td>鼠标键</td>
 <td>键盘模拟鼠标操作</td>
 </tr>
-</tbody>
-</table>
-<h3 id="其他辅助工具">其他辅助工具</h3>
-<ul>
+</tbody></table>
+<h3 id="其他辅助工具"><a href="#其他辅助工具" class="headerlink" title="其他辅助工具"></a>其他辅助工具</h3><ul>
 <li><strong>高对比度显示</strong>：增强视觉可读性</li>
 <li><strong>屏幕阅读器</strong>：Orca等文本转语音工具</li>
 <li><strong>盲文显示器</strong>：触觉输出设备</li>
 <li><strong>屏幕放大镜</strong>：视觉辅助工具</li>
 <li><strong>屏幕键盘</strong>：GOK等虚拟输入工具</li>
 </ul>
-<h3 id="专用软件">专用软件</h3>
-<ul>
+<h3 id="专用软件"><a href="#专用软件" class="headerlink" title="专用软件"></a>专用软件</h3><ul>
 <li><strong>Orca</strong>：GNOME屏幕阅读器和放大镜</li>
 <li><strong>GOK</strong>：GNOME屏幕键盘</li>
 <li><strong>emacspeak</strong>：为Emacs添加语音功能</li>
@@ -632,7 +605,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -695,7 +668,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -760,7 +733,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -823,7 +796,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -931,6 +904,269 @@
                 Tokyo/Macao
             </div>
         
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                            aria-label=": linux基础"
+                        >
+                            <h3 class="media-heading">linux基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/04/28/iptables/"
+                            aria-label=": iptables"
+                        >
+                            <h3 class="media-heading">iptables</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/08/12/git%E6%95%99%E7%A8%8B/"
+                            aria-label=": git教程"
+                        >
+                            <h3 class="media-heading">git教程</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年8月12日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/01/18/Java%E5%8F%98%E9%87%8F%E7%B1%BB%E5%9E%8B/"
+                            aria-label=": Java变量类型"
+                        >
+                            <h3 class="media-heading">Java变量类型</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年1月18日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/09/12/%E6%95%B0%E5%AD%A6/markdown-latex%E7%9A%84%E6%95%B0%E5%AD%A6%E5%BC%8F%E5%86%99%E6%B3%95/"
+                            aria-label=": LaTeX的写法"
+                        >
+                            <h3 class="media-heading">LaTeX的写法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年9月12日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/09/13/%E6%95%B0%E5%AD%A6/0-%E4%B8%AD%E5%AD%A6%E6%95%B0%E5%AD%A6%E5%A4%8D%E4%B9%A0/"
+                            aria-label=": 0.中学数学复习"
+                        >
+                            <h3 class="media-heading">0.中学数学复习</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年9月13日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/09/28/%E6%95%B0%E5%AD%A6/1-%E5%88%9D%E7%AD%89%E5%87%BD%E6%95%B0%E7%9A%84%E5%AF%BC%E6%95%B0%E6%8E%A8%E5%AF%BC/"
+                            aria-label=": 1.初等函数的导数推导"
+                        >
+                            <h3 class="media-heading">1.初等函数的导数推导</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年9月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/09/28/%E6%95%B0%E5%AD%A6/2-%E5%87%BD%E6%95%B0%E7%9A%84%E6%B1%82%E5%AF%BC%E6%B3%95%E5%88%99/"
+                            aria-label=": 2.函数的求导法则"
+                        >
+                            <h3 class="media-heading">2.函数的求导法则</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年9月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/09/28/%E6%95%B0%E5%AD%A6/3-%E8%8E%B1%E5%B8%83%E5%B0%BC%E5%85%B9%E5%85%AC%E5%BC%8F/"
+                            aria-label=": 3.莱布尼兹公式"
+                        >
+                            <h3 class="media-heading">3.莱布尼兹公式</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年9月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/09/28/%E6%95%B0%E5%AD%A6/4-%E5%BE%AE%E5%88%86/"
+                            aria-label=": 4.微分"
+                        >
+                            <h3 class="media-heading">4.微分</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年9月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 42 篇文章
+            </p>
+        </div>
     </div>
 </div>
 

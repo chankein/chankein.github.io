@@ -13,13 +13,13 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. RAID (冗余磁盘阵列)\nRAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。\nLinux 上的 RAID\n在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。\nRAID 各个等级：\n\n\nRAID 0 (条带化)\n\n多个硬盘组合成一个大磁盘，没有备份，提供较好的性能但没有容灾能力。\n示例：三台 100GB 硬盘组成一个 300GB 的 RAID 0。\n\n\n\nRAID 1 (镜像)\n\n多台硬盘写入相同数据，提供冗余备份。\n示例：三个 100GB 硬盘组成一个 100GB 的 RAID 1。\n\n\n\nRAID 4\n\n至少需要 3 台硬盘，其中一台用作备份分区。性能瓶颈在于备份分区。\n示例：三个 100GB 硬盘组成一个 200GB 的 RAID 4。\n\n\n\nRAID 5\n\n使用分布式备份技术，性能较 RAID 4 好，且不需要专门的备份硬盘。\n示例：三个 100GB 硬盘组成一个 200GB 的 RAID 5。\n\n\n\n其他 RAID 等级：\n\nRAID LINEAR：类似 RAID 0。\nRAID 0+1 (RAID01)：RAID 0 组成的 RAID 1。\nRAID 10 (RAID+0)：RAID 1 组成的 RAID 0。\nRAID 6：比 RAID 5 多一台备份区。\n\n\n\nmdadm 命令控制 RAID 阵列\nmdadm [option] [设备名]\n常用选项：\n\n\n\n选项\n描述\n\n\n\n\n-C, --create\n创建 RAID 阵列并生成相关设备\n\n\n-a\n自动生成必要的设备文件\n\n\n-c\n指定 Chunk 大小\n\n\n-l, --level\n指定 RAID 级别\n\n\n-n, --raid-devices\n指定 RAID 阵列中的设备数量\n\n\n-x, --spare-devices\n指定备用设备数量\n\n\n--manage\n管理 RAID 阵列\n\n\n-a, --add\n添加设备\n\n\n-r, --remove\n删除设备\n\n\n-f, --fail\n标记设备为失效\n\n\n--query\n查询 RAID 状态\n\n\n--detail\n查看 RAID 详细状态\n\n\n--stop\n停止指定的 RAID 阵列\n\n\n--stop --scan\n停止所有 RAID 阵列\n\n\n\n\n2. LVM (逻辑卷管理)\nLVM 是 Linux 下的一种磁盘管理工具，可以灵活地管理硬盘、分区和逻辑卷。\nLVM 结构：\n\nPV (Physical Volume)：一个硬盘或一个分区作为物理空间。\nPE (Physical Extent)：PV 组成 PE。\nVG (Volume Group)：PE 组成 VG。\nLV (Logical Volume)：VG 内的 PE 分配为 LV。\n\n创建 LVM：\n\n\n准备 LVM 用的分区：\n12fdisk /dev/sdafdisk /dev/sdb\n\n\n初始化 PV：\n1pvcreate /dev/sda1 /dev/sdb1\n\n\n创建 VG：\n1vgcreate testvg /dev/sda1 /dev/sdb1\n\n\n创建 LV：\n1lvcreate -L 1G -n lv01 testvg\n\n\n创建文件系统并挂载：\n12mke2fs -j /dev/testvg/lv01mount /dev/testvg/lv01 /mnt\n\n\n管理 LVM：\n\n\n\n命令\n说明\n\n\n\n\npvdisplay\n显示物理 PV 信息\n\n\npvscan\n显示 PV 状态\n\n\npvmove\n移动 PV 中的 PE\n\n\npvremove\n删除 PV\n\n\nvgextend\n扩展 VG\n\n\nvgreduce\n缩小 VG\n\n\nvgdisplay\n显示 VG 详情\n\n\nlvdisplay\n显示 LV 详情\n\n\nlvextend\n扩展 LV\n\n\nlvreduce\n缩小 LV\n\n\nlvremove\n删除 LV\n\n\nlvcreate -s\n创建快照\n\n\n\n\n3. 访问记忆装置\n设备文件说明：\n\n\n\n设备文件\n说明\n\n\n\n\n/dev/hda\nIDE 主硬盘\n\n\n/dev/hdb\nIDE 从硬盘\n\n\n/dev/sda\n第一个 SCSI/STAT/USB 硬盘\n\n\n/dev/sdb\n第二个 SCSI/STAT/USB 硬盘\n\n\n/dev/sr0\n第一个 SCSI/STAT/USB CD/DVD\n\n\n/dev/st0\n第一个 SCSI 磁带设备\n\n\n\n硬盘管理：\nLinux 将 IDE 以外的硬盘识别为 SCSI 设备。硬盘的数据传送模式有 PIO（Programmed I/O）和 DMA（Direct Memory Access）模式。通常使用 DMA 模式。\n检查 DMA 模式：\n1hdparm -i /dev/sda\n硬盘控制：\n1hdparm -d1 /dev/sda  # 启用 DMA 模式\n使用 SCSI/STAT/USB：\n1sdparm [option] [设备文件]\n\n4. iSCSI (Internet Small Computer System Interface)\niSCSI 是基于 TCP/IP 的 SCSI 协议，可以使远程存储设备像本地设备一样使用。\niSCSI 配置步骤：\n\n\n配置 targets.conf 文件：\n123456&lt;target iqn.2014.01.com.example.lpic:target0&gt;   backing-store /dev/sdb2   initiator-address 192.168.11.2   initiator-address 192.168.11.4   incominguser centuser password&lt;/target&gt;\n\n\n启动 iSCSI target 服务：\n1service tgtd start\n\n\n使用 tgtadm 命令查看 target 状态：\n1tgtadm --mode target --op show\n\n\n使用 iscsiadm 从 initiator 查询 target：\n1iscsiadm -m discovery -t sendtargets -p 192.168.11.3\n\n\n配置认证方式：\n修改 /etc/iscsi/iscid.conf：\n123node.session.auth.authmethod = CHAPnode.session.auth.username = centusernode.session.auth.password = password\n\n\n登录 iSCSI：\n1iscsiadm -m node --login\n登录后，使用 cat /proc/partitions 查看 iSCSI 目标是否添加成功。\n\n\n","dateCreated":"2020-11-15T14:01:30+08:00","dateModified":"2025-05-12T15:05:38+08:00","datePublished":"2020-11-15T14:01:30+08:00","description":"","headline":"15.高度的存储管理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/","keywords":"linux, LPIC"}</script>
-    <meta name="description" content="1. RAID (冗余磁盘阵列) RAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。 Linux 上的 RAID 在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。 RAID 各个等级：   RAID 0 (条带化)  多个硬盘组合成一个大磁">
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. RAID (冗余磁盘阵列)RAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。\nLinux 上的 RAID在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。\nRAID 各个等级：\nRAID 0 (条带化)\n\n多个硬盘组合成一个大磁盘，没有备份，提供较好的性能但没有容灾能力。\n示例：三台 100GB 硬盘组成一个 300GB 的 RAID 0。\n\n\nRAID 1 (镜像)\n\n多台硬盘写入相同数据，提供冗余备份。\n示例：三个 100GB 硬盘组成一个 100GB 的 RAID 1。\n\n\nRAID 4\n\n至少需要 3 台硬盘，其中一台用作备份分区。性能瓶颈在于备份分区。\n示例：三个 100GB 硬盘组成一个 200GB 的 RAID 4。\n\n\nRAID 5\n\n使用分布式备份技术，性能较 RAID 4 好，且不需要专门的备份硬盘。\n示例：三个 100GB 硬盘组成一个 200GB 的 RAID 5。\n\n\n其他 RAID 等级：\n\nRAID LINEAR：类似 RAID 0。\nRAID 0+1 (RAID01)：RAID 0 组成的 RAID 1。\nRAID 10 (RAID+0)：RAID 1 组成的 RAID 0。\nRAID 6：比 RAID 5 多一台备份区。\n\n\n\nmdadm 命令控制 RAID 阵列mdadm [option] [设备名]\n常用选项：\n\n\n选项\n描述\n\n\n\n-C, --create\n创建 RAID 阵列并生成相关设备\n\n\n-a\n自动生成必要的设备文件\n\n\n-c\n指定 Chunk 大小\n\n\n-l, --level\n指定 RAID 级别\n\n\n-n, --raid-devices\n指定 RAID 阵列中的设备数量\n\n\n-x, --spare-devices\n指定备用设备数量\n\n\n--manage\n管理 RAID 阵列\n\n\n-a, --add\n添加设备\n\n\n-r, --remove\n删除设备\n\n\n-f, --fail\n标记设备为失效\n\n\n--query\n查询 RAID 状态\n\n\n--detail\n查看 RAID 详细状态\n\n\n--stop\n停止指定的 RAID 阵列\n\n\n--stop --scan\n停止所有 RAID 阵列\n\n\n\n2. LVM (逻辑卷管理)LVM 是 Linux 下的一种磁盘管理工具，可以灵活地管理硬盘、分区和逻辑卷。\nLVM 结构：\nPV (Physical Volume)：一个硬盘或一个分区作为物理空间。\nPE (Physical Extent)：PV 组成 PE。\nVG (Volume Group)：PE 组成 VG。\nLV (Logical Volume)：VG 内的 PE 分配为 LV。\n\n创建 LVM：\n准备 LVM 用的分区：\n12fdisk /dev/sdafdisk /dev/sdb\n\n初始化 PV：\n1pvcreate /dev/sda1 /dev/sdb1\n\n创建 VG：\n1vgcreate testvg /dev/sda1 /dev/sdb1\n\n创建 LV：\n1lvcreate -L 1G -n lv01 testvg\n\n创建文件系统并挂载：\n12mke2fs -j /dev/testvg/lv01mount /dev/testvg/lv01 /mnt\n\n管理 LVM：\n\n\n命令\n说明\n\n\n\npvdisplay\n显示物理 PV 信息\n\n\npvscan\n显示 PV 状态\n\n\npvmove\n移动 PV 中的 PE\n\n\npvremove\n删除 PV\n\n\nvgextend\n扩展 VG\n\n\nvgreduce\n缩小 VG\n\n\nvgdisplay\n显示 VG 详情\n\n\nlvdisplay\n显示 LV 详情\n\n\nlvextend\n扩展 LV\n\n\nlvreduce\n缩小 LV\n\n\nlvremove\n删除 LV\n\n\nlvcreate -s\n创建快照\n\n\n\n3. 访问记忆装置设备文件说明：\n\n\n设备文件\n说明\n\n\n\n/dev/hda\nIDE 主硬盘\n\n\n/dev/hdb\nIDE 从硬盘\n\n\n/dev/sda\n第一个 SCSI&#x2F;STAT&#x2F;USB 硬盘\n\n\n/dev/sdb\n第二个 SCSI&#x2F;STAT&#x2F;USB 硬盘\n\n\n/dev/sr0\n第一个 SCSI&#x2F;STAT&#x2F;USB CD&#x2F;DVD\n\n\n/dev/st0\n第一个 SCSI 磁带设备\n\n\n硬盘管理：Linux 将 IDE 以外的硬盘识别为 SCSI 设备。硬盘的数据传送模式有 PIO（Programmed I&#x2F;O）和 DMA（Direct Memory Access）模式。通常使用 DMA 模式。\n检查 DMA 模式：1hdparm -i /dev/sda\n\n硬盘控制：1hdparm -d1 /dev/sda  # 启用 DMA 模式\n\n使用 SCSI&#x2F;STAT&#x2F;USB：1sdparm [option] [设备文件]\n\n\n4. iSCSI (Internet Small Computer System Interface)iSCSI 是基于 TCP&#x2F;IP 的 SCSI 协议，可以使远程存储设备像本地设备一样使用。\niSCSI 配置步骤：\n配置 targets.conf 文件：\n123456&lt;target iqn.2014.01.com.example.lpic:target0&gt;   backing-store /dev/sdb2   initiator-address 192.168.11.2   initiator-address 192.168.11.4   incominguser centuser password&lt;/target&gt;\n\n启动 iSCSI target 服务：\n1service tgtd start\n\n使用 tgtadm 命令查看 target 状态：\n1tgtadm --mode target --op show\n\n使用 iscsiadm 从 initiator 查询 target：\n1iscsiadm -m discovery -t sendtargets -p 192.168.11.3\n\n配置认证方式：修改 /etc/iscsi/iscid.conf：\n123node.session.auth.authmethod = CHAPnode.session.auth.username = centusernode.session.auth.password = password\n\n登录 iSCSI：\n1iscsiadm -m node --login\n\n登录后，使用 cat /proc/partitions 查看 iSCSI 目标是否添加成功。\n\n\n","dateCreated":"2020-11-15T14:01:30+08:00","dateModified":"2025-05-12T15:05:38+08:00","datePublished":"2020-11-15T14:01:30+08:00","description":"","headline":"15.高度的存储管理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/","keywords":"linux, LPIC"}</script>
+    <meta name="description" content="1. RAID (冗余磁盘阵列)RAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。 Linux 上的 RAID在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。 RAID 各个等级： RAID 0 (条带化)  多个硬盘组合成一个大磁盘，没有">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="15.高度的存储管理">
 <meta property="og:url" content="https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
-<meta property="og:description" content="1. RAID (冗余磁盘阵列) RAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。 Linux 上的 RAID 在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。 RAID 各个等级：   RAID 0 (条带化)  多个硬盘组合成一个大磁">
+<meta property="og:description" content="1. RAID (冗余磁盘阵列)RAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。 Linux 上的 RAID在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。 RAID 各个等级： RAID 0 (条带化)  多个硬盘组合成一个大磁盘，没有">
 <meta property="og:locale" content="zh_TW">
 <meta property="article:published_time" content="2020-11-15T06:01:30.000Z">
 <meta property="article:modified_time" content="2025-05-12T07:05:38.152Z">
@@ -313,42 +313,34 @@
     
     <div class="post-content markdown">
         <div class="main-content-wrap">
-            <h1>1. RAID (冗余磁盘阵列)</h1>
-<p>RAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。</p>
-<h2 id="Linux-上的-RAID">Linux 上的 RAID</h2>
-<p>在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。</p>
-<h2 id="RAID-各个等级：">RAID 各个等级：</h2>
-<ul>
-<li>
-<p><strong>RAID 0 (条带化)</strong></p>
+            <h1 id="1-RAID-冗余磁盘阵列"><a href="#1-RAID-冗余磁盘阵列" class="headerlink" title="1. RAID (冗余磁盘阵列)"></a>1. RAID (冗余磁盘阵列)</h1><p>RAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。</p>
+<h2 id="Linux-上的-RAID"><a href="#Linux-上的-RAID" class="headerlink" title="Linux 上的 RAID"></a>Linux 上的 RAID</h2><p>在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。</p>
+<h2 id="RAID-各个等级："><a href="#RAID-各个等级：" class="headerlink" title="RAID 各个等级："></a>RAID 各个等级：</h2><ul>
+<li><p><strong>RAID 0 (条带化)</strong></p>
 <ul>
 <li>多个硬盘组合成一个大磁盘，没有备份，提供较好的性能但没有容灾能力。</li>
 <li>示例：三台 100GB 硬盘组成一个 300GB 的 RAID 0。</li>
 </ul>
 </li>
-<li>
-<p><strong>RAID 1 (镜像)</strong></p>
+<li><p><strong>RAID 1 (镜像)</strong></p>
 <ul>
 <li>多台硬盘写入相同数据，提供冗余备份。</li>
 <li>示例：三个 100GB 硬盘组成一个 100GB 的 RAID 1。</li>
 </ul>
 </li>
-<li>
-<p><strong>RAID 4</strong></p>
+<li><p><strong>RAID 4</strong></p>
 <ul>
 <li>至少需要 3 台硬盘，其中一台用作备份分区。性能瓶颈在于备份分区。</li>
 <li>示例：三个 100GB 硬盘组成一个 200GB 的 RAID 4。</li>
 </ul>
 </li>
-<li>
-<p><strong>RAID 5</strong></p>
+<li><p><strong>RAID 5</strong></p>
 <ul>
 <li>使用分布式备份技术，性能较 RAID 4 好，且不需要专门的备份硬盘。</li>
 <li>示例：三个 100GB 硬盘组成一个 200GB 的 RAID 5。</li>
 </ul>
 </li>
-<li>
-<p><strong>其他 RAID 等级：</strong></p>
+<li><p><strong>其他 RAID 等级：</strong></p>
 <ul>
 <li><strong>RAID LINEAR</strong>：类似 RAID 0。</li>
 <li><strong>RAID 0+1 (RAID01)</strong>：RAID 0 组成的 RAID 1。</li>
@@ -357,18 +349,15 @@
 </ul>
 </li>
 </ul>
-<h2 id="mdadm-命令控制-RAID-阵列"><code>mdadm</code> 命令控制 RAID 阵列</h2>
-<p><code>mdadm [option] [设备名]</code></p>
-<h3 id="常用选项：">常用选项：</h3>
-<table>
+<h2 id="mdadm-命令控制-RAID-阵列"><a href="#mdadm-命令控制-RAID-阵列" class="headerlink" title="mdadm 命令控制 RAID 阵列"></a><code>mdadm</code> 命令控制 RAID 阵列</h2><p><code>mdadm [option] [设备名]</code></p>
+<h3 id="常用选项："><a href="#常用选项：" class="headerlink" title="常用选项："></a>常用选项：</h3><table>
 <thead>
 <tr>
 <th>选项</th>
 <th>描述</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>-C</code>, <code>--create</code></td>
 <td>创建 RAID 阵列并生成相关设备</td>
 </tr>
@@ -424,51 +413,39 @@
 <td><code>--stop --scan</code></td>
 <td>停止所有 RAID 阵列</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <hr>
-<h1>2. LVM (逻辑卷管理)</h1>
-<p>LVM 是 Linux 下的一种磁盘管理工具，可以灵活地管理硬盘、分区和逻辑卷。</p>
-<h3 id="LVM-结构：">LVM 结构：</h3>
-<ol>
+<h1 id="2-LVM-逻辑卷管理"><a href="#2-LVM-逻辑卷管理" class="headerlink" title="2. LVM (逻辑卷管理)"></a>2. LVM (逻辑卷管理)</h1><p>LVM 是 Linux 下的一种磁盘管理工具，可以灵活地管理硬盘、分区和逻辑卷。</p>
+<h3 id="LVM-结构："><a href="#LVM-结构：" class="headerlink" title="LVM 结构："></a>LVM 结构：</h3><ol>
 <li><strong>PV (Physical Volume)</strong>：一个硬盘或一个分区作为物理空间。</li>
 <li><strong>PE (Physical Extent)</strong>：PV 组成 PE。</li>
 <li><strong>VG (Volume Group)</strong>：PE 组成 VG。</li>
 <li><strong>LV (Logical Volume)</strong>：VG 内的 PE 分配为 LV。</li>
 </ol>
-<h3 id="创建-LVM：">创建 LVM：</h3>
-<ol>
-<li>
-<p>准备 LVM 用的分区：</p>
+<h3 id="创建-LVM："><a href="#创建-LVM：" class="headerlink" title="创建 LVM："></a>创建 LVM：</h3><ol>
+<li><p>准备 LVM 用的分区：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fdisk /dev/sda</span><br><span class="line">fdisk /dev/sdb</span><br></pre></td></tr></table></figure>
 </li>
-<li>
-<p>初始化 PV：</p>
+<li><p>初始化 PV：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pvcreate /dev/sda1 /dev/sdb1</span><br></pre></td></tr></table></figure>
 </li>
-<li>
-<p>创建 VG：</p>
+<li><p>创建 VG：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vgcreate testvg /dev/sda1 /dev/sdb1</span><br></pre></td></tr></table></figure>
 </li>
-<li>
-<p>创建 LV：</p>
+<li><p>创建 LV：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lvcreate -L 1G -n lv01 testvg</span><br></pre></td></tr></table></figure>
 </li>
-<li>
-<p>创建文件系统并挂载：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mke2fs -j /dev/testvg/lv01</span><br><span class="line">mount /dev/testvg/lv01 /mnt</span><br></pre></td></tr></table></figure>
-</li>
+<li><p>创建文件系统并挂载：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mke2fs -j /dev/testvg/lv01</span><br><span class="line">mount /dev/testvg/lv01 /mnt</span><br></pre></td></tr></table></figure></li>
 </ol>
-<h3 id="管理-LVM：">管理 LVM：</h3>
-<table>
+<h3 id="管理-LVM："><a href="#管理-LVM：" class="headerlink" title="管理 LVM："></a>管理 LVM：</h3><table>
 <thead>
 <tr>
 <th>命令</th>
 <th>说明</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>pvdisplay</code></td>
 <td>显示物理 PV 信息</td>
 </tr>
@@ -516,20 +493,16 @@
 <td><code>lvcreate -s</code></td>
 <td>创建快照</td>
 </tr>
-</tbody>
-</table>
+</tbody></table>
 <hr>
-<h1>3. 访问记忆装置</h1>
-<h3 id="设备文件说明：">设备文件说明：</h3>
-<table>
+<h1 id="3-访问记忆装置"><a href="#3-访问记忆装置" class="headerlink" title="3. 访问记忆装置"></a>3. 访问记忆装置</h1><h3 id="设备文件说明："><a href="#设备文件说明：" class="headerlink" title="设备文件说明："></a>设备文件说明：</h3><table>
 <thead>
 <tr>
 <th>设备文件</th>
 <th>说明</th>
 </tr>
 </thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td><code>/dev/hda</code></td>
 <td>IDE 主硬盘</td>
 </tr>
@@ -539,59 +512,49 @@
 </tr>
 <tr>
 <td><code>/dev/sda</code></td>
-<td>第一个 SCSI/STAT/USB 硬盘</td>
+<td>第一个 SCSI&#x2F;STAT&#x2F;USB 硬盘</td>
 </tr>
 <tr>
 <td><code>/dev/sdb</code></td>
-<td>第二个 SCSI/STAT/USB 硬盘</td>
+<td>第二个 SCSI&#x2F;STAT&#x2F;USB 硬盘</td>
 </tr>
 <tr>
 <td><code>/dev/sr0</code></td>
-<td>第一个 SCSI/STAT/USB CD/DVD</td>
+<td>第一个 SCSI&#x2F;STAT&#x2F;USB CD&#x2F;DVD</td>
 </tr>
 <tr>
 <td><code>/dev/st0</code></td>
 <td>第一个 SCSI 磁带设备</td>
 </tr>
-</tbody>
-</table>
-<h3 id="硬盘管理：">硬盘管理：</h3>
-<p>Linux 将 IDE 以外的硬盘识别为 SCSI 设备。硬盘的数据传送模式有 PIO（Programmed I/O）和 DMA（Direct Memory Access）模式。通常使用 DMA 模式。</p>
-<h3 id="检查-DMA-模式：">检查 DMA 模式：</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdparm -i /dev/sda</span><br></pre></td></tr></table></figure>
-<h3 id="硬盘控制：">硬盘控制：</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdparm -d1 /dev/sda  <span class="comment"># 启用 DMA 模式</span></span><br></pre></td></tr></table></figure>
-<h3 id="使用-SCSI-STAT-USB：">使用 SCSI/STAT/USB：</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sdparm [option] [设备文件]</span><br></pre></td></tr></table></figure>
+</tbody></table>
+<h3 id="硬盘管理："><a href="#硬盘管理：" class="headerlink" title="硬盘管理："></a>硬盘管理：</h3><p>Linux 将 IDE 以外的硬盘识别为 SCSI 设备。硬盘的数据传送模式有 PIO（Programmed I&#x2F;O）和 DMA（Direct Memory Access）模式。通常使用 DMA 模式。</p>
+<h3 id="检查-DMA-模式："><a href="#检查-DMA-模式：" class="headerlink" title="检查 DMA 模式："></a>检查 DMA 模式：</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdparm -i /dev/sda</span><br></pre></td></tr></table></figure>
+
+<h3 id="硬盘控制："><a href="#硬盘控制：" class="headerlink" title="硬盘控制："></a>硬盘控制：</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdparm -d1 /dev/sda  <span class="comment"># 启用 DMA 模式</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="使用-SCSI-STAT-USB："><a href="#使用-SCSI-STAT-USB：" class="headerlink" title="使用 SCSI&#x2F;STAT&#x2F;USB："></a>使用 SCSI&#x2F;STAT&#x2F;USB：</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sdparm [option] [设备文件]</span><br></pre></td></tr></table></figure>
+
 <hr>
-<h1>4. iSCSI (Internet Small Computer System Interface)</h1>
-<p>iSCSI 是基于 TCP/IP 的 SCSI 协议，可以使远程存储设备像本地设备一样使用。</p>
-<h2 id="iSCSI-配置步骤：">iSCSI 配置步骤：</h2>
-<ol>
-<li>
-<p>配置 <code>targets.conf</code> 文件：</p>
+<h1 id="4-iSCSI-Internet-Small-Computer-System-Interface"><a href="#4-iSCSI-Internet-Small-Computer-System-Interface" class="headerlink" title="4. iSCSI (Internet Small Computer System Interface)"></a>4. iSCSI (Internet Small Computer System Interface)</h1><p>iSCSI 是基于 TCP&#x2F;IP 的 SCSI 协议，可以使远程存储设备像本地设备一样使用。</p>
+<h2 id="iSCSI-配置步骤："><a href="#iSCSI-配置步骤：" class="headerlink" title="iSCSI 配置步骤："></a>iSCSI 配置步骤：</h2><ol>
+<li><p>配置 <code>targets.conf</code> 文件：</p>
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">target</span> <span class="attr">iqn.2014.01.com.example.lpic:target0</span>&gt;</span></span><br><span class="line">   backing-store /dev/sdb2</span><br><span class="line">   initiator-address 192.168.11.2</span><br><span class="line">   initiator-address 192.168.11.4</span><br><span class="line">   incominguser centuser password</span><br><span class="line"><span class="tag">&lt;/<span class="name">target</span>&gt;</span></span><br></pre></td></tr></table></figure>
 </li>
-<li>
-<p>启动 iSCSI target 服务：</p>
+<li><p>启动 iSCSI target 服务：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service tgtd start</span><br></pre></td></tr></table></figure>
 </li>
-<li>
-<p>使用 <code>tgtadm</code> 命令查看 target 状态：</p>
+<li><p>使用 <code>tgtadm</code> 命令查看 target 状态：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tgtadm --mode target --op show</span><br></pre></td></tr></table></figure>
 </li>
-<li>
-<p>使用 <code>iscsiadm</code> 从 initiator 查询 target：</p>
+<li><p>使用 <code>iscsiadm</code> 从 initiator 查询 target：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iscsiadm -m discovery -t sendtargets -p 192.168.11.3</span><br></pre></td></tr></table></figure>
 </li>
-<li>
-<p>配置认证方式：<br>
-修改 <code>/etc/iscsi/iscid.conf</code>：</p>
+<li><p>配置认证方式：<br>修改 <code>/etc/iscsi/iscid.conf</code>：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">node.session.auth.authmethod = CHAP</span><br><span class="line">node.session.auth.username = centuser</span><br><span class="line">node.session.auth.password = password</span><br></pre></td></tr></table></figure>
 </li>
-<li>
-<p>登录 iSCSI：</p>
+<li><p>登录 iSCSI：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iscsiadm -m node --login</span><br></pre></td></tr></table></figure>
+
 <p>登录后，使用 <code>cat /proc/partitions</code> 查看 iSCSI 目标是否添加成功。</p>
 </li>
 </ol>
@@ -649,7 +612,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -712,7 +675,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -777,7 +740,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -840,7 +803,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -948,6 +911,269 @@
                 Tokyo/Macao
             </div>
         
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                            aria-label=": linux基础"
+                        >
+                            <h3 class="media-heading">linux基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/04/28/iptables/"
+                            aria-label=": iptables"
+                        >
+                            <h3 class="media-heading">iptables</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/08/12/git%E6%95%99%E7%A8%8B/"
+                            aria-label=": git教程"
+                        >
+                            <h3 class="media-heading">git教程</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年8月12日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/01/18/Java%E5%8F%98%E9%87%8F%E7%B1%BB%E5%9E%8B/"
+                            aria-label=": Java变量类型"
+                        >
+                            <h3 class="media-heading">Java变量类型</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年1月18日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/09/12/%E6%95%B0%E5%AD%A6/markdown-latex%E7%9A%84%E6%95%B0%E5%AD%A6%E5%BC%8F%E5%86%99%E6%B3%95/"
+                            aria-label=": LaTeX的写法"
+                        >
+                            <h3 class="media-heading">LaTeX的写法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年9月12日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/09/13/%E6%95%B0%E5%AD%A6/0-%E4%B8%AD%E5%AD%A6%E6%95%B0%E5%AD%A6%E5%A4%8D%E4%B9%A0/"
+                            aria-label=": 0.中学数学复习"
+                        >
+                            <h3 class="media-heading">0.中学数学复习</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年9月13日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/09/28/%E6%95%B0%E5%AD%A6/1-%E5%88%9D%E7%AD%89%E5%87%BD%E6%95%B0%E7%9A%84%E5%AF%BC%E6%95%B0%E6%8E%A8%E5%AF%BC/"
+                            aria-label=": 1.初等函数的导数推导"
+                        >
+                            <h3 class="media-heading">1.初等函数的导数推导</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年9月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/09/28/%E6%95%B0%E5%AD%A6/2-%E5%87%BD%E6%95%B0%E7%9A%84%E6%B1%82%E5%AF%BC%E6%B3%95%E5%88%99/"
+                            aria-label=": 2.函数的求导法则"
+                        >
+                            <h3 class="media-heading">2.函数的求导法则</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年9月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/09/28/%E6%95%B0%E5%AD%A6/3-%E8%8E%B1%E5%B8%83%E5%B0%BC%E5%85%B9%E5%85%AC%E5%BC%8F/"
+                            aria-label=": 3.莱布尼兹公式"
+                        >
+                            <h3 class="media-heading">3.莱布尼兹公式</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年9月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2019/09/28/%E6%95%B0%E5%AD%A6/4-%E5%BE%AE%E5%88%86/"
+                            aria-label=": 4.微分"
+                        >
+                            <h3 class="media-heading">4.微分</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2019年9月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 42 篇文章
+            </p>
+        </div>
     </div>
 </div>
 
