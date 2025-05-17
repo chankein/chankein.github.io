@@ -17508,7 +17508,6 @@ return jQuery;
      * @returns {void}
      */
     search: function(search) {
-	  console.log('Current algolia instance:', this.algolia);
       var self = this;
       this.algolia.search(search).then(function(content) {
         self.showResults(content.hits);

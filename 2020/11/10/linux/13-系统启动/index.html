@@ -3,6 +3,7 @@
 <html lang="zh-tw">
     
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
 
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
     
@@ -31,13 +32,13 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. 系统启动流程1.1 启动阶段详解\n\n\n阶段\n组件\n功能说明\n\n\n\n1\nBIOS\n- 硬件自检(POST)- 读取CMOS设置- 检测启动设备顺序- 加载MBR中的BootLoader\n\n\n2\nMBR\n- 512字节(启动代码+分区表)- 包含第一阶段BootLoader- 标识活动分区\n\n\n3\nBootLoader\n- 阶段1: MBR中的初始代码- 阶段1.5: 文件系统识别- 阶段2: 加载内核(&#x2F;boot&#x2F;grub&#x2F;)\n\n\n4\n内核\n- 硬件检测与初始化- 加载驱动模块- 挂载根文件系统- 启动init进程(PID&#x3D;1)\n\n\n5\ninit进程\n- 根据&#x2F;etc&#x2F;inittab初始化系统- 启动运行级别对应服务- 生成所有后续进程\n\n\n1.2 inittab 文件格式1id:runlevels:action:process\n\n主要action类型\n\n\naction\n说明\n\n\n\nboot\n系统启动时执行，不等待完成\n\n\nbootwait\n系统启动时执行，等待完成\n\n\nctrlaltdel\n捕获Ctrl+Alt+Del组合键\n\n\ninitdefault\n设置默认运行级别\n\n\nonce\n进入运行级别时执行一次\n\n\nrespawn\n进程终止后自动重启\n\n\nsysinit\n系统初始化脚本\n\n\nwait\n进入运行级别时执行并等待\n\n\n1.3 运行级别管理标准运行级别\n\n\n级别\n说明\n\n\n\n0\n关机\n\n\n1&#x2F;S\n单用户模式\n\n\n2\n多用户无NFS\n\n\n3\n完整多用户模式\n\n\n4\n自定义\n\n\n5\n图形界面\n\n\n6\n重启\n\n\n服务管理脚本1/etc/init.d/service [command]\n\n\n\n\n命令\n作用\n\n\n\nstart\n启动服务\n\n\nstop\n停止服务\n\n\nrestart\n重启服务\n\n\nreload\n重载配置\n\n\nstatus\n查看状态\n\n\n服务自启动管理RedHat系(chkconfig):\n1chkconfig [选项] 服务名 [on|off]\n\n\n\n\n选项\n说明\n\n\n\n–list\n显示服务状态\n\n\n–level\n指定运行级别\n\n\n–add\n添加服务\n\n\n–del\n删除服务\n\n\nDebian系(update-rc.d):\n1update-rc.d [选项] 服务名 [commands]\n\n\n\n\n选项\n说明\n\n\n\n-n\n模拟执行\n\n\n-f\n强制操作\n\n\nremove\n删除链接\n\n\n1.4 Upstart 事件驱动主要命令:\n1initctl [command] job\n\n\n\n\n命令\n功能\n\n\n\nstart\n启动作业\n\n\nstop\n停止作业\n\n\nrestart\n重启作业\n\n\nstatus\n查看状态\n\n\nlist\n列出所有作业\n\n\n配置文件位置:\n1/etc/init/*.conf\n\n2. GRUB 引导加载器2.1 GRUB Legacy vs GRUB2\n\n\n特性\nGRUB Legacy\nGRUB2\n\n\n\n版本\n0.9x\n1.9x\n\n\n配置文件\nmenu.lst\ngrub.cfg\n\n\n生成方式\n直接编辑\nupdate-grub\n\n\n分区表示\n(hd0,0)\nhd0,msdos1\n\n\n2.2 GRUB Legacy 配置&#x2F;boot&#x2F;grub&#x2F;menu.lst 示例:\n123456timeout 5default 0title CentOSroot (hd0,0)kernel /vmlinuz ro root=/dev/sda1initrd /initrd.img\n\n常用命令:\n123grub&gt; root (hd0,0)     # 设置根分区grub&gt; setup (hd0)      # 安装到MBRgrub&gt; cat /grub/menu.lst # 查看配置\n\n2.3 GRUB2 配置&#x2F;etc&#x2F;default&#x2F;grub 关键参数:\n\n\n\n参数\n说明\n\n\n\nGRUB_DEFAULT\n默认启动项\n\n\nGRUB_TIMEOUT\n菜单超时\n\n\nGRUB_CMDLINE_LINUX\n内核参数\n\n\n生成配置:\n1update-grub\n\n2.4 内核启动参数\n\n\n参数\n作用\n\n\n\nroot&#x3D;&#x2F;dev&#x2F;sda1\n指定根分区\n\n\nro&#x2F;rw\n只读&#x2F;读写挂载\n\n\ninit&#x3D;&#x2F;bin&#x2F;bash\n指定初始化程序\n\n\nsingle\n单用户模式\n\n\nmem&#x3D;1024M\n限制内存大小\n\n\n查看当前参数:\n1cat /proc/cmdline\n\n3. 其他引导加载器3.1 LILO 配置&#x2F;etc&#x2F;lilo.conf 示例:\n123456boot=/dev/sdamap=/boot/mapdefault=linuximage=/boot/vmlinuzlabel=linuxroot=/dev/sda1\n\n应用配置:\n1lilo -v\n\n3.2 SYSLINUX 系列\n\n\n类型\n文件系统\n用途\n\n\n\nSYSLINUX\nFAT\nUSB启动\n\n\nISOLINUX\nISO9660\n光盘启动\n\n\nEXTLINUX\next2&#x2F;3&#x2F;4\n硬盘启动\n\n\nPXELINUX\n网络\n网络启动\n\n\nPXE启动环境搭建:\n\n安装必要服务:\n\n1yum install dhcp tftp-server syslinux\n\n配置DHCP:\n\n12filename &quot;pxelinux.0&quot;;next-server 192.168.1.100;\n\n准备TFTP目录:\n\n12cp /usr/share/syslinux/pxelinux.0 /var/lib/tftpboot/mkdir /var/lib/tftpboot/pxelinux.cfg\n\n4. 系统恢复方法4.1 救援模式操作\n使用安装介质启动\n进入救援模式\n挂载原系统:\n\n1chroot /mnt/sysimage\n\n修复引导:\n\n1grub-install /dev/sda\n\n4.2 常见修复场景\n\n\n问题\n解决方案\n\n\n\nMBR损坏\ndd if=/usr/share/syslinux/mbr.bin of=/dev/sda\n\n\nGRUB损坏\ngrub-install /dev/sda\n\n\n文件系统错误\nfsck -y /dev/sda1\n\n\n密码重置\ninit=/bin/bash 启动后修改密码\n\n\n5. 启动优化技巧\n并行启动:\n\n123vim /etc/init/rc-sysinit.conf# 修改为:env DEFAULT_RUNLEVEL=2\n\n\n禁用不需要的服务:\n\n12chkconfig --list | grep 3:onchkconfig servicename off\n\n\n使用readahead:\n\n1service readahead-early restart\n\n\nSSD优化:在&#x2F;etc&#x2F;fstab添加:\n\n1noatime,discard","dateCreated":"2020-11-10T14:01:10+08:00","dateModified":"2025-05-12T14:43:29+08:00","datePublished":"2020-11-10T14:01:10+08:00","description":"","headline":"13.系统启动","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/11/10/linux/13-%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/11/10/linux/13-%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8/","keywords":"linux, LPIC"}</script>
-    <meta name="description" content="1. 系统启动流程1.1 启动阶段详解   阶段 组件 功能说明    1 BIOS - 硬件自检(POST)- 读取CMOS设置- 检测启动设备顺序- 加载MBR中的BootLoader   2 MBR - 512字节(启动代码+分区表)- 包含第一阶段BootLoader- 标识活动分区   3 BootLoader - 阶段1: MBR中的初始代码- 阶段1.5: 文件系统识别- 阶段2:">
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. 系统启动流程\n1.1 启动阶段详解\n\n\n\n阶段\n组件\n功能说明\n\n\n\n\n1\nBIOS\n- 硬件自检(POST)- 读取CMOS设置- 检测启动设备顺序- 加载MBR中的BootLoader\n\n\n2\nMBR\n- 512字节(启动代码+分区表)- 包含第一阶段BootLoader- 标识活动分区\n\n\n3\nBootLoader\n- 阶段1: MBR中的初始代码- 阶段1.5: 文件系统识别- 阶段2: 加载内核(/boot/grub/)\n\n\n4\n内核\n- 硬件检测与初始化- 加载驱动模块- 挂载根文件系统- 启动init进程(PID=1)\n\n\n5\ninit进程\n- 根据/etc/inittab初始化系统- 启动运行级别对应服务- 生成所有后续进程\n\n\n\n1.2 inittab 文件格式\n1id:runlevels:action:process\n主要action类型\n\n\n\naction\n说明\n\n\n\n\nboot\n系统启动时执行，不等待完成\n\n\nbootwait\n系统启动时执行，等待完成\n\n\nctrlaltdel\n捕获Ctrl+Alt+Del组合键\n\n\ninitdefault\n设置默认运行级别\n\n\nonce\n进入运行级别时执行一次\n\n\nrespawn\n进程终止后自动重启\n\n\nsysinit\n系统初始化脚本\n\n\nwait\n进入运行级别时执行并等待\n\n\n\n1.3 运行级别管理\n标准运行级别\n\n\n\n级别\n说明\n\n\n\n\n0\n关机\n\n\n1/S\n单用户模式\n\n\n2\n多用户无NFS\n\n\n3\n完整多用户模式\n\n\n4\n自定义\n\n\n5\n图形界面\n\n\n6\n重启\n\n\n\n服务管理脚本\n1/etc/init.d/service [command]\n\n\n\n命令\n作用\n\n\n\n\nstart\n启动服务\n\n\nstop\n停止服务\n\n\nrestart\n重启服务\n\n\nreload\n重载配置\n\n\nstatus\n查看状态\n\n\n\n服务自启动管理\nRedHat系(chkconfig):\n1chkconfig [选项] 服务名 [on|off]\n\n\n\n选项\n说明\n\n\n\n\n–list\n显示服务状态\n\n\n–level\n指定运行级别\n\n\n–add\n添加服务\n\n\n–del\n删除服务\n\n\n\nDebian系(update-rc.d):\n1update-rc.d [选项] 服务名 [commands]\n\n\n\n选项\n说明\n\n\n\n\n-n\n模拟执行\n\n\n-f\n强制操作\n\n\nremove\n删除链接\n\n\n\n1.4 Upstart 事件驱动\n主要命令:\n1initctl [command] job\n\n\n\n命令\n功能\n\n\n\n\nstart\n启动作业\n\n\nstop\n停止作业\n\n\nrestart\n重启作业\n\n\nstatus\n查看状态\n\n\nlist\n列出所有作业\n\n\n\n配置文件位置:\n1/etc/init/*.conf\n2. GRUB 引导加载器\n2.1 GRUB Legacy vs GRUB2\n\n\n\n特性\nGRUB Legacy\nGRUB2\n\n\n\n\n版本\n0.9x\n1.9x\n\n\n配置文件\nmenu.lst\ngrub.cfg\n\n\n生成方式\n直接编辑\nupdate-grub\n\n\n分区表示\n(hd0,0)\nhd0,msdos1\n\n\n\n2.2 GRUB Legacy 配置\n/boot/grub/menu.lst 示例:\n123456timeout 5default 0title CentOSroot (hd0,0)kernel /vmlinuz ro root=/dev/sda1initrd /initrd.img\n常用命令:\n123grub&gt; root (hd0,0)     # 设置根分区grub&gt; setup (hd0)      # 安装到MBRgrub&gt; cat /grub/menu.lst # 查看配置\n2.3 GRUB2 配置\n/etc/default/grub 关键参数:\n\n\n\n参数\n说明\n\n\n\n\nGRUB_DEFAULT\n默认启动项\n\n\nGRUB_TIMEOUT\n菜单超时\n\n\nGRUB_CMDLINE_LINUX\n内核参数\n\n\n\n生成配置:\n1update-grub\n2.4 内核启动参数\n\n\n\n参数\n作用\n\n\n\n\nroot=/dev/sda1\n指定根分区\n\n\nro/rw\n只读/读写挂载\n\n\ninit=/bin/bash\n指定初始化程序\n\n\nsingle\n单用户模式\n\n\nmem=1024M\n限制内存大小\n\n\n\n查看当前参数:\n1cat /proc/cmdline\n3. 其他引导加载器\n3.1 LILO 配置\n/etc/lilo.conf 示例:\n123456boot=/dev/sdamap=/boot/mapdefault=linuximage=/boot/vmlinuzlabel=linuxroot=/dev/sda1\n应用配置:\n1lilo -v\n3.2 SYSLINUX 系列\n\n\n\n类型\n文件系统\n用途\n\n\n\n\nSYSLINUX\nFAT\nUSB启动\n\n\nISOLINUX\nISO9660\n光盘启动\n\n\nEXTLINUX\next2/3/4\n硬盘启动\n\n\nPXELINUX\n网络\n网络启动\n\n\n\nPXE启动环境搭建:\n\n安装必要服务:\n\n1yum install dhcp tftp-server syslinux\n\n配置DHCP:\n\n12filename &quot;pxelinux.0&quot;;next-server 192.168.1.100;\n\n准备TFTP目录:\n\n12cp /usr/share/syslinux/pxelinux.0 /var/lib/tftpboot/mkdir /var/lib/tftpboot/pxelinux.cfg\n4. 系统恢复方法\n4.1 救援模式操作\n\n使用安装介质启动\n进入救援模式\n挂载原系统:\n\n1chroot /mnt/sysimage\n\n修复引导:\n\n1grub-install /dev/sda\n4.2 常见修复场景\n\n\n\n问题\n解决方案\n\n\n\n\nMBR损坏\ndd if=/usr/share/syslinux/mbr.bin of=/dev/sda\n\n\nGRUB损坏\ngrub-install /dev/sda\n\n\n文件系统错误\nfsck -y /dev/sda1\n\n\n密码重置\ninit=/bin/bash 启动后修改密码\n\n\n\n5. 启动优化技巧\n\n并行启动:\n\n123vim /etc/init/rc-sysinit.conf# 修改为:env DEFAULT_RUNLEVEL=2\n\n禁用不需要的服务:\n\n12chkconfig --list | grep 3:onchkconfig servicename off\n\n使用readahead:\n\n1service readahead-early restart\n\nSSD优化:\n在/etc/fstab添加:\n\n1noatime,discard","dateCreated":"2020-11-10T14:01:10+08:00","dateModified":"2025-05-12T14:43:29+08:00","datePublished":"2020-11-10T14:01:10+08:00","description":"","headline":"13.系统启动","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/11/10/linux/13-%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/11/10/linux/13-%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8/","keywords":"linux, LPIC"}</script>
+    <meta name="description" content="1. 系统启动流程 1.1 启动阶段详解    阶段 组件 功能说明     1 BIOS - 硬件自检(POST)- 读取CMOS设置- 检测启动设备顺序- 加载MBR中的BootLoader   2 MBR - 512字节(启动代码+分区表)- 包含第一阶段BootLoader- 标识活动分区   3 BootLoader - 阶段1: MBR中的初始代码- 阶段1.5: 文件系统识别- 阶段">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="13.系统启动">
 <meta property="og:url" content="https://chankein.github.io/2020/11/10/linux/13-%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
-<meta property="og:description" content="1. 系统启动流程1.1 启动阶段详解   阶段 组件 功能说明    1 BIOS - 硬件自检(POST)- 读取CMOS设置- 检测启动设备顺序- 加载MBR中的BootLoader   2 MBR - 512字节(启动代码+分区表)- 包含第一阶段BootLoader- 标识活动分区   3 BootLoader - 阶段1: MBR中的初始代码- 阶段1.5: 文件系统识别- 阶段2:">
+<meta property="og:description" content="1. 系统启动流程 1.1 启动阶段详解    阶段 组件 功能说明     1 BIOS - 硬件自检(POST)- 读取CMOS设置- 检测启动设备顺序- 加载MBR中的BootLoader   2 MBR - 512字节(启动代码+分区表)- 包含第一阶段BootLoader- 标识活动分区   3 BootLoader - 阶段1: MBR中的初始代码- 阶段1.5: 文件系统识别- 阶段">
 <meta property="og:locale" content="zh_TW">
 <meta property="article:published_time" content="2020-11-10T06:01:10.000Z">
 <meta property="article:modified_time" content="2025-05-12T06:43:29.922Z">
@@ -67,9 +68,7 @@
     
         
     
-<!-- hexo injector head_end start -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
-<!-- hexo injector head_end end --></head>
+</head>
 
     <body>
         <div id="blog">
@@ -331,7 +330,9 @@
     
     <div class="post-content markdown">
         <div class="main-content-wrap">
-            <h2 id="1-系统启动流程"><a href="#1-系统启动流程" class="headerlink" title="1. 系统启动流程"></a>1. 系统启动流程</h2><h3 id="1-1-启动阶段详解"><a href="#1-1-启动阶段详解" class="headerlink" title="1.1 启动阶段详解"></a>1.1 启动阶段详解</h3><table>
+            <h2 id="1-系统启动流程">1. 系统启动流程</h2>
+<h3 id="1-1-启动阶段详解">1.1 启动阶段详解</h3>
+<table>
 <thead>
 <tr>
 <th>阶段</th>
@@ -339,7 +340,8 @@
 <th>功能说明</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>1</td>
 <td>BIOS</td>
 <td>- 硬件自检(POST)<br>- 读取CMOS设置<br>- 检测启动设备顺序<br>- 加载MBR中的BootLoader</td>
@@ -352,29 +354,32 @@
 <tr>
 <td>3</td>
 <td>BootLoader</td>
-<td>- 阶段1: MBR中的初始代码<br>- 阶段1.5: 文件系统识别<br>- 阶段2: 加载内核(&#x2F;boot&#x2F;grub&#x2F;)</td>
+<td>- 阶段1: MBR中的初始代码<br>- 阶段1.5: 文件系统识别<br>- 阶段2: 加载内核(/boot/grub/)</td>
 </tr>
 <tr>
 <td>4</td>
 <td>内核</td>
-<td>- 硬件检测与初始化<br>- 加载驱动模块<br>- 挂载根文件系统<br>- 启动init进程(PID&#x3D;1)</td>
+<td>- 硬件检测与初始化<br>- 加载驱动模块<br>- 挂载根文件系统<br>- 启动init进程(PID=1)</td>
 </tr>
 <tr>
 <td>5</td>
 <td>init进程</td>
-<td>- 根据&#x2F;etc&#x2F;inittab初始化系统<br>- 启动运行级别对应服务<br>- 生成所有后续进程</td>
+<td>- 根据/etc/inittab初始化系统<br>- 启动运行级别对应服务<br>- 生成所有后续进程</td>
 </tr>
-</tbody></table>
-<h3 id="1-2-inittab-文件格式"><a href="#1-2-inittab-文件格式" class="headerlink" title="1.2 inittab 文件格式"></a>1.2 inittab 文件格式</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">id:runlevels:action:process</span><br></pre></td></tr></table></figure>
-
-<h4 id="主要action类型"><a href="#主要action类型" class="headerlink" title="主要action类型"></a>主要action类型</h4><table>
+</tbody>
+</table>
+<h3 id="1-2-inittab-文件格式">1.2 inittab 文件格式</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">id:runlevels:action:process</span><br></pre></td></tr></table></figure>
+<h4 id="主要action类型">主要action类型</h4>
+<table>
 <thead>
 <tr>
 <th>action</th>
 <th>说明</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>boot</td>
 <td>系统启动时执行，不等待完成</td>
 </tr>
@@ -406,20 +411,24 @@
 <td>wait</td>
 <td>进入运行级别时执行并等待</td>
 </tr>
-</tbody></table>
-<h3 id="1-3-运行级别管理"><a href="#1-3-运行级别管理" class="headerlink" title="1.3 运行级别管理"></a>1.3 运行级别管理</h3><h4 id="标准运行级别"><a href="#标准运行级别" class="headerlink" title="标准运行级别"></a>标准运行级别</h4><table>
+</tbody>
+</table>
+<h3 id="1-3-运行级别管理">1.3 运行级别管理</h3>
+<h4 id="标准运行级别">标准运行级别</h4>
+<table>
 <thead>
 <tr>
 <th>级别</th>
 <th>说明</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>0</td>
 <td>关机</td>
 </tr>
 <tr>
-<td>1&#x2F;S</td>
+<td>1/S</td>
 <td>单用户模式</td>
 </tr>
 <tr>
@@ -442,9 +451,10 @@
 <td>6</td>
 <td>重启</td>
 </tr>
-</tbody></table>
-<h4 id="服务管理脚本"><a href="#服务管理脚本" class="headerlink" title="服务管理脚本"></a>服务管理脚本</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/etc/init.d/service [<span class="built_in">command</span>]</span><br></pre></td></tr></table></figure>
-
+</tbody>
+</table>
+<h4 id="服务管理脚本">服务管理脚本</h4>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/etc/init.d/service [<span class="built_in">command</span>]</span><br></pre></td></tr></table></figure>
 <table>
 <thead>
 <tr>
@@ -452,7 +462,8 @@
 <th>作用</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>start</td>
 <td>启动服务</td>
 </tr>
@@ -472,10 +483,11 @@
 <td>status</td>
 <td>查看状态</td>
 </tr>
-</tbody></table>
-<h4 id="服务自启动管理"><a href="#服务自启动管理" class="headerlink" title="服务自启动管理"></a>服务自启动管理</h4><p><strong>RedHat系(chkconfig):</strong></p>
+</tbody>
+</table>
+<h4 id="服务自启动管理">服务自启动管理</h4>
+<p><strong>RedHat系(chkconfig):</strong></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chkconfig [选项] 服务名 [on|off]</span><br></pre></td></tr></table></figure>
-
 <table>
 <thead>
 <tr>
@@ -483,7 +495,8 @@
 <th>说明</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>–list</td>
 <td>显示服务状态</td>
 </tr>
@@ -499,10 +512,10 @@
 <td>–del</td>
 <td>删除服务</td>
 </tr>
-</tbody></table>
+</tbody>
+</table>
 <p><strong>Debian系(update-rc.d):</strong></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">update-rc.d [选项] 服务名 [commands]</span><br></pre></td></tr></table></figure>
-
 <table>
 <thead>
 <tr>
@@ -510,7 +523,8 @@
 <th>说明</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>-n</td>
 <td>模拟执行</td>
 </tr>
@@ -522,10 +536,11 @@
 <td>remove</td>
 <td>删除链接</td>
 </tr>
-</tbody></table>
-<h3 id="1-4-Upstart-事件驱动"><a href="#1-4-Upstart-事件驱动" class="headerlink" title="1.4 Upstart 事件驱动"></a>1.4 Upstart 事件驱动</h3><p><strong>主要命令:</strong></p>
+</tbody>
+</table>
+<h3 id="1-4-Upstart-事件驱动">1.4 Upstart 事件驱动</h3>
+<p><strong>主要命令:</strong></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">initctl [<span class="built_in">command</span>] job</span><br></pre></td></tr></table></figure>
-
 <table>
 <thead>
 <tr>
@@ -533,7 +548,8 @@
 <th>功能</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>start</td>
 <td>启动作业</td>
 </tr>
@@ -553,11 +569,13 @@
 <td>list</td>
 <td>列出所有作业</td>
 </tr>
-</tbody></table>
+</tbody>
+</table>
 <p><strong>配置文件位置:</strong></p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/etc/init/*.conf</span><br></pre></td></tr></table></figure>
-
-<h2 id="2-GRUB-引导加载器"><a href="#2-GRUB-引导加载器" class="headerlink" title="2. GRUB 引导加载器"></a>2. GRUB 引导加载器</h2><h3 id="2-1-GRUB-Legacy-vs-GRUB2"><a href="#2-1-GRUB-Legacy-vs-GRUB2" class="headerlink" title="2.1 GRUB Legacy vs GRUB2"></a>2.1 GRUB Legacy vs GRUB2</h3><table>
+<h2 id="2-GRUB-引导加载器">2. GRUB 引导加载器</h2>
+<h3 id="2-1-GRUB-Legacy-vs-GRUB2">2.1 GRUB Legacy vs GRUB2</h3>
+<table>
 <thead>
 <tr>
 <th>特性</th>
@@ -565,7 +583,8 @@
 <th>GRUB2</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>版本</td>
 <td>0.9x</td>
 <td>1.9x</td>
@@ -585,14 +604,15 @@
 <td>(hd0,0)</td>
 <td>hd0,msdos1</td>
 </tr>
-</tbody></table>
-<h3 id="2-2-GRUB-Legacy-配置"><a href="#2-2-GRUB-Legacy-配置" class="headerlink" title="2.2 GRUB Legacy 配置"></a>2.2 GRUB Legacy 配置</h3><p><strong>&#x2F;boot&#x2F;grub&#x2F;menu.lst 示例:</strong></p>
+</tbody>
+</table>
+<h3 id="2-2-GRUB-Legacy-配置">2.2 GRUB Legacy 配置</h3>
+<p><strong>/boot/grub/menu.lst 示例:</strong></p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">timeout 5</span><br><span class="line">default 0</span><br><span class="line">title CentOS</span><br><span class="line">root (hd0,0)</span><br><span class="line">kernel /vmlinuz ro root=/dev/sda1</span><br><span class="line">initrd /initrd.img</span><br></pre></td></tr></table></figure>
-
 <p><strong>常用命令:</strong></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">grub&gt; root (hd0,0)     <span class="comment"># 设置根分区</span></span><br><span class="line">grub&gt; setup (hd0)      <span class="comment"># 安装到MBR</span></span><br><span class="line">grub&gt; <span class="built_in">cat</span> /grub/menu.lst <span class="comment"># 查看配置</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="2-3-GRUB2-配置"><a href="#2-3-GRUB2-配置" class="headerlink" title="2.3 GRUB2 配置"></a>2.3 GRUB2 配置</h3><p><strong>&#x2F;etc&#x2F;default&#x2F;grub 关键参数:</strong></p>
+<h3 id="2-3-GRUB2-配置">2.3 GRUB2 配置</h3>
+<p><strong>/etc/default/grub 关键参数:</strong></p>
 <table>
 <thead>
 <tr>
@@ -600,7 +620,8 @@
 <th>说明</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>GRUB_DEFAULT</td>
 <td>默认启动项</td>
 </tr>
@@ -612,27 +633,29 @@
 <td>GRUB_CMDLINE_LINUX</td>
 <td>内核参数</td>
 </tr>
-</tbody></table>
+</tbody>
+</table>
 <p><strong>生成配置:</strong></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">update-grub</span><br></pre></td></tr></table></figure>
-
-<h3 id="2-4-内核启动参数"><a href="#2-4-内核启动参数" class="headerlink" title="2.4 内核启动参数"></a>2.4 内核启动参数</h3><table>
+<h3 id="2-4-内核启动参数">2.4 内核启动参数</h3>
+<table>
 <thead>
 <tr>
 <th>参数</th>
 <th>作用</th>
 </tr>
 </thead>
-<tbody><tr>
-<td>root&#x3D;&#x2F;dev&#x2F;sda1</td>
+<tbody>
+<tr>
+<td>root=/dev/sda1</td>
 <td>指定根分区</td>
 </tr>
 <tr>
-<td>ro&#x2F;rw</td>
-<td>只读&#x2F;读写挂载</td>
+<td>ro/rw</td>
+<td>只读/读写挂载</td>
 </tr>
 <tr>
-<td>init&#x3D;&#x2F;bin&#x2F;bash</td>
+<td>init=/bin/bash</td>
 <td>指定初始化程序</td>
 </tr>
 <tr>
@@ -640,20 +663,21 @@
 <td>单用户模式</td>
 </tr>
 <tr>
-<td>mem&#x3D;1024M</td>
+<td>mem=1024M</td>
 <td>限制内存大小</td>
 </tr>
-</tbody></table>
+</tbody>
+</table>
 <p><strong>查看当前参数:</strong></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /proc/cmdline</span><br></pre></td></tr></table></figure>
-
-<h2 id="3-其他引导加载器"><a href="#3-其他引导加载器" class="headerlink" title="3. 其他引导加载器"></a>3. 其他引导加载器</h2><h3 id="3-1-LILO-配置"><a href="#3-1-LILO-配置" class="headerlink" title="3.1 LILO 配置"></a>3.1 LILO 配置</h3><p><strong>&#x2F;etc&#x2F;lilo.conf 示例:</strong></p>
+<h2 id="3-其他引导加载器">3. 其他引导加载器</h2>
+<h3 id="3-1-LILO-配置">3.1 LILO 配置</h3>
+<p><strong>/etc/lilo.conf 示例:</strong></p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">boot=/dev/sda</span><br><span class="line">map=/boot/map</span><br><span class="line">default=linux</span><br><span class="line">image=/boot/vmlinuz</span><br><span class="line">label=linux</span><br><span class="line">root=/dev/sda1</span><br></pre></td></tr></table></figure>
-
 <p><strong>应用配置:</strong></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lilo -v</span><br></pre></td></tr></table></figure>
-
-<h3 id="3-2-SYSLINUX-系列"><a href="#3-2-SYSLINUX-系列" class="headerlink" title="3.2 SYSLINUX 系列"></a>3.2 SYSLINUX 系列</h3><table>
+<h3 id="3-2-SYSLINUX-系列">3.2 SYSLINUX 系列</h3>
+<table>
 <thead>
 <tr>
 <th>类型</th>
@@ -661,7 +685,8 @@
 <th>用途</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>SYSLINUX</td>
 <td>FAT</td>
 <td>USB启动</td>
@@ -673,7 +698,7 @@
 </tr>
 <tr>
 <td>EXTLINUX</td>
-<td>ext2&#x2F;3&#x2F;4</td>
+<td>ext2/3/4</td>
 <td>硬盘启动</td>
 </tr>
 <tr>
@@ -681,7 +706,8 @@
 <td>网络</td>
 <td>网络启动</td>
 </tr>
-</tbody></table>
+</tbody>
+</table>
 <p><strong>PXE启动环境搭建:</strong></p>
 <ol>
 <li>安装必要服务:</li>
@@ -695,8 +721,9 @@
 <li>准备TFTP目录:</li>
 </ol>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cp</span> /usr/share/syslinux/pxelinux.0 /var/lib/tftpboot/</span><br><span class="line"><span class="built_in">mkdir</span> /var/lib/tftpboot/pxelinux.cfg</span><br></pre></td></tr></table></figure>
-
-<h2 id="4-系统恢复方法"><a href="#4-系统恢复方法" class="headerlink" title="4. 系统恢复方法"></a>4. 系统恢复方法</h2><h3 id="4-1-救援模式操作"><a href="#4-1-救援模式操作" class="headerlink" title="4.1 救援模式操作"></a>4.1 救援模式操作</h3><ol>
+<h2 id="4-系统恢复方法">4. 系统恢复方法</h2>
+<h3 id="4-1-救援模式操作">4.1 救援模式操作</h3>
+<ol>
 <li>使用安装介质启动</li>
 <li>进入救援模式</li>
 <li>挂载原系统:</li>
@@ -706,15 +733,16 @@
 <li>修复引导:</li>
 </ol>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grub-install /dev/sda</span><br></pre></td></tr></table></figure>
-
-<h3 id="4-2-常见修复场景"><a href="#4-2-常见修复场景" class="headerlink" title="4.2 常见修复场景"></a>4.2 常见修复场景</h3><table>
+<h3 id="4-2-常见修复场景">4.2 常见修复场景</h3>
+<table>
 <thead>
 <tr>
 <th>问题</th>
 <th>解决方案</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>MBR损坏</td>
 <td><code>dd if=/usr/share/syslinux/mbr.bin of=/dev/sda</code></td>
 </tr>
@@ -730,24 +758,24 @@
 <td>密码重置</td>
 <td><code>init=/bin/bash</code> 启动后修改密码</td>
 </tr>
-</tbody></table>
-<h2 id="5-启动优化技巧"><a href="#5-启动优化技巧" class="headerlink" title="5. 启动优化技巧"></a>5. 启动优化技巧</h2><ol>
+</tbody>
+</table>
+<h2 id="5-启动优化技巧">5. 启动优化技巧</h2>
+<ol>
 <li><strong>并行启动</strong>:</li>
 </ol>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/init/rc-sysinit.conf</span><br><span class="line"><span class="comment"># 修改为:</span></span><br><span class="line"><span class="built_in">env</span> DEFAULT_RUNLEVEL=2</span><br></pre></td></tr></table></figure>
-
 <ol start="2">
 <li><strong>禁用不需要的服务</strong>:</li>
 </ol>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">chkconfig --list | grep 3:on</span><br><span class="line">chkconfig servicename off</span><br></pre></td></tr></table></figure>
-
 <ol start="3">
 <li><strong>使用readahead</strong>:</li>
 </ol>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service readahead-early restart</span><br></pre></td></tr></table></figure>
-
 <ol start="4">
-<li><strong>SSD优化</strong>:<br>在&#x2F;etc&#x2F;fstab添加:</li>
+<li><strong>SSD优化</strong>:<br>
+在/etc/fstab添加:</li>
 </ol>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">noatime,discard</span><br></pre></td></tr></table></figure>
             
@@ -803,7 +831,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -866,7 +894,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -931,7 +959,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -994,7 +1022,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
