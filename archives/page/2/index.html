@@ -302,6 +302,401 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../../2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                            aria-label=": 14.设备和文件系统"
+                        >
+                            14.设备和文件系统
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2020-11-14T14:01:10+08:00">
+	
+		    2020 年 11 月 14 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="1-文件系统基础">1. 文件系统基础</h2>
+<h3 id="etc-fstab-文件格式解析">/etc/fstab 文件格式解析</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">设备/标签/UUID  挂载点  文件系统类型  挂载选项  dump标志  fsck顺序</span><br></pre></td></tr></table></figure>
+<p><strong>字段说明：</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>说明</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>设备标识</td>
+<td>/dev/sda1, UUID=xxxx, LABEL=root</td>
+</tr>
+<tr>
+<td>2</td>
+<td>挂载路径</td>
+<td>/, /home, /boot</td>
+</tr>
+<tr>
+<td>3</td>
+<td>文件系统类型</td>
+<td>ext4, xfs, nfs</td>
+</tr>
+<tr>
+<td>4</td>
+<td>挂载选项</td>
+<td>defaults, noatime</td>
+</tr>
+<tr>
+<td>5</td>
+<td>dump备份标志</td>
+<td>0(不备份), 1(备份)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>fsck检查顺序</td>
+<td>0(不检查), 1(优先), 2(次级)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="文件系统类型对比">文件系统类型对比</h3>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>特点</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ext4</td>
+<td>日志式, 最大16TB文件</td>
+<td>通用Linux系统</td>
+</tr>
+<tr>
+<td>XFS</td>
+<td>高性能, 最大8EB文件</td>
+<td>大文件处理</td>
+</tr>
+<tr>
+<td>Btrfs</td>
+<td>写时复制, 快照功能</td>
+<td>高级存储需求</td>
+</tr>
+<tr>
+<td>FAT32</td>
+<td>兼容性好</td>
+<td>U盘/移动设备</td>
+</tr>
+<tr>
+<td>NTFS</td>
+<td>Windows兼容</td>
+<td>双系统共享分区</td>
+</tr>
+</tbody>
+</table>
+<h3 id="常用挂载选项">常用挂载选项</h3>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>作用</th>
+<th>性能影响</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>async</td>
+<td>异步写入</td>
+<td>提升性能</td>
+</tr>
+<tr>
+<td>noatime</td>
+<td>不更新访问时间</td>
+<td>显著提升</td>
+</tr>
+<tr>
+<td>nodiratime</td>
+<td>不更新目录访问时间</td>
+<td>小幅提升</td>
+</tr>
+<tr>
+<td>discard</td>
+<td>TRIM支持(SSD)</td>
+<td>延长SSD寿命</td>
+</tr>
+<tr>
+<td>data=writeback</td>
+<td>ext4日志模式</td>
+<td>性能最佳</td>
+</tr>
+</tbody>
+</table>
+<p><strong>查看支持的文件系统：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /proc/filesystems</span><br></pre></td></tr></table></figure>
+<p><strong>查看已挂载文件系统：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /etc/mtab   <span class="comment"># 或</span></span><br><span class="line"><span class="built_in">cat</span> /proc/mounts</span><br></pre></td></tr></table></figure>
+<h2 id="2-挂载管理命令">2. 挂载管理命令</h2>
+<h3 id="mount-命令详解">mount 命令详解</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount [选项] [设备] [挂载点]</span><br></pre></td></tr></table></figure>
+<p><strong>常用选项：</strong></p>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-t</td>
+<td>指定文件系统类型</td>
+</tr>
+<tr>
+<td>-o</td>
+<td>指定挂载选项(多选项用逗号分隔)</td>
+</tr>
+<tr>
+<td>-a</td>
+<td>挂载/etc/fstab中所有文件系统</td>
+</tr>
+<tr>
+<td>–bind</td>
+<td>目录绑定挂载</td>
+</tr>
+<tr>
+<td>-l</td>
+<td>显示标签</td>
+</tr>
+</tbody>
+</table>
+<p><strong>示例：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t ext4 -o noatime /dev/sdb1 /mnt/data</span><br></pre></td></tr></table></figure>
+<h3 id="umount-命令">umount 命令</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">umount [选项] [设备|挂载点]</span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-a</td>
+<td>卸载所有文件系统</td>
+</tr>
+<tr>
+<td>-t</td>
+<td>按类型卸载</td>
+</tr>
+<tr>
+<td>-l</td>
+<td>延迟卸载(强制)</td>
+</tr>
+<tr>
+<td>-f</td>
+<td>强制卸载</td>
+</tr>
+</tbody>
+</table>
+<p><strong>强制卸载流程：</strong></p>
+<ol>
+<li><code>fuser -vm /mountpoint</code> 查看占用进程</li>
+<li><code>kill -9 PID</code> 结束进程</li>
+<li><code>umount -f /mountpoint</code></li>
+</ol>
+<h2 id="3-SWAP-管理">3. SWAP 管理</h2>
+<h3 id="创建SWAP文件">创建SWAP文件</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建1GB交换文件</span></span><br><span class="line"><span class="built_in">dd</span> <span class="keyword">if</span>=/dev/zero of=/swapfile bs=1M count=1024</span><br><span class="line"><span class="built_in">chmod</span> 600 /swapfile</span><br><span class="line">mkswap /swapfile</span><br><span class="line">swapon /swapfile</span><br></pre></td></tr></table></figure>
+<h3 id="SWAP管理命令">SWAP管理命令</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>swapon -a</code></td>
+<td>启用所有swap</td>
+</tr>
+<tr>
+<td><code>swapon -s</code></td>
+<td>查看swap使用</td>
+</tr>
+<tr>
+<td><code>swapoff -a</code></td>
+<td>禁用所有swap</td>
+</tr>
+</tbody>
+</table>
+<p><strong>优化建议：</strong></p>
+<ul>
+<li>物理内存&lt;8GB时，SWAP=1.5倍内存</li>
+<li>物理内存≥8GB时，SWAP=8GB</li>
+</ul>
+<h2 id="4-文件系统创建与维护">4. 文件系统创建与维护</h2>
+<h3 id="创建工具对比">创建工具对比</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>对应文件系统</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>mkfs.ext4</td>
+<td>ext4</td>
+<td>默认日志模式</td>
+</tr>
+<tr>
+<td>mkfs.xfs</td>
+<td>XFS</td>
+<td>高性能大文件</td>
+</tr>
+<tr>
+<td>mkfs.btrfs</td>
+<td>Btrfs</td>
+<td>高级功能支持</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ext4创建示例：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkfs.ext4 -b 4096 -m 1 -L DATA /dev/sdb1</span><br></pre></td></tr></table></figure>
+<p><strong>XFS创建示例：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkfs.xfs -f -L BIGDATA /dev/sdc1</span><br></pre></td></tr></table></figure>
+<h3 id="文件系统检查">文件系统检查</h3>
+<p><strong>ext系列检查：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fsck -y /dev/sda1   <span class="comment"># 自动修复</span></span><br><span class="line">e2fsck -f /dev/sda1 <span class="comment"># 强制检查</span></span><br></pre></td></tr></table></figure>
+<p><strong>XFS检查：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xfs_repair /dev/sdb1</span><br></pre></td></tr></table></figure>
+<p><strong>检查时机：</strong></p>
+<ul>
+<li>异常关机后</li>
+<li>定期维护时(建议每6个月)</li>
+<li>出现I/O错误时</li>
+</ul>
+<h2 id="5-高级文件系统特性">5. 高级文件系统特性</h2>
+<h3 id="ext4-特性管理">ext4 特性管理</h3>
+<p><strong>转换ext3→ext4：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tune2fs -O extent,uninit_bg,dir_index /dev/sda1</span><br><span class="line">fsck -pf /dev/sda1</span><br></pre></td></tr></table></figure>
+<p><strong>调整参数：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tune2fs -c 30 -i 7d /dev/sda1  <span class="comment"># 每30次挂载或7天检查</span></span><br><span class="line">tune2fs -m 5 /dev/sda1         <span class="comment"># 保留5%空间</span></span><br></pre></td></tr></table></figure>
+<h3 id="XFS-高级功能">XFS 高级功能</h3>
+<p><strong>查看信息：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">xfs_info /dev/sdb1</span><br><span class="line">xfs_admin -l /dev/sdb1</span><br></pre></td></tr></table></figure>
+<p><strong>备份恢复：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">xfsdump -l 0 -f /backup/root.xfsdump /dev/sda1</span><br><span class="line">xfsrestore -f /backup/root.xfsdump /mnt/restore</span><br></pre></td></tr></table></figure>
+<h2 id="6-光盘与加密文件系统">6. 光盘与加密文件系统</h2>
+<h3 id="光盘制作">光盘制作</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建ISO</span></span><br><span class="line">mkisofs -JR -V <span class="string">&quot;BACKUP_2023&quot;</span> -o backup.iso /backup</span><br><span class="line"></span><br><span class="line"><span class="comment"># 刻录光盘</span></span><br><span class="line">cdrecord -v dev=1,0,0 speed=24 backup.iso</span><br></pre></td></tr></table></figure>
+<h3 id="加密文件系统">加密文件系统</h3>
+<p><strong>LUKS加密：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cryptsetup luksFormat /dev/sdb1</span><br><span class="line">cryptsetup luksOpen /dev/sdb1 secret</span><br><span class="line">mkfs.ext4 /dev/mapper/secret</span><br><span class="line">mount /dev/mapper/secret /mnt/secure</span><br></pre></td></tr></table></figure>
+<p><strong>关闭加密卷：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">umount /mnt/secure</span><br><span class="line">cryptsetup luksClose secret</span><br></pre></td></tr></table></figure>
+<h2 id="7-磁盘健康监控">7. 磁盘健康监控</h2>
+<h3 id="S-M-A-R-T-监控">S.M.A.R.T. 监控</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">smartctl -a /dev/sda          <span class="comment"># 查看详细信息</span></span><br><span class="line">smartctl -H /dev/sda          <span class="comment"># 健康状态</span></span><br><span class="line">smartctl -t long /dev/sda     <span class="comment"># 启动长测试</span></span><br></pre></td></tr></table></figure>
+<p><strong>关键监控指标：</strong></p>
+<ul>
+<li>Reallocated_Sector_Ct</li>
+<li>Current_Pending_Sector</li>
+<li>Temperature_Celsius</li>
+</ul>
+<h2 id="8-故障处理流程">8. 故障处理流程</h2>
+<h3 id="文件系统修复步骤">文件系统修复步骤</h3>
+<ol>
+<li>
+<p><strong>卸载文件系统</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">umount /dev/sda1</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>进入单用户模式</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">init 1</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>执行检查修复</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fsck -y /dev/sda1</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>严重损坏时</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">debugfs /dev/sda1</span><br><span class="line">&gt; lsdel      <span class="comment"># 查看已删除inode</span></span><br><span class="line">&gt; dump &lt;inode&gt; /tmp/recover_file</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h3 id="应急恢复方案">应急恢复方案</h3>
+<table>
+<thead>
+<tr>
+<th>问题现象</th>
+<th>解决方案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>无法挂载</td>
+<td><code>fsck -y /dev/sdX</code></td>
+</tr>
+<tr>
+<td>Superblock损坏</td>
+<td><code>e2fsck -b 32768 /dev/sdX</code></td>
+</tr>
+<tr>
+<td>只读文件系统</td>
+<td><code>mount -o remount,rw /</code></td>
+</tr>
+</tbody>
+</table>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../../2020/11/10/linux/13-%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8/"
                             aria-label=": 13.系统启动"
                         >
@@ -2953,6 +3348,281 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../../2020/06/12/pytest%E5%9F%BA%E7%A1%80/"
+                            aria-label=": pytest基础"
+                        >
+                            pytest基础
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2020-06-12T07:43:28+08:00">
+	
+		    2020 年 6 月 12 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../categories/devops/">devops</a>, <a class="category-link" href="../../../categories/devops/pytest/">pytest</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="1-概述">1. 概述</h2>
+<p>pytest 是一个功能强大的 Python 测试框架，具有以下特点：</p>
+<ul>
+<li>简单灵活，文档丰富</li>
+<li>支持参数化测试</li>
+<li>可用于单元测试、功能测试、自动化测试（如 Selenium/Appium）和接口测试</li>
+<li>丰富的插件生态系统</li>
+<li>支持测试跳过（skip）和预期失败（xfail）</li>
+<li>良好的 CI 工具集成（如 Jenkins）</li>
+</ul>
+<h3 id="主要插件">主要插件</h3>
+<table>
+<thead>
+<tr>
+<th>插件名称</th>
+<th>功能描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pytest-selenium</td>
+<td>Selenium 集成</td>
+</tr>
+<tr>
+<td>pytest-html</td>
+<td>生成 HTML 测试报告</td>
+</tr>
+<tr>
+<td>pytest-rerunfailures</td>
+<td>失败用例重试</td>
+</tr>
+<tr>
+<td>pytest-xdist</td>
+<td>多 CPU 并行测试</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-使用介绍">2. 使用介绍</h2>
+<h3 id="2-1-安装">2.1 安装</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pytest</span><br></pre></td></tr></table></figure>
+<h3 id="2-2-编写规则">2.2 编写规则</h3>
+<ul>
+<li>测试文件：<code>test_*.py</code> 或 <code>*_test.py</code></li>
+<li>测试类：以 <code>Test</code> 开头，不能有 <code>__init__</code> 方法</li>
+<li>测试函数：以 <code>test_</code> 开头</li>
+<li>断言：使用 Python 原生 <code>assert</code></li>
+</ul>
+<h3 id="2-3-示例代码">2.3 示例代码</h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># pytest1.py</span></span><br><span class="line"><span class="keyword">import</span> pytest</span><br><span class="line"></span><br><span class="line"><span class="meta">@pytest.fixture(<span class="params">scope=<span class="string">&#x27;function&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">setup_function</span>(<span class="params">request</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">teardown_function</span>():</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;teardown_function called.&quot;</span>)</span><br><span class="line">    request.addfinalizer(teardown_function)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;setup_function called.&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@pytest.fixture(<span class="params">scope=<span class="string">&#x27;module&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">setup_module</span>(<span class="params">request</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">teardown_module</span>():</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;teardown_module called.&quot;</span>)</span><br><span class="line">    request.addfinalizer(teardown_module)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;setup_module called.&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@pytest.mark.website</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_1</span>(<span class="params">setup_function</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;Test_1 called.&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_2</span>(<span class="params">setup_module</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;Test_2 called.&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_3</span>(<span class="params">setup_module</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;Test_3 called.&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="2-4-fixture-的-scope-参数">2.4 fixture 的 scope 参数</h3>
+<table>
+<thead>
+<tr>
+<th>参数值</th>
+<th>作用范围</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>function</td>
+<td>每个测试函数运行一次（默认）</td>
+</tr>
+<tr>
+<td>class</td>
+<td>每个测试类运行一次</td>
+</tr>
+<tr>
+<td>module</td>
+<td>每个模块运行一次</td>
+</tr>
+<tr>
+<td>session</td>
+<td>每次会话运行一次</td>
+</tr>
+</tbody>
+</table>
+<h3 id="2-5-setup-和-teardown">2.5 setup 和 teardown</h3>
+<ul>
+<li><strong>setup</strong>：测试前的准备工作</li>
+<li><strong>teardown</strong>：测试后的清理工作</li>
+<li>替代方案：使用 <code>yield</code> 实现 setup/teardown</li>
+</ul>
+<h2 id="3-测试执行">3. 测试执行</h2>
+<h3 id="3-1-基本执行命令">3.1 基本执行命令</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pytest</code></td>
+<td>运行当前目录下所有测试</td>
+</tr>
+<tr>
+<td><code>pytest test_mod.py</code></td>
+<td>运行指定模块的测试</td>
+</tr>
+<tr>
+<td><code>pytest somepath/</code></td>
+<td>运行指定路径下的测试</td>
+</tr>
+<tr>
+<td><code>pytest -k &quot;stringexpr&quot;</code></td>
+<td>运行名称匹配表达式的测试</td>
+</tr>
+<tr>
+<td><code>pytest test_mod.py::test_func</code></td>
+<td>运行指定模块的特定测试函数</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-2-标记执行">3.2 标记执行</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 执行标记为 website 的测试</span></span><br><span class="line">pytest -v -m <span class="string">&quot;website&quot;</span> pytest1.py</span><br><span class="line"></span><br><span class="line"><span class="comment"># 执行未标记为 website 的测试</span></span><br><span class="line">pytest -v -m <span class="string">&quot;not website&quot;</span> pytest1.py</span><br></pre></td></tr></table></figure>
+<h3 id="3-3-常用命令行参数">3.3 常用命令行参数</h3>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-v</code></td>
+<td>显示详细测试结果</td>
+</tr>
+<tr>
+<td><code>-q</code></td>
+<td>只显示简要结果</td>
+</tr>
+<tr>
+<td><code>-s</code></td>
+<td>显示 print 输出</td>
+</tr>
+<tr>
+<td><code>-x</code></td>
+<td>遇到第一个失败立即停止</td>
+</tr>
+<tr>
+<td><code>--exitfirst</code></td>
+<td>同 <code>-x</code></td>
+</tr>
+<tr>
+<td><code>-h</code></td>
+<td>显示帮助信息</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-扩展插件">4. 扩展插件</h2>
+<h3 id="4-1-测试覆盖率-pytest-cov">4.1 测试覆盖率 (pytest-cov)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pip install pytest-cov</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成 HTML 覆盖率报告</span></span><br><span class="line">pytest --cov-report=html --cov=./ test_code_target_dir</span><br></pre></td></tr></table></figure>
+<p><strong>覆盖率参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--cov=[path]</code></td>
+<td>指定计算覆盖率的路径</td>
+</tr>
+<tr>
+<td><code>--cov-report=type</code></td>
+<td>报告类型：term, html, xml 等</td>
+</tr>
+<tr>
+<td><code>--cov-fail-under=MIN</code></td>
+<td>设置覆盖率最低阈值</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-2-其他实用插件">4.2 其他实用插件</h3>
+<table>
+<thead>
+<tr>
+<th>插件</th>
+<th>功能</th>
+<th>安装命令</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pytest-randomly</td>
+<td>随机执行测试</td>
+<td><code>pip install pytest-randomly</code></td>
+</tr>
+<tr>
+<td>pytest-xdist</td>
+<td>分布式测试</td>
+<td><code>pip install pytest-xdist</code></td>
+</tr>
+<tr>
+<td>pytest-instafail</td>
+<td>立即显示失败</td>
+<td><code>pip install pytest-instafail</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-示例输出">5. 示例输出</h2>
+<h3 id="5-1-详细模式-v">5.1 详细模式 (-v)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ pytest -v pytest1.py</span><br><span class="line">==============================================================================</span><br><span class="line">platform linux2 -- Python 2.7.14, pytest-3.0.0</span><br><span class="line">collected 3 items</span><br><span class="line"></span><br><span class="line">pytest1.py::test_1 PASSED</span><br><span class="line">pytest1.py::test_3 PASSED</span><br><span class="line">pytest1.py::test_2 PASSED</span><br></pre></td></tr></table></figure>
+<h3 id="5-2-显示输出-s">5.2 显示输出 (-s)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ pytest -s pytest1.py</span><br><span class="line">==============================================================================</span><br><span class="line">setup_function called.</span><br><span class="line">Test_1 called.</span><br><span class="line">.teardown_function called.</span><br><span class="line">setup_module called.</span><br><span class="line">Test_2 called.</span><br><span class="line">.Test_3 called.</span><br><span class="line">.teardown_module called.</span><br></pre></td></tr></table></figure>
+<h3 id="5-3-覆盖率报告">5.3 覆盖率报告</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">---------------------------------------------------------------- coverage: platform linux2, python 2.7.14-final-0 ----------------------------------------------------------------</span><br><span class="line">Name         Stmts   Miss  Cover</span><br><span class="line">--------------------------------</span><br><span class="line">pytest1.py      18      0   100%</span><br></pre></td></tr></table></figure>
+<h2 id="6-参考资源">6. 参考资源</h2>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://wiki.python.org/moin/PythonTestingToolsTaxonomy">Python 测试工具大全</a></li>
+<li><a target="_blank" rel="noopener" href="http://docs.python-guide.org/en/latest/writing/tests/">主流测试工具比较</a></li>
+<li><a target="_blank" rel="noopener" href="http://pythontesting.net/test-podcast/">pytest 官方播客</a></li>
+<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/liuchunming033/article/details/46501653">pytest 简介</a></li>
+</ol>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../2020/06/12/pytest%E5%9F%BA%E7%A1%80/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../../2020/05/24/linux/8-%E7%B3%BB%E7%BB%9F%E7%AE%A1%E7%90%86/"
                             aria-label=": 8.系统管理"
                         >
@@ -3813,537 +4483,6 @@
         
     </article>
     
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../../2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
-                            aria-label=": 5.文件系统与存储管理"
-                        >
-                            5.文件系统与存储管理
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2020-05-08T19:06:24+08:00">
-	
-		    2020 年 5 月 8 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h2 id="1-磁盘配额管理">1. 磁盘配额管理</h2>
-<h3 id="1-1-配额概念与类型">1.1 配额概念与类型</h3>
-<h4 id="配额类型说明">配额类型说明</h4>
-<ul>
-<li><strong>硬限制(Hard Limit)</strong>：用户绝对不能超过的磁盘空间限制</li>
-<li><strong>软限制(Soft Limit)</strong>：允许用户暂时超过的限制，系统会发出警告</li>
-<li><strong>宽限期(Grace Period)</strong>：超过软限制后允许保留的时间（默认7天）</li>
-</ul>
-<h3 id="1-2-配额实施完整步骤">1.2 配额实施完整步骤</h3>
-<ol>
-<li>
-<p><strong>修改fstab文件</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在/etc/fstab中添加usrquota和/或grpquota选项</span></span><br><span class="line">/dev/sda1 /home ext4 defaults,usrquota,grpquota 0 2</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p><strong>重新挂载文件系统</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">umount /home</span><br><span class="line">mount -o remount /home</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p><strong>创建配额文件</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">touch</span> /home/aquota.user /home/aquota.group</span><br><span class="line"><span class="built_in">chmod</span> 600 /home/aquota.*</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p><strong>初始化配额数据库</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">quotacheck -cugm /home</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p><strong>启用配额系统</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">quotaon -avug</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p><strong>为用户设置配额</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">edquota username</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<h3 id="1-3-配额管理命令详解">1.3 配额管理命令详解</h3>
-<h4 id="quota-显示配额信息">quota - 显示配额信息</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">quota -u username  <span class="comment"># 显示用户配额</span></span><br><span class="line">quota -g groupname <span class="comment"># 显示组配额</span></span><br><span class="line">quota -v           <span class="comment"># 显示详细信息</span></span><br></pre></td></tr></table></figure>
-<h4 id="quotacheck-检查配额">quotacheck - 检查配额</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">quotacheck -avug  <span class="comment"># 检查所有文件系统配额</span></span><br><span class="line">quotacheck -cug /home  <span class="comment"># 检查指定文件系统</span></span><br></pre></td></tr></table></figure>
-<h4 id="quotaon-quotaoff-启用-禁用配额">quotaon/quotaoff - 启用/禁用配额</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">quotaon -avug     <span class="comment"># 启用所有配额</span></span><br><span class="line">quotaoff /home    <span class="comment"># 禁用指定文件系统配额</span></span><br></pre></td></tr></table></figure>
-<h4 id="edquota-编辑配额">edquota - 编辑配额</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">edquota -u username  <span class="comment"># 编辑用户配额</span></span><br><span class="line">edquota -p template_user new_user  <span class="comment"># 复制配额设置</span></span><br><span class="line">edquota -t           <span class="comment"># 修改宽限期</span></span><br></pre></td></tr></table></figure>
-<h4 id="repquota-报告配额状态">repquota - 报告配额状态</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">repquota -a       <span class="comment"># 报告所有文件系统配额状态</span></span><br><span class="line">repquota -u /home <span class="comment"># 报告/home的用户配额</span></span><br></pre></td></tr></table></figure>
-<h2 id="2-文件系统层次标准-FHS">2. 文件系统层次标准(FHS)</h2>
-<h3 id="2-1-核心目录结构">2.1 核心目录结构</h3>
-<table>
-<thead>
-<tr>
-<th>目录</th>
-<th>完整描述</th>
-<th>典型内容</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>/bin</code></td>
-<td>基础命令二进制文件</td>
-<td>ls, cp, mv等基本命令</td>
-</tr>
-<tr>
-<td><code>/sbin</code></td>
-<td>系统管理二进制文件</td>
-<td>fdisk, fsck, ifconfig等</td>
-</tr>
-<tr>
-<td><code>/etc</code></td>
-<td>系统配置文件</td>
-<td>passwd, fstab, network等配置文件</td>
-</tr>
-<tr>
-<td><code>/dev</code></td>
-<td>设备文件</td>
-<td>sda, tty, null等设备节点</td>
-</tr>
-<tr>
-<td><code>/lib</code></td>
-<td>系统库文件</td>
-<td>系统运行所需共享库</td>
-</tr>
-<tr>
-<td><code>/mnt</code></td>
-<td>临时挂载点</td>
-<td>临时挂载文件系统的目录</td>
-</tr>
-<tr>
-<td><code>/opt</code></td>
-<td>可选应用软件包</td>
-<td>第三方应用程序</td>
-</tr>
-<tr>
-<td><code>/proc</code></td>
-<td>进程和内核信息</td>
-<td>虚拟文件系统，提供系统信息</td>
-</tr>
-<tr>
-<td><code>/root</code></td>
-<td>root用户主目录</td>
-<td>root用户的个人文件和配置</td>
-</tr>
-<tr>
-<td><code>/boot</code></td>
-<td>启动加载文件</td>
-<td>vmlinuz, initramfs, grub等</td>
-</tr>
-<tr>
-<td><code>/home</code></td>
-<td>用户主目录</td>
-<td>普通用户的个人目录</td>
-</tr>
-<tr>
-<td><code>/tmp</code></td>
-<td>临时文件</td>
-<td>系统重启后通常清空</td>
-</tr>
-<tr>
-<td><code>/var</code></td>
-<td>可变数据文件</td>
-<td>日志、邮件、数据库等</td>
-</tr>
-<tr>
-<td><code>/usr</code></td>
-<td>用户程序资源</td>
-<td>应用程序、文档、库文件等</td>
-</tr>
-</tbody>
-</table>
-<h2 id="3-分区与文件系统管理">3. 分区与文件系统管理</h2>
-<h3 id="3-1-分区管理">3.1 分区管理</h3>
-<h4 id="fdisk-完整操作流程">fdisk 完整操作流程</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fdisk /dev/sdb</span><br></pre></td></tr></table></figure>
-<p>交互命令列表：</p>
-<ul>
-<li><code>n</code>：创建新分区</li>
-<li><code>d</code>：删除分区</li>
-<li><code>p</code>：显示分区表</li>
-<li><code>t</code>：更改分区类型</li>
-<li><code>a</code>：切换启动标志</li>
-<li><code>w</code>：写入并退出</li>
-<li><code>q</code>：不保存退出</li>
-<li><code>m</code>：显示帮助菜单</li>
-</ul>
-<h3 id="3-2-文件系统创建与管理">3.2 文件系统创建与管理</h3>
-<h4 id="mkfs-命令集">mkfs 命令集</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkfs -t ext4 /dev/sdb1      <span class="comment"># 创建ext4文件系统</span></span><br><span class="line">mkfs.ext4 /dev/sdb1         <span class="comment"># 同上</span></span><br><span class="line">mkfs.xfs /dev/sdb2          <span class="comment"># 创建XFS文件系统</span></span><br><span class="line">mkfs.btrfs /dev/sdb3        <span class="comment"># 创建Btrfs文件系统</span></span><br></pre></td></tr></table></figure>
-<h4 id="交换空间管理">交换空间管理</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkswap /dev/sdb4            <span class="comment"># 创建交换分区</span></span><br><span class="line">swapon /dev/sdb4            <span class="comment"># 启用交换分区</span></span><br><span class="line">swapon -s                   <span class="comment"># 显示交换空间状态</span></span><br><span class="line">swapoff /dev/sdb4           <span class="comment"># 禁用交换分区</span></span><br></pre></td></tr></table></figure>
-<h3 id="3-3-文件系统检查与维护">3.3 文件系统检查与维护</h3>
-<h4 id="fsck-系列命令">fsck 系列命令</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">fsck /dev/sdb1              <span class="comment"># 基本文件系统检查</span></span><br><span class="line">fsck -y /dev/sdb1           <span class="comment"># 自动修复错误</span></span><br><span class="line">e2fsck -p /dev/sdb1         <span class="comment"># ext文件系统自动修复</span></span><br><span class="line">xfs_repair /dev/sdb2        <span class="comment"># XFS文件系统修复</span></span><br></pre></td></tr></table></figure>
-<h4 id="tune2fs-调整参数">tune2fs 调整参数</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">tune2fs -c 30 /dev/sdb1     <span class="comment"># 设置每30次挂载后检查</span></span><br><span class="line">tune2fs -i 15d /dev/sdb1    <span class="comment"># 设置15天间隔检查</span></span><br><span class="line">tune2fs -L DATA /dev/sdb1   <span class="comment"># 设置卷标为DATA</span></span><br></pre></td></tr></table></figure>
-<h3 id="3-4-空间监控命令">3.4 空间监控命令</h3>
-<h4 id="df-详细用法">df 详细用法</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">df</span> -h                       <span class="comment"># 人类可读格式</span></span><br><span class="line"><span class="built_in">df</span> -i                       <span class="comment"># 显示inode使用情况</span></span><br><span class="line"><span class="built_in">df</span> -T                       <span class="comment"># 显示文件系统类型</span></span><br><span class="line"><span class="built_in">df</span> --total                  <span class="comment"># 显示总计信息</span></span><br></pre></td></tr></table></figure>
-<h4 id="du-详细用法">du 详细用法</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">du</span> -sh /var/log             <span class="comment"># 显示目录总大小</span></span><br><span class="line"><span class="built_in">du</span> -ah /home                <span class="comment"># 显示所有文件和目录大小</span></span><br><span class="line"><span class="built_in">du</span> -csh *                   <span class="comment"># 显示当前目录各项目大小和总计</span></span><br><span class="line"><span class="built_in">du</span> --max-depth=1 /usr       <span class="comment"># 只显示一级子目录大小</span></span><br></pre></td></tr></table></figure>
-<h2 id="4-文件搜索命令">4. 文件搜索命令</h2>
-<h3 id="4-1-find-命令完整用法">4.1 find 命令完整用法</h3>
-<h4 id="基本语法">基本语法</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find [路径] [选项] [操作]</span><br></pre></td></tr></table></figure>
-<h4 id="常用示例">常用示例</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">find / -name <span class="string">&quot;*.conf&quot;</span>               <span class="comment"># 按名称查找</span></span><br><span class="line">find /home -user alice              <span class="comment"># 按属主查找</span></span><br><span class="line">find /var/log -mtime -7             <span class="comment"># 查找7天内修改的文件</span></span><br><span class="line">find /tmp -size +10M                <span class="comment"># 查找大于10MB的文件</span></span><br><span class="line">find . -perm 644                    <span class="comment"># 查找权限为644的文件</span></span><br><span class="line">find /etc -<span class="built_in">type</span> f -<span class="built_in">exec</span> grep -l <span class="string">&quot;error&quot;</span> &#123;&#125; \;  <span class="comment"># 结合grep</span></span><br></pre></td></tr></table></figure>
-<h3 id="4-2-locate-updatedb-系统">4.2 locate/updatedb 系统</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">locate passwd              <span class="comment"># 快速查找文件</span></span><br><span class="line">updatedb                   <span class="comment"># 更新数据库</span></span><br><span class="line">updatedb -e /mnt           <span class="comment"># 排除/mnt目录</span></span><br></pre></td></tr></table></figure>
-<h3 id="4-3-which-whereis-type">4.3 which/whereis/type</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">which</span> <span class="built_in">ls</span>                   <span class="comment"># 查找命令路径</span></span><br><span class="line">whereis python             <span class="comment"># 查找命令相关文件</span></span><br><span class="line"><span class="built_in">type</span> -a <span class="built_in">cd</span>                 <span class="comment"># 显示命令类型</span></span><br></pre></td></tr></table></figure>
-<h2 id="5-挂载管理">5. 挂载管理</h2>
-<h3 id="5-1-挂载选项详解">5.1 挂载选项详解</h3>
-<table>
-<thead>
-<tr>
-<th>选项</th>
-<th>完整描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>async/sync</code></td>
-<td>异步/同步写入</td>
-</tr>
-<tr>
-<td><code>auto/noauto</code></td>
-<td>是否允许mount -a自动挂载</td>
-</tr>
-<tr>
-<td><code>exec/noexec</code></td>
-<td>是否允许执行二进制文件</td>
-</tr>
-<tr>
-<td><code>ro/rw</code></td>
-<td>只读/读写模式</td>
-</tr>
-<tr>
-<td><code>suid/nosuid</code></td>
-<td>是否允许SUID/SGID</td>
-</tr>
-<tr>
-<td><code>user/nouser</code></td>
-<td>是否允许普通用户挂载</td>
-</tr>
-<tr>
-<td><code>defaults</code></td>
-<td>默认选项(rw,suid,dev,exec,auto,nouser,async)</td>
-</tr>
-</tbody>
-</table>
-<h3 id="5-2-mount-umount-完整用法">5.2 mount/umount 完整用法</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mount /dev/sdb1 /mnt/data           <span class="comment"># 基本挂载</span></span><br><span class="line">mount -o remount,ro /mnt/data       <span class="comment"># 重新挂载为只读</span></span><br><span class="line">mount -t nfs server:/share /mnt/nfs <span class="comment"># 挂载NFS</span></span><br><span class="line">umount /mnt/data                    <span class="comment"># 卸载</span></span><br><span class="line">umount -l /mnt/data                 <span class="comment"># 延迟卸载</span></span><br></pre></td></tr></table></figure>
-<h3 id="5-3-etc-fstab-文件格式">5.3 /etc/fstab 文件格式</h3>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># 设备文件/挂载点/文件系统类型/选项/备份标记/检查顺序</span><br><span class="line">/dev/sdb1  /data  ext4  defaults  0  2</span><br><span class="line">UUID=xxxx  /home  xfs   defaults  0  1</span><br></pre></td></tr></table></figure>
-<h2 id="6-逻辑卷管理-LVM">6. 逻辑卷管理(LVM)</h2>
-<h3 id="6-1-LVM-基本概念">6.1 LVM 基本概念</h3>
-<ol>
-<li><strong>PV(Physical Volume)</strong>：物理卷，实际存储设备</li>
-<li><strong>VG(Volume Group)</strong>：卷组，由PV组成的存储池</li>
-<li><strong>LV(Logical Volume)</strong>：逻辑卷，从VG划分的可挂载空间</li>
-<li><strong>PE(Physical Extent)</strong>：物理块，LVM最小分配单元(默认4MB)</li>
-<li><strong>LE(Logical Extent)</strong>：逻辑块，与PE一一对应</li>
-</ol>
-<h3 id="6-2-LVM-完整操作流程">6.2 LVM 完整操作流程</h3>
-<h4 id="物理卷-PV-管理">物理卷(PV)管理</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pvcreate /dev/sdb /dev/sdc          <span class="comment"># 创建PV</span></span><br><span class="line">pvdisplay                           <span class="comment"># 显示PV信息</span></span><br><span class="line">pvmove /dev/sdb                     <span class="comment"># 迁移PV数据</span></span><br><span class="line">pvremove /dev/sdb                   <span class="comment"># 删除PV</span></span><br></pre></td></tr></table></figure>
-<h4 id="卷组-VG-管理">卷组(VG)管理</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vgcreate vg_data /dev/sdb /dev/sdc  <span class="comment"># 创建VG</span></span><br><span class="line">vgextend vg_data /dev/sdd           <span class="comment"># 扩展VG</span></span><br><span class="line">vgreduce vg_data /dev/sdb           <span class="comment"># 缩减VG</span></span><br><span class="line">vgdisplay                           <span class="comment"># 显示VG信息</span></span><br><span class="line">vgremove vg_data                    <span class="comment"># 删除VG</span></span><br></pre></td></tr></table></figure>
-<h4 id="逻辑卷-LV-管理">逻辑卷(LV)管理</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">lvcreate -L 50G -n lv_home vg_data  <span class="comment"># 创建50G逻辑卷</span></span><br><span class="line">lvextend -L +10G /dev/vg_data/lv_home <span class="comment"># 扩展10G</span></span><br><span class="line">lvreduce -L -5G /dev/vg_data/lv_home <span class="comment"># 缩减5G</span></span><br><span class="line">lvresize -L 60G /dev/vg_data/lv_home <span class="comment"># 调整到60G</span></span><br><span class="line">lvdisplay                           <span class="comment"># 显示LV信息</span></span><br><span class="line">lvremove /dev/vg_data/lv_home       <span class="comment"># 删除LV</span></span><br></pre></td></tr></table></figure>
-<h4 id="文件系统扩展">文件系统扩展</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 对于ext2/3/4文件系统</span></span><br><span class="line">resize2fs /dev/vg_data/lv_home</span><br><span class="line"></span><br><span class="line"><span class="comment"># 对于XFS文件系统</span></span><br><span class="line">xfs_growfs /dev/vg_data/lv_home</span><br></pre></td></tr></table></figure>
-<h3 id="6-3-LVM-快照功能">6.3 LVM 快照功能</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">lvcreate -L 10G -s -n snap_home /dev/vg_data/lv_home  <span class="comment"># 创建快照</span></span><br><span class="line">mount /dev/vg_data/snap_home /mnt/snapshot           <span class="comment"># 挂载快照</span></span><br><span class="line">umount /mnt/snapshot                                 <span class="comment"># 卸载快照</span></span><br><span class="line">lvremove /dev/vg_data/snap_home                      <span class="comment"># 删除快照</span></span><br></pre></td></tr></table></figure>
-<h3 id="6-4-LVM-信息查看命令">6.4 LVM 信息查看命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">pvs        <span class="comment"># 简要PV信息</span></span><br><span class="line">vgs        <span class="comment"># 简要VG信息</span></span><br><span class="line">lvs        <span class="comment"># 简要LV信息</span></span><br><span class="line">pvdisplay  <span class="comment"># 详细PV信息</span></span><br><span class="line">vgdisplay  <span class="comment"># 详细VG信息</span></span><br><span class="line">lvdisplay  <span class="comment"># 详细LV信息</span></span><br><span class="line">lsblk      <span class="comment"># 块设备层次结构</span></span><br></pre></td></tr></table></figure>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../../2020/05/08/linux/5-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../../2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
-                            aria-label=": 4.文件和程序管理"
-                        >
-                            4.文件和程序管理
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2020-05-08T16:06:24+08:00">
-	
-		    2020 年 5 月 8 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h2 id="1-用户权限管理">1. 用户权限管理</h2>
-<h3 id="1-1-文件权限基础">1.1 文件权限基础</h3>
-<h4 id="权限表示法">权限表示法</h4>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">d rwx r-x r--</span><br><span class="line">↑ ↑   ↑   ↑</span><br><span class="line">│ │   │   └─ 其他用户权限(r--)</span><br><span class="line">│ │   └─── 所属组权限(r-x)</span><br><span class="line">│ └────── 所有者权限(rwx)</span><br><span class="line">└──────── 文件类型(d=目录)</span><br></pre></td></tr></table></figure>
-<h4 id="权限数值">权限数值</h4>
-<ul>
-<li>r(读): 4</li>
-<li>w(写): 2</li>
-<li>x(执行): 1</li>
-</ul>
-<h3 id="1-2-chmod-命令">1.2 chmod 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">chmod</span> [选项] 权限 文件</span><br></pre></td></tr></table></figure>
-<h4 id="常用选项">常用选项</h4>
-<ul>
-<li><code>-R</code>: 递归修改目录下所有文件</li>
-</ul>
-<h4 id="权限设置方法">权限设置方法</h4>
-<ol>
-<li>
-<p><strong>符号法</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">chmod</span> u+x file      <span class="comment"># 给所有者添加执行权限</span></span><br><span class="line"><span class="built_in">chmod</span> g-w file      <span class="comment"># 移除组的写权限</span></span><br><span class="line"><span class="built_in">chmod</span> o=rx file     <span class="comment"># 设置其他用户为读执行</span></span><br><span class="line"><span class="built_in">chmod</span> a+r file      <span class="comment"># 给所有用户添加读权限</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p><strong>数字法</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">chmod</span> 755 file      <span class="comment"># rwxr-xr-x</span></span><br><span class="line"><span class="built_in">chmod</span> 644 file      <span class="comment"># rw-r--r--</span></span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<h3 id="1-3-特殊权限">1.3 特殊权限</h3>
-<table>
-<thead>
-<tr>
-<th>权限</th>
-<th>数值</th>
-<th>设置方法</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>SUID</td>
-<td>4000</td>
-<td><code>u+s</code></td>
-<td>执行时以文件所有者权限运行</td>
-</tr>
-<tr>
-<td>SGID</td>
-<td>2000</td>
-<td><code>g+s</code></td>
-<td>执行时以文件所属组权限运行</td>
-</tr>
-<tr>
-<td>Sticky</td>
-<td>1000</td>
-<td><code>o+t</code></td>
-<td>目录中文件只有所有者能删除</td>
-</tr>
-</tbody>
-</table>
-<h3 id="1-4-umask-命令">1.4 umask 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">umask</span>           <span class="comment"># 查看当前umask值</span></span><br><span class="line"><span class="built_in">umask</span> 022       <span class="comment"># 设置新的umask值</span></span><br></pre></td></tr></table></figure>
-<ul>
-<li>文件默认权限: <code>666 - umask</code></li>
-<li>目录默认权限: <code>777 - umask</code></li>
-</ul>
-<h3 id="1-5-ACL-高级权限控制">1.5 ACL 高级权限控制</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">setfacl -m u:user:rwx file   <span class="comment"># 添加用户ACL</span></span><br><span class="line">setfacl -x u:user file       <span class="comment"># 删除用户ACL</span></span><br><span class="line">getfacl file                 <span class="comment"># 查看ACL权限</span></span><br></pre></td></tr></table></figure>
-<h3 id="1-6-所有权管理">1.6 所有权管理</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">chown</span> user:group file        <span class="comment"># 修改所有者和组</span></span><br><span class="line"><span class="built_in">chown</span> -R user:group <span class="built_in">dir</span>      <span class="comment"># 递归修改</span></span><br><span class="line"><span class="built_in">chgrp</span> group file             <span class="comment"># 修改文件所属组</span></span><br></pre></td></tr></table></figure>
-<h2 id="2-链接管理">2. 链接管理</h2>
-<h3 id="2-1-链接类型对比">2.1 链接类型对比</h3>
-<table>
-<thead>
-<tr>
-<th>特性</th>
-<th>硬链接</th>
-<th>软链接</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>inode</td>
-<td>相同</td>
-<td>不同</td>
-</tr>
-<tr>
-<td>跨文件系统</td>
-<td>不支持</td>
-<td>支持</td>
-</tr>
-<tr>
-<td>链接目录</td>
-<td>不允许</td>
-<td>允许</td>
-</tr>
-<tr>
-<td>原文件删除</td>
-<td>仍可访问</td>
-<td>失效</td>
-</tr>
-</tbody>
-</table>
-<h3 id="2-2-ln-命令">2.2 ln 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ln</span> <span class="built_in">source</span> <span class="built_in">link</span>        <span class="comment"># 创建硬链接</span></span><br><span class="line"><span class="built_in">ln</span> -s <span class="built_in">source</span> <span class="built_in">link</span>     <span class="comment"># 创建软链接</span></span><br></pre></td></tr></table></figure>
-<h2 id="3-进程管理">3. 进程管理</h2>
-<h3 id="3-1-ps-命令">3.1 ps 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ps aux       <span class="comment"># 查看所有进程</span></span><br><span class="line">ps -ef       <span class="comment"># 完整格式显示</span></span><br><span class="line">ps -u user   <span class="comment"># 查看指定用户进程</span></span><br></pre></td></tr></table></figure>
-<h3 id="3-2-top-命令">3.2 top 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">top          <span class="comment"># 动态查看进程</span></span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>r</code>: 调整进程优先级</li>
-<li><code>k</code>: 终止进程</li>
-<li><code>q</code>: 退出</li>
-</ul>
-<h3 id="3-3-进程控制">3.3 进程控制</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">kill</span> -9 PID          <span class="comment"># 强制终止进程</span></span><br><span class="line">killall process      <span class="comment"># 终止同名所有进程</span></span><br><span class="line">pkill pattern        <span class="comment"># 按模式终止进程</span></span><br></pre></td></tr></table></figure>
-<h4 id="常用信号">常用信号</h4>
-<table>
-<thead>
-<tr>
-<th>信号</th>
-<th>值</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>HUP</td>
-<td>1</td>
-<td>重新加载配置</td>
-</tr>
-<tr>
-<td>INT</td>
-<td>2</td>
-<td>中断(Ctrl+C)</td>
-</tr>
-<tr>
-<td>KILL</td>
-<td>9</td>
-<td>强制终止</td>
-</tr>
-<tr>
-<td>TERM</td>
-<td>15</td>
-<td>正常终止</td>
-</tr>
-</tbody>
-</table>
-<h3 id="3-4-作业控制">3.4 作业控制</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">command</span> &amp;       <span class="comment"># 后台运行</span></span><br><span class="line"><span class="built_in">fg</span> %1          <span class="comment"># 前台恢复作业1</span></span><br><span class="line"><span class="built_in">bg</span> %2          <span class="comment"># 后台继续作业2</span></span><br><span class="line"><span class="built_in">jobs</span>           <span class="comment"># 查看后台作业</span></span><br></pre></td></tr></table></figure>
-<h3 id="3-5-优先级管理">3.5 优先级管理</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">nice</span> -n 10 <span class="built_in">command</span>   <span class="comment"># 启动低优先级进程</span></span><br><span class="line">renice 15 -p PID     <span class="comment"># 调整运行中进程优先级</span></span><br></pre></td></tr></table></figure>
-<h3 id="3-6-终端复用器">3.6 终端复用器</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tmux                <span class="comment"># 启动新会话</span></span><br></pre></td></tr></table></figure>
-<p>常用快捷键:</p>
-<ul>
-<li><code>Ctrl+b c</code>: 新建窗口</li>
-<li><code>Ctrl+b %</code>: 垂直分割</li>
-<li><code>Ctrl+b &quot;</code>: 水平分割</li>
-<li><code>Ctrl+b d</code>: 分离会话</li>
-</ul>
-<h2 id="4-压缩与归档">4. 压缩与归档</h2>
-<h3 id="4-1-单文件压缩">4.1 单文件压缩</h3>
-<h4 id="gzip">gzip</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">gzip file            <span class="comment"># 压缩为file.gz</span></span><br><span class="line">gunzip file.gz       <span class="comment"># 解压</span></span><br><span class="line">gzip -d file.gz      <span class="comment"># 解压(同上)</span></span><br></pre></td></tr></table></figure>
-<h4 id="bzip2">bzip2</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bzip2 file           <span class="comment"># 压缩为file.bz2</span></span><br><span class="line">bunzip2 file.bz2     <span class="comment"># 解压</span></span><br></pre></td></tr></table></figure>
-<h4 id="xz">xz</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">xz file              <span class="comment"># 压缩为file.xz</span></span><br><span class="line">unxz file.xz         <span class="comment"># 解压</span></span><br></pre></td></tr></table></figure>
-<h3 id="4-2-归档工具">4.2 归档工具</h3>
-<h4 id="tar-命令">tar 命令</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 打包压缩</span></span><br><span class="line">tar czvf archive.tar.gz <span class="built_in">dir</span>/     <span class="comment"># gzip压缩</span></span><br><span class="line">tar cjvf archive.tar.bz2 <span class="built_in">dir</span>/    <span class="comment"># bzip2压缩</span></span><br><span class="line">tar cJvf archive.tar.xz <span class="built_in">dir</span>/     <span class="comment"># xz压缩</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 解压</span></span><br><span class="line">tar xzvf archive.tar.gz          <span class="comment"># 解压gzip</span></span><br><span class="line">tar xjvf archive.tar.bz2         <span class="comment"># 解压bzip2</span></span><br><span class="line">tar xJvf archive.tar.xz          <span class="comment"># 解压xz</span></span><br></pre></td></tr></table></figure>
-<h4 id="cpio-命令">cpio 命令</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">find . | cpio -ov &gt; backup.cpio      <span class="comment"># 创建归档</span></span><br><span class="line">cpio -idv &lt; backup.cpio              <span class="comment"># 解压归档</span></span><br></pre></td></tr></table></figure>
-<h4 id="dd-命令">dd 命令</h4>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">dd</span> <span class="keyword">if</span>=/dev/sda of=disk.img bs=1M     <span class="comment"># 创建磁盘映像</span></span><br><span class="line"><span class="built_in">dd</span> <span class="keyword">if</span>=disk.img of=/dev/sdb           <span class="comment"># 恢复磁盘映像</span></span><br></pre></td></tr></table></figure>
-<h2 id="5-实用技巧">5. 实用技巧</h2>
-<h3 id="5-1-nohup-命令">5.1 nohup 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">nohup</span> <span class="built_in">command</span> &amp;      <span class="comment"># 退出终端后继续运行</span></span><br></pre></td></tr></table></figure>
-<h3 id="5-2-watch-命令">5.2 watch 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">watch -n 5 <span class="string">&#x27;ls -l&#x27;</span>   <span class="comment"># 每5秒执行一次命令</span></span><br></pre></td></tr></table></figure>
-<h3 id="5-3-文件传输">5.3 文件传输</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">dd</span> <span class="keyword">if</span>=file.iso | ssh user@host <span class="string">&quot;dd of=file.iso&quot;</span>  <span class="comment"># 通过SSH传输文件</span></span><br></pre></td></tr></table></figure>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../../2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -4444,6 +4583,121 @@
         <div class="modal-body">
             <div class="no-result text-color-light text-center">沒有找到文章</div>
             <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
                 
                 <div class="media">
                     
@@ -4560,121 +4814,6 @@
                     <hr>
                 </div>
                 
-                <div class="media">
-                    
-                    <div class="media-body">
-                        <a
-                            class="link-unstyled"
-                            href="https://chankein.github.io/2019/09/13/%E6%95%B0%E5%AD%A6/0-%E4%B8%AD%E5%AD%A6%E6%95%B0%E5%AD%A6%E5%A4%8D%E4%B9%A0/"
-                            aria-label=": 0.中学数学复习"
-                        >
-                            <h3 class="media-heading">0.中学数学复习</h3>
-                        </a>
-                        <span class="media-meta">
-                            <span class="media-date text-small">
-                                
-                                    2019年9月13日
-                                
-                            </span>
-                        </span>
-                        <div class="media-content hide-xs font-merryweather"></div>
-                    </div>
-                    <div style="clear:both;"></div>
-                    <hr>
-                </div>
-                
-                <div class="media">
-                    
-                    <div class="media-body">
-                        <a
-                            class="link-unstyled"
-                            href="https://chankein.github.io/2019/09/28/%E6%95%B0%E5%AD%A6/1-%E5%88%9D%E7%AD%89%E5%87%BD%E6%95%B0%E7%9A%84%E5%AF%BC%E6%95%B0%E6%8E%A8%E5%AF%BC/"
-                            aria-label=": 1.初等函数的导数推导"
-                        >
-                            <h3 class="media-heading">1.初等函数的导数推导</h3>
-                        </a>
-                        <span class="media-meta">
-                            <span class="media-date text-small">
-                                
-                                    2019年9月28日
-                                
-                            </span>
-                        </span>
-                        <div class="media-content hide-xs font-merryweather"></div>
-                    </div>
-                    <div style="clear:both;"></div>
-                    <hr>
-                </div>
-                
-                <div class="media">
-                    
-                    <div class="media-body">
-                        <a
-                            class="link-unstyled"
-                            href="https://chankein.github.io/2019/09/28/%E6%95%B0%E5%AD%A6/2-%E5%87%BD%E6%95%B0%E7%9A%84%E6%B1%82%E5%AF%BC%E6%B3%95%E5%88%99/"
-                            aria-label=": 2.函数的求导法则"
-                        >
-                            <h3 class="media-heading">2.函数的求导法则</h3>
-                        </a>
-                        <span class="media-meta">
-                            <span class="media-date text-small">
-                                
-                                    2019年9月28日
-                                
-                            </span>
-                        </span>
-                        <div class="media-content hide-xs font-merryweather"></div>
-                    </div>
-                    <div style="clear:both;"></div>
-                    <hr>
-                </div>
-                
-                <div class="media">
-                    
-                    <div class="media-body">
-                        <a
-                            class="link-unstyled"
-                            href="https://chankein.github.io/2019/09/28/%E6%95%B0%E5%AD%A6/3-%E8%8E%B1%E5%B8%83%E5%B0%BC%E5%85%B9%E5%85%AC%E5%BC%8F/"
-                            aria-label=": 3.莱布尼兹公式"
-                        >
-                            <h3 class="media-heading">3.莱布尼兹公式</h3>
-                        </a>
-                        <span class="media-meta">
-                            <span class="media-date text-small">
-                                
-                                    2019年9月28日
-                                
-                            </span>
-                        </span>
-                        <div class="media-content hide-xs font-merryweather"></div>
-                    </div>
-                    <div style="clear:both;"></div>
-                    <hr>
-                </div>
-                
-                <div class="media">
-                    
-                    <div class="media-body">
-                        <a
-                            class="link-unstyled"
-                            href="https://chankein.github.io/2019/09/28/%E6%95%B0%E5%AD%A6/4-%E5%BE%AE%E5%88%86/"
-                            aria-label=": 4.微分"
-                        >
-                            <h3 class="media-heading">4.微分</h3>
-                        </a>
-                        <span class="media-meta">
-                            <span class="media-date text-small">
-                                
-                                    2019年9月28日
-                                
-                            </span>
-                        </span>
-                        <div class="media-content hide-xs font-merryweather"></div>
-                    </div>
-                    <div style="clear:both;"></div>
-                    <hr>
-                </div>
-                
             </div>
         </div>
         <div class="modal-footer">
@@ -4682,7 +4821,7 @@
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 42 篇文章
+                找到 49 篇文章
             </p>
         </div>
     </div>
