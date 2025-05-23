@@ -1,0 +1,1103 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>ansible教程-入门篇 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"Ansible 简介\nAnsible 提供开源自动化，可降低复杂性并在任何地方运行。使用 Ansible 可以自动执行几乎任何任务。以下是 Ansible 的一些常见用例\n\n\n消除重复并简化工作流程\n\n\n管理和维护系统配置\n\n\n持续部署复杂的软件\n\n\n执行零停机滚动更新\n\n\nAnsible 使用简单的、人类可读的脚本（称为剧本）来自动化您的任务。您在剧本中声明本地或远程系统的期望状态。Ansible 确保系统保持在该状态。\n作为自动化技术，Ansible 围绕以下原则设计\n无代理架构\n通过避免在 IT 基础设施上安装额外软件来降低维护开销。\n简单性\n自动化剧本使用简单的 YAML 语法，代码就像文档一样易于阅读。Ansible 也是分散式的，使用 SSH 和现有的操作系统凭据来访问远程机器。\n可扩展性和灵活性\n通过模块化设计轻松快速地扩展您自动化的系统，该设计支持各种操作系统、云平台和网络设备。\n幂等性和可预测性\n当系统处于您的剧本描述的状态时，即使多次运行剧本，Ansible 也不会更改任何内容。\n使用 Ansible 开始自动化\n通过创建自动化项目、构建清单和创建“Hello World”剧本开始使用 Ansible。\n\n\n安装 Ansible。\n1pip install ansible\n\n\n在您的文件系统上创建一个项目文件夹。\n1mkdir ansible_quickstart &amp;&amp; cd ansible_quickstart\n使用单一目录结构可以更轻松地添加到源代码管理，以及重用和共享自动化内容。\n\n\n构建清单\n清单将受管节点组织在集中式文件中，这些文件为 Ansible 提供系统信息和网络位置。使用清单文件，Ansible 可以使用单个命令管理大量主机。\n要完成以下步骤，您需要至少一个主机系统的 IP 地址或完全限定域名 (FQDN)。出于演示目的，主机可以在容器或虚拟机中本地运行。您还必须确保您的公共 SSH 密钥已添加到每个主机上的 authorized_keys 文件中。\n继续 Ansible 入门并按如下步骤构建清单\n\n\n在您在 上一步中创建的 ansible_quickstart 目录中创建一个名为 inventory.ini 的文件。\n\n\n向 inventory.ini 文件添加一个新的 [myhosts] 组，并指定每个主机系统的 IP 地址或完全限定域名 (FQDN)。\n1234[myhosts]192.0.2.50192.0.2.51192.0.2.52\n\n\n验证您的清单。\n1ansible-inventory -i inventory.ini --list\n\n\nPing 清单中的 myhosts 组。\n1ansible myhosts -m ping -i inventory.ini\n注意\n如果控制节点和受管节点上的用户名不同，请使用 ansible 命令传递 -u 选项。\n123456789101112131415161718192021192.0.2.50 | SUCCESS =&gt; &#123;    &quot;ansible_facts&quot;: &#123;        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python3&quot;    &#125;,    &quot;changed&quot;: false,    &quot;ping&quot;: &quot;pong&quot;&#125;192.0.2.51 | SUCCESS =&gt; &#123;    &quot;ansible_facts&quot;: &#123;        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python3&quot;    &#125;,    &quot;changed&quot;: false,    &quot;ping&quot;: &quot;pong&quot;&#125;192.0.2.52 | SUCCESS =&gt; &#123;    &quot;ansible_facts&quot;: &#123;        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python3&quot;    &#125;,    &quot;changed&quot;: false,    &quot;ping&quot;: &quot;pong&quot;&#125;\n\n\nINI 或 YAML 格式的清单\n您可以使用 INI 文件或 YAML 创建清单。在大多数情况下，例如上一步中的示例，对于少量受管节点，INI 文件简单易读。\n随着受管节点数量的增加，使用 YAML 格式创建清单变得更合理。例如，以下是 inventory.ini 的等效项，它声明受管节点的唯一名称并使用 ansible_host 字段\n12345678myhosts:  hosts:    my_host_01:      ansible_host: 192.0.2.50    my_host_02:      ansible_host: 192.0.2.51    my_host_03:      ansible_host: 192.0.2.52\n构建清单的技巧\n\n\n确保组名有意义且唯一。组名也区分大小写。\n\n\n避免在组名中使用空格、连字符和前导数字（使用 floor_19，而不是 19th_floor）。\n\n\n根据主机的**什么**、**哪里**和**何时**逻辑地将主机分组到您的清单中。\n什么\n根据拓扑结构对主机分组，例如：db、web、leaf、spine。\n哪里\n按地理位置对主机分组，例如：数据中心、区域、楼层、建筑物。\n何时\n按阶段对主机分组，例如：开发、测试、过渡、生产。\n\n\n使用元组\n使用以下语法创建一个元组来组织清单中的多个组\n以下清单说明了数据中心的结构基础。此示例清单包含一个 network 元组，其中包括所有网络设备，以及一个 datacenter 元组，其中包括 network 组和所有 Web 服务器。\n123456789101112131415161718192021222324252627282930leafs:  hosts:    leaf01:      ansible_host: 192.0.2.100    leaf02:      ansible_host: 192.0.2.110spines:  hosts:    spine01:      ansible_host: 192.0.2.120    spine02:      ansible_host: 192.0.2.130network:  children:    leafs:    spines:webservers:  hosts:    webserver01:      ansible_host: 192.0.2.140    webserver02:      ansible_host: 192.0.2.150datacenter:  children:    network:    webservers:\n创建变量\n变量设置受管节点的值，例如 IP 地址、FQDN、操作系统和 SSH 用户，因此您无需在运行 Ansible 命令时传递它们。\n变量可以应用于特定主机。\n12345678webservers:  hosts:    webserver01:      ansible_host: 192.0.2.140      http_port: 80    webserver02:      ansible_host: 192.0.2.150      http_port: 443\n变量也可以应用于组中的所有主机。\n12345678910webservers:  hosts:    webserver01:      ansible_host: 192.0.2.140      http_port: 80    webserver02:      ansible_host: 192.0.2.150      http_port: 443  vars:    ansible_user: my_server_user\n\n创建剧本\n剧本是 Ansible 用于部署和配置受管节点的自动化蓝图，采用 YAML 格式。\n剧本\n一系列定义 Ansible 执行操作顺序的剧目，自上而下，以实现总体目标。\n剧目\n一个有序的任务列表，映射到清单中的受管节点。\n任务\n对单个模块的引用，定义 Ansible 执行的操作。\n模块\nAnsible 在受管节点上运行的代码或二进制单元。Ansible 模块按集合分组，每个模块都有一个完全限定的集合名称 (FQCN)。\n完成以下步骤以创建用于 ping 主机并打印“Hello world”消息的剧本\n\n\n在您之前创建的 ansible_quickstart 目录中创建一个名为 playbook.yaml 的文件，内容如下：\n123456789- name: My first play  hosts: myhosts  tasks:   - name: Ping my hosts     ansible.builtin.ping:   - name: Print message     ansible.builtin.debug:       msg: Hello world\n\n\n运行您的剧本。\n1ansible-playbook -i inventory.ini playbook.yaml\n\n\nAnsible 返回以下输出\n123456789101112131415161718192021222324252627PLAY [My first play] ****************************************************************************TASK [Gathering Facts] **************************************************************************ok: [192.0.2.50]ok: [192.0.2.51]ok: [192.0.2.52]TASK [Ping my hosts] ****************************************************************************ok: [192.0.2.50]ok: [192.0.2.51]ok: [192.0.2.52]TASK [Print message] ****************************************************************************ok: [192.0.2.50] =&gt; &#123;    &quot;msg&quot;: &quot;Hello world&quot;&#125;ok: [192.0.2.51] =&gt; &#123;    &quot;msg&quot;: &quot;Hello world&quot;&#125;ok: [192.0.2.52] =&gt; &#123;    &quot;msg&quot;: &quot;Hello world&quot;&#125;PLAY RECAP **************************************************************************************192.0.2.50: ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0192.0.2.51: ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0192.0.2.52: ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0\n在此输出中，您可以看到\n\n\n您为剧目和每个任务指定的名称。您应始终使用易于验证和排查剧本问题的描述性名称。\n\n\n“收集事实”任务隐式运行。默认情况下，Ansible 会收集有关您的清单的信息，以便在剧本中使用。\n\n\n每个任务的状态。每个任务的状态为 ok，表示它已成功运行。\n\n\n剧目摘要，总结了每个主机上所有任务的结果。在此示例中，共有三个任务，因此 ok=3 表示每个任务都已成功运行。\n\n\n恭喜，您已开始使用 Ansible！\n","dateCreated":"2025-05-22T17:52:27+08:00","dateModified":"2025-05-22T18:07:08+08:00","datePublished":"2025-05-22T17:52:27+08:00","description":"","headline":"ansible教程-入门篇","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/","keywords":"ansible, 简明教程"}</script>
+    <meta name="description" content="Ansible 简介 Ansible 提供开源自动化，可降低复杂性并在任何地方运行。使用 Ansible 可以自动执行几乎任何任务。以下是 Ansible 的一些常见用例   消除重复并简化工作流程   管理和维护系统配置   持续部署复杂的软件   执行零停机滚动更新   Ansible 使用简单的、人类可读的脚本（称为剧本）来自动化您的任务。您在剧本中声明本地或远程系统的期望状态。Ansibl">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="ansible教程-入门篇">
+<meta property="og:url" content="https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="Ansible 简介 Ansible 提供开源自动化，可降低复杂性并在任何地方运行。使用 Ansible 可以自动执行几乎任何任务。以下是 Ansible 的一些常见用例   消除重复并简化工作流程   管理和维护系统配置   持续部署复杂的软件   执行零停机滚动更新   Ansible 使用简单的、人类可读的脚本（称为剧本）来自动化您的任务。您在剧本中声明本地或远程系统的期望状态。Ansibl">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2025-05-22T09:52:27.000Z">
+<meta property="article:modified_time" content="2025-05-22T10:07:08.161Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="ansible">
+<meta property="article:tag" content="简明教程">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            ansible教程-入门篇
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2025-05-22T17:52:27+08:00">
+	
+		    2025 年 5 月 22 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/devops/">devops</a>, <a class="category-link" href="../../../../../categories/devops/ansible/">ansible</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="Ansible-简介">Ansible 简介</h2>
+<p>Ansible 提供开源自动化，可降低复杂性并在任何地方运行。使用 Ansible 可以自动执行几乎任何任务。以下是 Ansible 的一些常见用例</p>
+<ul>
+<li>
+<p>消除重复并简化工作流程</p>
+</li>
+<li>
+<p>管理和维护系统配置</p>
+</li>
+<li>
+<p>持续部署复杂的软件</p>
+</li>
+<li>
+<p>执行零停机滚动更新</p>
+</li>
+</ul>
+<p>Ansible 使用简单的、人类可读的脚本（称为剧本）来自动化您的任务。您在剧本中声明本地或远程系统的期望状态。Ansible 确保系统保持在该状态。</p>
+<p>作为自动化技术，Ansible 围绕以下原则设计</p>
+<p>无代理架构</p>
+<p>通过避免在 IT 基础设施上安装额外软件来降低维护开销。</p>
+<p>简单性</p>
+<p>自动化剧本使用简单的 YAML 语法，代码就像文档一样易于阅读。Ansible 也是分散式的，使用 SSH 和现有的操作系统凭据来访问远程机器。</p>
+<p>可扩展性和灵活性</p>
+<p>通过模块化设计轻松快速地扩展您自动化的系统，该设计支持各种操作系统、云平台和网络设备。</p>
+<p>幂等性和可预测性</p>
+<p>当系统处于您的剧本描述的状态时，即使多次运行剧本，Ansible 也不会更改任何内容。</p>
+<h2 id="使用-Ansible-开始自动化">使用 Ansible 开始自动化</h2>
+<p>通过创建自动化项目、构建清单和创建“Hello World”剧本开始使用 Ansible。</p>
+<ol>
+<li>
+<p>安装 Ansible。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install ansible</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>在您的文件系统上创建一个项目文件夹。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir ansible_quickstart &amp;&amp; cd ansible_quickstart</span><br></pre></td></tr></table></figure>
+<p>使用单一目录结构可以更轻松地添加到源代码管理，以及重用和共享自动化内容。</p>
+</li>
+</ol>
+<h2 id="构建清单">构建清单</h2>
+<p>清单将受管节点组织在集中式文件中，这些文件为 Ansible 提供系统信息和网络位置。使用清单文件，Ansible 可以使用单个命令管理大量主机。</p>
+<p>要完成以下步骤，您需要至少一个主机系统的 IP 地址或完全限定域名 (FQDN)。出于演示目的，主机可以在容器或虚拟机中本地运行。您还必须确保您的公共 SSH 密钥已添加到每个主机上的 <code>authorized_keys</code> 文件中。</p>
+<p>继续 Ansible 入门并按如下步骤构建清单</p>
+<ol>
+<li>
+<p>在您在 上一步中创建的 <code>ansible_quickstart</code> 目录中创建一个名为 <code>inventory.ini</code> 的文件。</p>
+</li>
+<li>
+<p>向 <code>inventory.ini</code> 文件添加一个新的 <code>[myhosts]</code> 组，并指定每个主机系统的 IP 地址或完全限定域名 (FQDN)。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[myhosts]</span><br><span class="line">192.0.2.50</span><br><span class="line">192.0.2.51</span><br><span class="line">192.0.2.52</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>验证您的清单。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible-inventory -i inventory.ini --list</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>Ping 清单中的 <code>myhosts</code> 组。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible myhosts -m ping -i inventory.ini</span><br></pre></td></tr></table></figure>
+<p>注意</p>
+<p>如果控制节点和受管节点上的用户名不同，请使用 <code>ansible</code> 命令传递 <code>-u</code> 选项。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">192.0.2.50 | SUCCESS =&gt; &#123;</span><br><span class="line">    &quot;ansible_facts&quot;: &#123;</span><br><span class="line">        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python3&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;changed&quot;: false,</span><br><span class="line">    &quot;ping&quot;: &quot;pong&quot;</span><br><span class="line">&#125;</span><br><span class="line">192.0.2.51 | SUCCESS =&gt; &#123;</span><br><span class="line">    &quot;ansible_facts&quot;: &#123;</span><br><span class="line">        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python3&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;changed&quot;: false,</span><br><span class="line">    &quot;ping&quot;: &quot;pong&quot;</span><br><span class="line">&#125;</span><br><span class="line">192.0.2.52 | SUCCESS =&gt; &#123;</span><br><span class="line">    &quot;ansible_facts&quot;: &#123;</span><br><span class="line">        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python3&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;changed&quot;: false,</span><br><span class="line">    &quot;ping&quot;: &quot;pong&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="INI-或-YAML-格式的清单">INI 或 YAML 格式的清单</h2>
+<p>您可以使用 <code>INI</code> 文件或 <code>YAML</code> 创建清单。在大多数情况下，例如上一步中的示例，对于少量受管节点，<code>INI</code> 文件简单易读。</p>
+<p>随着受管节点数量的增加，使用 <code>YAML</code> 格式创建清单变得更合理。例如，以下是 <code>inventory.ini</code> 的等效项，它声明受管节点的唯一名称并使用 <code>ansible_host</code> 字段</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">myhosts:</span></span><br><span class="line">  <span class="attr">hosts:</span></span><br><span class="line">    <span class="attr">my_host_01:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.50</span></span><br><span class="line">    <span class="attr">my_host_02:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.51</span></span><br><span class="line">    <span class="attr">my_host_03:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.52</span></span><br></pre></td></tr></table></figure>
+<h2 id="构建清单的技巧">构建清单的技巧</h2>
+<ul>
+<li>
+<p>确保组名有意义且唯一。组名也区分大小写。</p>
+</li>
+<li>
+<p>避免在组名中使用空格、连字符和前导数字（使用 <code>floor_19</code>，而不是 <code>19th_floor</code>）。</p>
+</li>
+<li>
+<p>根据主机的**什么**、**哪里**和**何时**逻辑地将主机分组到您的清单中。</p>
+<p>什么</p>
+<p>根据拓扑结构对主机分组，例如：db、web、leaf、spine。</p>
+<p>哪里</p>
+<p>按地理位置对主机分组，例如：数据中心、区域、楼层、建筑物。</p>
+<p>何时</p>
+<p>按阶段对主机分组，例如：开发、测试、过渡、生产。</p>
+</li>
+</ul>
+<h3 id="使用元组">使用元组</h3>
+<p>使用以下语法创建一个元组来组织清单中的多个组</p>
+<p>以下清单说明了数据中心的结构基础。此示例清单包含一个 <code>network</code> 元组，其中包括所有网络设备，以及一个 <code>datacenter</code> 元组，其中包括 <code>network</code> 组和所有 Web 服务器。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">leafs:</span></span><br><span class="line">  <span class="attr">hosts:</span></span><br><span class="line">    <span class="attr">leaf01:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.100</span></span><br><span class="line">    <span class="attr">leaf02:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.110</span></span><br><span class="line"></span><br><span class="line"><span class="attr">spines:</span></span><br><span class="line">  <span class="attr">hosts:</span></span><br><span class="line">    <span class="attr">spine01:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.120</span></span><br><span class="line">    <span class="attr">spine02:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.130</span></span><br><span class="line"></span><br><span class="line"><span class="attr">network:</span></span><br><span class="line">  <span class="attr">children:</span></span><br><span class="line">    <span class="attr">leafs:</span></span><br><span class="line">    <span class="attr">spines:</span></span><br><span class="line"></span><br><span class="line"><span class="attr">webservers:</span></span><br><span class="line">  <span class="attr">hosts:</span></span><br><span class="line">    <span class="attr">webserver01:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.140</span></span><br><span class="line">    <span class="attr">webserver02:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.150</span></span><br><span class="line"></span><br><span class="line"><span class="attr">datacenter:</span></span><br><span class="line">  <span class="attr">children:</span></span><br><span class="line">    <span class="attr">network:</span></span><br><span class="line">    <span class="attr">webservers:</span></span><br></pre></td></tr></table></figure>
+<h3 id="创建变量">创建变量</h3>
+<p>变量设置受管节点的值，例如 IP 地址、FQDN、操作系统和 SSH 用户，因此您无需在运行 Ansible 命令时传递它们。</p>
+<p>变量可以应用于特定主机。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">webservers:</span></span><br><span class="line">  <span class="attr">hosts:</span></span><br><span class="line">    <span class="attr">webserver01:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.140</span></span><br><span class="line">      <span class="attr">http_port:</span> <span class="number">80</span></span><br><span class="line">    <span class="attr">webserver02:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.150</span></span><br><span class="line">      <span class="attr">http_port:</span> <span class="number">443</span></span><br></pre></td></tr></table></figure>
+<p>变量也可以应用于组中的所有主机。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">webservers:</span></span><br><span class="line">  <span class="attr">hosts:</span></span><br><span class="line">    <span class="attr">webserver01:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.140</span></span><br><span class="line">      <span class="attr">http_port:</span> <span class="number">80</span></span><br><span class="line">    <span class="attr">webserver02:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.150</span></span><br><span class="line">      <span class="attr">http_port:</span> <span class="number">443</span></span><br><span class="line">  <span class="attr">vars:</span></span><br><span class="line">    <span class="attr">ansible_user:</span> <span class="string">my_server_user</span></span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="创建剧本">创建剧本</h2>
+<p>剧本是 Ansible 用于部署和配置受管节点的自动化蓝图，采用 <code>YAML</code> 格式。</p>
+<p>剧本</p>
+<p>一系列定义 Ansible 执行操作顺序的剧目，自上而下，以实现总体目标。</p>
+<p>剧目</p>
+<p>一个有序的任务列表，映射到清单中的受管节点。</p>
+<p>任务</p>
+<p>对单个模块的引用，定义 Ansible 执行的操作。</p>
+<p>模块</p>
+<p>Ansible 在受管节点上运行的代码或二进制单元。Ansible 模块按集合分组，每个模块都有一个<a target="_blank" rel="noopener" href="https://docs.ansible.org.cn/ansible/latest/reference_appendices/glossary.html#term-Fully-Qualified-Collection-Name-FQCN">完全限定的集合名称 (FQCN)</a>。</p>
+<p>完成以下步骤以创建用于 ping 主机并打印“Hello world”消息的剧本</p>
+<ol>
+<li>
+<p>在您之前创建的 <code>ansible_quickstart</code> 目录中创建一个名为 <code>playbook.yaml</code> 的文件，内容如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">My</span> <span class="string">first</span> <span class="string">play</span></span><br><span class="line">  <span class="attr">hosts:</span> <span class="string">myhosts</span></span><br><span class="line">  <span class="attr">tasks:</span></span><br><span class="line">   <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Ping</span> <span class="string">my</span> <span class="string">hosts</span></span><br><span class="line">     <span class="attr">ansible.builtin.ping:</span></span><br><span class="line"></span><br><span class="line">   <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Print</span> <span class="string">message</span></span><br><span class="line">     <span class="attr">ansible.builtin.debug:</span></span><br><span class="line">       <span class="attr">msg:</span> <span class="string">Hello</span> <span class="string">world</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>运行您的剧本。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible-playbook -i inventory.ini playbook.yaml</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>Ansible 返回以下输出</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">PLAY [My first play] ****************************************************************************</span><br><span class="line"></span><br><span class="line">TASK [Gathering Facts] **************************************************************************</span><br><span class="line">ok: [192.0.2.50]</span><br><span class="line">ok: [192.0.2.51]</span><br><span class="line">ok: [192.0.2.52]</span><br><span class="line"></span><br><span class="line">TASK [Ping my hosts] ****************************************************************************</span><br><span class="line">ok: [192.0.2.50]</span><br><span class="line">ok: [192.0.2.51]</span><br><span class="line">ok: [192.0.2.52]</span><br><span class="line"></span><br><span class="line">TASK [Print message] ****************************************************************************</span><br><span class="line">ok: [192.0.2.50] =&gt; &#123;</span><br><span class="line">    &quot;msg&quot;: &quot;Hello world&quot;</span><br><span class="line">&#125;</span><br><span class="line">ok: [192.0.2.51] =&gt; &#123;</span><br><span class="line">    &quot;msg&quot;: &quot;Hello world&quot;</span><br><span class="line">&#125;</span><br><span class="line">ok: [192.0.2.52] =&gt; &#123;</span><br><span class="line">    &quot;msg&quot;: &quot;Hello world&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">PLAY RECAP **************************************************************************************</span><br><span class="line">192.0.2.50: ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0</span><br><span class="line">192.0.2.51: ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0</span><br><span class="line">192.0.2.52: ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0</span><br></pre></td></tr></table></figure>
+<p>在此输出中，您可以看到</p>
+<ul>
+<li>
+<p>您为剧目和每个任务指定的名称。您应始终使用易于验证和排查剧本问题的描述性名称。</p>
+</li>
+<li>
+<p>“收集事实”任务隐式运行。默认情况下，Ansible 会收集有关您的清单的信息，以便在剧本中使用。</p>
+</li>
+<li>
+<p>每个任务的状态。每个任务的状态为 <code>ok</code>，表示它已成功运行。</p>
+</li>
+<li>
+<p>剧目摘要，总结了每个主机上所有任务的结果。在此示例中，共有三个任务，因此 <code>ok=3</code> 表示每个任务都已成功运行。</p>
+</li>
+</ul>
+<p>恭喜，您已开始使用 Ansible！</p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/ansible/" rel="tag">ansible</a> <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/%E7%AE%80%E6%98%8E%E6%95%99%E7%A8%8B/" rel="tag">简明教程</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../ansible%E6%95%99%E7%A8%8B-%E6%A6%82%E5%BF%B5/"
+                    data-tooltip="ansible教程-概念"
+                    aria-label="上一篇: ansible教程-概念"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../21/cheat-sheet/pandas-cheat-sheet/"
+                    data-tooltip="pandas cheat sheet"
+                    aria-label="下一篇: pandas cheat sheet"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../ansible%E6%95%99%E7%A8%8B-%E6%A6%82%E5%BF%B5/"
+                    data-tooltip="ansible教程-概念"
+                    aria-label="上一篇: ansible教程-概念"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../21/cheat-sheet/pandas-cheat-sheet/"
+                    data-tooltip="pandas cheat sheet"
+                    aria-label="下一篇: pandas cheat sheet"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macao
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/10/12/mysql%E5%9F%BA%E7%A1%80%E6%95%99%E7%A8%8B/"
+                            aria-label=": mysql基础教程"
+                        >
+                            <h3 class="media-heading">mysql基础教程</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年10月12日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                            aria-label=": linux基础"
+                        >
+                            <h3 class="media-heading">linux基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/04/28/iptables/"
+                            aria-label=": iptables"
+                        >
+                            <h3 class="media-heading">iptables</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/08/12/git/git%E6%95%99%E7%A8%8B/"
+                            aria-label=": git教程"
+                        >
+                            <h3 class="media-heading">git教程</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年8月12日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/09/15/git/git-flow/"
+                            aria-label=": git flow"
+                        >
+                            <h3 class="media-heading">git flow</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年9月15日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 67 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

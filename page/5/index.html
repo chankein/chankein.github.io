@@ -301,6 +301,922 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../2020/05/06/linux/1-%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/"
+                            aria-label=": 1.系统架构"
+                        >
+                            1.系统架构
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2020-05-06T16:06:24+08:00">
+	
+		    2020 年 5 月 6 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="1-系统架构">1. 系统架构</h2>
+<h3 id="1-1-PCI架构">1.1 PCI架构</h3>
+<ul>
+<li><strong>PCI(外围组件互连)</strong>: Intel Core系统的主要总线架构</li>
+<li><strong>组件</strong>:
+<ul>
+<li><strong>CPU</strong>:
+<ul>
+<li>显示: eDP(支持i7 CPU和DDR4内存)</li>
+<li>显示: HDMI(支持i7 CPU和DDR4内存)</li>
+</ul>
+</li>
+<li><strong>PCH(平台控制器中枢)</strong>:
+<ul>
+<li>USB 3.0接口</li>
+<li>PCI总线</li>
+<li>音频输出</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="1-2-lspci命令">1.2 lspci命令</h3>
+<ul>
+<li>显示PCI总线和连接设备的信息</li>
+<li>可以查看:
+<ul>
+<li>中断请求(IRQ)信息</li>
+<li>设备路径和速度</li>
+<li>制造商ID</li>
+</ul>
+</li>
+</ul>
+<h3 id="1-3-ACPI-高级配置与电源接口">1.3 ACPI(高级配置与电源接口)</h3>
+<ul>
+<li>电源管理规范标准</li>
+<li>管理功能包括:
+<ul>
+<li>电源按钮操作</li>
+<li>笔记本开合盖检测</li>
+<li>电池充电状态</li>
+<li>CPU速度调节</li>
+</ul>
+</li>
+<li><strong>重要说明</strong>:
+<ul>
+<li>不直接管理硬件，而是处理电源事件</li>
+<li>配置文件位置:
+<ul>
+<li><code>/etc/acpi/</code>目录</li>
+<li><code>/proc/acpi/</code>目录</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>守护进程</strong>:
+<ul>
+<li><code>acpid</code>:
+<ul>
+<li>配置目录: <code>/etc/acpi/</code></li>
+<li>示例: 查看电源配置<code>cat /etc/acpi/events/power.conf</code></li>
+</ul>
+</li>
+<li><code>systemd-logind</code>:
+<ul>
+<li>配置文件: <code>/etc/systemd/logind.conf</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-启动流程">2. 启动流程</h2>
+<h3 id="2-1-传统SysV-Init启动">2.1 传统SysV Init启动</h3>
+<ol>
+<li>电源启动</li>
+<li>BIOS初始化</li>
+<li>引导加载程序(GRUB)</li>
+<li>加载内核(<code>vmlinuz</code>, <code>initramfs</code>)</li>
+<li>执行内核</li>
+<li>执行initramfs</li>
+<li>init进程启动并挂载根文件系统</li>
+<li>init启动各种服务</li>
+</ol>
+<h3 id="2-2-现代systemd启动">2.2 现代systemd启动</h3>
+<ol>
+<li>电源启动</li>
+<li>UEFI初始化</li>
+<li>引导加载程序(GRUB2)</li>
+<li>加载内核(<code>vmlinuz</code>, <code>initramfs</code>)</li>
+<li>执行内核</li>
+<li>执行initramfs</li>
+<li>systemd启动并挂载根文件系统</li>
+<li>systemd启动各种服务</li>
+</ol>
+<h3 id="2-3-Init进程详情">2.3 Init进程详情</h3>
+<ul>
+<li>第一个用户空间进程路径: <code>/sbin/init</code></li>
+<li>传统init流程:
+<ol>
+<li>init读取<code>/etc/inittab</code></li>
+<li>init执行<code>/etc/rc.sysinit</code>脚本</li>
+<li>init执行<code>/etc/rc</code>脚本</li>
+<li><code>/etc/rc</code>执行<code>/etc/rc&lt;运行级别&gt;.d/</code>目录下的脚本</li>
+</ol>
+</li>
+</ul>
+<h2 id="3-分区表">3. 分区表</h2>
+<h3 id="3-1-GPT-GUID分区表">3.1 GPT(GUID分区表)</h3>
+<ul>
+<li>EFI规范的一部分</li>
+<li>支持最大9.4TB分区</li>
+<li>使用GUID标识:
+<ul>
+<li>设备标识</li>
+<li>分区标识</li>
+</ul>
+</li>
+</ul>
+<h3 id="3-2-MBR-主引导记录">3.2 MBR(主引导记录)</h3>
+<ul>
+<li>使用CHS(柱面/磁头/扇区)寻址</li>
+<li>最大只支持2TB分区</li>
+</ul>
+<h2 id="4-系统信息命令">4. 系统信息命令</h2>
+<h3 id="4-1-uname命令">4.1 uname命令</h3>
+<p>显示系统信息:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">uname</span> -m  <span class="comment"># 显示硬件架构类型</span></span><br><span class="line"><span class="built_in">uname</span> -n  <span class="comment"># 显示网络节点主机名</span></span><br><span class="line"><span class="built_in">uname</span> -r  <span class="comment"># 显示内核发行版本</span></span><br><span class="line"><span class="built_in">uname</span> -s  <span class="comment"># 显示操作系统名称</span></span><br><span class="line"><span class="built_in">uname</span> -v  <span class="comment"># 显示内核版本</span></span><br><span class="line"><span class="built_in">uname</span> -a  <span class="comment"># 显示所有信息</span></span><br></pre></td></tr></table></figure>
+<h3 id="4-2-wall命令">4.2 wall命令</h3>
+<p>向所有用户广播消息:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wall <span class="string">&quot;消息内容&quot;</span></span><br></pre></td></tr></table></figure>
+<h3 id="4-3-dmesg命令">4.3 dmesg命令</h3>
+<p>显示内核环形缓冲区消息(启动日志):</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dmesg</span><br></pre></td></tr></table></figure>
+<h3 id="4-4-lsmod命令">4.4 lsmod命令</h3>
+<p>列出已加载的内核模块:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsmod</span><br></pre></td></tr></table></figure>
+<h3 id="4-5-modprobe命令">4.5 modprobe命令</h3>
+<p>手动加载设备驱动:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">modprobe &lt;设备名称&gt;</span><br></pre></td></tr></table></figure>
+<h2 id="5-proc文件系统">5. /proc文件系统</h2>
+<p>/proc目录下的重要文件:</p>
+<ul>
+<li><code>/proc/bus/usb/*</code> - USB设备信息</li>
+<li><code>/proc/cpuinfo</code> - CPU信息</li>
+<li><code>/proc/interrupts</code> - 中断请求信息</li>
+<li><code>/proc/pci</code> - PCI设备信息</li>
+<li><code>/proc/scsi/scsi</code> - SCSI设备信息</li>
+<li><code>/proc/version</code> - 内核版本信息</li>
+<li><code>/proc/meminfo</code> - 内存信息</li>
+</ul>
+<h2 id="6-运行级别">6. 运行级别</h2>
+<p>运行级别配置文件:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/etc/inittab</span><br></pre></td></tr></table></figure>
+<h2 id="7-模拟器">7. 模拟器</h2>
+<p>通过软件模拟硬件环境来运行不同操作系统的工具</p>
+<h2 id="8-启动顺序图示">8. 启动顺序图示</h2>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">graph TD</span><br><span class="line">    A[BIOS/UEFI固件] --&gt; B[引导加载程序]</span><br><span class="line">    B --&gt; C[Linux内核]</span><br><span class="line">    C --&gt; D[Init/Systemd]</span><br><span class="line">    D --&gt; E[系统服务]</span><br></pre></td></tr></table></figure>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2020/05/06/linux/1-%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../2019/10/28/%E6%95%B0%E5%AD%A6/%E6%A6%82%E7%8E%872-%E8%BF%9E%E7%BB%AD%E5%9E%8B%E9%9A%8F%E6%9C%BA%E5%88%86%E5%B8%83%E5%BE%8B/"
+                            aria-label=": 概率2-连续型随机分布律"
+                        >
+                            概率2-连续型随机分布律
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2019-10-28T23:11:58+08:00">
+	
+		    2019 年 10 月 28 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h5 id="1-均匀分布">1,均匀分布</h5>
+<p>若连续型随机变量X具有概率密度</p>
+\begin{align*}
+f(x)= \begin{cases}{1 \over {b-a}} ,a < x < b,\\0\end{cases}
+\end{align*}
+
+<p>则称X在区间(a,b)上服从均匀分布，记为X〜U(a,b)</p>
+<p>分布函数：</p>
+\begin{align*}
+F(x)= 
+\begin{cases} 
+0, & x < a \\
+\frac{x-a}{b-a}, & a \leq x < b \\
+1, & x \geq b 
+\end{cases}
+\end{align*}
+
+<hr>
+<h3 id="2-指数分布">2. 指数分布</h3>
+<p>若连续型随机变量X具有概率密度：</p>
+\begin{align*}
+f(x)= \begin{cases}
+\frac{1}{\theta} e^{-x/\theta}, & x > 0 \\
+0, & \text{其他}
+\end{cases}
+\end{align*}
+
+<p>其中θ&gt;0为常数，则称X服从参数为θ的指数分布。</p>
+<p>易知f(x)≥0，且：</p>
+\begin{align*}
+\int^\infty_{-\infty}f(x)dx = \left[-e^{-x/\theta}\right]^\infty_0 = 1
+\end{align*}
+
+<p>分布函数：</p>
+\begin{align*}
+F(x)= \begin{cases}
+1-e^{-x/\theta}, & x > 0 \\
+0, & \text{其他}
+\end{cases}
+\end{align*}
+
+<p>服从指数分布的随机变量X具有无记忆性：<br>
+对于任意s,t&gt;0，有</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>P</mi><mo>{</mo><mi>X</mi><mo>&gt;</mo><mi>s</mi><mo>+</mo><mi>t</mi><mi mathvariant="normal">∣</mi><mi>X</mi><mo>&gt;</mo><mi>s</mi><mo>}</mo><mo>=</mo><mi>P</mi><mo>(</mo><mi>X</mi><mo>&gt;</mo><mi>t</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">P\{X&gt;s+t|X&gt;s\} = P(X&gt;t)
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base displaystyle textstyle uncramped"><span class="mord mathit" style="margin-right:0.13889em;">P</span><span class="mopen">{</span><span class="mord mathit" style="margin-right:0.07847em;">X</span><span class="mrel">&gt;</span><span class="mord mathit">s</span><span class="mbin">+</span><span class="mord mathit">t</span><span class="mord mathrm">∣</span><span class="mord mathit" style="margin-right:0.07847em;">X</span><span class="mrel">&gt;</span><span class="mord mathit">s</span><span class="mclose">}</span><span class="mrel">=</span><span class="mord mathit" style="margin-right:0.13889em;">P</span><span class="mopen">(</span><span class="mord mathit" style="margin-right:0.07847em;">X</span><span class="mrel">&gt;</span><span class="mord mathit">t</span><span class="mclose">)</span></span></span></span></span></p>
+<p>证明：</p>
+\begin{align*}
+P\{X>s+t|X>s\} 
+&= \frac{P\{X>s+t\} \cap P\{X>s\}}{P\{X>s\}} \\
+&= \frac{P\{X>s+t\}}{P\{X>s\}} \\
+&= \frac{1-F(s+t)}{1-F(s)} \\
+&= \frac{e^{-(s+t)/\theta}}{e^{-s/\theta}} \\
+&= e^{-t/\theta} \\
+&= P\{X>t\}
+\end{align*}
+
+<hr>
+<h3 id="3-正态分布">3. 正态分布</h3>
+<p>若连续型随机变量X具有概率密度：</p>
+\begin{align*}
+f(x) = \frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{(x-\mu)^2}{2\sigma^2}}
+\end{align*}
+
+<p>其中μ,σ(σ&gt;0)为常数，则称X服从参数为μ,σ的正态分布，记为X～N(μ,σ²)。</p>
+<p>显然f(x)≥0，下面证明：</p>
+\begin{align*}
+\int^\infty_{-\infty}f(x)dx = 1
+\end{align*}
+
+<p>令<span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>t</mi><mo>=</mo><mfrac><mrow><mi>x</mi><mo>−</mo><mi>μ</mi></mrow><mrow><mi>σ</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">t = \frac{x-\mu}{\sigma}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.854439em;"></span><span class="strut bottom" style="height:1.199439em;vertical-align:-0.345em;"></span><span class="base textstyle uncramped"><span class="mord mathit">t</span><span class="mrel">=</span><span class="mord reset-textstyle textstyle uncramped"><span class="sizing reset-size5 size5 reset-textstyle textstyle uncramped nulldelimiter"></span><span class="mfrac"><span class="vlist"><span style="top:0.345em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord scriptstyle cramped"><span class="mord mathit" style="margin-right:0.03588em;">σ</span></span></span></span><span style="top:-0.22999999999999998em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle textstyle uncramped frac-line"></span></span><span style="top:-0.44610799999999995em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord scriptstyle uncramped"><span class="mord mathit">x</span><span class="mbin">−</span><span class="mord mathit">μ</span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span>​</span></span></span><span class="sizing reset-size5 size5 reset-textstyle textstyle uncramped nulldelimiter"></span></span></span></span></span>，则：</p>
+\begin{align*}
+σ=(x-μ)/t,
+
+t'(x)=1/σ
+\end{align*}
+
+<p>得到:</p>
+\begin{align*}
+\int^\infty_{-\infty}\frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{(x-\mu)^2}{2\sigma^2}}dx &=\int^\infty_{-\infty}{1 \over {\sqrt{2 \pi}}(x-μ)/t}e^{-t^2 \over 2}dt \\
+&= \frac{1}{\sqrt{2\pi}}\int^\infty_{-\infty}e^{-\frac{t^2}{2}}dt
+\end{align*}
+
+<p>记：</p>
+\begin{align*}
+I = \int^\infty_{-\infty}e^{-\frac{t^2}{2}}dt
+\end{align*}
+
+<p>则有：</p>
+\begin{align*}
+I^2 = \int^\infty_{-\infty}\int^\infty_{-\infty}e^{-\frac{t^2+u^2}{2}}dtdu
+\end{align*}
+
+<p>利用极坐标变换：</p>
+\begin{align*}
+I^2 = \int^{2\pi}_0\int^\infty_0 re^{-\frac{r^2}{2}}drd\theta = 2\pi
+\end{align*}
+
+<p>（p55）</p>
+<hr>
+<h3 id="附：">附：</h3>
+<p>计算：</p>
+\begin{align*}
+\iint_D^\infty e^{-\frac{x^2+y^2}{2}}dxdy
+\end{align*}
+
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2019/10/28/%E6%95%B0%E5%AD%A6/%E6%A6%82%E7%8E%872-%E8%BF%9E%E7%BB%AD%E5%9E%8B%E9%9A%8F%E6%9C%BA%E5%88%86%E5%B8%83%E5%BE%8B/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../2019/10/28/%E6%95%B0%E5%AD%A6/%E6%A6%82%E7%8E%871-%E7%A6%BB%E6%95%A3%E5%9E%8B%E9%9A%8F%E6%9C%BA%E5%88%86%E5%B8%83%E5%BE%8B/"
+                            aria-label=": 概率1-离散型随机分布律"
+                        >
+                            概率1-离散型随机分布律
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2019-10-28T22:11:58+08:00">
+	
+		    2019 年 10 月 28 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h5 id="１-不放回抽样表达式">１.不放回抽样表达式:</h5>
+<p>a件产品中抽取n件（不放回），则可能的取法有</p>
+\begin{align*}
+\left( \begin{matrix} a\\ n \\ \end{matrix} \right) =C^n_a=A^n_a/n!= { {a(a-1)...(a-n+1)} \over n!} ={a! \over n!(a-n)!}
+\end{align*}
+
+<hr>
+<h5 id="伯努利试验-二项分布">伯努利试验,二项分布</h5>
+<p>设试验E只有两种可能结果:A及非A,则称E为伯努利试验，设P(A)=p (0&lt;p&lt;1),此时P(非A)=1-p.将E独立重复地进行N次，则称这一串重复的独立试验为n重伯努利试验。</p>
+<p>标记为<br>
+X〜b(n,p).</p>
+\begin{align*}
+P\{X = k\}=\left( \begin{matrix} n\\ k \\ \end{matrix} \right) p^k q^{n-k}
+\end{align*}
+
+<p>当n=1时，化为二项分布：</p>
+\begin{align*}
+P\{X = k\}= p^k q^{1-k}
+\end{align*}
+
+\begin{align*}
+\sum_{k=0}^n P\{X = k\}=\sum_{k=0}^n {\left( \begin{matrix} n\\ k \\ \end{matrix} \right) } p^k q^{n-k} =(p+q)^n=1
+\end{align*}
+
+<hr>
+<h5 id="泊松分布">泊松分布</h5>
+<p>设随机变量X所有可能取的值为0,1,2,…,2而取各个值的概率为</p>
+\begin{align*}
+P\{X=k\}={λ^ke^{-λ} \over {k!}} ,k=0,1,2,...,
+\end{align*}
+
+<p>其中λ&gt;0是常数.则称X服从参数为λ的泊松分布，记为X〜π(λ).</p>
+<p>易知,P{X=k}≥0,k=0,1,2,…,且有</p>
+\begin{align*}
+
+\sum_{k=0}^\infty P\{X = k\}=\sum_{k=0}^\infty {λ^ke^{-λ} \over {k!}}=e^{-λ}\sum_{k=0}^\infty {λ^k\over {k!}}=e^{-λ}e^λ=1
+
+\end{align*}
+
+<p>倒数第二步是<strong>泰勒级数</strong>(见附表)</p>
+<p><strong>泊松定理</strong>  设λ&gt;0是一个常数,n是任意正整数,设np=λ,则对于任一固定的非负整数k，有</p>
+\begin{align*}
+\lim_{n \to \infty} \binom{n}{k} p_n^k (1-p_n)^{n-k} = \frac{\color{red}\lambda^k \color{purple}e^{-\lambda}}{\color{red}k!}.
+\end{align*}
+
+<p><strong>证</strong> 由</p>
+\begin{align*}
+p_n= {λ \over n}
+\end{align*}
+
+<p>,有</p>
+\begin{align*}
+{\left( \begin{matrix} n\\ k \\ \end{matrix} \right)}p^k_n(1-p_n)^{n-k}&={\color{blue}{n(n-1)(n-2)...(n-k+1)} \over {\color{red}k!}}{({\color{red}{λ} \over \color{blue}n})^k}{(1-{λ \over n})^{n-k}} \\
+&={\color{red}{λ^k \over k!}}{[\color{blue}1 \cdot ({1-{1 \over n})}\cdot ({1-{2 \over n})...(1-{(k+1) \over n})}}]{\color{purple}(1-{λ \over n})^{n}}{(1-{λ \over n})^{-k}}
+\end{align*}
+
+<p>对于任意固定的k,当n→∞,</p>
+\begin{align*}
+\lim_{n \to \infty}[1 \cdot ({1-{1 \over n})}\cdot ({1-{2 \over n})...(1-{(k+1) \over n})}]=1, \\
+
+\lim_{n \to \infty}(1-{λ \over n})^{n}={\color{purple}e^{-λ}}, \\
+
+\lim_{n \to \infty}(1-{λ \over n})^{-k}=1
+\end{align*}
+
+<p>Q.E.D.</p>
+<hr>
+<p><strong>泰勒中值定理</strong> 如果函数f(x)在含有x₀的某个开区间(a,b)内具有直到(n+1)阶的导数，则对任一x∈(a,b),有</p>
+\begin{align*}
+f(x)=f(x_0)+f'(x_0)(x-x_0)+{f''(x_0) \over 2!}(x-x_0)^2+...+{f^{(n)}(x_0) \over n!}(x-x_0)^n+R_n(x),
+\end{align*}
+
+<p>其中</p>
+\begin{align*}
+R_n(x)={f^{(n+1)}(\xi) \over ({n+1})!} (x-x_0)^{n+1}
+\end{align*}
+
+<p>当</p>
+\begin{align*}
+&x_0=0,f(λ)=e^λ \\
+
+&f(λ)=e^λ \\
+&= e^0+{(e^0)(λ-0) \over {1!}}+{(e^0)(λ-0)^2 \over {2!}}+{(e^0)(λ-0)^3 \over {3!}}+...+{(e^0)(λ-0)^k \over {k!}} \\
+&= \sum_{k=0}^\infty {λ^k\over {k!}}
+\end{align*}
+
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2019/10/28/%E6%95%B0%E5%AD%A6/%E6%A6%82%E7%8E%871-%E7%A6%BB%E6%95%A3%E5%9E%8B%E9%9A%8F%E6%9C%BA%E5%88%86%E5%B8%83%E5%BE%8B/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../2019/10/28/%E6%95%B0%E5%AD%A6/11-%E5%81%8F%E5%AF%BC%E6%95%B0-%E6%8B%89%E6%99%AE%E6%8B%89%E6%96%AF%E6%96%B9%E7%A8%8B/"
+                            aria-label=": 11.偏导数(拉普拉斯方程)"
+                        >
+                            11.偏导数(拉普拉斯方程)
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2019-10-28T21:46:04+08:00">
+	
+		    2019 年 10 月 28 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <p>拉普拉斯方程：<br>
+验证函数</p>
+\begin{align*}
+z=ln \sqrt{x^2+y^2}
+\end{align*}
+
+<p>满足方程</p>
+\begin{align*}
+{\partial^2{z} \over \partial{x^2}}+{\partial^2{z} \over \partial{y^2}}=0
+\end{align*}
+
+<p>证:因为</p>
+\begin{align*}
+z=ln \sqrt{x^2+y^2} =1/2 ln(x^2+y^2)
+\end{align*}
+
+<p>所以</p>
+\begin{align*}
+{\partial{z} \over \partial{x}}={x \over(x^2+y^2)}
+\end{align*}
+
+\begin{align*}
+{\partial^2{z} \over \partial{x^2}}={(x^2+y^2)-2x \cdot x \over(x^2+y^2)^2}={y^2-x^2 \over(x^2+y^2)^2}
+\end{align*}
+
+\begin{align*}
+{\partial{z} \over \partial{y}}={y \over(x^2+y^2)}
+\end{align*}
+
+\begin{align*}
+{\partial^2{z} \over \partial{y^2}}={(x^2+y^2)-2y \cdot y \over(x^2+y^2)^2}={x^2-y^2 \over(x^2+y^2)^2}
+\end{align*}
+
+<p>Q.E.D.</p>
+<hr>
+<p>验证函数</p>
+\begin{align*}
+u={1 \over r}
+\end{align*}
+
+<p>满足方程</p>
+\begin{align*}
+{\partial^2{u} \over \partial{x^2}}+{\partial^2{u} \over \partial{y^2}}+{\partial^2{u} \over \partial{z^2}}=0
+\end{align*}
+
+<p>其中</p>
+\begin{align*}
+r =\sqrt{x^2+y^2+z^2}
+\end{align*}
+
+<p>证：</p>
+\begin{align*}
+{\partial{u} \over \partial{x}}={-1 \over r^2} \cdot {1 \over {2r}}  \cdot 2x=-{x \over r^3}
+\end{align*}
+
+\begin{align*}
+{\partial^2{u} \over \partial{x^2}}=-{1 \over r^3}+ {3 \over r^4}x \cdot {1 \over {2r}}  \cdot 2x=-{1 \over r^3}+{3x^2 \over r^5}
+\end{align*}
+
+<p>同理</p>
+\begin{align*}
+{\partial^2{u} \over \partial{y^2}}=-{1 \over r^3}+ {3 \over r^4}y \cdot {1 \over {2r}}  \cdot 2y=-{1 \over r^3}+{3y^2 \over r^5}
+\end{align*}
+
+\begin{align*}
+{\partial^2{u} \over \partial{z^2}}=-{1 \over r^3}+ {3 \over r^4}z \cdot {1 \over {2r}}  \cdot 2z=-{1 \over r^3}+{3z^2 \over r^5}
+\end{align*}
+
+<p>于是</p>
+\begin{align*}
+{\partial^2{u} \over \partial{x^2}}+{\partial^2{u} \over \partial{y^2}}+{\partial^2{u} \over \partial{z^2}}={-3 \over r^3}+{(3x^2+3y^2+3z^2) \over r^5}=0
+\end{align*}
+
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2019/10/28/%E6%95%B0%E5%AD%A6/11-%E5%81%8F%E5%AF%BC%E6%95%B0-%E6%8B%89%E6%99%AE%E6%8B%89%E6%96%AF%E6%96%B9%E7%A8%8B/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../2019/10/28/%E6%95%B0%E5%AD%A6/10-%E5%90%91%E9%87%8F%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5/"
+                            aria-label=": 10.向量基本概念"
+                        >
+                            10.向量基本概念
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2019-10-28T20:46:04+08:00">
+	
+		    2019 年 10 月 28 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h4 id="一-向量的线性运算">一,向量的线性运算</h4>
+<hr>
+<p>1,向量的加减法</p>
+<p>(1)交换律 a+b=B+a;</p>
+<p>(2)结合律 (a+b)+c=a+(b+c);</p>
+<hr>
+<p>2,向量与数的乘法</p>
+<p>(1)结合律</p>
+\begin{align*}
+\lambda (\mu \vec{a}) =\lambda (\mu \vec{a})= (\lambda \mu) \vec{a}
+\end{align*}
+
+<p>(2)分配律</p>
+\begin{align*}
+(\lambda + \mu)\vec{a} =\lambda \vec{a} + \mu \vec{a} \\
+
+
+\lambda (\vec{a}+\vec{b}) =\lambda \vec{a} + \lambda \vec{b}
+\end{align*}
+
+<p><strong>定理1 设向量a ≠ 0,那么，向量b平行于a的充分必要条件是:存在唯一的实数λ，使b=λa</strong></p>
+<hr>
+<h4 id="向量的模，方向角，投影">向量的模，方向角，投影</h4>
+<p>向量模的坐标式</p>
+\begin{align*}
+|\vec{AB}|=\sqrt{x^2+y^2+z^2}
+\end{align*}
+
+<p>A，B两点间距离就是向量AB的模。</p>
+\begin{align*}
+|\vec{AB}|=\sqrt{(x_1-x_2)^2+(y_1-y_2)^2+(z_1-z_2)^2}
+\end{align*}
+
+<p>方向角和方向余弦</p>
+<p>设有两个非零向量a,b,任取空间一点O，<br>
+（P298）</p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2019/10/28/%E6%95%B0%E5%AD%A6/10-%E5%90%91%E9%87%8F%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../2019/10/27/%E6%95%B0%E5%AD%A6/9-%CE%93%E5%87%BD%E6%95%B0-gamma%E5%87%BD%E6%95%B0/"
+                            aria-label=": 9.Γ函数(gamma函数)"
+                        >
+                            9.Γ函数(gamma函数)
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2019-10-27T21:46:04+08:00">
+	
+		    2019 年 10 月 27 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <p>Γ函数：</p>
+\begin{align*}
+\Gamma (s)= \int_0^{+ \infty} e^{-x} x^{(s-1)}dx \ .(s>0)
+\end{align*}
+
+<p>分别讨论以下两个积分:</p>
+\begin{align*}
+I_1= \int_0^1 e^{-x} x^{(s-1)}dx \ .(s>0)
+\end{align*}
+
+\begin{align*}
+I_2= \int_1^{+ \infty} e^{-x} x^{(s-1)}dx \ .(s>0)
+\end{align*}
+
+<p>当s≥1时，<span class="katex"><span class="katex-mathml"><math><semantics><mrow><msub><mi>I</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">I_1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.68333em;"></span><span class="strut bottom" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="base textstyle uncramped"><span class="mord"><span class="mord mathit" style="margin-right:0.07847em;">I</span><span class="vlist"><span style="top:0.15em;margin-right:0.05em;margin-left:-0.07847em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord mathrm">1</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span>​</span></span></span></span></span></span> 是定积分（s看作定值），当0&lt;s&lt;1时，因为</p>
+\begin{align*}
+e^{-x} \cdot x^{s-1} ={1 \over x^{1-s}} \cdot {1 \over e^x} < {1 \over x^{1-s}}
+\end{align*}
+
+<p>根据比较审敛法2，反常积分<span class="katex"><span class="katex-mathml"><math><semantics><mrow><msub><mi>I</mi><mn>1</mn></msub></mrow><annotation encoding="application/x-tex">I_1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.68333em;"></span><span class="strut bottom" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="base textstyle uncramped"><span class="mord"><span class="mord mathit" style="margin-right:0.07847em;">I</span><span class="vlist"><span style="top:0.15em;margin-right:0.05em;margin-left:-0.07847em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord mathrm">1</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span>​</span></span></span></span></span></span>收敛。</p>
+<p>再讨论<span class="katex"><span class="katex-mathml"><math><semantics><mrow><msub><mi>I</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">I_2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.68333em;"></span><span class="strut bottom" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="base textstyle uncramped"><span class="mord"><span class="mord mathit" style="margin-right:0.07847em;">I</span><span class="vlist"><span style="top:0.15em;margin-right:0.05em;margin-left:-0.07847em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord mathrm">2</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span>​</span></span></span></span></span></span>,因为</p>
+\begin{align*}
+\lim_{x \to + \infty} x^2 \cdot (e^{-x}x^{s-1})= \lim_{x \to + \infty} {x^{s+1} \over e^x}=0
+\end{align*}
+
+<p>根据比较审敛法1，反常积分<span class="katex"><span class="katex-mathml"><math><semantics><mrow><msub><mi>I</mi><mn>2</mn></msub></mrow><annotation encoding="application/x-tex">I_2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.68333em;"></span><span class="strut bottom" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="base textstyle uncramped"><span class="mord"><span class="mord mathit" style="margin-right:0.07847em;">I</span><span class="vlist"><span style="top:0.15em;margin-right:0.05em;margin-left:-0.07847em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord mathrm">2</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span>​</span></span></span></span></span></span>收敛。<br>
+(最后一步洛必达法则)</p>
+<hr>
+<p>Γ函数四个性质:</p>
+<p>1.递推公式</p>
+\begin{align*}
+\Gamma (s+1) = s \Gamma (s) (s>0)
+\end{align*}
+
+<p>证: 应用分部积分法,有</p>
+\begin{align*}
+\Gamma (s+1) 
+&= \int_0^{+ \infty} e^{-x} x^s dx \\
+&= - \int_0^{+ \infty} x^s de^{-x} \\
+&= -([x^se^{-x}]_0^{+ \infty } -s \int_0^{+ \infty} e^{-x}x^{s-1}dx ) \\
+&= 0 + s \int_0^{+ \infty} e^{-x}x^{s-1}dx \\
+&= s \Gamma (s) 
+\end{align*}
+
+<p>其中</p>
+\begin{align*}
+\lim_{x \to + \infty  } x^se^{-x} =0
+\end{align*}
+
+<p>可由洛必达法则求得。<br>
+显然:</p>
+\begin{align*}
+\Gamma (1) 
+&=\int_0^{+ \infty} e^{-x}x^{s-1}dx \\
+&=\int_0^{+ \infty} e^{-x}dx \\ 
+&=[-e^{-x}]^{+ \infty}_0 \\
+&=0-(-1) \\
+&=1
+\end{align*}
+
+<p>反复运用递推公式有:<br>
+对于任意的正整数</p>
+\begin{align*}
+\Gamma (n+1)=n!
+\end{align*}
+
+<p>所以Gamma函数可以看作阶乘的推广</p>
+<p>2.当</p>
+\begin{align*}
+s \to 0^+
+\end{align*}
+
+<p>时,</p>
+\begin{align*}
+\Gamma (s) ={\Gamma (s+1) \over s},\Gamma (1)=1
+\end{align*}
+
+<p>,所以当</p>
+\begin{align*}
+s \to 0^+,\Gamma (s) \to + {\infty}
+\end{align*}
+
+<ol start="3">
+<li></li>
+</ol>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mtable><mtr><mtd><mrow><mi mathvariant="normal">Γ</mi><mo>(</mo><mi>s</mi><mo>)</mo><mi mathvariant="normal">Γ</mi><mo>(</mo><mi>s</mi><mo>−</mo><mn>1</mn><mo>)</mo><mo>=</mo><mrow><mfrac><mrow><mi>π</mi></mrow><mrow><mi>s</mi><mi>i</mi><mi>n</mi><mi>π</mi><mi>s</mi></mrow></mfrac></mrow><mtext> </mtext><mo>(</mo><mn>0</mn><mo>&lt;</mo><mi>s</mi><mo>&lt;</mo><mn>1</mn><mo>)</mo></mrow></mtd></mtr></mtable></mrow><annotation encoding="application/x-tex">\begin{aligned}
+\Gamma (s) \Gamma (s-1) ={\pi \over sin \pi s} \ (0&lt;s&lt;1)
+\end{aligned}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:1.1467800000000001em;"></span><span class="strut bottom" style="height:1.7935600000000003em;vertical-align:-0.64678em;"></span><span class="base displaystyle textstyle uncramped"><span class="mord"><span class="mtable"><span class="col-align-r"><span class="vlist"><span style="top:-0.03922000000000003em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="mord displaystyle textstyle uncramped"><span class="mord mathrm">Γ</span><span class="mopen">(</span><span class="mord mathit">s</span><span class="mclose">)</span><span class="mord mathrm">Γ</span><span class="mopen">(</span><span class="mord mathit">s</span><span class="mbin">−</span><span class="mord mathrm">1</span><span class="mclose">)</span><span class="mrel">=</span><span class="mord displaystyle textstyle uncramped"><span class="mord reset-textstyle displaystyle textstyle uncramped"><span class="sizing reset-size5 size5 reset-textstyle textstyle uncramped nulldelimiter"></span><span class="mfrac"><span class="vlist"><span style="top:0.686em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle textstyle cramped"><span class="mord textstyle cramped"><span class="mord mathit">s</span><span class="mord mathit">i</span><span class="mord mathit">n</span><span class="mord mathit" style="margin-right:0.03588em;">π</span><span class="mord mathit">s</span></span></span></span><span style="top:-0.22999999999999998em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle textstyle uncramped frac-line"></span></span><span style="top:-0.677em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle textstyle uncramped"><span class="mord textstyle uncramped"><span class="mord mathit" style="margin-right:0.03588em;">π</span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span>​</span></span></span><span class="sizing reset-size5 size5 reset-textstyle textstyle uncramped nulldelimiter"></span></span></span><span class="mord mspace"> </span><span class="mopen">(</span><span class="mord mathrm">0</span><span class="mrel">&lt;</span><span class="mord mathit">s</span><span class="mrel">&lt;</span><span class="mord mathrm">1</span><span class="mclose">)</span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span>​</span></span></span></span></span></span></span></span></span></p>
+<p>4.在</p>
+\begin{align*}
+\Gamma (s)  = \int_0^{+ \infty} e^{-x} x^{(s-1)}dx
+\end{align*}
+
+<p>作代换</p>
+\begin{align*}
+x=u^2
+\end{align*}
+
+<p>,<br>
+有</p>
+\begin{align*}
+\Gamma (s) =  \int_0^{+ \infty} e^{-u^2} u^{2(s-1)}2udu = 2 \int_0^{+ \infty} e^{-u^2} u^{2s-1}du
+\end{align*}
+
+<p>再令2s-1=t有:</p>
+\begin{align*}
+\int_0^{+ \infty} e^{-u^2} u^{2s-1}du = \int_0^{+ \infty} e^{-u^2} u^tdu =\Gamma ({t+1 \over 2}) . (t>-1) 
+\end{align*}
+
+<p>上式<br>
+令t=0,则s=1/2,得</p>
+\begin{align*}
+2 \int_0^{+ \infty} e^{-u^2}du =\Gamma({1 \over 2})=\sqrt{\pi}
+\end{align*}
+
+<p>以上即为高斯积分</p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2019/10/27/%E6%95%B0%E5%AD%A6/9-%CE%93%E5%87%BD%E6%95%B0-gamma%E5%87%BD%E6%95%B0/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../2019/10/26/%E6%95%B0%E5%AD%A6/8-%E5%8F%8D%E5%B8%B8%E7%A7%AF%E5%88%86/"
                             aria-label=": 8.反常积分"
                         >
@@ -1122,977 +2038,6 @@ R_n(x) = \frac{f^{(n+1)}(\xi)}{(n+1)!}(x-x_0)^{n+1} \quad \text{（$\xi$ 在 $x_
         
     </article>
     
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2019/09/28/%E6%95%B0%E5%AD%A6/4-%E5%BE%AE%E5%88%86/"
-                            aria-label=": 4.微分"
-                        >
-                            4.微分
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2019-09-28T21:11:58+08:00">
-	
-		    2019 年 9 月 28 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h3 id="定义">定义</h3>
-<p><strong>微分的基本概念：</strong></p>
-\begin{align*}
-\Delta y &= f(x_0 + \Delta x) - f(x_0) \quad \text{（函数增量）} \\
-\Delta y &= A \Delta x + o(\Delta x) \quad \text{（线性近似+高阶无穷小）}
-\end{align*}
-
-<p><strong>微分表达式：</strong></p>
-\begin{align*}
-dy = y'_x(x)dx = f'(u)g'(x)dx \quad \text{（链式法则微分形式）}
-\end{align*}
-
-<hr>
-<h4 id="复合函数的微分法则">复合函数的微分法则</h4>
-<p><strong>乘法法则的微分形式：</strong></p>
-\begin{align*}
-d(uv) &= (uv)'dx \\[5pt]
-\text{∵}\quad (uv)' &= u'v + v'u \quad \text{（乘积导数法则）} \\[5pt]
-u'dx &= du \\[5pt]
-v'dx &= dv \\[5pt]
-\text{∴}\quad d(uv) 
-&=(u'v+v'u)dx \\
-&=u'vdx+v'udx \\
-&= vdu + udv \quad \text{（微分乘积法则）} \\
-\end{align*}
-
-<p><strong>复合函数示例：</strong></p>
-\begin{align*}
-y &= \sin(2x+1) \\
-dy &= d(\sin u) = \cos(2x+1)d(2x+1) \\
-&= \cos(2x+1) \cdot 2dx = 2\cos(2x+1)dx \text{（先外函数后内函数）}
-\end{align*}
-
-<hr>
-<h4 id="近似计算原理">近似计算原理</h4>
-<p><strong>线性近似公式：</strong></p>
-\begin{align*}
-\text{∵} \Delta y=f(x_0 + \Delta x) - f(x_0)&\approx dy = f'(x_0)\Delta x \quad \text{（用切线近似函数）} \\[5pt]
-\text{∴} f(x_0 + \Delta x) \approx f(x_0) + f'(x_0) \Delta x \\[5pt]
-for \ x=(x_0 + \Delta x): \\[5pt]
-f(x) &\approx f(x_0) + f'(x_0)(x-x_0) \quad \text{（泰勒展开一阶项）}
-\end{align*}
-
-<hr>
-<h4 id="常用近似公式（当-x-很小时）：">常用近似公式（当|x|很小时）：</h4>
-<ol>
-<li>
-<p><strong>n次方根：</strong></p>
-\begin{align*}
-\sqrt[n]{1+x} \approx f(0) + f'(0)x (x - 0) =1 +(\frac{1}{n})(x)  = 1 + \frac{1}{n}x
-\end{align*}
-
-<p>如 $$\sqrt{1.02} \approx 1.01$$</p>
-</li>
-<li>
-<p><strong>正弦函数：</strong></p>
-\begin{align*}
-\sin x \approx f(0) + f'(0)(x - 0) = 0 + \cos(0)x = x
-\end{align*}
-
-<p>小角度时正弦值≈弧度值</p>
-</li>
-<li>
-<p><strong>正切函数：</strong></p>
-\begin{align*}
-\tan x &= \frac{\sin x}{\cos x} \\[5pt]
-\text{∵}\quad \tan'x &= \frac{\cos^2x + \sin^2x}{\cos^2x} = \frac{1}{\cos^2x} = \sec^2x \\[5pt]
-\text{∴}\quad \tan x &\approx f(0) + f'(0)(x - 0) = 0 + 1 \cdot x = x
-\end{align*}
-
-<p>小角度时正切值≈弧度值</p>
-</li>
-<li>
-<p><strong>指数函数：</strong></p>
-\begin{align*}
-e^x \approx f(0) + f'(0)(x - 0) = 1 + x
-\end{align*}
-
-<p>如 $$e^{0.01} \approx 1.01$$</p>
-</li>
-<li>
-<p><strong>对数函数：</strong></p>
-\begin{align*}
-\ln(1+x) \approx f(0) + f'(0)(x - 0) = 0 + 1 \cdot x = x
-\end{align*}
-
-<p>如 $$\ln(1.02) \approx 0.02$$</p>
-</li>
-</ol>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2019/09/28/%E6%95%B0%E5%AD%A6/4-%E5%BE%AE%E5%88%86/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2019/09/28/%E6%95%B0%E5%AD%A6/3-%E8%8E%B1%E5%B8%83%E5%B0%BC%E5%85%B9%E5%85%AC%E5%BC%8F/"
-                            aria-label=": 3.莱布尼兹公式"
-                        >
-                            3.莱布尼兹公式
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2019-09-28T18:11:58+08:00">
-	
-		    2019 年 9 月 28 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <p>对于幂函数：</p>
-\begin{align*}
-&y=x^n \\
-&y' = n x^{n-1} \\
-&y''=n(n-1)x^{n-2}  \\
-&...\\
-&y^{(m)}=n(n-1)...(n-m+1) x^{(n-m)}=n!/m! x^{(n-m)} \\
-if  \ n=m: \\
-&y^{(n)}=n!
-\end{align*}
-
-<p>莱布尼兹公式:</p>
-\begin{align*}
-(uv)^{(n)} = \sum^n_{k=0}C^k_nu^{(n-k)}v^{(k)}
-\end{align*}
-
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2019/09/28/%E6%95%B0%E5%AD%A6/3-%E8%8E%B1%E5%B8%83%E5%B0%BC%E5%85%B9%E5%85%AC%E5%BC%8F/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2019/09/28/%E6%95%B0%E5%AD%A6/2-%E5%87%BD%E6%95%B0%E7%9A%84%E6%B1%82%E5%AF%BC%E6%B3%95%E5%88%99/"
-                            aria-label=": 2.函数的求导法则"
-                        >
-                            2.函数的求导法则
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2019-09-28T16:58:41+08:00">
-	
-		    2019 年 9 月 28 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    \begin{align*}
-(1)\ & [u(x) \pm v(x)]' = u'(x) \pm v'(x) \\[10pt]
-
-(2)\ & [u(x)v(x)]' = u'(x)v(x) + u(x)v'(x) \\[10pt]
-
-(3)\ & \left[\frac{u(x)}{v(x)}\right]' = \frac{u'(x)v(x) - u(x)v'(x)}{v^2(x)}
-\end{align*}
-
-<h3 id="证明">证明</h3>
-<h4 id="1-加减法则">(1) 加减法则</h4>
-\begin{align*}
-[u(x) \pm v(x)]' 
-&= \lim_{\Delta x \to 0} \frac{[u(x + \Delta x) \pm v(x + \Delta x)] - [u(x) \pm v(x)]}{\Delta x} \\
-&= \lim_{\Delta x \to 0} \frac{[u(x + \Delta x) - u(x)] \pm [v(x + \Delta x) - v(x)]}{\Delta x} \\
-&= \lim_{\Delta x \to 0} \frac{u(x + \Delta x) - u(x)}{\Delta x} \pm \lim_{\Delta x \to 0} \frac{v(x + \Delta x) - v(x)}{\Delta x} \\
-&= u'(x) \pm v'(x)
-\end{align*}
-
-<h4 id="2-乘法法则">(2) 乘法法则</h4>
-\begin{align*}
-[u(x)v(x)]' 
-&= \lim_{\Delta x \to 0} \frac{u(x + \Delta x)v(x + \Delta x) - u(x)v(x)}{\Delta x} \\
-&= \lim_{\Delta x \to 0} \left[
-  \frac{u(x + \Delta x) - u(x)}{\Delta x} \cdot v(x + \Delta x) 
-  + u(x) \cdot \frac{v(x + \Delta x) - v(x)}{\Delta x}
-\right] \\
-&= u'(x)v(x) + u(x)v'(x)
-\end{align*}
-
-<h4 id="3-除法法则">(3) 除法法则</h4>
-\begin{align*}
-\left[\frac{u(x)}{v(x)}\right]' 
-&= \lim_{\Delta x \to 0} \frac{\frac{u(x + \Delta x)}{v(x + \Delta x)} - \frac{u(x)}{v(x)}}{\Delta x} \\
-&= \lim_{\Delta x \to 0} \frac{u(x + \Delta x)v(x) - u(x)v(x + \Delta x)}{\Delta x \cdot v(x)v(x + \Delta x)} \\
-&= \lim_{\Delta x \to 0} \frac{
-  \frac{[u(x + \Delta x) - u(x)]v(x)}{\Delta x} 
-  - \frac{u(x)[v(x + \Delta x) - v(x)]}{\Delta x}
-}{v(x)v(x + \Delta x)} \\
-&= \frac{u'(x)v(x) - u(x)v'(x)}{v^2(x)}
-\end{align*}
-
-<hr>
-<h3 id="反函数的导数">反函数的导数</h3>
-\begin{align*}
-[f^{-1}(x)]' 
-= \lim_{\Delta x \to 0} \frac{\Delta y}{\Delta x} 
-= \lim_{\Delta y \to 0} \frac{1}{\frac{\Delta x}{\Delta y}} 
-= \frac{1}{f'(y)}
-\end{align*}
-
-<hr>
-<h3 id="复合函数导数">复合函数导数</h3>
-\begin{align*}
-y &= f(u) \\
-u &= g(x) \\
-y &= f[g(x)] \\[10pt]
-\frac{dy}{dx} &= f'(u) \cdot g'(x) 
-= \frac{dy}{du} \cdot \frac{du}{dx}
-\end{align*}
-
-<hr>
-<h3 id="隐函数求导">隐函数求导</h3>
-<h4 id="例1">例1</h4>
-\begin{align*}
-x + y^3 - 1 &= 0 \\
-1 + 3y^2 \cdot \frac{dy}{dx} &= 0
-\end{align*}
-
-<h4 id="例2">例2</h4>
-\begin{align*}
-e^y + xy - e &= 0 \\
-e^y \frac{dy}{dx} + y + x\frac{dy}{dx} &= 0
-\end{align*}
-
-<hr>
-<h3 id="参数方程导数">参数方程导数</h3>
-<h4 id="运动学示例">运动学示例</h4>
-\begin{align*}
-\begin{cases}
-x = v_1 t \\
-y = v_2 t - \frac{1}{2}gt^2
-\end{cases}
-\end{align*}
-
-<h4 id="一般形式">一般形式</h4>
-\begin{align*}
-\begin{cases}
-x = \varphi(t) \\
-y = \psi(t)
-\end{cases}
-\quad \Rightarrow \quad
-\frac{dy}{dx} = \frac{\frac{dy}{dt}}{\frac{dx}{dt}} = \frac{\psi'(t)}{\varphi'(t)}
-\end{align*}
-
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2019/09/28/%E6%95%B0%E5%AD%A6/2-%E5%87%BD%E6%95%B0%E7%9A%84%E6%B1%82%E5%AF%BC%E6%B3%95%E5%88%99/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2019/09/28/%E6%95%B0%E5%AD%A6/1-%E5%88%9D%E7%AD%89%E5%87%BD%E6%95%B0%E7%9A%84%E5%AF%BC%E6%95%B0%E6%8E%A8%E5%AF%BC/"
-                            aria-label=": 1.初等函数的导数推导"
-                        >
-                            1.初等函数的导数推导
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2019-09-28T10:58:41+08:00">
-	
-		    2019 年 9 月 28 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h2 id="初等函数的导数推导">初等函数的导数推导</h2>
-<h3 id="1-幂函数求导">1. 幂函数求导</h3>
-<p>求 $$\textcolor{red}{f(x)=x^n}$$ 在 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>x</mi><mo>=</mo><mi>a</mi></mrow><annotation encoding="application/x-tex">x=a</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.43056em;"></span><span class="strut bottom" style="height:0.43056em;vertical-align:0em;"></span><span class="base textstyle uncramped"><span class="mord mathit">x</span><span class="mrel">=</span><span class="mord mathit">a</span></span></span></span> 处的导数：</p>
-\begin{align*}
-f'(x) 
-&= \lim_{x\to a} \frac{f(x)-f(a)}{x-a} \\
-&= \lim_{x\to a} \frac{x^n-a^n}{x-a} \\
-&= \lim_{x\to a} \frac{(x^n-ax^{n-1}) + (ax^{n-1}-a^2x^{n-2}) + \cdots + a^{n-1}x-a^n}{x-a} \\
-&= \lim_{x\to a} \left[(x^{n-1}) + (ax^{n-2}) + \cdots + a^{n-1}\right] \\
-&= \lim_{x\to a} (x^{n-1}) + \lim_{x \to a} (ax^{n-2})...+\lim_{x\to a} a^{n-1} \\
-&= na^{n-1}
-\end{align*}
-
-\begin{align*}
-\therefore
-f(x)=x^n \\
-f'(x) = n x^{n-1}
-\end{align*}
-
-<hr>
-<h3 id="2-正弦函数求导">2. 正弦函数求导</h3>
-<p>求 $$\textcolor{red}{f(x)= \sin x}$$ 的导数：</p>
-\begin{align*}
-f'(x) &= \lim_{h\to 0} \frac{f(x+h)-f(x)}{h} \\
-&= \lim_{h\to 0} \frac{\sin(x+h)-\sin x}{h} \\
-&= \lim_{h\to 0} \frac{2\sin\left(\frac{h}{2}\right)\cos\left(x+\frac{h}{2}\right)}{h} \\
-&= \lim_{h\to 0} \left(\frac{\sin\left(\frac{h}{2}\right)}{\frac{h}{2}} \cdot \cos\left(x+\frac{h}{2}\right)\right) \\
-&= \cos x
-\end{align*}
-
-<hr>
-<h3 id="3-余弦函数求导">3. 余弦函数求导</h3>
-<p>求 $$\textcolor{red}{f(x)= \cos x}$$ 的导数：</p>
-\begin{align*}
-f'(x) 
-&= \lim_{h\to 0} {f(x+h)-f(x) \over h} \\
-&= \lim_{h\to 0} \frac{\cos(x+h)-\cos x}{h} \\
-&= \lim_{h\to 0} \frac{-2\sin\left(\frac{h}{2}\right)\sin\left(x+\frac{h}{2}\right)}{h} \\
-&= -\lim_{h\to 0} \left(\frac{\sin\left(\frac{h}{2}\right)}{\frac{h}{2}} \cdot \sin\left(x+\frac{h}{2}\right)\right) \\
-&= -\sin x
-\end{align*}
-
-<hr>
-<h3 id="4-指数函数求导">4. 指数函数求导</h3>
-<p>求 $$\textcolor{red}{f(x)= a^x}$$ 的导数：</p>
-\begin{align*}
-f'(x) 
-&= \lim_{h\to 0} {f(x+h)-f(x) \over h} \\
-&= \lim_{h\to 0} \frac{a^{x+h}-a^x}{h} \\
-&= \textcolor{red}{a^x \lim_{h\to 0} \frac{a^h-1}{h}} \\
-&= \textcolor{red}{a^x \ln a}
-\end{align*}
-
-<p><strong>推导关键步骤</strong>：<br>
-令 $$t = a^h - 1$$，则：</p>
-\begin{align*}
-a=log_a (t+1)
-\end{align*}
-
-\begin{align*}
-此时有:
-\textcolor{red}{
-\lim_{h\to 0} \frac{a^h-1}{h} = \lim_{t\to 0} \frac{t}{\log_a(t+1)} = \ln a}
-\end{align*}
-
-<hr>
-<h3 id="5-对数函数求导">5. 对数函数求导</h3>
-<p>求 $$\textcolor{red}{f(x)= \log_a x}$$ 的导数：</p>
-\begin{align*}
-f'(x) 
-&= \lim_{h\to 0} {f(x+h)-f(x) \over h} \\
-&= \lim_{h\to 0} \frac{\log_a(x+h) - \log_a x}{h} \\
-&= \lim_{h\to 0} {log_a \ {(x+h) \over x} \over h} \\
-&= \lim_{h\to 0} \frac{1}{x} \cdot \textcolor{red}{\frac{\log_a\left(1+\frac{h}{x}\right)}{\frac{h}{x}}} \\
-&\textcolor{red}{= \frac{1}{x \ln a}}
-\end{align*}
-
-<p><strong>特例</strong>：当 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>a</mi><mo>=</mo><mi>e</mi></mrow><annotation encoding="application/x-tex">a=e</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.43056em;"></span><span class="strut bottom" style="height:0.43056em;vertical-align:0em;"></span><span class="base textstyle uncramped"><span class="mord mathit">a</span><span class="mrel">=</span><span class="mord mathit">e</span></span></span></span> 时，</p>
-<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>f</mi><mo>(</mo><mi>x</mi><mo>)</mo><mo>=</mo><mi>l</mi><mi>n</mi><mtext> </mtext><mi>x</mi></mrow><annotation encoding="application/x-tex">f(x)= ln \ x 
-</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base displaystyle textstyle uncramped"><span class="mord mathit" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathit">x</span><span class="mclose">)</span><span class="mrel">=</span><span class="mord mathit" style="margin-right:0.01968em;">l</span><span class="mord mathit">n</span><span class="mord mspace"> </span><span class="mord mathit">x</span></span></span></span></span></p>
-\begin{align*}
-& f'(x) =(\ln x)' = \frac{1}{x}
-\end{align*}
-
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2019/09/28/%E6%95%B0%E5%AD%A6/1-%E5%88%9D%E7%AD%89%E5%87%BD%E6%95%B0%E7%9A%84%E5%AF%BC%E6%95%B0%E6%8E%A8%E5%AF%BC/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2019/09/13/%E6%95%B0%E5%AD%A6/0-%E4%B8%AD%E5%AD%A6%E6%95%B0%E5%AD%A6%E5%A4%8D%E4%B9%A0/"
-                            aria-label=": 0.中学数学复习"
-                        >
-                            0.中学数学复习
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2019-09-13T16:58:41+08:00">
-	
-		    2019 年 9 月 13 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h4 id="等比公式：">等比公式：</h4>
-\begin{align*}
-S_n=a_1(1-q^n)/(1-q)
-\end{align*}
-
-<h4 id="等差公式：">等差公式：</h4>
-\begin{align*}
-S_n=(a_1+a_n)n/2=na_1+n(n-1)d/2
-\end{align*}
-
-<hr>
-<h3 id="排列组合：">排列组合：</h3>
-<h4 id="排列">排列</h4>
-\begin{align*}
-A^m_n=n(n-1)(n-2)...(n-m+1)=\frac{n!}{(n-m)!}
-\end{align*}
-
-<h4 id="组合">组合</h4>
-\begin{align*}
-C^m_n={A^m_n \over m!}={n(n-1)(n-2)...(n-m+1)\over m!}={n! \over m!(n-m)!}
-\end{align*}
-
-<hr>
-<h3 id="牛顿二项式">牛顿二项式</h3>
-\begin{align*}
-(a+b)^n=\sum^n_{k=0}C^k_nx^k
-\end{align*}
-
-<hr>
-<h3 id="三角函数">三角函数</h3>
-\begin{align*}
-\sin(\alpha+\beta)=\sin(\alpha)\cos(\beta)+\cos(\alpha)\sin(\beta)
-
-\therefore \sin(2\alpha)=2\sin(\alpha)\cos(\alpha)
-\end{align*}
-
-\begin{align*}
-\cos(\alpha+\beta)=\cos(\alpha)\cos(\beta)-\sin(\alpha)s\in(\beta)
-
-\therefore \cos(2\alpha)=\cos^2(\alpha)-\sin^2(\alpha)
-\end{align*}
-
-<hr>
-<h3 id="对数函数">对数函数</h3>
-<hr>
-<p>e的定义</p>
-\begin{align*}
-\lim_{x\to \infty} (1+{1 \over {n}})^n=e
-\end{align*}
-
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2019/09/13/%E6%95%B0%E5%AD%A6/0-%E4%B8%AD%E5%AD%A6%E6%95%B0%E5%AD%A6%E5%A4%8D%E4%B9%A0/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2019/09/12/%E6%95%B0%E5%AD%A6/markdown-latex%E7%9A%84%E6%95%B0%E5%AD%A6%E5%BC%8F%E5%86%99%E6%B3%95/"
-                            aria-label=": LaTeX的写法"
-                        >
-                            LaTeX的写法
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2019-09-12T15:24:55+08:00">
-	
-		    2019 年 9 月 12 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <p>数学符号和对应的LaTeX代码：</p>
-<table>
-<thead>
-<tr>
-<th>符号显示</th>
-<th>LaTeX代码</th>
-<th>符号显示</th>
-<th>LaTeX代码</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>∑</td>
-<td><code>$\sum$</code></td>
-<td>∑_{i=0}^n</td>
-<td><code>$\sum_&#123;i=0&#125;^n$</code></td>
-</tr>
-<tr>
-<td>∏</td>
-<td><code>$\prod$</code></td>
-<td>∏_{i=0}^n</td>
-<td><code>$\prod_&#123;i=0&#125;^n$</code></td>
-</tr>
-<tr>
-<td>×</td>
-<td><code>$\times$</code></td>
-<td>∗</td>
-<td><code>$\ast$</code></td>
-</tr>
-<tr>
-<td>±</td>
-<td><code>$\pm$</code></td>
-<td>÷</td>
-<td><code>$\div$</code></td>
-</tr>
-<tr>
-<td>∣</td>
-<td><code>$\mid$</code></td>
-<td>⋅</td>
-<td><code>$\cdot$</code></td>
-</tr>
-<tr>
-<td>⨀</td>
-<td><code>$\bigodot$</code></td>
-<td>≈</td>
-<td><code>$\approx$</code></td>
-</tr>
-<tr>
-<td>≤</td>
-<td><code>$\leq$</code></td>
-<td>≥</td>
-<td><code>$\geq$</code></td>
-</tr>
-<tr>
-<td>≠</td>
-<td><code>$\neq$</code></td>
-<td>≡</td>
-<td><code>$\equiv$</code></td>
-</tr>
-<tr>
-<td>x̄</td>
-<td><code>$\overline&#123;x&#125;$</code></td>
-<td>x̲</td>
-<td><code>$\underline&#123;x&#125;$</code></td>
-</tr>
-<tr>
-<td>x̂</td>
-<td><code>$\hat&#123;x&#125;$</code></td>
-<td>x̌</td>
-<td><code>$\check&#123;x&#125;$</code></td>
-</tr>
-<tr>
-<td>x̆</td>
-<td><code>$\breve&#123;x&#125;$</code></td>
-<td>↑</td>
-<td><code>$\uparrow$</code></td>
-</tr>
-<tr>
-<td>↓</td>
-<td><code>$\downarrow$</code></td>
-<td>←</td>
-<td><code>$\leftarrow$</code></td>
-</tr>
-<tr>
-<td>→</td>
-<td><code>$\rightarrow$</code></td>
-<td>⇑</td>
-<td><code>$\Uparrow$</code></td>
-</tr>
-<tr>
-<td>⇓</td>
-<td><code>$\Downarrow$</code></td>
-<td>⇐</td>
-<td><code>$\Leftarrow$</code></td>
-</tr>
-<tr>
-<td>⇒</td>
-<td><code>$\Rightarrow$</code></td>
-<td>⟵</td>
-<td><code>$\longleftarrow$</code></td>
-</tr>
-<tr>
-<td>⟶</td>
-<td><code>$\longrightarrow$</code></td>
-<td>⟸</td>
-<td><code>$\Longleftarrow$</code></td>
-</tr>
-<tr>
-<td>⟹</td>
-<td><code>$\Longrightarrow$</code></td>
-<td>∵</td>
-<td><code>$\because$</code></td>
-</tr>
-<tr>
-<td>∴</td>
-<td><code>$\therefore$</code></td>
-<td>∀</td>
-<td><code>$\forall$</code></td>
-</tr>
-<tr>
-<td>∃</td>
-<td><code>$\exists$</code></td>
-<td>y′</td>
-<td><code>$y'$</code></td>
-</tr>
-<tr>
-<td>∫</td>
-<td><code>$\int$</code></td>
-<td>∬</td>
-<td><code>$\iint$</code></td>
-</tr>
-<tr>
-<td>∭</td>
-<td><code>$\iiint$</code></td>
-<td>∮</td>
-<td><code>$\oint$</code></td>
-</tr>
-<tr>
-<td>lim</td>
-<td><code>$\lim$</code></td>
-<td>∞</td>
-<td><code>$\infty$</code></td>
-</tr>
-<tr>
-<td>∇</td>
-<td><code>$\nabla$</code></td>
-<td>⊥</td>
-<td><code>$\bot$</code></td>
-</tr>
-<tr>
-<td>∠30°</td>
-<td><code>$\angle 30^\circ$</code></td>
-<td>sin</td>
-<td><code>$\sin$</code></td>
-</tr>
-<tr>
-<td>cos</td>
-<td><code>$\cos$</code></td>
-<td>tan</td>
-<td><code>$\tan$</code></td>
-</tr>
-<tr>
-<td>cot</td>
-<td><code>$\cot$</code></td>
-<td>sec</td>
-<td><code>$\sec$</code></td>
-</tr>
-<tr>
-<td>csc</td>
-<td><code>$\csc$</code></td>
-<td>log</td>
-<td><code>$\log$</code></td>
-</tr>
-<tr>
-<td>lg</td>
-<td><code>$\lg$</code></td>
-<td>ln</td>
-<td><code>$\ln$</code></td>
-</tr>
-<tr>
-<td>∅</td>
-<td><code>$\emptyset$</code></td>
-<td>∈</td>
-<td><code>$\in$</code></td>
-</tr>
-<tr>
-<td>∉</td>
-<td><code>$\notin$</code></td>
-<td>⊂</td>
-<td><code>$\subset$</code></td>
-</tr>
-<tr>
-<td>⊃</td>
-<td><code>$\supset$</code></td>
-<td>⊆</td>
-<td><code>$\subseteq$</code></td>
-</tr>
-<tr>
-<td>⊇</td>
-<td><code>$\supseteq$</code></td>
-<td>⋂</td>
-<td><code>$\bigcap$</code></td>
-</tr>
-<tr>
-<td>⋃</td>
-<td><code>$\bigcup$</code></td>
-<td>⋁</td>
-<td><code>$\bigvee$</code></td>
-</tr>
-<tr>
-<td>⋀</td>
-<td><code>$\bigwedge$</code></td>
-<td>⨄</td>
-<td><code>$\biguplus$</code></td>
-</tr>
-<tr>
-<td>⨆</td>
-<td><code>$\bigsqcup$</code></td>
-<td></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-<h3 id="分式与特殊符号">分式与特殊符号</h3>
-<table>
-<thead>
-<tr>
-<th>显示</th>
-<th>LaTeX代码</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1/(2x+1)</td>
-<td><code>$\frac&#123;1&#125;&#123;2x+1&#125;$</code></td>
-</tr>
-<tr>
-<td>1/(2x+1)</td>
-<td><code>$&#123;&#123;1&#125; \over &#123;2x+1&#125;&#125;$</code></td>
-</tr>
-<tr>
-<td>du/dx|_{x=0}</td>
-<td>`$\left.\frac{du}{dx}\right</td>
-</tr>
-<tr>
-<td>∛9</td>
-<td><code>$\sqrt[3]&#123;9&#125;$</code></td>
-</tr>
-<tr>
-<td>√16</td>
-<td><code>$\sqrt&#123;16&#125;$</code></td>
-</tr>
-<tr>
-<td>…</td>
-<td><code>$\ldots$</code></td>
-</tr>
-<tr>
-<td>f(x₁,x₂,…,xₙ)=x₁²+⋯+xₙ²</td>
-<td><code>$f(x_1,x_2,\ldots,x_n)=x_1^2+\cdots+x_n^2$</code></td>
-</tr>
-<tr>
-<td>a⃗</td>
-<td><code>$\vec&#123;a&#125;$</code></td>
-</tr>
-<tr>
-<td>∫₀¹ x²dx</td>
-<td><code>$\int_0^1 x^2 dx$</code></td>
-</tr>
-<tr>
-<td>limₙ→∞ 1/[n(n+1)]</td>
-<td><code>$\lim_&#123;n\to\infty&#125;\frac&#123;1&#125;&#123;n(n+1)&#125;$</code></td>
-</tr>
-<tr>
-<td>∑₁ⁿ 1/x²</td>
-<td><code>$\sum_1^n \frac&#123;1&#125;&#123;x^2&#125;$</code></td>
-</tr>
-<tr>
-<td>x∈[0,100]</td>
-<td><code>$x \in [0,100]$</code></td>
-</tr>
-<tr>
-<td>xʸᶻ=(1+eˣ)⁻²ˣʸʷ</td>
-<td><code>$x^&#123;y^z&#125;=(1+e^x)^&#123;-2xy^w&#125;$</code></td>
-</tr>
-</tbody>
-</table>
-<h3 id="分段函数">分段函数</h3>
-\begin{align*}
-y = \begin{cases} 
-x \\ 
-\alpha 
-\end{cases}
-\end{align*}
-
-<p>LaTeX代码：</p>
-<figure class="highlight latex"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">$</span><span class="built_in">$</span>y =<span class="keyword">\begin</span>&#123;cases&#125; x<span class="keyword">\\</span> <span class="keyword">\alpha</span> <span class="keyword">\end</span>&#123;cases&#125;<span class="built_in">$</span><span class="built_in">$</span></span><br></pre></td></tr></table></figure>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2019/09/12/%E6%95%B0%E5%AD%A6/markdown-latex%E7%9A%84%E6%95%B0%E5%AD%A6%E5%BC%8F%E5%86%99%E6%B3%95/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -2119,7 +2064,7 @@ x \\
             </a>
           </li>
         
-        <li class="pagination-number">第 5 頁 共 6 頁</li>
+        <li class="pagination-number">第 5 頁 共 7 頁</li>
     </ul>
 </div>
 
@@ -2198,7 +2143,7 @@ x \\
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -2221,7 +2166,7 @@ x \\
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -2244,7 +2189,7 @@ x \\
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -2267,7 +2212,7 @@ x \\
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -2290,7 +2235,7 @@ x \\
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -2299,6 +2244,29 @@ x \\
                             <span class="media-date text-small">
                                 
                                     2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/10/12/mysql%E5%9F%BA%E7%A1%80%E6%95%99%E7%A8%8B/"
+                            aria-label=": mysql基础教程"
+                        >
+                            <h3 class="media-heading">mysql基础教程</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年10月12日
                                 
                             </span>
                         </span>
@@ -2400,29 +2368,6 @@ x \\
                     <hr>
                 </div>
                 
-                <div class="media">
-                    
-                    <div class="media-body">
-                        <a
-                            class="link-unstyled"
-                            href="https://chankein.github.io/2017/09/16/git/git-rebase/"
-                            aria-label=": git rebase"
-                        >
-                            <h3 class="media-heading">git rebase</h3>
-                        </a>
-                        <span class="media-meta">
-                            <span class="media-date text-small">
-                                
-                                    2017年9月16日
-                                
-                            </span>
-                        </span>
-                        <div class="media-content hide-xs font-merryweather"></div>
-                    </div>
-                    <div style="clear:both;"></div>
-                    <hr>
-                </div>
-                
             </div>
         </div>
         <div class="modal-footer">
@@ -2430,7 +2375,7 @@ x \\
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 60 篇文章
+                找到 67 篇文章
             </p>
         </div>
     </div>
