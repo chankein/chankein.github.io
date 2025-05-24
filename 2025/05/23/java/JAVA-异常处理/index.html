@@ -1,0 +1,1428 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>JAVA-异常处理 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"在计算机程序运行的过程中，总是会出现各种各样的错误。\n有一些错误是用户造成的，比如，希望用户输入一个int类型的年龄，但是用户的输入是abc：\n123// 假设用户输入了abc：String s = &quot;abc&quot;;int n = Integer.parseInt(s); // NumberFormatException!\n程序想要读写某个文件的内容，但是用户已经把它删除了：\n12// 用户删除了该文件：String t = readFile(&quot;C:\\\\abc.txt&quot;); // FileNotFoundException!\n还有一些错误是随机出现，并且永远不可能避免的。比如：\n\n网络突然断了，连接不到远程服务器；\n内存耗尽，程序崩溃了；\n用户点“打印”，但根本没有打印机；\n……\n\n所以，一个健壮的程序必须处理各种各样的错误。\n所谓错误，就是程序调用某个函数的时候，如果失败了，就表示出错。\n调用方如何获知调用失败的信息？有两种方法：\n方法一：约定返回错误码。\n例如，处理一个文件，如果返回0，表示成功，返回其他整数，表示约定的错误码：\n1234567891011121314int code = processFile(&quot;C:\\\\test.txt&quot;);if (code == 0) &#123;    // ok:&#125; else &#123;    // error:    switch (code) &#123;    case 1:        // file not found:    case 2:        // no read permission:    default:        // unknown error:    &#125;&#125;\n因为使用int类型的错误码，想要处理就非常麻烦。这种方式常见于底层C函数。\n方法二：在语言层面上提供一个异常处理机制。\nJava内置了一套异常处理机制，总是使用异常来表示错误。\n异常是一种class，因此它本身带有类型信息。异常可以在任何地方抛出，但只需要在上层捕获，这样就和方法调用分离了：\n123456789101112try &#123;    String s = processFile(“C:\\\\test.txt”);    // ok:&#125; catch (FileNotFoundException e) &#123;    // file not found:&#125; catch (SecurityException e) &#123;    // no read permission:&#125; catch (IOException e) &#123;    // io error:&#125; catch (Exception e) &#123;    // other error:&#125;\n因为Java的异常是class，它的继承关系如下：\n1234567891011121314151617181920212223242526                     ┌───────────┐                     │  Object   │                     └───────────┘                           ▲                           │                     ┌───────────┐                     │ Throwable │                     └───────────┘                           ▲                 ┌─────────┴─────────┐                 │                   │           ┌───────────┐       ┌───────────┐           │   Error   │       │ Exception │           └───────────┘       └───────────┘                 ▲                   ▲         ┌───────┘              ┌────┴──────────┐         │                      │               │┌─────────────────┐    ┌─────────────────┐┌───────────┐│OutOfMemoryError │... │RuntimeException ││IOException│...└─────────────────┘    └─────────────────┘└───────────┘                                ▲                    ┌───────────┴─────────────┐                    │                         │         ┌─────────────────────┐ ┌─────────────────────────┐         │NullPointerException │ │IllegalArgumentException │...         └─────────────────────┘ └─────────────────────────┘\n从继承关系可知：Throwable是异常体系的根，它继承自Object。Throwable有两个体系：Error和Exception，Error表示严重的错误，程序对此一般无能为力，例如：\n\nOutOfMemoryError：内存耗尽\nNoClassDefFoundError：无法加载某个Class\nStackOverflowError：栈溢出\n\n而Exception则是运行时的错误，它可以被捕获并处理。\n某些异常是应用程序逻辑处理的一部分，应该捕获并处理。例如：\n\nNumberFormatException：数值类型的格式错误\nFileNotFoundException：未找到文件\nSocketException：读取网络失败\n\n还有一些异常是程序逻辑编写不对造成的，应该修复程序本身。例如：\n\nNullPointerException：对某个null的对象调用方法或字段\nIndexOutOfBoundsException：数组索引越界\n\nException又分为两大类：\n\nRuntimeException以及它的子类；\n非RuntimeException（包括IOException、ReflectiveOperationException等等）\n\nJava规定：\n\n必须捕获的异常，包括Exception及其子类，但不包括RuntimeException及其子类，这种类型的异常称为Checked Exception。\n不需要捕获的异常，包括Error及其子类，RuntimeException及其子类。\n\n注意\n编译器对RuntimeException及其子类不做强制捕获要求，不是指应用程序本身不应该捕获并处理RuntimeException。是否需要捕获，具体问题具体分析。\n捕获异常\n捕获异常使用try...catch语句，把可能发生异常的代码放到try &#123;...&#125;中，然后使用catch捕获对应的Exception及其子类：\n123456789101112131415161718192021// try...catchimport java.io.UnsupportedEncodingException;import java.util.Arrays;public class Main &#123;    public static void main(String[] args) &#123;        byte[] bs = toGBK(&quot;中文&quot;);        System.out.println(Arrays.toString(bs));    &#125;    static byte[] toGBK(String s) &#123;        try &#123;            // 用指定编码转换String为byte[]:            return s.getBytes(&quot;GBK&quot;);        &#125; catch (UnsupportedEncodingException e) &#123;            // 如果系统不支持GBK编码，会捕获到UnsupportedEncodingException:            System.out.println(e); // 打印异常信息            return s.getBytes(); // 尝试使用默认编码        &#125;    &#125;&#125;\n如果我们不捕获UnsupportedEncodingException，会出现编译失败的问题：\n1234567891011121314// try...catchimport java.io.UnsupportedEncodingException;import java.util.Arrays;public class Main &#123;    public static void main(String[] args) &#123;        byte[] bs = toGBK(&quot;中文&quot;);        System.out.println(Arrays.toString(bs));    &#125;    static byte[] toGBK(String s) &#123;        return s.getBytes(&quot;GBK&quot;);    &#125;&#125;\n编译器会报错，错误信息类似：unreported exception UnsupportedEncodingException; must be caught or declared to be thrown，并且准确地指出需要捕获的语句是return s.getBytes(&quot;GBK&quot;);。意思是说，像UnsupportedEncodingException这样的Checked Exception，必须被捕获。\n这是因为String.getBytes(String)方法定义是：\n123public byte[] getBytes(String charsetName) throws UnsupportedEncodingException &#123;    ...&#125;\n在方法定义的时候，使用throws Xxx表示该方法可能抛出的异常类型。调用方在调用的时候，必须强制捕获这些异常，否则编译器会报错。\n在toGBK()方法中，因为调用了String.getBytes(String)方法，就必须捕获UnsupportedEncodingException。我们也可以不捕获它，而是在方法定义处用throws表示toGBK()方法可能会抛出UnsupportedEncodingException，就可以让toGBK()方法通过编译器检查：\n1234567891011121314// try...catchimport java.io.UnsupportedEncodingException;import java.util.Arrays;public class Main &#123;    public static void main(String[] args) &#123;        byte[] bs = toGBK(&quot;中文&quot;);        System.out.println(Arrays.toString(bs));    &#125;    static byte[] toGBK(String s) throws UnsupportedEncodingException &#123;        return s.getBytes(&quot;GBK&quot;);    &#125;&#125;\n上述代码仍然会得到编译错误，但这一次，编译器提示的不是调用return s.getBytes(&quot;GBK&quot;);的问题，而是byte[] bs = toGBK(&quot;中文&quot;);。因为在main()方法中，调用toGBK()，没有捕获它声明的可能抛出的UnsupportedEncodingException。\n修复方法是在main()方法中捕获异常并处理：\n12345678910111213141516171819// try...catchimport java.io.UnsupportedEncodingException;import java.util.Arrays;public class Main &#123;    public static void main(String[] args) &#123;        try &#123;            byte[] bs = toGBK(&quot;中文&quot;);            System.out.println(Arrays.toString(bs));        &#125; catch (UnsupportedEncodingException e) &#123;            System.out.println(e);        &#125;    &#125;    static byte[] toGBK(String s) throws UnsupportedEncodingException &#123;        // 用指定编码转换String为byte[]:        return s.getBytes(&quot;GBK&quot;);    &#125;&#125;\n可见，只要是方法声明的Checked Exception，不在调用层捕获，也必须在更高的调用层捕获。所有未捕获的异常，最终也必须在main()方法中捕获，不会出现漏写try的情况。这是由编译器保证的。main()方法也是最后捕获Exception的机会。\n如果是测试代码，上面的写法就略显麻烦。如果不想写任何try代码，可以直接把main()方法定义为throws Exception：\n123456789101112131415// try...catchimport java.io.UnsupportedEncodingException;import java.util.Arrays;public class Main &#123;    public static void main(String[] args) throws Exception &#123;        byte[] bs = toGBK(&quot;中文&quot;);        System.out.println(Arrays.toString(bs));    &#125;    static byte[] toGBK(String s) throws UnsupportedEncodingException &#123;        // 用指定编码转换String为byte[]:        return s.getBytes(&quot;GBK&quot;);    &#125;&#125;\n因为main()方法声明了可能抛出Exception，也就声明了可能抛出所有的Exception，因此在内部就无需捕获了。代价就是一旦发生异常，程序会立刻退出。\n还有一些童鞋喜欢在toGBK()内部“消化”异常：\n1234567static byte[] toGBK(String s) &#123;    try &#123;        return s.getBytes(&quot;GBK&quot;);    &#125; catch (UnsupportedEncodingException e) &#123;        // 什么也不干    &#125;    return null;\n这种捕获后不处理的方式是非常不好的，即使真的什么也做不了，也要先把异常记录下来：\n12345678static byte[] toGBK(String s) &#123;    try &#123;        return s.getBytes(&quot;GBK&quot;);    &#125; catch (UnsupportedEncodingException e) &#123;        // 先记下来再说:        e.printStackTrace();    &#125;    return null;\n所有异常都可以调用printStackTrace()方法打印异常栈，这是一个简单有用的快速打印异常的方法。\n小结\nJava使用异常来表示错误，并通过try ... catch捕获异常；\nJava的异常是class，并且从Throwable继承；\nError是无需捕获的严重错误，Exception是应该捕获的可处理的错误；\nRuntimeException无需强制捕获，非RuntimeException（Checked Exception）需强制捕获，或者用throws声明；\n不推荐捕获了异常但不进行任何处理。\n在Java中，凡是可能抛出异常的语句，都可以用try ... catch捕获。把可能发生异常的语句放在try &#123; ... &#125;中，然后使用catch捕获对应的Exception及其子类。\n多catch语句\n可以使用多个catch语句，每个catch分别捕获对应的Exception及其子类。JVM在捕获到异常后，会从上到下匹配catch语句，匹配到某个catch后，执行catch代码块，然后不再继续匹配。\n简单地说就是：多个catch语句只有一个能被执行。例如：\n1234567891011public static void main(String[] args) &#123;    try &#123;        process1();        process2();        process3();    &#125; catch (IOException e) &#123;        System.out.println(e);    &#125; catch (NumberFormatException e) &#123;        System.out.println(e);    &#125;&#125;\n存在多个catch的时候，catch的顺序非常重要：子类必须写在前面。例如：\n1234567891011public static void main(String[] args) &#123;    try &#123;        process1();        process2();        process3();    &#125; catch (IOException e) &#123;        System.out.println(&quot;IO error&quot;);    &#125; catch (UnsupportedEncodingException e) &#123; // 永远捕获不到        System.out.println(&quot;Bad encoding&quot;);    &#125;&#125;\n对于上面的代码，UnsupportedEncodingException异常是永远捕获不到的，因为它是IOException的子类。当抛出UnsupportedEncodingException异常时，会被catch (IOException e) &#123; ... &#125;捕获并执行。\n因此，正确的写法是把子类放到前面：\n1234567891011public static void main(String[] args) &#123;    try &#123;        process1();        process2();        process3();    &#125; catch (UnsupportedEncodingException e) &#123;        System.out.println(&quot;Bad encoding&quot;);    &#125; catch (IOException e) &#123;        System.out.println(&quot;IO error&quot;);    &#125;&#125;\nfinally语句\n无论是否有异常发生，如果我们都希望执行一些语句，例如清理工作，怎么写？\n可以把执行语句写若干遍：正常执行的放到try中，每个catch再写一遍。例如：\n1234567891011121314public static void main(String[] args) &#123;    try &#123;        process1();        process2();        process3();        System.out.println(&quot;END&quot;);    &#125; catch (UnsupportedEncodingException e) &#123;        System.out.println(&quot;Bad encoding&quot;);        System.out.println(&quot;END&quot;);    &#125; catch (IOException e) &#123;        System.out.println(&quot;IO error&quot;);        System.out.println(&quot;END&quot;);    &#125;&#125;\n上述代码无论是否发生异常，都会执行System.out.println(&quot;END&quot;);这条语句。\n那么如何消除这些重复的代码？Java的try ... catch机制还提供了finally语句，finally语句块保证有无错误都会执行。上述代码可以改写如下：\n12345678910111213public static void main(String[] args) &#123;    try &#123;        process1();        process2();        process3();    &#125; catch (UnsupportedEncodingException e) &#123;        System.out.println(&quot;Bad encoding&quot;);    &#125; catch (IOException e) &#123;        System.out.println(&quot;IO error&quot;);    &#125; finally &#123;        System.out.println(&quot;END&quot;);    &#125;&#125;\n注意finally有几个特点：\n\nfinally语句不是必须的，可写可不写；\nfinally总是最后执行。\n\n如果没有发生异常，就正常执行try &#123; ... &#125;语句块，然后执行finally。如果发生了异常，就中断执行try &#123; ... &#125;语句块，然后跳转执行匹配的catch语句块，最后执行finally。\n可见，finally是用来保证一些代码必须执行的。\n某些情况下，可以没有catch，只使用try ... finally结构。例如：\n1234567void process(String file) throws IOException &#123;    try &#123;        ...    &#125; finally &#123;        System.out.println(&quot;END&quot;);    &#125;&#125;\n因为方法声明了可能抛出的异常，所以可以不写catch。\n捕获多种异常\n如果某些异常的处理逻辑相同，但是异常本身不存在继承关系，那么就得编写多条catch子句：\n12345678910111213public static void main(String[] args) &#123;    try &#123;        process1();        process2();        process3();    &#125; catch (IOException e) &#123;        System.out.println(&quot;Bad input&quot;);    &#125; catch (NumberFormatException e) &#123;        System.out.println(&quot;Bad input&quot;);    &#125; catch (Exception e) &#123;        System.out.println(&quot;Unknown error&quot;);    &#125;&#125;\n因为处理IOException和NumberFormatException的代码是相同的，所以我们可以把它两用|合并到一起：\n123456789101112public static void main(String[] args) &#123;    try &#123;        process1();        process2();        process3();    &#125; catch (IOException | NumberFormatException e) &#123;        // IOException或NumberFormatException        System.out.println(&quot;Bad input&quot;);    &#125; catch (Exception e) &#123;        System.out.println(&quot;Unknown error&quot;);    &#125;&#125;\n练习\n用try ... catch捕获异常并处理。\n下载练习\n小结\n捕获异常时，多个catch语句的匹配顺序非常重要，子类必须放在前面；\nfinally语句保证了有无异常都会执行，它是可选的；\n一个catch语句也可以匹配多个非继承关系的异常。\n异常的传播\n当某个方法抛出了异常时，如果当前方法没有捕获异常，异常就会被抛到上层调用方法，直到遇到某个try ... catch被捕获为止：\n123456789101112131415161718// exceptionpublic class Main &#123;    public static void main(String[] args) &#123;        try &#123;            process1();        &#125; catch (Exception e) &#123;            e.printStackTrace();        &#125;    &#125;    static void process1() &#123;        process2();    &#125;    static void process2() &#123;        Integer.parseInt(null); // 会抛出NumberFormatException    &#125;&#125;\n通过printStackTrace()可以打印出方法的调用栈，类似：\n123456java.lang.NumberFormatException: null    at java.base/java.lang.Integer.parseInt(Integer.java:614)    at java.base/java.lang.Integer.parseInt(Integer.java:770)    at Main.process2(Main.java:16)    at Main.process1(Main.java:12)    at Main.main(Main.java:5)\nprintStackTrace()对于调试错误非常有用，上述信息表示：NumberFormatException是在java.lang.Integer.parseInt方法中被抛出的，从下往上看，调用层次依次是：\n\nmain()调用process1()；\nprocess1()调用process2()；\nprocess2()调用Integer.parseInt(String)；\nInteger.parseInt(String)调用Integer.parseInt(String, int)。\n\n查看Integer.java源码可知，抛出异常的方法代码如下：\n123456public static int parseInt(String s, int radix) throws NumberFormatException &#123;    if (s == null) &#123;        throw new NumberFormatException(&quot;null&quot;);    &#125;    ...&#125;\n并且，每层调用均给出了源代码的行号，可直接定位。\n抛出异常\n当发生错误时，例如，用户输入了非法的字符，我们就可以抛出异常。\n如何抛出异常？参考Integer.parseInt()方法，抛出异常分两步：\n\n创建某个Exception的实例；\n用throw语句抛出。\n\n下面是一个例子：\n123456void process2(String s) &#123;    if (s==null) &#123;        NullPointerException e = new NullPointerException();        throw e;    &#125;&#125;\n实际上，绝大部分抛出异常的代码都会合并写成一行：\n12345void process2(String s) &#123;    if (s==null) &#123;        throw new NullPointerException();    &#125;&#125;\n如果一个方法捕获了某个异常后，又在catch子句中抛出新的异常，就相当于把抛出的异常类型“转换”了：\n12345678910111213void process1(String s) &#123;    try &#123;        process2();    &#125; catch (NullPointerException e) &#123;        throw new IllegalArgumentException();    &#125;&#125;void process2(String s) &#123;    if (s==null) &#123;        throw new NullPointerException();    &#125;&#125;\n当process2()抛出NullPointerException后，被process1()捕获，然后抛出IllegalArgumentException()。\n如果在main()中捕获IllegalArgumentException，我们看看打印的异常栈：\n12345678910111213141516171819202122// exceptionpublic class Main &#123;    public static void main(String[] args) &#123;        try &#123;            process1();        &#125; catch (Exception e) &#123;            e.printStackTrace();        &#125;    &#125;    static void process1() &#123;        try &#123;            process2();        &#125; catch (NullPointerException e) &#123;            throw new IllegalArgumentException();        &#125;    &#125;    static void process2() &#123;        throw new NullPointerException();    &#125;&#125;\n打印出的异常栈类似：\n123java.lang.IllegalArgumentException    at Main.process1(Main.java:15)    at Main.main(Main.java:5)\n这说明新的异常丢失了原始异常信息，我们已经看不到原始异常NullPointerException的信息了。\n为了能追踪到完整的异常栈，在构造异常的时候，把原始的Exception实例传进去，新的Exception就可以持有原始Exception信息。对上述代码改进如下：\n12345678910111213141516171819202122// exceptionpublic class Main &#123;    public static void main(String[] args) &#123;        try &#123;            process1();        &#125; catch (Exception e) &#123;            e.printStackTrace();        &#125;    &#125;    static void process1() &#123;        try &#123;            process2();        &#125; catch (NullPointerException e) &#123;            throw new IllegalArgumentException(e);        &#125;    &#125;    static void process2() &#123;        throw new NullPointerException();    &#125;&#125;\n运行上述代码，打印出的异常栈类似：\n123456java.lang.IllegalArgumentException: java.lang.NullPointerException    at Main.process1(Main.java:15)    at Main.main(Main.java:5)Caused by: java.lang.NullPointerException    at Main.process2(Main.java:20)    at Main.process1(Main.java:13)\n注意到Caused by: Xxx，说明捕获的IllegalArgumentException并不是造成问题的根源，根源在于NullPointerException，是在Main.process2()方法抛出的。\n在代码中获取原始异常可以使用Throwable.getCause()方法。如果返回null，说明已经是“根异常”了。\n有了完整的异常栈的信息，我们才能快速定位并修复代码的问题。\n最佳实践\n捕获到异常并再次抛出时，一定要留住原始异常，否则很难定位第一案发现场！\n如果我们在try或者catch语句块中抛出异常，finally语句是否会执行？例如：\n12345678910111213// exceptionpublic class Main &#123;    public static void main(String[] args) &#123;        try &#123;            Integer.parseInt(&quot;abc&quot;);        &#125; catch (Exception e) &#123;            System.out.println(&quot;catched&quot;);            throw new RuntimeException(e);        &#125; finally &#123;            System.out.println(&quot;finally&quot;);        &#125;    &#125;&#125;\n上述代码执行结果如下：\n123456catchedfinallyException in thread &quot;main&quot; java.lang.RuntimeException: java.lang.NumberFormatException: For input string: &quot;abc&quot;    at Main.main(Main.java:8)Caused by: java.lang.NumberFormatException: For input string: &quot;abc&quot;    at ...\n第一行打印了catched，说明进入了catch语句块。第二行打印了finally，说明执行了finally语句块。\n因此，在catch中抛出异常，不会影响finally的执行。JVM会先执行finally，然后抛出异常。\n异常屏蔽\n如果在执行finally语句时抛出异常，那么，catch语句的异常还能否继续抛出？例如：\n1234567891011121314// exceptionpublic class Main &#123;    public static void main(String[] args) &#123;        try &#123;            Integer.parseInt(&quot;abc&quot;);        &#125; catch (Exception e) &#123;            System.out.println(&quot;catched&quot;);            throw new RuntimeException(e);        &#125; finally &#123;            System.out.println(&quot;finally&quot;);            throw new IllegalArgumentException();        &#125;    &#125;&#125;\n执行上述代码，发现异常信息如下：\n1234catchedfinallyException in thread &quot;main&quot; java.lang.IllegalArgumentException    at Main.main(Main.java:11)\n这说明finally抛出异常后，原来在catch中准备抛出的异常就“消失”了，因为只能抛出一个异常。没有被抛出的异常称为“被屏蔽”的异常（Suppressed Exception）。\n在极少数的情况下，我们需要获知所有的异常。如何保存所有的异常信息？方法是先用origin变量保存原始异常，然后调用Throwable.addSuppressed()，把原始异常添加进来，最后在finally抛出：\n123456789101112131415161718// exceptionpublic class Main &#123;    public static void main(String[] args) throws Exception &#123;        Exception origin = null;        try &#123;            System.out.println(Integer.parseInt(&quot;abc&quot;));        &#125; catch (Exception e) &#123;            origin = e;            throw e;        &#125; finally &#123;            Exception e = new IllegalArgumentException();            if (origin != null) &#123;                e.addSuppressed(origin);            &#125;            throw e;        &#125;    &#125;&#125;\n当catch和finally都抛出了异常时，虽然catch的异常被屏蔽了，但是，finally抛出的异常仍然包含了它：\n1234567Exception in thread &quot;main&quot; java.lang.IllegalArgumentException    at Main.main(Main.java:11)Suppressed: java.lang.NumberFormatException: For input string: &quot;abc&quot;    at java.base/java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)    at java.base/java.lang.Integer.parseInt(Integer.java:652)    at java.base/java.lang.Integer.parseInt(Integer.java:770)    at Main.main(Main.java:6)\n通过Throwable.getSuppressed()可以获取所有的Suppressed Exception。\n绝大多数情况下，在finally中不要抛出异常。因此，我们通常不需要关心Suppressed Exception。\n提问时贴出异常\n异常打印的详细的栈信息是找出问题的关键，许多初学者在提问时只贴代码，不贴异常，相当于只报案不给线索，福尔摩斯也无能为力。\n还有的童鞋只贴部分异常信息，最关键的Caused by: xxx给省略了，这都属于不正确的提问方式，得改。\n练习\n如果传入的参数为负，则抛出IllegalArgumentException。\n下载练习\n小结\n调用printStackTrace()可以打印异常的传播栈，对于调试非常有用；\n捕获异常并再次抛出新的异常时，应该持有原始异常信息；\n通常不要在finally中抛出异常。如果在finally中抛出异常，应该原始异常加入到原有异常中。调用方可通过Throwable.getSuppressed()获取所有添加的Suppressed Exception。\n自定义异常\nJava标准库定义的常用异常包括：\n123456789101112131415Exception├─ RuntimeException│  ├─ NullPointerException│  ├─ IndexOutOfBoundsException│  ├─ SecurityException│  └─ IllegalArgumentException│     └─ NumberFormatException├─ IOException│  ├─ UnsupportedCharsetException│  ├─ FileNotFoundException│  └─ SocketException├─ ParseException├─ GeneralSecurityException├─ SQLException└─ TimeoutException\n当我们在代码中需要抛出异常时，尽量使用JDK已定义的异常类型。例如，参数检查不合法，应该抛出IllegalArgumentException：\n12345static void process1(int age) &#123;    if (age &lt;= 0) &#123;        throw new IllegalArgumentException();    &#125;&#125;\n在一个大型项目中，可以自定义新的异常类型，但是，保持一个合理的异常继承体系是非常重要的。\n一个常见的做法是自定义一个BaseException作为“根异常”，然后，派生出各种业务类型的异常。\nBaseException需要从一个适合的Exception派生，通常建议从RuntimeException派生：\n12public class BaseException extends RuntimeException &#123;&#125;\n其他业务类型的异常就可以从BaseException派生：\n1234567public class UserNotFoundException extends BaseException &#123;&#125;public class LoginFailedException extends BaseException &#123;&#125;...\n自定义的BaseException应该提供多个构造方法：\n1234567891011121314151617public class BaseException extends RuntimeException &#123;    public BaseException() &#123;        super();    &#125;    public BaseException(String message, Throwable cause) &#123;        super(message, cause);    &#125;    public BaseException(String message) &#123;        super(message);    &#125;    public BaseException(Throwable cause) &#123;        super(cause);    &#125;&#125;\n上述构造方法实际上都是原样照抄RuntimeException。这样，抛出异常的时候，就可以选择合适的构造方法。通过IDE可以根据父类快速生成子类的构造方法。\n练习\n请从BaseException派生自定义异常。\n下载练习\n小结\n抛出异常时，尽量复用JDK已定义的异常类型；\n自定义异常体系时，推荐从RuntimeException派生“根异常”，再派生出业务异常；\n自定义异常时，应该提供多种构造方法。\n\n\n在所有的RuntimeException异常中，Java程序员最熟悉的恐怕就是NullPointerException了。\nNullPointerException即空指针异常，俗称NPE。如果一个对象为null，调用其方法或访问其字段就会产生NullPointerException，这个异常通常是由JVM抛出的，例如：\n1234567// NullPointerExceptionpublic class Main &#123;    public static void main(String[] args) &#123;        String s = null;        System.out.println(s.toLowerCase());    &#125;&#125;\n指针这个概念实际上源自C语言，Java语言中并无指针。我们定义的变量实际上是引用，Null Pointer更确切地说是Null Reference，不过两者区别不大。\n处理NullPointerException\n如果遇到NullPointerException，我们应该如何处理？首先，必须明确，NullPointerException是一种代码逻辑错误，遇到NullPointerException，遵循原则是早暴露，早修复，严禁使用catch来隐藏这种编码错误：\n12345// 错误示例: 捕获NullPointerExceptiontry &#123;    transferMoney(from, to, amount);&#125; catch (NullPointerException e) &#123;&#125;\n好的编码习惯可以极大地降低NullPointerException的产生，例如：\n成员变量在定义时初始化：\n123public class Person &#123;    private String name = &quot;&quot;;&#125;\n使用空字符串&quot;&quot;而不是默认的null可避免很多NullPointerException，编写业务逻辑时，用空字符串&quot;&quot;表示未填写比null安全得多。\n返回空字符串&quot;&quot;、空数组而不是null：\n1234567public String[] readLinesFromFile(String file) &#123;    if (getFileSize(file) == 0) &#123;        // 返回空数组而不是null:        return new String[0];    &#125;    ...&#125;\n这样可以使得调用方无需检查结果是否为null。\n如果调用方一定要根据null判断，比如返回null表示文件不存在，那么考虑返回Optional&lt;T&gt;：\n123456public Optional&lt;String&gt; readFromFile(String file) &#123;    if (!fileExist(file)) &#123;        return Optional.empty();    &#125;    ...&#125;\n这样调用方必须通过Optional.isPresent()判断是否有结果。\n定位NullPointerException\n如果产生了NullPointerException，例如，调用a.b.c.x()时产生了NullPointerException，原因可能是：\n\na是null；\na.b是null；\na.b.c是null；\n\n确定到底是哪个对象是null以前只能打印这样的日志：\n123System.out.println(a);System.out.println(a.b);System.out.println(a.b.c);\n从Java 14开始，如果产生了NullPointerException，JVM可以给出详细的信息告诉我们null对象到底是谁。我们来看例子：\n1234567891011121314151617public class Main &#123;    public static void main(String[] args) &#123;        Person p = new Person();        System.out.println(p.address.city.toLowerCase());    &#125;&#125;class Person &#123;    String[] name = new String[2];    Address address = new Address();&#125;class Address &#123;    String city;    String street;    String zipcode;&#125;\n可以在NullPointerException的详细信息中看到类似... because &quot;&lt;local1&gt;.address.city&quot; is null，意思是city字段为null，这样我们就能快速定位问题所在。\n这种增强的NullPointerException详细信息是Java 14新增的功能，但默认是关闭的，我们可以给JVM添加一个-XX:+ShowCodeDetailsInExceptionMessages参数启用它：\n1java -XX:+ShowCodeDetailsInExceptionMessages Main.java\n小结\nNullPointerException是Java代码常见的逻辑错误，应当早暴露，早修复；\n可以启用Java 14的增强异常信息来查看NullPointerException的详细错误信息。\n使用断言\n断言（Assertion）是一种调试程序的方式。在Java中，使用assert关键字来实现断言。\n我们先看一个例子：\n12345public static void main(String[] args) &#123;    double x = Math.abs(-123.45);    assert x &gt;= 0;    System.out.println(x);&#125;\n语句assert x &gt;= 0;即为断言，断言条件x &gt;= 0预期为true。如果计算结果为false，则断言失败，抛出AssertionError。\n使用assert语句时，还可以添加一个可选的断言消息：\n1assert x &gt;= 0 : &quot;x must &gt;= 0&quot;;\n这样，断言失败的时候，AssertionError会带上消息x must &gt;= 0，更加便于调试。\nJava断言的特点是：断言失败时会抛出AssertionError，导致程序结束退出。因此，断言不能用于可恢复的程序错误，只应该用于开发和测试阶段。\n对于可恢复的程序错误，不应该使用断言。例如：\n123void sort(int[] arr) &#123;    assert arr != null;&#125;\n应该抛出异常并在上层捕获：\n12345void sort(int[] arr) &#123;    if (arr == null) &#123;        throw new IllegalArgumentException(&quot;array cannot be null&quot;);    &#125;&#125;\n当我们在程序中使用assert时，例如，一个简单的断言：\n12345678// assertpublic class Main &#123;    public static void main(String[] args) &#123;        int x = -1;        assert x &gt; 0;        System.out.println(x);    &#125;&#125;\n断言x必须大于0，实际上x为-1，断言肯定失败。执行上述代码，发现程序并未抛出AssertionError，而是正常打印了x的值。\n这是怎么回事？为什么assert语句不起作用？\n这是因为JVM默认关闭断言指令，即遇到assert语句就自动忽略了，不执行。\n要执行assert语句，必须给Java虚拟机传递-enableassertions（可简写为-ea）参数启用断言。所以，上述程序必须在命令行下运行才有效果：\n123$ java -ea Main.javaException in thread &quot;main&quot; java.lang.AssertionError\tat Main.main(Main.java:5)\n还可以有选择地对特定地类启用断言，命令行参数是：-ea:com.itranswarp.sample.Main，表示只对com.itranswarp.sample.Main这个类启用断言。\n或者对特定地包启用断言，命令行参数是：-ea:com.itranswarp.sample...（注意结尾有3个.），表示对com.itranswarp.sample这个包启动断言。\n实际开发中，很少使用断言。更好的方法是编写单元测试，后续我们会讲解JUnit的使用。\n小结\n断言是一种调试方式，断言失败会抛出AssertionError，只能在开发和测试阶段启用断言；\n对可恢复的错误不能使用断言，而应该抛出异常；\n断言很少被使用，更好的方法是编写单元测试。\n\n\n使用JDK Logging\n在编写程序的过程中，发现程序运行结果与预期不符，怎么办？当然是用System.out.println()打印出执行过程中的某些变量，观察每一步的结果与代码逻辑是否符合，然后有针对性地修改代码。\n代码改好了怎么办？当然是删除没有用的System.out.println()语句了。\n如果改代码又改出问题怎么办？再加上System.out.println()。\n反复这么搞几次，很快大家就发现使用System.out.println()非常麻烦。\n怎么办？\n解决方法是使用日志。\n那什么是日志？日志就是Logging，它的目的是为了取代System.out.println()。\n输出日志，而不是用System.out.println()，有以下几个好处：\n\n可以设置输出样式，避免自己每次都写&quot;ERROR: &quot; + var；\n可以设置输出级别，禁止某些级别输出。例如，只输出错误日志；\n可以被重定向到文件，这样可以在程序运行结束后查看日志；\n可以按包名控制日志级别，只输出某些包打的日志；\n可以……\n\n总之就是好处很多啦。\n那如何使用日志？\n因为Java标准库内置了日志包java.util.logging，我们可以直接用。先看一个简单的例子：\n12345678910111213// loggingimport java.util.logging.Level;import java.util.logging.Logger;public class Hello &#123;    public static void main(String[] args) &#123;        Logger logger = Logger.getGlobal();        logger.info(&quot;start process...&quot;);        logger.warning(&quot;memory is running out...&quot;);        logger.fine(&quot;ignored.&quot;);        logger.severe(&quot;process will be terminated...&quot;);    &#125;&#125;\n运行上述代码，得到类似如下的输出：\n123456Mar 02, 2019 6:32:13 PM Hello mainINFO: start process...Mar 02, 2019 6:32:13 PM Hello mainWARNING: memory is running out...Mar 02, 2019 6:32:13 PM Hello mainSEVERE: process will be terminated...\n对比可见，使用日志最大的好处是，它自动打印了时间、调用类、调用方法等很多有用的信息。\n再仔细观察发现，4条日志，只打印了3条，logger.fine()没有打印。这是因为，日志的输出可以设定级别。JDK的Logging定义了7个日志级别，从严重到普通：\n\nSEVERE\nWARNING\nINFO\nCONFIG\nFINE\nFINER\nFINEST\n\n因为默认级别是INFO，因此，INFO级别以下的日志，不会被打印出来。使用日志级别的好处在于，调整级别，就可以屏蔽掉很多调试相关的日志输出。\n使用Java标准库内置的Logging有以下局限：\nLogging系统在JVM启动时读取配置文件并完成初始化，一旦开始运行main()方法，就无法修改配置；\n配置不太方便，需要在JVM启动时传递参数-Djava.util.logging.config.file=&lt;config-file-name&gt;。\n因此，Java标准库内置的Logging使用并不是非常广泛。更方便的日志系统我们稍后介绍。\n练习\n使用logger.severe()打印异常：\n123456789101112131415import java.io.UnsupportedEncodingException;import java.util.logging.Logger;public class Main &#123;    public static void main(String[] args) &#123;        Logger logger = Logger.getLogger(Main.class.getName());        logger.info(&quot;Start process...&quot;);        try &#123;            &quot;&quot;.getBytes(&quot;invalidCharsetName&quot;);        &#125; catch (UnsupportedEncodingException e) &#123;            // TODO: 使用logger.severe()打印异常        &#125;        logger.info(&quot;Process end.&quot;);    &#125;&#125;\n下载练习\n小结\n日志是为了替代System.out.println()，可以定义格式，重定向到文件等；\n日志可以存档，便于追踪问题；\n日志记录可以按级别分类，便于打开或关闭某些级别；\n可以根据配置文件调整日志，无需修改代码；\nJava标准库提供了java.util.logging来实现日志功能。\n\n\n和Java标准库提供的日志不同，Commons Logging是一个第三方日志库，它是由Apache创建的日志模块。\nCommons Logging的特色是，它可以挂接不同的日志系统，并通过配置文件指定挂接的日志系统。默认情况下，Commons Loggin自动搜索并使用Log4j（Log4j是另一个流行的日志系统），如果没有找到Log4j，再使用JDK Logging。\n使用Commons Logging只需要和两个类打交道，并且只有两步：\n第一步，通过LogFactory获取Log类的实例； 第二步，使用Log实例的方法打日志。\n示例代码如下：\n12345678910import org.apache.commons.logging.Log;import org.apache.commons.logging.LogFactory;public class Main &#123;    public static void main(String[] args) &#123;        Log log = LogFactory.getLog(Main.class);        log.info(&quot;start...&quot;);        log.warn(&quot;end.&quot;);    &#125;&#125;\n运行上述代码，肯定会得到编译错误，类似error: package org.apache.commons.logging does not exist（找不到org.apache.commons.logging这个包）。因为Commons Logging是一个第三方提供的库，所以，必须先把它下载下来。下载后，解压，找到commons-logging-1.2.jar这个文件，再把Java源码Main.java放到一个目录下，例如work目录：\n123work├─ commons-logging-1.2.jar└─ Main.java\n然后用javac编译Main.java，编译的时候要指定classpath，不然编译器找不到我们引用的org.apache.commons.logging包。编译命令如下：\n1javac -cp commons-logging-1.2.jar Main.java\n如果编译成功，那么当前目录下就会多出一个Main.class文件：\n1234work├─ commons-logging-1.2.jar├─ Main.java└─ Main.class\n现在可以执行这个Main.class，使用java命令，也必须指定classpath，命令如下：\n1java -cp .;commons-logging-1.2.jar Main\n注意到传入的classpath有两部分：一个是.，一个是commons-logging-1.2.jar，用;分割。.表示当前目录，如果没有这个.，JVM不会在当前目录搜索Main.class，就会报错。\n如果在Linux或macOS下运行，注意classpath的分隔符不是;，而是:：\n1java -cp .:commons-logging-1.2.jar Main\n运行结果如下：\n1234Mar 02, 2019 7:15:31 PM Main mainINFO: start...Mar 02, 2019 7:15:31 PM Main mainWARNING: end.\nCommons Logging定义了6个日志级别：\n\nFATAL\nERROR\nWARNING\nINFO\nDEBUG\nTRACE\n\n默认级别是INFO。\n使用Commons Logging时，如果在静态方法中引用Log，通常直接定义一个静态类型变量：\n12345678// 在静态方法中引用Log:public class Main &#123;    static final Log log = LogFactory.getLog(Main.class);    static void foo() &#123;        log.info(&quot;foo&quot;);    &#125;&#125;\n在实例方法中引用Log，通常定义一个实例变量：\n12345678// 在实例方法中引用Log:public class Person &#123;    protected final Log log = LogFactory.getLog(getClass());    void foo() &#123;        log.info(&quot;foo&quot;);    &#125;&#125;\n注意到实例变量log的获取方式是LogFactory.getLog(getClass())，虽然也可以用LogFactory.getLog(Person.class)，但是前一种方式有个非常大的好处，就是子类可以直接使用该log实例。例如：\n123456// 在子类中使用父类实例化的log:public class Student extends Person &#123;    void bar() &#123;        log.info(&quot;bar&quot;);    &#125;&#125;\n由于Java类的动态特性，子类获取的log字段实际上相当于LogFactory.getLog(Student.class)，但却是从父类继承而来，并且无需改动代码。\n此外，Commons Logging的日志方法，例如info()，除了标准的info(String)外，还提供了一个非常有用的重载方法：info(String, Throwable)，这使得记录异常更加简单：\n12345try &#123;    ...&#125; catch (Exception e) &#123;    log.error(&quot;got exception!&quot;, e);&#125;\n练习\n使用log.error(String, Throwable)打印异常。\n下载练习\n小结\nCommons Logging是使用最广泛的日志模块；\nCommons Logging的API非常简单；\nCommons Logging可以自动检测并使用其他日志模块。\n前面介绍了Commons Logging，可以作为“日志接口”来使用。而真正的“日志实现”可以使用Log4j。\nLog4j是一种非常流行的日志框架，最新版本是2.x。\nLog4j是一个组件化设计的日志系统，它的架构大致如下：\n12345678910111213log.info(&quot;User signed in.&quot;); │ │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐ ├──▶│ Appender │───▶│  Filter  │───▶│  Layout  │───▶│ Console  │ │   └──────────┘    └──────────┘    └──────────┘    └──────────┘ │ │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐ ├──▶│ Appender │───▶│  Filter  │───▶│  Layout  │───▶│   File   │ │   └──────────┘    └──────────┘    └──────────┘    └──────────┘ │ │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐ └──▶│ Appender │───▶│  Filter  │───▶│  Layout  │───▶│  Socket  │     └──────────┘    └──────────┘    └──────────┘    └──────────┘\n当我们使用Log4j输出一条日志时，Log4j自动通过不同的Appender把同一条日志输出到不同的目的地。例如：\n\nconsole：输出到屏幕；\nfile：输出到文件；\nsocket：通过网络输出到远程计算机；\njdbc：输出到数据库\n\n在输出日志的过程中，通过Filter来过滤哪些log需要被输出，哪些log不需要被输出。例如，仅输出ERROR级别的日志。\n最后，通过Layout来格式化日志信息，例如，自动添加日期、时间、方法名称等信息。\n上述结构虽然复杂，但我们在实际使用的时候，并不需要关心Log4j的API，而是通过配置文件来配置它。\n以XML配置为例，使用Log4j的时候，我们把一个log4j2.xml的文件放到classpath下就可以让Log4j读取配置文件并按照我们的配置来输出日志。下面是一个配置文件的例子：\n123456789101112131415161718192021222324252627282930313233343536&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;Configuration&gt;\t&lt;Properties&gt;        &lt;!-- 定义日志格式 --&gt;\t\t&lt;Property name=&quot;log.pattern&quot;&gt;%d&#123;MM-dd HH:mm:ss.SSS&#125; [%t] %-5level %logger&#123;36&#125;%n%msg%n%n&lt;/Property&gt;        &lt;!-- 定义文件名变量 --&gt;\t\t&lt;Property name=&quot;file.err.filename&quot;&gt;log/err.log&lt;/Property&gt;\t\t&lt;Property name=&quot;file.err.pattern&quot;&gt;log/err.%i.log.gz&lt;/Property&gt;\t&lt;/Properties&gt;    &lt;!-- 定义Appender，即目的地 --&gt;\t&lt;Appenders&gt;        &lt;!-- 定义输出到屏幕 --&gt;\t\t&lt;Console name=&quot;console&quot; target=&quot;SYSTEM_OUT&quot;&gt;            &lt;!-- 日志格式引用上面定义的log.pattern --&gt;\t\t\t&lt;PatternLayout pattern=&quot;$&#123;log.pattern&#125;&quot; /&gt;\t\t&lt;/Console&gt;        &lt;!-- 定义输出到文件,文件名引用上面定义的file.err.filename --&gt;\t\t&lt;RollingFile name=&quot;err&quot; bufferedIO=&quot;true&quot; fileName=&quot;$&#123;file.err.filename&#125;&quot; filePattern=&quot;$&#123;file.err.pattern&#125;&quot;&gt;\t\t\t&lt;PatternLayout pattern=&quot;$&#123;log.pattern&#125;&quot; /&gt;\t\t\t&lt;Policies&gt;                &lt;!-- 根据文件大小自动切割日志 --&gt;\t\t\t\t&lt;SizeBasedTriggeringPolicy size=&quot;1 MB&quot; /&gt;\t\t\t&lt;/Policies&gt;            &lt;!-- 保留最近10份 --&gt;\t\t\t&lt;DefaultRolloverStrategy max=&quot;10&quot; /&gt;\t\t&lt;/RollingFile&gt;\t&lt;/Appenders&gt;\t&lt;Loggers&gt;\t\t&lt;Root level=&quot;info&quot;&gt;            &lt;!-- 对info级别的日志，输出到console --&gt;\t\t\t&lt;AppenderRef ref=&quot;console&quot; level=&quot;info&quot; /&gt;            &lt;!-- 对error级别的日志，输出到err，即上面定义的RollingFile --&gt;\t\t\t&lt;AppenderRef ref=&quot;err&quot; level=&quot;error&quot; /&gt;\t\t&lt;/Root&gt;\t&lt;/Loggers&gt;&lt;/Configuration&gt;\n虽然配置Log4j比较繁琐，但一旦配置完成，使用起来就非常方便。对上面的配置文件，凡是INFO级别的日志，会自动输出到屏幕，而ERROR级别的日志，不但会输出到屏幕，还会同时输出到文件。并且，一旦日志文件达到指定大小（1MB），Log4j就会自动切割新的日志文件，并最多保留10份。\n有了配置文件还不够，因为Log4j也是一个第三方库，我们需要从这里下载Log4j，解压后，把以下3个jar包放到classpath中：\n\nlog4j-api-2.x.jar\nlog4j-core-2.x.jar\nlog4j-jcl-2.x.jar\n\n因为Commons Logging会自动发现并使用Log4j，所以，把上一节下载的commons-logging-1.2.jar也放到classpath中。\n要打印日志，只需要按Commons Logging的写法写，不需要改动任何代码，就可以得到Log4j的日志输出，类似：\n1203-03 12:09:45.880 [main] INFO  com.itranswarp.learnjava.MainStart process...\n最佳实践\n在开发阶段，始终使用Commons Logging接口来写入日志，并且开发阶段无需引入Log4j。如果需要把日志写入文件，只需要把正确的配置文件和Log4j相关的jar包放入classpath，就可以自动把日志切换成使用Log4j写入，无需修改任何代码。\n练习\n根据配置文件，观察Log4j写入的日志文件。\n下载练习\n小结\n通过Commons Logging实现日志，不需要修改代码即可使用Log4j；\n使用Log4j只需要把log4j2.xml和相关jar放入classpath；\n如果要更换Log4j，只需要移除log4j2.xml和相关jar；\n只有扩展Log4j时，才需要引用Log4j的接口（例如，将日志加密写入数据库的功能，需要自己开发）。\n前面介绍了Commons Logging和Log4j这一对好基友，它们一个负责充当日志API，一个负责实现日志底层，搭配使用非常便于开发。\n有的童鞋可能还听说过SLF4J和Logback。这两个东东看上去也像日志，它们又是啥？\n其实SLF4J类似于Commons Logging，也是一个日志接口，而Logback类似于Log4j，是一个日志的实现。\n为什么有了Commons Logging和Log4j，又会蹦出来SLF4J和Logback？这是因为Java有着非常悠久的开源历史，不但OpenJDK本身是开源的，而且我们用到的第三方库，几乎全部都是开源的。开源生态丰富的一个特定就是，同一个功能，可以找到若干种互相竞争的开源库。\n因为对Commons Logging的接口不满意，有人就搞了SLF4J。因为对Log4j的性能不满意，有人就搞了Logback。\n我们先来看看SLF4J对Commons Logging的接口有何改进。在Commons Logging中，我们要打印日志，有时候得这么写：\n123int score = 99;p.setScore(score);log.info(&quot;Set score &quot; + score + &quot; for Person &quot; + p.getName() + &quot; ok.&quot;);\n拼字符串是一个非常麻烦的事情，所以SLF4J的日志接口改进成这样了：\n123int score = 99;p.setScore(score);logger.info(&quot;Set score &#123;&#125; for Person &#123;&#125; ok.&quot;, score, p.getName());\n我们靠猜也能猜出来，SLF4J的日志接口传入的是一个带占位符的字符串，用后面的变量自动替换占位符，所以看起来更加自然。\n如何使用SLF4J？它的接口实际上和Commons Logging几乎一模一样：\n123456import org.slf4j.Logger;import org.slf4j.LoggerFactory;class Main &#123;    final Logger logger = LoggerFactory.getLogger(getClass());&#125;\n对比一下Commons Logging和SLF4J的接口：\n\n\n\nCommons Logging\nSLF4J\n\n\n\n\norg.apache.commons.logging.Log\norg.slf4j.Logger\n\n\norg.apache.commons.logging.LogFactory\norg.slf4j.LoggerFactory\n\n\n\n不同之处就是Log变成了Logger，LogFactory变成了LoggerFactory。\n使用SLF4J和Logback和前面讲到的使用Commons Logging加Log4j是类似的，先分别下载SLF4J和Logback，然后把以下jar包放到classpath下：\n\nslf4j-api-1.7.x.jar\nlogback-classic-1.2.x.jar\nlogback-core-1.2.x.jar\n\n然后使用SLF4J的Logger和LoggerFactory即可。\n和Log4j类似，我们仍然需要一个Logback的配置文件，把logback.xml放到classpath下，配置如下：\n123456789101112131415161718192021222324252627&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;configuration&gt;\t&lt;appender name=&quot;CONSOLE&quot; class=&quot;ch.qos.logback.core.ConsoleAppender&quot;&gt;\t\t&lt;encoder&gt;\t\t\t&lt;pattern&gt;%d&#123;HH:mm:ss.SSS&#125; [%thread] %-5level %logger&#123;36&#125; - %msg%n&lt;/pattern&gt;\t\t&lt;/encoder&gt;\t&lt;/appender&gt;\t&lt;appender name=&quot;FILE&quot; class=&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;&gt;\t\t&lt;encoder&gt;\t\t\t&lt;pattern&gt;%d&#123;HH:mm:ss.SSS&#125; [%thread] %-5level %logger&#123;36&#125; - %msg%n&lt;/pattern&gt;\t\t\t&lt;charset&gt;utf-8&lt;/charset&gt;\t\t&lt;/encoder&gt;\t\t&lt;file&gt;log/output.log&lt;/file&gt;\t\t&lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.FixedWindowRollingPolicy&quot;&gt;\t\t\t&lt;fileNamePattern&gt;log/output.log.%i&lt;/fileNamePattern&gt;\t\t&lt;/rollingPolicy&gt;\t\t&lt;triggeringPolicy class=&quot;ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy&quot;&gt;\t\t\t&lt;MaxFileSize&gt;1MB&lt;/MaxFileSize&gt;\t\t&lt;/triggeringPolicy&gt;\t&lt;/appender&gt;\t&lt;root level=&quot;INFO&quot;&gt;\t\t&lt;appender-ref ref=&quot;CONSOLE&quot; /&gt;\t\t&lt;appender-ref ref=&quot;FILE&quot; /&gt;\t&lt;/root&gt;&lt;/configuration&gt;\n运行即可获得类似如下的输出：\n113:15:25.328 [main] INFO  com.itranswarp.learnjava.Main - Start process...\n从目前的趋势来看，越来越多的开源项目从Commons Logging加Log4j转向了SLF4J加Logback。\n练习\n根据配置文件，观察Logback写入的日志文件。\n下载练习\n小结\nSLF4J和Logback可以取代Commons Logging和Log4j；\n始终使用SLF4J的接口写入日志，使用Logback只需要配置，不需要修改代码。\n","dateCreated":"2025-05-23T17:31:10+08:00","dateModified":"2025-05-24T12:38:23+08:00","datePublished":"2025-05-23T17:31:10+08:00","description":"","headline":"JAVA-异常处理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/","keywords":"Java"}</script>
+    <meta name="description" content="在计算机程序运行的过程中，总是会出现各种各样的错误。 有一些错误是用户造成的，比如，希望用户输入一个int类型的年龄，但是用户的输入是abc： 123&#x2F;&#x2F; 假设用户输入了abc：String s &#x3D; &quot;abc&quot;;int n &#x3D; Integer.parseInt(s); &#x2F;&#x2F; NumberFormatException! 程序想要读写某个文件的内容，但是用户已经把它删除了： 12">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="JAVA-异常处理">
+<meta property="og:url" content="https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="在计算机程序运行的过程中，总是会出现各种各样的错误。 有一些错误是用户造成的，比如，希望用户输入一个int类型的年龄，但是用户的输入是abc： 123&#x2F;&#x2F; 假设用户输入了abc：String s &#x3D; &quot;abc&quot;;int n &#x3D; Integer.parseInt(s); &#x2F;&#x2F; NumberFormatException! 程序想要读写某个文件的内容，但是用户已经把它删除了： 12">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2025-05-23T09:31:10.000Z">
+<meta property="article:modified_time" content="2025-05-24T04:38:23.227Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="Java">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            JAVA-异常处理
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2025-05-23T17:31:10+08:00">
+	
+		    2025 年 5 月 23 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Java/">Java</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <p>在计算机程序运行的过程中，总是会出现各种各样的错误。</p>
+<p>有一些错误是用户造成的，比如，希望用户输入一个<code>int</code>类型的年龄，但是用户的输入是<code>abc</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 假设用户输入了abc：</span></span><br><span class="line"><span class="type">String</span> <span class="variable">s</span> <span class="operator">=</span> <span class="string">&quot;abc&quot;</span>;</span><br><span class="line"><span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> Integer.parseInt(s); <span class="comment">// NumberFormatException!</span></span><br></pre></td></tr></table></figure>
+<p>程序想要读写某个文件的内容，但是用户已经把它删除了：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 用户删除了该文件：</span></span><br><span class="line"><span class="type">String</span> <span class="variable">t</span> <span class="operator">=</span> readFile(<span class="string">&quot;C:\\abc.txt&quot;</span>); <span class="comment">// FileNotFoundException!</span></span><br></pre></td></tr></table></figure>
+<p>还有一些错误是随机出现，并且永远不可能避免的。比如：</p>
+<ul>
+<li>网络突然断了，连接不到远程服务器；</li>
+<li>内存耗尽，程序崩溃了；</li>
+<li>用户点“打印”，但根本没有打印机；</li>
+<li>……</li>
+</ul>
+<p>所以，一个健壮的程序必须处理各种各样的错误。</p>
+<p>所谓错误，就是程序调用某个函数的时候，如果失败了，就表示出错。</p>
+<p>调用方如何获知调用失败的信息？有两种方法：</p>
+<p>方法一：约定返回错误码。</p>
+<p>例如，处理一个文件，如果返回<code>0</code>，表示成功，返回其他整数，表示约定的错误码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="variable">code</span> <span class="operator">=</span> processFile(<span class="string">&quot;C:\\test.txt&quot;</span>);</span><br><span class="line"><span class="keyword">if</span> (code == <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// ok:</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// error:</span></span><br><span class="line">    <span class="keyword">switch</span> (code) &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">1</span>:</span><br><span class="line">        <span class="comment">// file not found:</span></span><br><span class="line">    <span class="keyword">case</span> <span class="number">2</span>:</span><br><span class="line">        <span class="comment">// no read permission:</span></span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">        <span class="comment">// unknown error:</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因为使用<code>int</code>类型的错误码，想要处理就非常麻烦。这种方式常见于底层C函数。</p>
+<p>方法二：在语言层面上提供一个异常处理机制。</p>
+<p>Java内置了一套异常处理机制，总是使用异常来表示错误。</p>
+<p>异常是一种<code>class</code>，因此它本身带有类型信息。异常可以在任何地方抛出，但只需要在上层捕获，这样就和方法调用分离了：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">s</span> <span class="operator">=</span> processFile(“C:\\test.txt”);</span><br><span class="line">    <span class="comment">// ok:</span></span><br><span class="line">&#125; <span class="keyword">catch</span> (FileNotFoundException e) &#123;</span><br><span class="line">    <span class="comment">// file not found:</span></span><br><span class="line">&#125; <span class="keyword">catch</span> (SecurityException e) &#123;</span><br><span class="line">    <span class="comment">// no read permission:</span></span><br><span class="line">&#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">    <span class="comment">// io error:</span></span><br><span class="line">&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    <span class="comment">// other error:</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因为Java的异常是<code>class</code>，它的继承关系如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">                     ┌───────────┐</span><br><span class="line">                     │  Object   │</span><br><span class="line">                     └───────────┘</span><br><span class="line">                           ▲</span><br><span class="line">                           │</span><br><span class="line">                     ┌───────────┐</span><br><span class="line">                     │ Throwable │</span><br><span class="line">                     └───────────┘</span><br><span class="line">                           ▲</span><br><span class="line">                 ┌─────────┴─────────┐</span><br><span class="line">                 │                   │</span><br><span class="line">           ┌───────────┐       ┌───────────┐</span><br><span class="line">           │   Error   │       │ Exception │</span><br><span class="line">           └───────────┘       └───────────┘</span><br><span class="line">                 ▲                   ▲</span><br><span class="line">         ┌───────┘              ┌────┴──────────┐</span><br><span class="line">         │                      │               │</span><br><span class="line">┌─────────────────┐    ┌─────────────────┐┌───────────┐</span><br><span class="line">│OutOfMemoryError │... │RuntimeException ││IOException│...</span><br><span class="line">└─────────────────┘    └─────────────────┘└───────────┘</span><br><span class="line">                                ▲</span><br><span class="line">                    ┌───────────┴─────────────┐</span><br><span class="line">                    │                         │</span><br><span class="line">         ┌─────────────────────┐ ┌─────────────────────────┐</span><br><span class="line">         │NullPointerException │ │IllegalArgumentException │...</span><br><span class="line">         └─────────────────────┘ └─────────────────────────┘</span><br></pre></td></tr></table></figure>
+<p>从继承关系可知：<code>Throwable</code>是异常体系的根，它继承自<code>Object</code>。<code>Throwable</code>有两个体系：<code>Error</code>和<code>Exception</code>，<code>Error</code>表示严重的错误，程序对此一般无能为力，例如：</p>
+<ul>
+<li><code>OutOfMemoryError</code>：内存耗尽</li>
+<li><code>NoClassDefFoundError</code>：无法加载某个Class</li>
+<li><code>StackOverflowError</code>：栈溢出</li>
+</ul>
+<p>而<code>Exception</code>则是运行时的错误，它可以被捕获并处理。</p>
+<p>某些异常是应用程序逻辑处理的一部分，应该捕获并处理。例如：</p>
+<ul>
+<li><code>NumberFormatException</code>：数值类型的格式错误</li>
+<li><code>FileNotFoundException</code>：未找到文件</li>
+<li><code>SocketException</code>：读取网络失败</li>
+</ul>
+<p>还有一些异常是程序逻辑编写不对造成的，应该修复程序本身。例如：</p>
+<ul>
+<li><code>NullPointerException</code>：对某个<code>null</code>的对象调用方法或字段</li>
+<li><code>IndexOutOfBoundsException</code>：数组索引越界</li>
+</ul>
+<p><code>Exception</code>又分为两大类：</p>
+<ol>
+<li><code>RuntimeException</code>以及它的子类；</li>
+<li>非<code>RuntimeException</code>（包括<code>IOException</code>、<code>ReflectiveOperationException</code>等等）</li>
+</ol>
+<p>Java规定：</p>
+<ul>
+<li>必须捕获的异常，包括<code>Exception</code>及其子类，但不包括<code>RuntimeException</code>及其子类，这种类型的异常称为Checked Exception。</li>
+<li>不需要捕获的异常，包括<code>Error</code>及其子类，<code>RuntimeException</code>及其子类。</li>
+</ul>
+<p>注意</p>
+<p>编译器对RuntimeException及其子类不做强制捕获要求，不是指应用程序本身不应该捕获并处理RuntimeException。是否需要捕获，具体问题具体分析。</p>
+<h3 id="捕获异常">捕获异常</h3>
+<p>捕获异常使用<code>try...catch</code>语句，把可能发生异常的代码放到<code>try &#123;...&#125;</code>中，然后使用<code>catch</code>捕获对应的<code>Exception</code>及其子类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// try...catch</span></span><br><span class="line"><span class="keyword">import</span> java.io.UnsupportedEncodingException;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">byte</span>[] bs = toGBK(<span class="string">&quot;中文&quot;</span>);</span><br><span class="line">        System.out.println(Arrays.toString(bs));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 用指定编码转换String为byte[]:</span></span><br><span class="line">            <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">            <span class="comment">// 如果系统不支持GBK编码，会捕获到UnsupportedEncodingException:</span></span><br><span class="line">            System.out.println(e); <span class="comment">// 打印异常信息</span></span><br><span class="line">            <span class="keyword">return</span> s.getBytes(); <span class="comment">// 尝试使用默认编码</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果我们不捕获<code>UnsupportedEncodingException</code>，会出现编译失败的问题：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// try...catch</span></span><br><span class="line"><span class="keyword">import</span> java.io.UnsupportedEncodingException;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">byte</span>[] bs = toGBK(<span class="string">&quot;中文&quot;</span>);</span><br><span class="line">        System.out.println(Arrays.toString(bs));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) &#123;</span><br><span class="line">        <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>编译器会报错，错误信息类似：unreported exception UnsupportedEncodingException; must be caught or declared to be thrown，并且准确地指出需要捕获的语句是<code>return s.getBytes(&quot;GBK&quot;);</code>。意思是说，像<code>UnsupportedEncodingException</code>这样的Checked Exception，必须被捕获。</p>
+<p>这是因为<code>String.getBytes(String)</code>方法定义是：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">byte</span>[] getBytes(String charsetName) <span class="keyword">throws</span> UnsupportedEncodingException &#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在方法定义的时候，使用<code>throws Xxx</code>表示该方法可能抛出的异常类型。调用方在调用的时候，必须强制捕获这些异常，否则编译器会报错。</p>
+<p>在<code>toGBK()</code>方法中，因为调用了<code>String.getBytes(String)</code>方法，就必须捕获<code>UnsupportedEncodingException</code>。我们也可以不捕获它，而是在方法定义处用throws表示<code>toGBK()</code>方法可能会抛出<code>UnsupportedEncodingException</code>，就可以让<code>toGBK()</code>方法通过编译器检查：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// try...catch</span></span><br><span class="line"><span class="keyword">import</span> java.io.UnsupportedEncodingException;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">byte</span>[] bs = toGBK(<span class="string">&quot;中文&quot;</span>);</span><br><span class="line">        System.out.println(Arrays.toString(bs));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) <span class="keyword">throws</span> UnsupportedEncodingException &#123;</span><br><span class="line">        <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述代码仍然会得到编译错误，但这一次，编译器提示的不是调用<code>return s.getBytes(&quot;GBK&quot;);</code>的问题，而是<code>byte[] bs = toGBK(&quot;中文&quot;);</code>。因为在<code>main()</code>方法中，调用<code>toGBK()</code>，没有捕获它声明的可能抛出的<code>UnsupportedEncodingException</code>。</p>
+<p>修复方法是在<code>main()</code>方法中捕获异常并处理：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// try...catch</span></span><br><span class="line"><span class="keyword">import</span> java.io.UnsupportedEncodingException;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="type">byte</span>[] bs = toGBK(<span class="string">&quot;中文&quot;</span>);</span><br><span class="line">            System.out.println(Arrays.toString(bs));</span><br><span class="line">        &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">            System.out.println(e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) <span class="keyword">throws</span> UnsupportedEncodingException &#123;</span><br><span class="line">        <span class="comment">// 用指定编码转换String为byte[]:</span></span><br><span class="line">        <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可见，只要是方法声明的Checked Exception，不在调用层捕获，也必须在更高的调用层捕获。所有未捕获的异常，最终也必须在<code>main()</code>方法中捕获，不会出现漏写<code>try</code>的情况。这是由编译器保证的。<code>main()</code>方法也是最后捕获<code>Exception</code>的机会。</p>
+<p>如果是测试代码，上面的写法就略显麻烦。如果不想写任何<code>try</code>代码，可以直接把<code>main()</code>方法定义为<code>throws Exception</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// try...catch</span></span><br><span class="line"><span class="keyword">import</span> java.io.UnsupportedEncodingException;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">byte</span>[] bs = toGBK(<span class="string">&quot;中文&quot;</span>);</span><br><span class="line">        System.out.println(Arrays.toString(bs));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) <span class="keyword">throws</span> UnsupportedEncodingException &#123;</span><br><span class="line">        <span class="comment">// 用指定编码转换String为byte[]:</span></span><br><span class="line">        <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因为<code>main()</code>方法声明了可能抛出<code>Exception</code>，也就声明了可能抛出所有的<code>Exception</code>，因此在内部就无需捕获了。代价就是一旦发生异常，程序会立刻退出。</p>
+<p>还有一些童鞋喜欢在<code>toGBK()</code>内部“消化”异常：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">        <span class="comment">// 什么也不干</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br></pre></td></tr></table></figure>
+<p>这种捕获后不处理的方式是非常不好的，即使真的什么也做不了，也要先把异常记录下来：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">        <span class="comment">// 先记下来再说:</span></span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br></pre></td></tr></table></figure>
+<p>所有异常都可以调用<code>printStackTrace()</code>方法打印异常栈，这是一个简单有用的快速打印异常的方法。</p>
+<h3 id="小结">小结</h3>
+<p>Java使用异常来表示错误，并通过<code>try ... catch</code>捕获异常；</p>
+<p>Java的异常是<code>class</code>，并且从<code>Throwable</code>继承；</p>
+<p><code>Error</code>是无需捕获的严重错误，<code>Exception</code>是应该捕获的可处理的错误；</p>
+<p><code>RuntimeException</code>无需强制捕获，非<code>RuntimeException</code>（Checked Exception）需强制捕获，或者用<code>throws</code>声明；</p>
+<p>不推荐捕获了异常但不进行任何处理。</p>
+<p>在Java中，凡是可能抛出异常的语句，都可以用<code>try ... catch</code>捕获。把可能发生异常的语句放在<code>try &#123; ... &#125;</code>中，然后使用<code>catch</code>捕获对应的<code>Exception</code>及其子类。</p>
+<h3 id="多catch语句">多catch语句</h3>
+<p>可以使用多个<code>catch</code>语句，每个<code>catch</code>分别捕获对应的<code>Exception</code>及其子类。JVM在捕获到异常后，会从上到下匹配<code>catch</code>语句，匹配到某个<code>catch</code>后，执行<code>catch</code>代码块，然后<em>不再</em>继续匹配。</p>
+<p>简单地说就是：多个<code>catch</code>语句只有一个能被执行。例如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        System.out.println(e);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (NumberFormatException e) &#123;</span><br><span class="line">        System.out.println(e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>存在多个<code>catch</code>的时候，<code>catch</code>的顺序非常重要：子类必须写在前面。例如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;IO error&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123; <span class="comment">// 永远捕获不到</span></span><br><span class="line">        System.out.println(<span class="string">&quot;Bad encoding&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于上面的代码，<code>UnsupportedEncodingException</code>异常是永远捕获不到的，因为它是<code>IOException</code>的子类。当抛出<code>UnsupportedEncodingException</code>异常时，会被<code>catch (IOException e) &#123; ... &#125;</code>捕获并执行。</p>
+<p>因此，正确的写法是把子类放到前面：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Bad encoding&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;IO error&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="finally语句">finally语句</h3>
+<p>无论是否有异常发生，如果我们都希望执行一些语句，例如清理工作，怎么写？</p>
+<p>可以把执行语句写若干遍：正常执行的放到<code>try</code>中，每个<code>catch</code>再写一遍。例如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">        System.out.println(<span class="string">&quot;END&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Bad encoding&quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;END&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;IO error&quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;END&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述代码无论是否发生异常，都会执行<code>System.out.println(&quot;END&quot;);</code>这条语句。</p>
+<p>那么如何消除这些重复的代码？Java的<code>try ... catch</code>机制还提供了<code>finally</code>语句，<code>finally</code>语句块保证有无错误都会执行。上述代码可以改写如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Bad encoding&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;IO error&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;END&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意<code>finally</code>有几个特点：</p>
+<ol>
+<li><code>finally</code>语句不是必须的，可写可不写；</li>
+<li><code>finally</code>总是最后执行。</li>
+</ol>
+<p>如果没有发生异常，就正常执行<code>try &#123; ... &#125;</code>语句块，然后执行<code>finally</code>。如果发生了异常，就中断执行<code>try &#123; ... &#125;</code>语句块，然后跳转执行匹配的<code>catch</code>语句块，最后执行<code>finally</code>。</p>
+<p>可见，<code>finally</code>是用来保证一些代码必须执行的。</p>
+<p>某些情况下，可以没有<code>catch</code>，只使用<code>try ... finally</code>结构。例如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">process</span><span class="params">(String file)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;END&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因为方法声明了可能抛出的异常，所以可以不写<code>catch</code>。</p>
+<h3 id="捕获多种异常">捕获多种异常</h3>
+<p>如果某些异常的处理逻辑相同，但是异常本身不存在继承关系，那么就得编写多条<code>catch</code>子句：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Bad input&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (NumberFormatException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Bad input&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Unknown error&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因为处理<code>IOException</code>和<code>NumberFormatException</code>的代码是相同的，所以我们可以把它两用<code>|</code>合并到一起：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException | NumberFormatException e) &#123;</span><br><span class="line">        <span class="comment">// IOException或NumberFormatException</span></span><br><span class="line">        System.out.println(<span class="string">&quot;Bad input&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Unknown error&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="练习">练习</h3>
+<p>用<code>try ... catch</code>捕获异常并处理。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/catch-exception/exception-catch.zip">下载练习</a></p>
+<h3 id="小结-2">小结</h3>
+<p>捕获异常时，多个<code>catch</code>语句的匹配顺序非常重要，子类必须放在前面；</p>
+<p><code>finally</code>语句保证了有无异常都会执行，它是可选的；</p>
+<p>一个<code>catch</code>语句也可以匹配多个非继承关系的异常。</p>
+<h3 id="异常的传播">异常的传播</h3>
+<p>当某个方法抛出了异常时，如果当前方法没有捕获异常，异常就会被抛到上层调用方法，直到遇到某个<code>try ... catch</code>被捕获为止：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// exception</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            process1();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process1</span><span class="params">()</span> &#123;</span><br><span class="line">        process2();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process2</span><span class="params">()</span> &#123;</span><br><span class="line">        Integer.parseInt(<span class="literal">null</span>); <span class="comment">// 会抛出NumberFormatException</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过<code>printStackTrace()</code>可以打印出方法的调用栈，类似：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">java.lang.NumberFormatException: <span class="literal">null</span></span><br><span class="line">    at java.base/java.lang.Integer.parseInt(Integer.java:<span class="number">614</span>)</span><br><span class="line">    at java.base/java.lang.Integer.parseInt(Integer.java:<span class="number">770</span>)</span><br><span class="line">    at Main.process2(Main.java:<span class="number">16</span>)</span><br><span class="line">    at Main.process1(Main.java:<span class="number">12</span>)</span><br><span class="line">    at Main.main(Main.java:<span class="number">5</span>)</span><br></pre></td></tr></table></figure>
+<p><code>printStackTrace()</code>对于调试错误非常有用，上述信息表示：<code>NumberFormatException</code>是在<code>java.lang.Integer.parseInt</code>方法中被抛出的，从下往上看，调用层次依次是：</p>
+<ol>
+<li><code>main()</code>调用<code>process1()</code>；</li>
+<li><code>process1()</code>调用<code>process2()</code>；</li>
+<li><code>process2()</code>调用<code>Integer.parseInt(String)</code>；</li>
+<li><code>Integer.parseInt(String)</code>调用<code>Integer.parseInt(String, int)</code>。</li>
+</ol>
+<p>查看<code>Integer.java</code>源码可知，抛出异常的方法代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="type">int</span> <span class="title function_">parseInt</span><span class="params">(String s, <span class="type">int</span> radix)</span> <span class="keyword">throws</span> NumberFormatException &#123;</span><br><span class="line">    <span class="keyword">if</span> (s == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NumberFormatException</span>(<span class="string">&quot;null&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>并且，每层调用均给出了源代码的行号，可直接定位。</p>
+<h3 id="抛出异常">抛出异常</h3>
+<p>当发生错误时，例如，用户输入了非法的字符，我们就可以抛出异常。</p>
+<p>如何抛出异常？参考<code>Integer.parseInt()</code>方法，抛出异常分两步：</p>
+<ol>
+<li>创建某个<code>Exception</code>的实例；</li>
+<li>用<code>throw</code>语句抛出。</li>
+</ol>
+<p>下面是一个例子：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">process2</span><span class="params">(String s)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (s==<span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="type">NullPointerException</span> <span class="variable">e</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">        <span class="keyword">throw</span> e;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实际上，绝大部分抛出异常的代码都会合并写成一行：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">process2</span><span class="params">(String s)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (s==<span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果一个方法捕获了某个异常后，又在<code>catch</code>子句中抛出新的异常，就相当于把抛出的异常类型“转换”了：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">process1</span><span class="params">(String s)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process2();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (NullPointerException e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">void</span> <span class="title function_">process2</span><span class="params">(String s)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (s==<span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当<code>process2()</code>抛出<code>NullPointerException</code>后，被<code>process1()</code>捕获，然后抛出<code>IllegalArgumentException()</code>。</p>
+<p>如果在<code>main()</code>中捕获<code>IllegalArgumentException</code>，我们看看打印的异常栈：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// exception</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            process1();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process1</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            process2();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (NullPointerException e) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process2</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>打印出的异常栈类似：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">java.lang.IllegalArgumentException</span><br><span class="line">    at Main.process1(Main.java:15)</span><br><span class="line">    at Main.main(Main.java:5)</span><br></pre></td></tr></table></figure>
+<p>这说明新的异常丢失了原始异常信息，我们已经看不到原始异常<code>NullPointerException</code>的信息了。</p>
+<p>为了能追踪到完整的异常栈，在构造异常的时候，把原始的<code>Exception</code>实例传进去，新的<code>Exception</code>就可以持有原始<code>Exception</code>信息。对上述代码改进如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// exception</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            process1();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process1</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            process2();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (NullPointerException e) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process2</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行上述代码，打印出的异常栈类似：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">java.lang.IllegalArgumentException: java.lang.NullPointerException</span><br><span class="line">    at Main.process1(Main.java:15)</span><br><span class="line">    at Main.main(Main.java:5)</span><br><span class="line">Caused by: java.lang.NullPointerException</span><br><span class="line">    at Main.process2(Main.java:20)</span><br><span class="line">    at Main.process1(Main.java:13)</span><br></pre></td></tr></table></figure>
+<p>注意到<code>Caused by: Xxx</code>，说明捕获的<code>IllegalArgumentException</code>并不是造成问题的根源，根源在于<code>NullPointerException</code>，是在<code>Main.process2()</code>方法抛出的。</p>
+<p>在代码中获取原始异常可以使用<code>Throwable.getCause()</code>方法。如果返回<code>null</code>，说明已经是“根异常”了。</p>
+<p>有了完整的异常栈的信息，我们才能快速定位并修复代码的问题。</p>
+<p>最佳实践</p>
+<p>捕获到异常并再次抛出时，一定要留住原始异常，否则很难定位第一案发现场！</p>
+<p>如果我们在<code>try</code>或者<code>catch</code>语句块中抛出异常，<code>finally</code>语句是否会执行？例如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// exception</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Integer.parseInt(<span class="string">&quot;abc&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;catched&quot;</span>);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;finally&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述代码执行结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">catched</span><br><span class="line">finally</span><br><span class="line">Exception in thread &quot;main&quot; java.lang.RuntimeException: java.lang.NumberFormatException: For input string: &quot;abc&quot;</span><br><span class="line">    at Main.main(Main.java:8)</span><br><span class="line">Caused by: java.lang.NumberFormatException: For input string: &quot;abc&quot;</span><br><span class="line">    at ...</span><br></pre></td></tr></table></figure>
+<p>第一行打印了<code>catched</code>，说明进入了<code>catch</code>语句块。第二行打印了<code>finally</code>，说明执行了<code>finally</code>语句块。</p>
+<p>因此，在<code>catch</code>中抛出异常，不会影响<code>finally</code>的执行。JVM会先执行<code>finally</code>，然后抛出异常。</p>
+<h3 id="异常屏蔽">异常屏蔽</h3>
+<p>如果在执行<code>finally</code>语句时抛出异常，那么，<code>catch</code>语句的异常还能否继续抛出？例如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// exception</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Integer.parseInt(<span class="string">&quot;abc&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;catched&quot;</span>);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;finally&quot;</span>);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行上述代码，发现异常信息如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">catched</span><br><span class="line">finally</span><br><span class="line">Exception in thread &quot;main&quot; java.lang.IllegalArgumentException</span><br><span class="line">    at Main.main(Main.java:11)</span><br></pre></td></tr></table></figure>
+<p>这说明<code>finally</code>抛出异常后，原来在<code>catch</code>中准备抛出的异常就“消失”了，因为只能抛出一个异常。没有被抛出的异常称为“被屏蔽”的异常（Suppressed Exception）。</p>
+<p>在极少数的情况下，我们需要获知所有的异常。如何保存所有的异常信息？方法是先用<code>origin</code>变量保存原始异常，然后调用<code>Throwable.addSuppressed()</code>，把原始异常添加进来，最后在<code>finally</code>抛出：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// exception</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">Exception</span> <span class="variable">origin</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            System.out.println(Integer.parseInt(<span class="string">&quot;abc&quot;</span>));</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            origin = e;</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="type">Exception</span> <span class="variable">e</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>();</span><br><span class="line">            <span class="keyword">if</span> (origin != <span class="literal">null</span>) &#123;</span><br><span class="line">                e.addSuppressed(origin);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当<code>catch</code>和<code>finally</code>都抛出了异常时，虽然<code>catch</code>的异常被屏蔽了，但是，<code>finally</code>抛出的异常仍然包含了它：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Exception in thread &quot;main&quot; java.lang.IllegalArgumentException</span><br><span class="line">    at Main.main(Main.java:11)</span><br><span class="line">Suppressed: java.lang.NumberFormatException: For input string: &quot;abc&quot;</span><br><span class="line">    at java.base/java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)</span><br><span class="line">    at java.base/java.lang.Integer.parseInt(Integer.java:652)</span><br><span class="line">    at java.base/java.lang.Integer.parseInt(Integer.java:770)</span><br><span class="line">    at Main.main(Main.java:6)</span><br></pre></td></tr></table></figure>
+<p>通过<code>Throwable.getSuppressed()</code>可以获取所有的<code>Suppressed Exception</code>。</p>
+<p>绝大多数情况下，在<code>finally</code>中不要抛出异常。因此，我们通常不需要关心<code>Suppressed Exception</code>。</p>
+<h3 id="提问时贴出异常">提问时贴出异常</h3>
+<p>异常打印的详细的栈信息是找出问题的关键，许多初学者在提问时只贴代码，不贴异常，相当于只报案不给线索，福尔摩斯也无能为力。</p>
+<p>还有的童鞋只贴部分异常信息，最关键的<code>Caused by: xxx</code>给省略了，这都属于不正确的提问方式，得改。</p>
+<h3 id="练习-2">练习</h3>
+<p>如果传入的参数为负，则抛出<code>IllegalArgumentException</code>。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/throw-exception/exception-throw.zip">下载练习</a></p>
+<h3 id="小结-3">小结</h3>
+<p>调用<code>printStackTrace()</code>可以打印异常的传播栈，对于调试非常有用；</p>
+<p>捕获异常并再次抛出新的异常时，应该持有原始异常信息；</p>
+<p>通常不要在<code>finally</code>中抛出异常。如果在<code>finally</code>中抛出异常，应该原始异常加入到原有异常中。调用方可通过<code>Throwable.getSuppressed()</code>获取所有添加的<code>Suppressed Exception</code>。</p>
+<h2 id="自定义异常">自定义异常</h2>
+<p>Java标准库定义的常用异常包括：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">Exception</span><br><span class="line">├─ RuntimeException</span><br><span class="line">│  ├─ NullPointerException</span><br><span class="line">│  ├─ IndexOutOfBoundsException</span><br><span class="line">│  ├─ SecurityException</span><br><span class="line">│  └─ IllegalArgumentException</span><br><span class="line">│     └─ NumberFormatException</span><br><span class="line">├─ IOException</span><br><span class="line">│  ├─ UnsupportedCharsetException</span><br><span class="line">│  ├─ FileNotFoundException</span><br><span class="line">│  └─ SocketException</span><br><span class="line">├─ ParseException</span><br><span class="line">├─ GeneralSecurityException</span><br><span class="line">├─ SQLException</span><br><span class="line">└─ TimeoutException</span><br></pre></td></tr></table></figure>
+<p>当我们在代码中需要抛出异常时，尽量使用JDK已定义的异常类型。例如，参数检查不合法，应该抛出<code>IllegalArgumentException</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process1</span><span class="params">(<span class="type">int</span> age)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (age &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在一个大型项目中，可以自定义新的异常类型，但是，保持一个合理的异常继承体系是非常重要的。</p>
+<p>一个常见的做法是自定义一个<code>BaseException</code>作为“根异常”，然后，派生出各种业务类型的异常。</p>
+<p><code>BaseException</code>需要从一个适合的<code>Exception</code>派生，通常建议从<code>RuntimeException</code>派生：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BaseException</span> <span class="keyword">extends</span> <span class="title class_">RuntimeException</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其他业务类型的异常就可以从<code>BaseException</code>派生：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserNotFoundException</span> <span class="keyword">extends</span> <span class="title class_">BaseException</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LoginFailedException</span> <span class="keyword">extends</span> <span class="title class_">BaseException</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>自定义的<code>BaseException</code>应该提供多个构造方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BaseException</span> <span class="keyword">extends</span> <span class="title class_">RuntimeException</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BaseException</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BaseException</span><span class="params">(String message, Throwable cause)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>(message, cause);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BaseException</span><span class="params">(String message)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>(message);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BaseException</span><span class="params">(Throwable cause)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>(cause);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述构造方法实际上都是原样照抄<code>RuntimeException</code>。这样，抛出异常的时候，就可以选择合适的构造方法。通过IDE可以根据父类快速生成子类的构造方法。</p>
+<h3 id="练习-3">练习</h3>
+<p>请从<code>BaseException</code>派生自定义异常。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/custom-exception/exception-custom.zip">下载练习</a></p>
+<h3 id="小结-4">小结</h3>
+<p>抛出异常时，尽量复用JDK已定义的异常类型；</p>
+<p>自定义异常体系时，推荐从<code>RuntimeException</code>派生“根异常”，再派生出业务异常；</p>
+<p>自定义异常时，应该提供多种构造方法。</p>
+<hr>
+<hr>
+<p>在所有的<code>RuntimeException</code>异常中，Java程序员最熟悉的恐怕就是<code>NullPointerException</code>了。</p>
+<p><code>NullPointerException</code>即空指针异常，俗称NPE。如果一个对象为<code>null</code>，调用其方法或访问其字段就会产生<code>NullPointerException</code>，这个异常通常是由JVM抛出的，例如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// NullPointerException</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">s</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">        System.out.println(s.toLowerCase());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>指针这个概念实际上源自C语言，Java语言中并无指针。我们定义的变量实际上是引用，Null Pointer更确切地说是Null Reference，不过两者区别不大。</p>
+<h3 id="处理NullPointerException">处理NullPointerException</h3>
+<p>如果遇到<code>NullPointerException</code>，我们应该如何处理？首先，必须明确，<code>NullPointerException</code>是一种代码逻辑错误，遇到<code>NullPointerException</code>，遵循原则是早暴露，早修复，严禁使用<code>catch</code>来隐藏这种编码错误：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 错误示例: 捕获NullPointerException</span></span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    transferMoney(from, to, amount);</span><br><span class="line">&#125; <span class="keyword">catch</span> (NullPointerException e) &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>好的编码习惯可以极大地降低<code>NullPointerException</code>的产生，例如：</p>
+<p>成员变量在定义时初始化：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">String</span> <span class="variable">name</span> <span class="operator">=</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用空字符串<code>&quot;&quot;</code>而不是默认的<code>null</code>可避免很多<code>NullPointerException</code>，编写业务逻辑时，用空字符串<code>&quot;&quot;</code>表示未填写比<code>null</code>安全得多。</p>
+<p>返回空字符串<code>&quot;&quot;</code>、空数组而不是<code>null</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> String[] readLinesFromFile(String file) &#123;</span><br><span class="line">    <span class="keyword">if</span> (getFileSize(file) == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// 返回空数组而不是null:</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">String</span>[<span class="number">0</span>];</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样可以使得调用方无需检查结果是否为<code>null</code>。</p>
+<p>如果调用方一定要根据<code>null</code>判断，比如返回<code>null</code>表示文件不存在，那么考虑返回<code>Optional&lt;T&gt;</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> Optional&lt;String&gt; <span class="title function_">readFromFile</span><span class="params">(String file)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!fileExist(file)) &#123;</span><br><span class="line">        <span class="keyword">return</span> Optional.empty();</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样调用方必须通过<code>Optional.isPresent()</code>判断是否有结果。</p>
+<h3 id="定位NullPointerException">定位NullPointerException</h3>
+<p>如果产生了<code>NullPointerException</code>，例如，调用<code>a.b.c.x()</code>时产生了<code>NullPointerException</code>，原因可能是：</p>
+<ul>
+<li><code>a</code>是<code>null</code>；</li>
+<li><code>a.b</code>是<code>null</code>；</li>
+<li><code>a.b.c</code>是<code>null</code>；</li>
+</ul>
+<p>确定到底是哪个对象是<code>null</code>以前只能打印这样的日志：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">System.out.println(a);</span><br><span class="line">System.out.println(a.b);</span><br><span class="line">System.out.println(a.b.c);</span><br></pre></td></tr></table></figure>
+<p>从Java 14开始，如果产生了<code>NullPointerException</code>，JVM可以给出详细的信息告诉我们<code>null</code>对象到底是谁。我们来看例子：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Person</span> <span class="variable">p</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Person</span>();</span><br><span class="line">        System.out.println(p.address.city.toLowerCase());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">    String[] name = <span class="keyword">new</span> <span class="title class_">String</span>[<span class="number">2</span>];</span><br><span class="line">    <span class="type">Address</span> <span class="variable">address</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Address</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Address</span> &#123;</span><br><span class="line">    String city;</span><br><span class="line">    String street;</span><br><span class="line">    String zipcode;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以在<code>NullPointerException</code>的详细信息中看到类似<code>... because &quot;&lt;local1&gt;.address.city&quot; is null</code>，意思是<code>city</code>字段为<code>null</code>，这样我们就能快速定位问题所在。</p>
+<p>这种增强的<code>NullPointerException</code>详细信息是Java 14新增的功能，但默认是关闭的，我们可以给JVM添加一个<code>-XX:+ShowCodeDetailsInExceptionMessages</code>参数启用它：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:+ShowCodeDetailsInExceptionMessages Main.java</span><br></pre></td></tr></table></figure>
+<h3 id="小结-5">小结</h3>
+<p><code>NullPointerException</code>是Java代码常见的逻辑错误，应当早暴露，早修复；</p>
+<p>可以启用Java 14的增强异常信息来查看<code>NullPointerException</code>的详细错误信息。</p>
+<h2 id="使用断言">使用断言</h2>
+<p>断言（Assertion）是一种调试程序的方式。在Java中，使用<code>assert</code>关键字来实现断言。</p>
+<p>我们先看一个例子：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="type">double</span> <span class="variable">x</span> <span class="operator">=</span> Math.abs(-<span class="number">123.45</span>);</span><br><span class="line">    <span class="keyword">assert</span> x &gt;= <span class="number">0</span>;</span><br><span class="line">    System.out.println(x);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>语句<code>assert x &gt;= 0;</code>即为断言，断言条件<code>x &gt;= 0</code>预期为<code>true</code>。如果计算结果为<code>false</code>，则断言失败，抛出<code>AssertionError</code>。</p>
+<p>使用<code>assert</code>语句时，还可以添加一个可选的断言消息：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">assert</span> x &gt;= <span class="number">0</span> : <span class="string">&quot;x must &gt;= 0&quot;</span>;</span><br></pre></td></tr></table></figure>
+<p>这样，断言失败的时候，<code>AssertionError</code>会带上消息<code>x must &gt;= 0</code>，更加便于调试。</p>
+<p>Java断言的特点是：断言失败时会抛出<code>AssertionError</code>，导致程序结束退出。因此，断言不能用于可恢复的程序错误，只应该用于开发和测试阶段。</p>
+<p>对于可恢复的程序错误，不应该使用断言。例如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">sort</span><span class="params">(<span class="type">int</span>[] arr)</span> &#123;</span><br><span class="line">    <span class="keyword">assert</span> arr != <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>应该抛出异常并在上层捕获：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">sort</span><span class="params">(<span class="type">int</span>[] arr)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (arr == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;array cannot be null&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当我们在程序中使用<code>assert</code>时，例如，一个简单的断言：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// assert</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">x</span> <span class="operator">=</span> -<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">assert</span> x &gt; <span class="number">0</span>;</span><br><span class="line">        System.out.println(x);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>断言<code>x</code>必须大于<code>0</code>，实际上<code>x</code>为<code>-1</code>，断言肯定失败。执行上述代码，发现程序并未抛出<code>AssertionError</code>，而是正常打印了<code>x</code>的值。</p>
+<p>这是怎么回事？为什么<code>assert</code>语句不起作用？</p>
+<p>这是因为JVM默认关闭断言指令，即遇到<code>assert</code>语句就自动忽略了，不执行。</p>
+<p>要执行<code>assert</code>语句，必须给Java虚拟机传递<code>-enableassertions</code>（可简写为<code>-ea</code>）参数启用断言。所以，上述程序必须在命令行下运行才有效果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ java -ea Main.java</span><br><span class="line">Exception in thread &quot;main&quot; java.lang.AssertionError</span><br><span class="line">	at Main.main(Main.java:5)</span><br></pre></td></tr></table></figure>
+<p>还可以有选择地对特定地类启用断言，命令行参数是：<code>-ea:com.itranswarp.sample.Main</code>，表示只对<code>com.itranswarp.sample.Main</code>这个类启用断言。</p>
+<p>或者对特定地包启用断言，命令行参数是：<code>-ea:com.itranswarp.sample...</code>（注意结尾有3个<code>.</code>），表示对<code>com.itranswarp.sample</code>这个包启动断言。</p>
+<p>实际开发中，很少使用断言。更好的方法是编写单元测试，后续我们会讲解<code>JUnit</code>的使用。</p>
+<h3 id="小结-6">小结</h3>
+<p>断言是一种调试方式，断言失败会抛出<code>AssertionError</code>，只能在开发和测试阶段启用断言；</p>
+<p>对可恢复的错误不能使用断言，而应该抛出异常；</p>
+<p>断言很少被使用，更好的方法是编写单元测试。</p>
+<hr>
+<hr>
+<h2 id="使用JDK-Logging">使用JDK Logging</h2>
+<p>在编写程序的过程中，发现程序运行结果与预期不符，怎么办？当然是用<code>System.out.println()</code>打印出执行过程中的某些变量，观察每一步的结果与代码逻辑是否符合，然后有针对性地修改代码。</p>
+<p>代码改好了怎么办？当然是删除没有用的<code>System.out.println()</code>语句了。</p>
+<p>如果改代码又改出问题怎么办？再加上<code>System.out.println()</code>。</p>
+<p>反复这么搞几次，很快大家就发现使用<code>System.out.println()</code>非常麻烦。</p>
+<p>怎么办？</p>
+<p>解决方法是使用日志。</p>
+<p>那什么是日志？日志就是Logging，它的目的是为了取代<code>System.out.println()</code>。</p>
+<p>输出日志，而不是用<code>System.out.println()</code>，有以下几个好处：</p>
+<ol>
+<li>可以设置输出样式，避免自己每次都写<code>&quot;ERROR: &quot; + var</code>；</li>
+<li>可以设置输出级别，禁止某些级别输出。例如，只输出错误日志；</li>
+<li>可以被重定向到文件，这样可以在程序运行结束后查看日志；</li>
+<li>可以按包名控制日志级别，只输出某些包打的日志；</li>
+<li>可以……</li>
+</ol>
+<p>总之就是好处很多啦。</p>
+<p>那如何使用日志？</p>
+<p>因为Java标准库内置了日志包<code>java.util.logging</code>，我们可以直接用。先看一个简单的例子：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// logging</span></span><br><span class="line"><span class="keyword">import</span> java.util.logging.Level;</span><br><span class="line"><span class="keyword">import</span> java.util.logging.Logger;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Hello</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Logger</span> <span class="variable">logger</span> <span class="operator">=</span> Logger.getGlobal();</span><br><span class="line">        logger.info(<span class="string">&quot;start process...&quot;</span>);</span><br><span class="line">        logger.warning(<span class="string">&quot;memory is running out...&quot;</span>);</span><br><span class="line">        logger.fine(<span class="string">&quot;ignored.&quot;</span>);</span><br><span class="line">        logger.severe(<span class="string">&quot;process will be terminated...&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行上述代码，得到类似如下的输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Mar 02, 2019 6:32:13 PM Hello main</span><br><span class="line">INFO: start process...</span><br><span class="line">Mar 02, 2019 6:32:13 PM Hello main</span><br><span class="line">WARNING: memory is running out...</span><br><span class="line">Mar 02, 2019 6:32:13 PM Hello main</span><br><span class="line">SEVERE: process will be terminated...</span><br></pre></td></tr></table></figure>
+<p>对比可见，使用日志最大的好处是，它自动打印了时间、调用类、调用方法等很多有用的信息。</p>
+<p>再仔细观察发现，4条日志，只打印了3条，<code>logger.fine()</code>没有打印。这是因为，日志的输出可以设定级别。JDK的Logging定义了7个日志级别，从严重到普通：</p>
+<ul>
+<li>SEVERE</li>
+<li>WARNING</li>
+<li>INFO</li>
+<li>CONFIG</li>
+<li>FINE</li>
+<li>FINER</li>
+<li>FINEST</li>
+</ul>
+<p>因为默认级别是INFO，因此，INFO级别以下的日志，不会被打印出来。使用日志级别的好处在于，调整级别，就可以屏蔽掉很多调试相关的日志输出。</p>
+<p>使用Java标准库内置的Logging有以下局限：</p>
+<p>Logging系统在JVM启动时读取配置文件并完成初始化，一旦开始运行<code>main()</code>方法，就无法修改配置；</p>
+<p>配置不太方便，需要在JVM启动时传递参数<code>-Djava.util.logging.config.file=&lt;config-file-name&gt;</code>。</p>
+<p>因此，Java标准库内置的Logging使用并不是非常广泛。更方便的日志系统我们稍后介绍。</p>
+<h3 id="练习-4">练习</h3>
+<p>使用<code>logger.severe()</code>打印异常：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.UnsupportedEncodingException;</span><br><span class="line"><span class="keyword">import</span> java.util.logging.Logger;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Logger</span> <span class="variable">logger</span> <span class="operator">=</span> Logger.getLogger(Main.class.getName());</span><br><span class="line">        logger.info(<span class="string">&quot;Start process...&quot;</span>);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="string">&quot;&quot;</span>.getBytes(<span class="string">&quot;invalidCharsetName&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">            <span class="comment">// <span class="doctag">TODO:</span> 使用logger.severe()打印异常</span></span><br><span class="line">        &#125;</span><br><span class="line">        logger.info(<span class="string">&quot;Process end.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/jdk-logging/logging-jdk.zip">下载练习</a></p>
+<h3 id="小结-7">小结</h3>
+<p>日志是为了替代<code>System.out.println()</code>，可以定义格式，重定向到文件等；</p>
+<p>日志可以存档，便于追踪问题；</p>
+<p>日志记录可以按级别分类，便于打开或关闭某些级别；</p>
+<p>可以根据配置文件调整日志，无需修改代码；</p>
+<p>Java标准库提供了<code>java.util.logging</code>来实现日志功能。</p>
+<hr>
+<hr>
+<p>和Java标准库提供的日志不同，Commons Logging是一个第三方日志库，它是由Apache创建的日志模块。</p>
+<p>Commons Logging的特色是，它可以挂接不同的日志系统，并通过配置文件指定挂接的日志系统。默认情况下，Commons Loggin自动搜索并使用Log4j（Log4j是另一个流行的日志系统），如果没有找到Log4j，再使用JDK Logging。</p>
+<p>使用Commons Logging只需要和两个类打交道，并且只有两步：</p>
+<p>第一步，通过<code>LogFactory</code>获取<code>Log</code>类的实例； 第二步，使用<code>Log</code>实例的方法打日志。</p>
+<p>示例代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.commons.logging.Log;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.logging.LogFactory;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Log</span> <span class="variable">log</span> <span class="operator">=</span> LogFactory.getLog(Main.class);</span><br><span class="line">        log.info(<span class="string">&quot;start...&quot;</span>);</span><br><span class="line">        log.warn(<span class="string">&quot;end.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行上述代码，肯定会得到编译错误，类似<code>error: package org.apache.commons.logging does not exist</code>（找不到<code>org.apache.commons.logging</code>这个包）。因为Commons Logging是一个第三方提供的库，所以，必须先把它<a target="_blank" rel="noopener" href="https://commons.apache.org/proper/commons-logging/download_logging.cgi">下载</a>下来。下载后，解压，找到<code>commons-logging-1.2.jar</code>这个文件，再把Java源码<code>Main.java</code>放到一个目录下，例如<code>work</code>目录：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">work</span><br><span class="line">├─ commons-logging-1.2.jar</span><br><span class="line">└─ Main.java</span><br></pre></td></tr></table></figure>
+<p>然后用<code>javac</code>编译<code>Main.java</code>，编译的时候要指定<code>classpath</code>，不然编译器找不到我们引用的<code>org.apache.commons.logging</code>包。编译命令如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">javac -cp commons-logging-1.2.jar Main.java</span><br></pre></td></tr></table></figure>
+<p>如果编译成功，那么当前目录下就会多出一个<code>Main.class</code>文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">work</span><br><span class="line">├─ commons-logging-1.2.jar</span><br><span class="line">├─ Main.java</span><br><span class="line">└─ Main.class</span><br></pre></td></tr></table></figure>
+<p>现在可以执行这个<code>Main.class</code>，使用<code>java</code>命令，也必须指定<code>classpath</code>，命令如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -cp .;commons-logging-1.2.jar Main</span><br></pre></td></tr></table></figure>
+<p>注意到传入的<code>classpath</code>有两部分：一个是<code>.</code>，一个是<code>commons-logging-1.2.jar</code>，用<code>;</code>分割。<code>.</code>表示当前目录，如果没有这个<code>.</code>，JVM不会在当前目录搜索<code>Main.class</code>，就会报错。</p>
+<p>如果在Linux或macOS下运行，注意<code>classpath</code>的分隔符不是<code>;</code>，而是<code>:</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -cp .:commons-logging-1.2.jar Main</span><br></pre></td></tr></table></figure>
+<p>运行结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Mar 02, 2019 7:15:31 PM Main main</span><br><span class="line">INFO: start...</span><br><span class="line">Mar 02, 2019 7:15:31 PM Main main</span><br><span class="line">WARNING: end.</span><br></pre></td></tr></table></figure>
+<p>Commons Logging定义了6个日志级别：</p>
+<ul>
+<li>FATAL</li>
+<li>ERROR</li>
+<li>WARNING</li>
+<li>INFO</li>
+<li>DEBUG</li>
+<li>TRACE</li>
+</ul>
+<p>默认级别是<code>INFO</code>。</p>
+<p>使用Commons Logging时，如果在静态方法中引用<code>Log</code>，通常直接定义一个静态类型变量：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在静态方法中引用Log:</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">Log</span> <span class="variable">log</span> <span class="operator">=</span> LogFactory.getLog(Main.class);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">foo</span><span class="params">()</span> &#123;</span><br><span class="line">        log.info(<span class="string">&quot;foo&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在实例方法中引用<code>Log</code>，通常定义一个实例变量：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在实例方法中引用Log:</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> <span class="type">Log</span> <span class="variable">log</span> <span class="operator">=</span> LogFactory.getLog(getClass());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">foo</span><span class="params">()</span> &#123;</span><br><span class="line">        log.info(<span class="string">&quot;foo&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意到实例变量log的获取方式是<code>LogFactory.getLog(getClass())</code>，虽然也可以用<code>LogFactory.getLog(Person.class)</code>，但是前一种方式有个非常大的好处，就是子类可以直接使用该<code>log</code>实例。例如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在子类中使用父类实例化的log:</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Student</span> <span class="keyword">extends</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">bar</span><span class="params">()</span> &#123;</span><br><span class="line">        log.info(<span class="string">&quot;bar&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>由于Java类的动态特性，子类获取的<code>log</code>字段实际上相当于<code>LogFactory.getLog(Student.class)</code>，但却是从父类继承而来，并且无需改动代码。</p>
+<p>此外，Commons Logging的日志方法，例如<code>info()</code>，除了标准的<code>info(String)</code>外，还提供了一个非常有用的重载方法：<code>info(String, Throwable)</code>，这使得记录异常更加简单：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    ...</span><br><span class="line">&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    log.error(<span class="string">&quot;got exception!&quot;</span>, e);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="练习-5">练习</h3>
+<p>使用<code>log.error(String, Throwable)</code>打印异常。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/commons-logging/logging-commons.zip">下载练习</a></p>
+<h3 id="小结-8">小结</h3>
+<p>Commons Logging是使用最广泛的日志模块；</p>
+<p>Commons Logging的API非常简单；</p>
+<p>Commons Logging可以自动检测并使用其他日志模块。</p>
+<p>前面介绍了Commons Logging，可以作为“日志接口”来使用。而真正的“日志实现”可以使用Log4j。</p>
+<p>Log4j是一种非常流行的日志框架，最新版本是2.x。</p>
+<p>Log4j是一个组件化设计的日志系统，它的架构大致如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">log.info(&quot;User signed in.&quot;);</span><br><span class="line"> │</span><br><span class="line"> │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐</span><br><span class="line"> ├──▶│ Appender │───▶│  Filter  │───▶│  Layout  │───▶│ Console  │</span><br><span class="line"> │   └──────────┘    └──────────┘    └──────────┘    └──────────┘</span><br><span class="line"> │</span><br><span class="line"> │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐</span><br><span class="line"> ├──▶│ Appender │───▶│  Filter  │───▶│  Layout  │───▶│   File   │</span><br><span class="line"> │   └──────────┘    └──────────┘    └──────────┘    └──────────┘</span><br><span class="line"> │</span><br><span class="line"> │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐</span><br><span class="line"> └──▶│ Appender │───▶│  Filter  │───▶│  Layout  │───▶│  Socket  │</span><br><span class="line">     └──────────┘    └──────────┘    └──────────┘    └──────────┘</span><br></pre></td></tr></table></figure>
+<p>当我们使用Log4j输出一条日志时，Log4j自动通过不同的Appender把同一条日志输出到不同的目的地。例如：</p>
+<ul>
+<li>console：输出到屏幕；</li>
+<li>file：输出到文件；</li>
+<li>socket：通过网络输出到远程计算机；</li>
+<li>jdbc：输出到数据库</li>
+</ul>
+<p>在输出日志的过程中，通过Filter来过滤哪些log需要被输出，哪些log不需要被输出。例如，仅输出<code>ERROR</code>级别的日志。</p>
+<p>最后，通过Layout来格式化日志信息，例如，自动添加日期、时间、方法名称等信息。</p>
+<p>上述结构虽然复杂，但我们在实际使用的时候，并不需要关心Log4j的API，而是通过配置文件来配置它。</p>
+<p>以XML配置为例，使用Log4j的时候，我们把一个<code>log4j2.xml</code>的文件放到<code>classpath</code>下就可以让Log4j读取配置文件并按照我们的配置来输出日志。下面是一个配置文件的例子：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=<span class="string">&quot;1.0&quot;</span> encoding=<span class="string">&quot;UTF-8&quot;</span>?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">Configuration</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">Properties</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 定义日志格式 --&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">Property</span> <span class="attr">name</span>=<span class="string">&quot;log.pattern&quot;</span>&gt;</span>%d&#123;MM-dd HH:mm:ss.SSS&#125; [%t] %-5level %logger&#123;36&#125;%n%msg%n%n<span class="tag">&lt;/<span class="name">Property</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 定义文件名变量 --&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">Property</span> <span class="attr">name</span>=<span class="string">&quot;file.err.filename&quot;</span>&gt;</span>log/err.log<span class="tag">&lt;/<span class="name">Property</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">Property</span> <span class="attr">name</span>=<span class="string">&quot;file.err.pattern&quot;</span>&gt;</span>log/err.%i.log.gz<span class="tag">&lt;/<span class="name">Property</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">Properties</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- 定义Appender，即目的地 --&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">Appenders</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 定义输出到屏幕 --&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">Console</span> <span class="attr">name</span>=<span class="string">&quot;console&quot;</span> <span class="attr">target</span>=<span class="string">&quot;SYSTEM_OUT&quot;</span>&gt;</span></span><br><span class="line">            <span class="comment">&lt;!-- 日志格式引用上面定义的log.pattern --&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">PatternLayout</span> <span class="attr">pattern</span>=<span class="string">&quot;$&#123;log.pattern&#125;&quot;</span> /&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">Console</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 定义输出到文件,文件名引用上面定义的file.err.filename --&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">RollingFile</span> <span class="attr">name</span>=<span class="string">&quot;err&quot;</span> <span class="attr">bufferedIO</span>=<span class="string">&quot;true&quot;</span> <span class="attr">fileName</span>=<span class="string">&quot;$&#123;file.err.filename&#125;&quot;</span> <span class="attr">filePattern</span>=<span class="string">&quot;$&#123;file.err.pattern&#125;&quot;</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">PatternLayout</span> <span class="attr">pattern</span>=<span class="string">&quot;$&#123;log.pattern&#125;&quot;</span> /&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">Policies</span>&gt;</span></span><br><span class="line">                <span class="comment">&lt;!-- 根据文件大小自动切割日志 --&gt;</span></span><br><span class="line">				<span class="tag">&lt;<span class="name">SizeBasedTriggeringPolicy</span> <span class="attr">size</span>=<span class="string">&quot;1 MB&quot;</span> /&gt;</span></span><br><span class="line">			<span class="tag">&lt;/<span class="name">Policies</span>&gt;</span></span><br><span class="line">            <span class="comment">&lt;!-- 保留最近10份 --&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">DefaultRolloverStrategy</span> <span class="attr">max</span>=<span class="string">&quot;10&quot;</span> /&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">RollingFile</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">Appenders</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">Loggers</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">Root</span> <span class="attr">level</span>=<span class="string">&quot;info&quot;</span>&gt;</span></span><br><span class="line">            <span class="comment">&lt;!-- 对info级别的日志，输出到console --&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">AppenderRef</span> <span class="attr">ref</span>=<span class="string">&quot;console&quot;</span> <span class="attr">level</span>=<span class="string">&quot;info&quot;</span> /&gt;</span></span><br><span class="line">            <span class="comment">&lt;!-- 对error级别的日志，输出到err，即上面定义的RollingFile --&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">AppenderRef</span> <span class="attr">ref</span>=<span class="string">&quot;err&quot;</span> <span class="attr">level</span>=<span class="string">&quot;error&quot;</span> /&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">Root</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">Loggers</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Configuration</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>虽然配置Log4j比较繁琐，但一旦配置完成，使用起来就非常方便。对上面的配置文件，凡是<code>INFO</code>级别的日志，会自动输出到屏幕，而<code>ERROR</code>级别的日志，不但会输出到屏幕，还会同时输出到文件。并且，一旦日志文件达到指定大小（1MB），Log4j就会自动切割新的日志文件，并最多保留10份。</p>
+<p>有了配置文件还不够，因为Log4j也是一个第三方库，我们需要从<a target="_blank" rel="noopener" href="https://logging.apache.org/log4j/2.x/download.html">这里</a>下载Log4j，解压后，把以下3个jar包放到<code>classpath</code>中：</p>
+<ul>
+<li>log4j-api-2.x.jar</li>
+<li>log4j-core-2.x.jar</li>
+<li>log4j-jcl-2.x.jar</li>
+</ul>
+<p>因为Commons Logging会自动发现并使用Log4j，所以，把上一节下载的<code>commons-logging-1.2.jar</code>也放到<code>classpath</code>中。</p>
+<p>要打印日志，只需要按Commons Logging的写法写，不需要改动任何代码，就可以得到Log4j的日志输出，类似：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">03-03 12:09:45.880 [main] INFO  com.itranswarp.learnjava.Main</span><br><span class="line">Start process...</span><br></pre></td></tr></table></figure>
+<h3 id="最佳实践">最佳实践</h3>
+<p>在开发阶段，始终使用Commons Logging接口来写入日志，并且开发阶段无需引入Log4j。如果需要把日志写入文件，只需要把正确的配置文件和Log4j相关的jar包放入<code>classpath</code>，就可以自动把日志切换成使用Log4j写入，无需修改任何代码。</p>
+<h3 id="练习-6">练习</h3>
+<p>根据配置文件，观察Log4j写入的日志文件。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/log4j/logging-log4j.zip">下载练习</a></p>
+<h3 id="小结-9">小结</h3>
+<p>通过Commons Logging实现日志，不需要修改代码即可使用Log4j；</p>
+<p>使用Log4j只需要把log4j2.xml和相关jar放入classpath；</p>
+<p>如果要更换Log4j，只需要移除log4j2.xml和相关jar；</p>
+<p>只有扩展Log4j时，才需要引用Log4j的接口（例如，将日志加密写入数据库的功能，需要自己开发）。</p>
+<p>前面介绍了Commons Logging和Log4j这一对好基友，它们一个负责充当日志API，一个负责实现日志底层，搭配使用非常便于开发。</p>
+<p>有的童鞋可能还听说过SLF4J和Logback。这两个东东看上去也像日志，它们又是啥？</p>
+<p>其实SLF4J类似于Commons Logging，也是一个日志接口，而Logback类似于Log4j，是一个日志的实现。</p>
+<p>为什么有了Commons Logging和Log4j，又会蹦出来SLF4J和Logback？这是因为Java有着非常悠久的开源历史，不但OpenJDK本身是开源的，而且我们用到的第三方库，几乎全部都是开源的。开源生态丰富的一个特定就是，同一个功能，可以找到若干种互相竞争的开源库。</p>
+<p>因为对Commons Logging的接口不满意，有人就搞了SLF4J。因为对Log4j的性能不满意，有人就搞了Logback。</p>
+<p>我们先来看看SLF4J对Commons Logging的接口有何改进。在Commons Logging中，我们要打印日志，有时候得这么写：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="variable">score</span> <span class="operator">=</span> <span class="number">99</span>;</span><br><span class="line">p.setScore(score);</span><br><span class="line">log.info(<span class="string">&quot;Set score &quot;</span> + score + <span class="string">&quot; for Person &quot;</span> + p.getName() + <span class="string">&quot; ok.&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p>拼字符串是一个非常麻烦的事情，所以SLF4J的日志接口改进成这样了：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="variable">score</span> <span class="operator">=</span> <span class="number">99</span>;</span><br><span class="line">p.setScore(score);</span><br><span class="line">logger.info(<span class="string">&quot;Set score &#123;&#125; for Person &#123;&#125; ok.&quot;</span>, score, p.getName());</span><br></pre></td></tr></table></figure>
+<p>我们靠猜也能猜出来，SLF4J的日志接口传入的是一个带占位符的字符串，用后面的变量自动替换占位符，所以看起来更加自然。</p>
+<p>如何使用SLF4J？它的接口实际上和Commons Logging几乎一模一样：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.slf4j.Logger;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.LoggerFactory;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">final</span> <span class="type">Logger</span> <span class="variable">logger</span> <span class="operator">=</span> LoggerFactory.getLogger(getClass());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对比一下Commons Logging和SLF4J的接口：</p>
+<table>
+<thead>
+<tr>
+<th>Commons Logging</th>
+<th>SLF4J</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>org.apache.commons.logging.Log</td>
+<td>org.slf4j.Logger</td>
+</tr>
+<tr>
+<td>org.apache.commons.logging.LogFactory</td>
+<td>org.slf4j.LoggerFactory</td>
+</tr>
+</tbody>
+</table>
+<p>不同之处就是<code>Log</code>变成了<code>Logger</code>，<code>LogFactory</code>变成了<code>LoggerFactory</code>。</p>
+<p>使用SLF4J和Logback和前面讲到的使用Commons Logging加Log4j是类似的，先分别下载<a target="_blank" rel="noopener" href="https://www.slf4j.org/download.html">SLF4J</a>和<a target="_blank" rel="noopener" href="https://logback.qos.ch/download.html">Logback</a>，然后把以下jar包放到classpath下：</p>
+<ul>
+<li>slf4j-api-1.7.x.jar</li>
+<li>logback-classic-1.2.x.jar</li>
+<li>logback-core-1.2.x.jar</li>
+</ul>
+<p>然后使用SLF4J的<code>Logger</code>和<code>LoggerFactory</code>即可。</p>
+<p>和Log4j类似，我们仍然需要一个Logback的配置文件，把<code>logback.xml</code>放到classpath下，配置如下：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=<span class="string">&quot;1.0&quot;</span> encoding=<span class="string">&quot;UTF-8&quot;</span>?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">appender</span> <span class="attr">name</span>=<span class="string">&quot;CONSOLE&quot;</span> <span class="attr">class</span>=<span class="string">&quot;ch.qos.logback.core.ConsoleAppender&quot;</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">encoder</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">pattern</span>&gt;</span>%d&#123;HH:mm:ss.SSS&#125; [%thread] %-5level %logger&#123;36&#125; - %msg%n<span class="tag">&lt;/<span class="name">pattern</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">encoder</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">appender</span>&gt;</span></span><br><span class="line"></span><br><span class="line">	<span class="tag">&lt;<span class="name">appender</span> <span class="attr">name</span>=<span class="string">&quot;FILE&quot;</span> <span class="attr">class</span>=<span class="string">&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">encoder</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">pattern</span>&gt;</span>%d&#123;HH:mm:ss.SSS&#125; [%thread] %-5level %logger&#123;36&#125; - %msg%n<span class="tag">&lt;/<span class="name">pattern</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">charset</span>&gt;</span>utf-8<span class="tag">&lt;/<span class="name">charset</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">encoder</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">file</span>&gt;</span>log/output.log<span class="tag">&lt;/<span class="name">file</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">rollingPolicy</span> <span class="attr">class</span>=<span class="string">&quot;ch.qos.logback.core.rolling.FixedWindowRollingPolicy&quot;</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">fileNamePattern</span>&gt;</span>log/output.log.%i<span class="tag">&lt;/<span class="name">fileNamePattern</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">rollingPolicy</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">triggeringPolicy</span> <span class="attr">class</span>=<span class="string">&quot;ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy&quot;</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">MaxFileSize</span>&gt;</span>1MB<span class="tag">&lt;/<span class="name">MaxFileSize</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">triggeringPolicy</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">appender</span>&gt;</span></span><br><span class="line"></span><br><span class="line">	<span class="tag">&lt;<span class="name">root</span> <span class="attr">level</span>=<span class="string">&quot;INFO&quot;</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;CONSOLE&quot;</span> /&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;FILE&quot;</span> /&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">root</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>运行即可获得类似如下的输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">13:15:25.328 [main] INFO  com.itranswarp.learnjava.Main - Start process...</span><br></pre></td></tr></table></figure>
+<p>从目前的趋势来看，越来越多的开源项目从Commons Logging加Log4j转向了SLF4J加Logback。</p>
+<h3 id="练习-7">练习</h3>
+<p>根据配置文件，观察Logback写入的日志文件。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/slf4j-logback/logging-slf4j.zip">下载练习</a></p>
+<h3 id="小结-10">小结</h3>
+<p>SLF4J和Logback可以取代Commons Logging和Log4j；</p>
+<p>始终使用SLF4J的接口写入日志，使用Logback只需要配置，不需要修改代码。</p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/Java/" rel="tag">Java</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../24/java/JAVA-%E5%8F%8D%E5%B0%84/"
+                    data-tooltip="JAVA-反射"
+                    aria-label="上一篇: JAVA-反射"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../JAVA-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B-%E6%A0%B8%E5%BF%83%E7%B1%BB/"
+                    data-tooltip="JAVA-面向对象编程-核心类"
+                    aria-label="下一篇: JAVA-面向对象编程-核心类"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../24/java/JAVA-%E5%8F%8D%E5%B0%84/"
+                    data-tooltip="JAVA-反射"
+                    aria-label="上一篇: JAVA-反射"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../JAVA-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B-%E6%A0%B8%E5%BF%83%E7%B1%BB/"
+                    data-tooltip="JAVA-面向对象编程-核心类"
+                    aria-label="下一篇: JAVA-面向对象编程-核心类"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macao
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/10/12/mysql%E5%9F%BA%E7%A1%80%E6%95%99%E7%A8%8B/"
+                            aria-label=": mysql基础教程"
+                        >
+                            <h3 class="media-heading">mysql基础教程</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年10月12日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/04/28/linux/linux%E5%9F%BA%E7%A1%80/"
+                            aria-label=": linux基础"
+                        >
+                            <h3 class="media-heading">linux基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/04/28/iptables/"
+                            aria-label=": iptables"
+                        >
+                            <h3 class="media-heading">iptables</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/08/12/git/git%E6%95%99%E7%A8%8B/"
+                            aria-label=": git教程"
+                        >
+                            <h3 class="media-heading">git教程</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年8月12日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2017/09/15/git/git-flow/"
+                            aria-label=": git flow"
+                        >
+                            <h3 class="media-heading">git flow</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2017年9月15日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 86 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

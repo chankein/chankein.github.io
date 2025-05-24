@@ -32,7 +32,7 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"基本操作\n\n查看iptable版本\n1rpm -q iptables\n查看iptables 规则\n123service iptables status# 或service -L --line-numbers\n表\niptables的4个表分别是：\n\nfilter（过滤）：数据包过滤/拦截，可以包含INPUT、FORWARD、OUTPUT这3个内置chain。\nnat（地址转换）：IP地址或端口号转换，可以包含PREROUTING、OUTPUT、POSTROUTING 3个内置chain，nat table在会话建立时会记录转换的对应关系，同一会话的回包和后续报文会自动地址转换，这是因为nat使用了ip_conntrack模块。\nmangle（包管理）：用来修改IP报文，可以包含PREROUTING、OUTPUT、INPUT、FORWARD、POSTROUTING 5个内置chain。\nraw：此表的优先级高于ip_conntrack模块和其它的table，主要用于将有会话状态的连接（比如tcp）的数据包排除在会话外。可以包含POSTROUTING、OUTPUT两个内置chain。\n\n看到这里肯定会有这样的疑问，为什么table只能包含一些而不是全部的chain呢？我想这个构架是按需设计而不是按功能设计的，尽管table不是包含所有的chain，但是每种功能的table都包含了实现这种功能所需的chain，即使包含更多的chain也是累赘或者无用的，而且实际上用起来也的确如此，够用了。\n还有就是不同table生效优先顺序问题，先后优先级是这样的：\nraw &gt; mangle &gt; nat &gt; filter\n所以，如果有filter禁止ping目的地址2.2.2.2，而nat又有策略将目的地址1.1.1.1转换成2.2.2.2，那么ping 1.1.1.1是ping不通的。\n不过一般情况下filter是不会和nat的策略打起架来，比如INPUT chain能做filter，却不能做nat，PREROUTING能做nat却不能做filter，而且PREROUTING只能做目的地址转换，不会对源地址过滤的需求造成麻烦，所以通常是不会相互干扰的。\n规则链(chain)\niptables内置的5个chain：PREROUTING、INPUT、OUPUT、FORWARD、POSTROUGING，这5个chain分别与netfilter中数据转发路径上的5个不同的位置挂钩，以匹配筛选不同类型的数据流，如下图所示：\n其中：\n\nPREROUTING链：应用于所有进入机器的ip包，包括目的地址是本机和目的地址非本机的包。\nINPUT链：应用于所有目的是本机的包，也就是目的IP是本机接口地址，所有发给本地socket的数据都经过它。\nOUPUT链：应用于所有由本机产生的包，所有应用程序发出的数据都经过它。\nFORWARD链：应用于所有经过路由决策被转发的包，也就是目的地址不是本机的数据包。\nPOSTROUGING链：应用于所有发出机器的IP包，包括本机发出的和从本机转发的数据包。\n\n策略匹配按照重上到下的顺序进行，当测试到某策略匹配时执行target并跳出，不再向下匹配，当测试到最后一条策略仍不匹配时，则采用policy指定的动作，如下图：\n除了内置chain外，还可以自定义chain，自定义chain并不能利用netfilter的hook来捕捉数据包，但是可用于策略的分类，比如有3类不同的用户访问主机上的不同服务，如果所有策略都放在INPUT chain中策略会多而难以维护，这个时候就可以定义3个自定义chain，分别配置不同的策略，同时在INPUT chain中添加策略对来访者分类并将目标指向3个自定义chain。\n自定义chain大显神威的地方在于动态生成策略，例如VPN服务器上，需要对不同分组的用户区别对待管理，但是用户IP是随机分配的，不能根据IP来区分用户组，这时候可以预先定义好各组chain，利用VPN服务端软件的一些钩子，当用户登陆时自动添加策略引导到自定义chain上来匹配。如果这时候没有自定义chain，那么策略的数量将是（用户数×所属组策略数），每增加一个用户，都要把所属组的全部策略添加一遍，这样大量的时间花费在策略匹配上，性能下降很快。\n\n各指令的含义\n\n-APPEND -A\n1iptables -A chain firewall-rule\n将规则添加到末尾。\n一般情况下,iptables 中最后的规则是丢弃所有数据包。\n于是使用-A参数添加的规则在丢弃规则后，将不起作用。\n\n-DELETE -D\n12345iptables -D chain firewall-rule# 删除对应规则direwall-rule的那一条# 或iptables -D chain rulenum# 删除chain中编号为rulenum的那一条.1表示第一条。\n\n-INSERT -I\n1iptables -I chain [rulenum] firewall-rule.\n将firewall-rule添加为chain中的第rulenum条规则,原先的第rulenum条规则及以后的各条顺次+1。如未指定rulenum,则默认为1.\n\n-REPLACE -R\n1iptables -R chain [rulenum] firewall-rule.\n将firewall-rule添加为chain中的第rulenum条规则,原先的第rulenum条规则及以后的各条顺次+1。如未指定rulenum,则默认为1.\n\n-LIST -L\n1iptables -L chain [rulenum] firewall-rule.\n列出chain或所有chain的第rulenum条规则或所有规则，在-L后再加上–lube-numbers，则显示序号\n\n-LIST-RULES -S\n1iptables -S chain [rulenum] \n打印全部规则\n\n-FLUSH -F\n1iptables -F chain\n情况chain(或全部chain)中的规则\n\n-ZERO -Z\n1iptables -Z chain [rulenum] \n清空chain或所有chain的包和字节计数器\n\n-NEW -N\n1iptables -N chain [rulenum] \n创建名称为chain的新链\n\n-DELETE-CHAIN -X\n1iptables -X [chain] \n删除用户自定义chain或所有用户定义的chain,该指令不影响预设规则\n\n-POLICY -P\n1iptables -P chain target \n改变chain的策略为target\n\n-RENAME-CHAIN -E\n1iptables -E old-chain new-chain\n将old-chain名更换为new-chain,使得old-chain的规则失效\n\n各参数的含义\n\n-P 代表协议（PROTOCOL）\n\n指明当前规则针对的传输协议（如 TCP、UDP、ICMP 等）\n可能的参数值有：tcp, udp, icmp, all\n使用 “all” 表示适用于所有协议。而如果在规则中不指定 -p 参数，则默认使用 “all” 参数。一般不使用 “all” 这个值，要么指定某个特定的协议，要么就指定 -p 参数。\n-p 的参数值既可以用名称（如 tcp）也可以用协议对应的数值（如 6 代表 tcp 协议）\n/etc/protocols 文件中包含了所有允许的协议名称和相应数值\n也可以用长的参数名 –protocol\n\n-S 代表源地址（SOURCE）\n\n指定数据包的源地址\n可以是 ip 地址，或者网络地址，或者主机名（hostname）\n例如：-s 192.168.1.101 表示针对特定的 ip 地址\n对于网络掩码，使用 /mask。例如，“-s 192.168.1.0/24″ 表示网络掩码为 255.255.255.0 的所有 192.168.1.x 地址都匹配。\n如果不指定 -s 参数，默认匹配所有源地址\n也可以用长参数名 –src 或者 –source\n\n-D 代表目的地址（DESTINATION）\n\n指定数据包的目的地址\n使用方式与上面的 “-s” 一样（不同之处仅在于 -s 指源，而 -d 表示目的地址）\n也可以用长参数名 –dst 或者 –destination\n\n-J 代表跳转（TARGET）\n\nj 的意思是 “jump”（跳转） 到目标\n指定当某个数据包满足该规则的时候的就跳转到的下一个处理规则，而不再顺序执行后面的规则判断\n可能的值有：ACCEPT, DROP, QUEUE, RETURN，分别表示接受、丢弃、进入队列，返回（跳出，通常是从某个 chain 中跳回到调用该 chain 的上层 chain）\n也可以跳转到某个自定义的 chain 中，使用该 chain 的名称做为跳转目标\n\n-I 代表 IN INTERFACE（入站接口）\n\ni 表示 “input interface”（输入接口，即，指定网络数据处理的网卡，一般 eth0 即表示第一块有线网卡的外网接口，lo 表示局域网接口）\n可以直接理解为 “-i” 表示接口。不过，-i 和 -o 都表示接口，-i 表示输入时的接口，而 -o 特指输出用的接口。\n指定数据包进入 INPUT、FORWARD 和 PREROUTING 链时经由的接口。\n例如：-i eth0 表示该规则应该针对从 eth0 接口进来的数据包。\n如果不指定 -i 参数，则经由系统中所有可用的接口进入的数据包都可以匹配该规则。\n也可以使用长参数 –in-interface\n\n-O 代表 OUT INTERFACE（出站接口）\n\no 表示 “output interface”（出站经由接口）\n指定发送出去的数据包进入 INPUT、FORWARD 和 PREROUTING 链时经由的接口。\n如果不指定 -o 参数，则经由系统中所有可用的接口发出的数据包都可以匹配该规则。\n也可以使用长参数 –out-interface\n\n\n其它防火墙参数选项\n上面某些防火墙参数还有属于它自己的参数选项，可以与其配合使用。下面是一些常用的选项。\n要使用这些参数选项，需要指定相应的参数，例如，要使用 “–sport” 选项，应该在规则中指定 “-p tcp” （或者 “-p udp”）等参数。\n注意：所有这些选项前面都是 –（2个短横线 – ）。\n–SPORT 表示 SOURCE PORT (源端口，用于 -P TCP, 或者 -P UDP)\n\n默认匹配所有端口（未特别指定时）\n可以指定端口号（数字），也可以指定端口名称。例如，默认的 SSH 端口号码为 22，名称为 ssh，可以表示为 “–sport 22″ 或者 “–sport ssh”。\n/etc/services 文件包含了所有允许的端口名称和对应的端口号码。\n在规则中使用号码比使用名称要好（效率高些）\n要匹配一个端口范围，使用英文半角冒号（:），如 22:100 匹配从 22 到 100 的所有端口号。\n也可以使用长名称 –source-port\n\n–DPORT 表示 DESTINATION PORT (目的端口，-P TCP, 或者 -P UDP)\n\n与 –sport 的用法相同，区别仅在于对象是目的端口\n也可以使用长名称 –destination-port\n\n–TCP-FLAGS 表示 TCP FLAGS (用于 -P TCP)\n\n可以使用英文半角逗号（,）来指定多个 TCP 状态标识\n可能值有：SYN, ACK, FIN, RST, URG, PSH。可以全用，也可以不用。\n\n–ICMP-TYPE 表示 ICMP TYPE (ICMP 类型，用于 -P ICMP)\n\n当使用 icmp 协议 “-p icmp” 的时候，可以使用 “–icmp-type” 特别指定 ICMP 类型\n例如，使用 “–icmp-type 0″ 表示 “Echo Reply”，“–icmp-type 8″ 表示 “Echo”。\n\n添加VIP:\n1ifconfig eth0:1 192.168.1.22 broadcast 192.168.1.2 netmask 255.255.255.0 up\n","dateCreated":"2017-04-28T23:08:51+08:00","dateModified":"2025-05-12T18:09:12+08:00","datePublished":"2017-04-28T23:08:51+08:00","description":"","headline":"iptables","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2017/04/28/iptables/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2017/04/28/iptables/","keywords":"linux"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"基本操作\n\n查看iptable版本\n1rpm -q iptables\n查看iptables 规则\n123service iptables status# 或service -L --line-numbers\n表\niptables的4个表分别是：\n\nfilter（过滤）：数据包过滤/拦截，可以包含INPUT、FORWARD、OUTPUT这3个内置chain。\nnat（地址转换）：IP地址或端口号转换，可以包含PREROUTING、OUTPUT、POSTROUTING 3个内置chain，nat table在会话建立时会记录转换的对应关系，同一会话的回包和后续报文会自动地址转换，这是因为nat使用了ip_conntrack模块。\nmangle（包管理）：用来修改IP报文，可以包含PREROUTING、OUTPUT、INPUT、FORWARD、POSTROUTING 5个内置chain。\nraw：此表的优先级高于ip_conntrack模块和其它的table，主要用于将有会话状态的连接（比如tcp）的数据包排除在会话外。可以包含POSTROUTING、OUTPUT两个内置chain。\n\n看到这里肯定会有这样的疑问，为什么table只能包含一些而不是全部的chain呢？我想这个构架是按需设计而不是按功能设计的，尽管table不是包含所有的chain，但是每种功能的table都包含了实现这种功能所需的chain，即使包含更多的chain也是累赘或者无用的，而且实际上用起来也的确如此，够用了。\n还有就是不同table生效优先顺序问题，先后优先级是这样的：\nraw &gt; mangle &gt; nat &gt; filter\n所以，如果有filter禁止ping目的地址2.2.2.2，而nat又有策略将目的地址1.1.1.1转换成2.2.2.2，那么ping 1.1.1.1是ping不通的。\n不过一般情况下filter是不会和nat的策略打起架来，比如INPUT chain能做filter，却不能做nat，PREROUTING能做nat却不能做filter，而且PREROUTING只能做目的地址转换，不会对源地址过滤的需求造成麻烦，所以通常是不会相互干扰的。\n规则链(chain)\niptables内置的5个chain：PREROUTING、INPUT、OUPUT、FORWARD、POSTROUGING，这5个chain分别与netfilter中数据转发路径上的5个不同的位置挂钩，以匹配筛选不同类型的数据流，如下图所示：\n其中：\n\nPREROUTING链：应用于所有进入机器的ip包，包括目的地址是本机和目的地址非本机的包。\nINPUT链：应用于所有目的是本机的包，也就是目的IP是本机接口地址，所有发给本地socket的数据都经过它。\nOUPUT链：应用于所有由本机产生的包，所有应用程序发出的数据都经过它。\nFORWARD链：应用于所有经过路由决策被转发的包，也就是目的地址不是本机的数据包。\nPOSTROUGING链：应用于所有发出机器的IP包，包括本机发出的和从本机转发的数据包。\n\n策略匹配按照重上到下的顺序进行，当测试到某策略匹配时执行target并跳出，不再向下匹配，当测试到最后一条策略仍不匹配时，则采用policy指定的动作，如下图：\n除了内置chain外，还可以自定义chain，自定义chain并不能利用netfilter的hook来捕捉数据包，但是可用于策略的分类，比如有3类不同的用户访问主机上的不同服务，如果所有策略都放在INPUT chain中策略会多而难以维护，这个时候就可以定义3个自定义chain，分别配置不同的策略，同时在INPUT chain中添加策略对来访者分类并将目标指向3个自定义chain。\n自定义chain大显神威的地方在于动态生成策略，例如VPN服务器上，需要对不同分组的用户区别对待管理，但是用户IP是随机分配的，不能根据IP来区分用户组，这时候可以预先定义好各组chain，利用VPN服务端软件的一些钩子，当用户登陆时自动添加策略引导到自定义chain上来匹配。如果这时候没有自定义chain，那么策略的数量将是（用户数×所属组策略数），每增加一个用户，都要把所属组的全部策略添加一遍，这样大量的时间花费在策略匹配上，性能下降很快。\n\n各指令的含义\n\n-APPEND -A\n1iptables -A chain firewall-rule\n将规则添加到末尾。\n一般情况下,iptables 中最后的规则是丢弃所有数据包。\n于是使用-A参数添加的规则在丢弃规则后，将不起作用。\n\n-DELETE -D\n12345iptables -D chain firewall-rule# 删除对应规则direwall-rule的那一条# 或iptables -D chain rulenum# 删除chain中编号为rulenum的那一条.1表示第一条。\n\n-INSERT -I\n1iptables -I chain [rulenum] firewall-rule.\n将firewall-rule添加为chain中的第rulenum条规则,原先的第rulenum条规则及以后的各条顺次+1。如未指定rulenum,则默认为1.\n\n-REPLACE -R\n1iptables -R chain [rulenum] firewall-rule.\n将firewall-rule添加为chain中的第rulenum条规则,原先的第rulenum条规则及以后的各条顺次+1。如未指定rulenum,则默认为1.\n\n-LIST -L\n1iptables -L chain [rulenum] firewall-rule.\n列出chain或所有chain的第rulenum条规则或所有规则，在-L后再加上–lube-numbers，则显示序号\n\n-LIST-RULES -S\n1iptables -S chain [rulenum] \n打印全部规则\n\n-FLUSH -F\n1iptables -F chain\n情况chain(或全部chain)中的规则\n\n-ZERO -Z\n1iptables -Z chain [rulenum] \n清空chain或所有chain的包和字节计数器\n\n-NEW -N\n1iptables -N chain [rulenum] \n创建名称为chain的新链\n\n-DELETE-CHAIN -X\n1iptables -X [chain] \n删除用户自定义chain或所有用户定义的chain,该指令不影响预设规则\n\n-POLICY -P\n1iptables -P chain target \n改变chain的策略为target\n\n-RENAME-CHAIN -E\n1iptables -E old-chain new-chain\n将old-chain名更换为new-chain,使得old-chain的规则失效\n\n各参数的含义\n\n-P 代表协议（PROTOCOL）\n\n指明当前规则针对的传输协议（如 TCP、UDP、ICMP 等）\n可能的参数值有：tcp, udp, icmp, all\n使用 “all” 表示适用于所有协议。而如果在规则中不指定 -p 参数，则默认使用 “all” 参数。一般不使用 “all” 这个值，要么指定某个特定的协议，要么就指定 -p 参数。\n-p 的参数值既可以用名称（如 tcp）也可以用协议对应的数值（如 6 代表 tcp 协议）\n/etc/protocols 文件中包含了所有允许的协议名称和相应数值\n也可以用长的参数名 –protocol\n\n-S 代表源地址（SOURCE）\n\n指定数据包的源地址\n可以是 ip 地址，或者网络地址，或者主机名（hostname）\n例如：-s 192.168.1.101 表示针对特定的 ip 地址\n对于网络掩码，使用 /mask。例如，“-s 192.168.1.0/24″ 表示网络掩码为 255.255.255.0 的所有 192.168.1.x 地址都匹配。\n如果不指定 -s 参数，默认匹配所有源地址\n也可以用长参数名 –src 或者 –source\n\n-D 代表目的地址（DESTINATION）\n\n指定数据包的目的地址\n使用方式与上面的 “-s” 一样（不同之处仅在于 -s 指源，而 -d 表示目的地址）\n也可以用长参数名 –dst 或者 –destination\n\n-J 代表跳转（TARGET）\n\nj 的意思是 “jump”（跳转） 到目标\n指定当某个数据包满足该规则的时候的就跳转到的下一个处理规则，而不再顺序执行后面的规则判断\n可能的值有：ACCEPT, DROP, QUEUE, RETURN，分别表示接受、丢弃、进入队列，返回（跳出，通常是从某个 chain 中跳回到调用该 chain 的上层 chain）\n也可以跳转到某个自定义的 chain 中，使用该 chain 的名称做为跳转目标\n\n-I 代表 IN INTERFACE（入站接口）\n\ni 表示 “input interface”（输入接口，即，指定网络数据处理的网卡，一般 eth0 即表示第一块有线网卡的外网接口，lo 表示局域网接口）\n可以直接理解为 “-i” 表示接口。不过，-i 和 -o 都表示接口，-i 表示输入时的接口，而 -o 特指输出用的接口。\n指定数据包进入 INPUT、FORWARD 和 PREROUTING 链时经由的接口。\n例如：-i eth0 表示该规则应该针对从 eth0 接口进来的数据包。\n如果不指定 -i 参数，则经由系统中所有可用的接口进入的数据包都可以匹配该规则。\n也可以使用长参数 –in-interface\n\n-O 代表 OUT INTERFACE（出站接口）\n\no 表示 “output interface”（出站经由接口）\n指定发送出去的数据包进入 INPUT、FORWARD 和 PREROUTING 链时经由的接口。\n如果不指定 -o 参数，则经由系统中所有可用的接口发出的数据包都可以匹配该规则。\n也可以使用长参数 –out-interface\n\n\n其它防火墙参数选项\n上面某些防火墙参数还有属于它自己的参数选项，可以与其配合使用。下面是一些常用的选项。\n要使用这些参数选项，需要指定相应的参数，例如，要使用 “–sport” 选项，应该在规则中指定 “-p tcp” （或者 “-p udp”）等参数。\n注意：所有这些选项前面都是 –（2个短横线 – ）。\n–SPORT 表示 SOURCE PORT (源端口，用于 -P TCP, 或者 -P UDP)\n\n默认匹配所有端口（未特别指定时）\n可以指定端口号（数字），也可以指定端口名称。例如，默认的 SSH 端口号码为 22，名称为 ssh，可以表示为 “–sport 22″ 或者 “–sport ssh”。\n/etc/services 文件包含了所有允许的端口名称和对应的端口号码。\n在规则中使用号码比使用名称要好（效率高些）\n要匹配一个端口范围，使用英文半角冒号（:），如 22:100 匹配从 22 到 100 的所有端口号。\n也可以使用长名称 –source-port\n\n–DPORT 表示 DESTINATION PORT (目的端口，-P TCP, 或者 -P UDP)\n\n与 –sport 的用法相同，区别仅在于对象是目的端口\n也可以使用长名称 –destination-port\n\n–TCP-FLAGS 表示 TCP FLAGS (用于 -P TCP)\n\n可以使用英文半角逗号（,）来指定多个 TCP 状态标识\n可能值有：SYN, ACK, FIN, RST, URG, PSH。可以全用，也可以不用。\n\n–ICMP-TYPE 表示 ICMP TYPE (ICMP 类型，用于 -P ICMP)\n\n当使用 icmp 协议 “-p icmp” 的时候，可以使用 “–icmp-type” 特别指定 ICMP 类型\n例如，使用 “–icmp-type 0″ 表示 “Echo Reply”，“–icmp-type 8″ 表示 “Echo”。\n\n添加VIP:\n1ifconfig eth0:1 192.168.1.22 broadcast 192.168.1.2 netmask 255.255.255.0 up\n","dateCreated":"2017-04-28T23:08:51+08:00","dateModified":"2025-05-23T16:38:44+08:00","datePublished":"2017-04-28T23:08:51+08:00","description":"","headline":"iptables","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2017/04/28/iptables/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2017/04/28/iptables/","keywords":"linux"}</script>
     <meta name="description" content="基本操作  查看iptable版本 1rpm -q iptables 查看iptables 规则 123service iptables status# 或service -L --line-numbers 表 iptables的4个表分别是：  filter（过滤）：数据包过滤&#x2F;拦截，可以包含INPUT、FORWARD、OUTPUT这3个内置chain。 nat（地址转换）：IP地址或端口号转换">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="iptables">
@@ -41,7 +41,7 @@
 <meta property="og:description" content="基本操作  查看iptable版本 1rpm -q iptables 查看iptables 规则 123service iptables status# 或service -L --line-numbers 表 iptables的4个表分别是：  filter（过滤）：数据包过滤&#x2F;拦截，可以包含INPUT、FORWARD、OUTPUT这3个内置chain。 nat（地址转换）：IP地址或端口号转换">
 <meta property="og:locale" content="zh_TW">
 <meta property="article:published_time" content="2017-04-28T15:08:51.000Z">
-<meta property="article:modified_time" content="2025-05-12T10:09:12.194Z">
+<meta property="article:modified_time" content="2025-05-23T08:38:44.378Z">
 <meta property="article:author" content="Kein Chan">
 <meta property="article:tag" content="linux">
 <meta name="twitter:card" content="summary">
@@ -317,7 +317,7 @@
     
         <span>分類 </span>
         
-    <a class="category-link" href="../../../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
+    <a class="category-link" href="../../../../categories/%E6%9C%8D%E5%8A%A1%E7%AB%AF/">服务端</a>, <a class="category-link" href="../../../../categories/%E6%9C%8D%E5%8A%A1%E7%AB%AF/linux/">linux</a>
 
 
     
@@ -531,7 +531,7 @@
                     
                 <a
                     class="post-action-btn btn btn--default tooltip--top"
-                    href="../linux%E5%9F%BA%E7%A1%80/"
+                    href="../linux/linux%E5%9F%BA%E7%A1%80/"
                     data-tooltip="linux基础"
                     aria-label="下一篇: linux基础"
                 >
@@ -547,7 +547,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -610,7 +610,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -659,7 +659,7 @@
                     
                 <a
                     class="post-action-btn btn btn--default tooltip--top"
-                    href="../linux%E5%9F%BA%E7%A1%80/"
+                    href="../linux/linux%E5%9F%BA%E7%A1%80/"
                     data-tooltip="linux基础"
                     aria-label="下一篇: linux基础"
                 >
@@ -675,7 +675,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -738,7 +738,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -1012,7 +1012,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2017/04/28/linux%E5%9F%BA%E7%A1%80/"
+                            href="https://chankein.github.io/2017/04/28/linux/linux%E5%9F%BA%E7%A1%80/"
                             aria-label=": linux基础"
                         >
                             <h3 class="media-heading">linux基础</h3>
@@ -1106,7 +1106,7 @@
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 67 篇文章
+                找到 86 篇文章
             </p>
         </div>
     </div>
