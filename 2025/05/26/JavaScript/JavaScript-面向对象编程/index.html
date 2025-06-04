@@ -1,0 +1,1109 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>JavaScript-面向对象编程 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"JavaScript的所有数据都可以看成对象，那是不是我们已经在使用面向对象编程了呢？\n当然不是。如果我们只使用Number、Array、string以及基本的&#123;...&#125;定义的对象，还无法发挥出面向对象编程的威力。\nJavaScript的面向对象编程和大多数其他语言如Java、C#的面向对象编程都不太一样。如果你熟悉Java或C#，很好，你一定明白面向对象的两个基本概念：\n\n类：类是对象的类型模板，例如，定义Student类来表示学生，类本身是一种类型，Student表示学生类型，但不表示任何具体的某个学生；\n实例：实例是根据类创建的对象，例如，根据Student类可以创建出xiaoming、xiaohong、xiaojun等多个实例，每个实例表示一个具体的学生，他们全都属于Student类型。\n\n所以，类和实例是大多数面向对象编程语言的基本概念。\n不过，在JavaScript中，这个概念需要改一改。JavaScript不区分类和实例的概念，而是通过原型（prototype）来实现面向对象编程。\n原型是指当我们想要创建xiaoming这个具体的学生时，我们并没有一个Student类型可用。那怎么办？恰好有这么一个现成的对象：\n1234567let robot = &#123;    name: &#x27;Robot&#x27;,    height: 1.6,    run: function () &#123;        console.log(this.name + &#x27; is running...&#x27;);    &#125;&#125;;\n我们看这个robot对象有名字，有身高，还会跑，有点像小明，干脆就根据它来“创建”小明得了！\n于是我们把它改名为Student，然后创建出xiaoming：\n12345678910111213let Student = &#123;    name: &#x27;Robot&#x27;,    height: 1.2,    run: function () &#123;        console.log(this.name + &#x27; is running...&#x27;);    &#125;&#125;;let xiaoming = &#123;    name: &#x27;小明&#x27;&#125;;xiaoming.__proto__ = Student;\n注意最后一行代码把xiaoming的原型指向了对象Student，看上去xiaoming仿佛是从Student继承下来的：\n12xiaoming.name; // &#x27;小明&#x27;xiaoming.run(); // 小明 is running...\nxiaoming有自己的name属性，但并没有定义run()方法。不过，由于小明是从Student继承而来，只要Student有run()方法，xiaoming也可以调用：\n\nJavaScript的原型链和Java的Class区别就在，它没有“Class”的概念，所有对象都是实例，所谓继承关系不过是把一个对象的原型指向另一个对象而已。\n如果你把xiaoming的原型指向其他对象：\n1234567let Bird = &#123;    fly: function () &#123;        console.log(this.name + &#x27; is flying...&#x27;);    &#125;&#125;;xiaoming.__proto__ = Bird;\n现在xiaoming已经无法run()了，他已经变成了一只鸟：\n1xiaoming.fly(); // 小明 is flying...\n在JavaScrip代码运行时期，你可以把xiaoming从Student变成Bird，或者变成任何对象。\n请注意，上述代码仅用于演示目的。在编写JavaScript代码时，不要直接用obj.__proto__去改变一个对象的原型，并且，低版本的IE也无法使用__proto__。Object.create()方法可以传入一个原型对象，并创建一个基于该原型的新对象，但是新对象什么属性都没有，因此，我们可以编写一个函数来创建xiaoming：\n1234567891011121314151617181920// 原型对象:let Student = &#123;    name: &#x27;Robot&#x27;,    height: 1.2,    run: function () &#123;        console.log(this.name + &#x27; is running...&#x27;);    &#125;&#125;;function createStudent(name) &#123;    // 基于Student原型创建一个新对象:    let s = Object.create(Student);    // 初始化新对象:    s.name = name;    return s;&#125;let xiaoming = createStudent(&#x27;小明&#x27;);xiaoming.run(); // 小明 is running...xiaoming.__proto__ === Student; // true\n这是创建原型继承的一种方法，JavaScript还有其他方法来创建对象，我们在后面会一一讲到。\nJavaScript对每个创建的对象都会设置一个原型，指向它的原型对象。\n当我们用obj.xxx访问一个对象的属性时，JavaScript引擎先在当前对象上查找该属性，如果没有找到，就到其原型对象上找，如果还没有找到，就一直上溯到Object.prototype对象，最后，如果还没有找到，就只能返回undefined。\n例如，创建一个Array对象：\n1let arr = [1, 2, 3];\n其原型链是：\n12345678910111213141516       null         ▲         │┌─────────────────┐│Object.prototype │└─────────────────┘         ▲         │┌─────────────────┐│ Array.prototype │└─────────────────┘         ▲         │┌─────────────────┐│       arr       │└─────────────────┘\nArray.prototype定义了indexOf()、shift()等方法，因此你可以在所有的Array对象上直接调用这些方法。\n当我们创建一个函数时：\n123function foo() &#123;    return 0;&#125;\n函数也是一个对象，它的原型链是：\n12345678910111213141516        null          ▲          │┌───────────────────┐│ Object.prototype  │└───────────────────┘          ▲          │┌───────────────────┐│Function.prototype │└───────────────────┘          ▲          │┌───────────────────┐│        foo        │└───────────────────┘\n由于Function.prototype定义了apply()等方法，因此，所有函数都可以调用apply()方法。\n很容易想到，如果原型链很长，那么访问一个对象的属性就会因为花更多的时间查找而变得更慢，因此要注意不要把原型链搞得太长。\n构造函数\n除了直接用&#123; ... &#125;创建一个对象外，JavaScript还可以用一种构造函数的方法来创建对象。它的用法是，先定义一个构造函数：\n123456function Student(name) &#123;    this.name = name;    this.hello = function () &#123;        alert(&#x27;Hello, &#x27; + this.name + &#x27;!&#x27;);    &#125;&#125;\n你会问，咦，这不是一个普通函数吗？\n这确实是一个普通函数，但是在JavaScript中，可以用关键字new来调用这个函数，并返回一个对象：\n123let xiaoming = new Student(&#x27;小明&#x27;);xiaoming.name; // &#x27;小明&#x27;xiaoming.hello(); // Hello, 小明!\n注意，如果不写new，这就是一个普通函数，它返回undefined。但是，如果写了new，它就变成了一个构造函数，它绑定的this指向新创建的对象，并默认返回this，也就是说，不需要在最后写return this;。\n新创建的xiaoming的原型链是：\n12345678910111213141516       null         ▲         │┌─────────────────┐│Object.prototype │└─────────────────┘         ▲         │┌─────────────────┐│Student.prototype│└─────────────────┘         ▲         │┌─────────────────┐│    xiaoming     │└─────────────────┘\n也就是说，xiaoming的原型指向函数Student的原型。如果你又创建了xiaohong、xiaojun，那么这些对象的原型与xiaoming是一样的：\n12345678910111213141516              null                ▲                │       ┌─────────────────┐       │Object.prototype │       └─────────────────┘                ▲                │       ┌─────────────────┐       │Student.prototype│       └─────────────────┘         ▲      ▲      ▲         │      │      │┌─────────┐┌─────────┐┌─────────┐│xiaoming ││xiaohong ││ xiaojun │└─────────┘└─────────┘└─────────┘\n用new Student()创建的对象还从原型上获得了一个constructor属性，它指向函数Student本身：\n123456xiaoming.constructor === Student.prototype.constructor; // trueStudent.prototype.constructor === Student; // trueObject.getPrototypeOf(xiaoming) === Student.prototype; // truexiaoming instanceof Student; // true\n看晕了吧？用一张图来表示这些乱七八糟的关系就是：\n\n红色箭头是原型链。注意，Student.prototype指向的对象就是xiaoming、xiaohong的原型对象，这个原型对象自己还有个属性constructor，指向Student函数本身。\n另外，函数Student恰好有个属性prototype指向xiaoming、xiaohong的原型对象，但是xiaoming、xiaohong这些对象可没有prototype这个属性，不过可以用__proto__这个非标准用法来查看。\n现在我们就认为xiaoming、xiaohong这些对象“继承”自Student。\n不过还有一个小问题，注意观察：\n12345xiaoming.name; // &#x27;小明&#x27;xiaohong.name; // &#x27;小红&#x27;xiaoming.hello; // function: Student.hello()xiaohong.hello; // function: Student.hello()xiaoming.hello === xiaohong.hello; // false\nxiaoming和xiaohong各自的name不同，这是对的，否则我们无法区分谁是谁了。\nxiaoming和xiaohong各自的hello是一个函数，但它们是两个不同的函数，虽然函数名称和代码都是相同的！\n如果我们通过new Student()创建了很多对象，这些对象的hello函数实际上只需要共享同一个函数就可以了，这样可以节省很多内存。\n要让创建的对象共享一个hello函数，根据对象的属性查找原则，我们只要把hello函数移动到xiaoming、xiaohong这些对象共同的原型上就可以了，也就是Student.prototype：\n\n修改代码如下：\n1234567function Student(name) &#123;    this.name = name;&#125;Student.prototype.hello = function () &#123;    alert(&#x27;Hello, &#x27; + this.name + &#x27;!&#x27;);&#125;;\n用new创建基于原型的JavaScript的对象就是这么简单！\n忘记写new怎么办\n如果一个函数被定义为用于创建对象的构造函数，但是调用时忘记了写new怎么办？\n在strict模式下，this.name = name将报错，因为this绑定为undefined，在非strict模式下，this.name = name不报错，因为this绑定为window，于是无意间创建了全局变量name，并且返回undefined，这个结果更糟糕。\n所以，调用构造函数千万不要忘记写new。为了区分普通函数和构造函数，按照约定，构造函数首字母应当大写，而普通函数首字母应当小写，这样，一些语法检查工具如jslint将可以帮你检测到漏写的new。\n最后，我们还可以编写一个createStudent()函数，在内部封装所有的new操作。一个常用的编程模式像这样：\n123456789101112function Student(props) &#123;    this.name = props.name || &#x27;匿名&#x27;; // 默认值为&#x27;匿名&#x27;    this.grade = props.grade || 1; // 默认值为1&#125;Student.prototype.hello = function () &#123;    alert(&#x27;Hello, &#x27; + this.name + &#x27;!&#x27;);&#125;;function createStudent(props) &#123;    return new Student(props || &#123;&#125;)&#125;\n这个createStudent()函数有几个巨大的优点：一是不需要new来调用，二是参数非常灵活，可以不传，也可以这么传：\n12345let xiaoming = createStudent(&#123;    name: &#x27;小明&#x27;&#125;);xiaoming.grade; // 1\n如果创建的对象有很多属性，我们只需要传递需要的某些属性，剩下的属性可以用默认值。由于参数是一个Object，我们无需记忆参数的顺序。如果恰好从JSON拿到了一个对象，就可以直接创建出xiaoming。\n练习\n请利用构造函数定义Cat，并让所有的Cat对象有一个name属性，并共享一个方法say()，返回字符串'Hello, xxx!'：\n1234567891011121314151617function Cat(name) &#123;    // TODO:&#125;// 测试:let kitty = new Cat(&#x27;Kitty&#x27;);let doraemon = new Cat(&#x27;哆啦A梦&#x27;);if (kitty &amp;&amp; kitty.name === &#x27;Kitty&#x27;    &amp;&amp; kitty.say    &amp;&amp; typeof kitty.say === &#x27;function&#x27;    &amp;&amp; kitty.say() === &#x27;Hello, Kitty!&#x27;    &amp;&amp; kitty.say === doraemon.say) &#123;    console.log(&#x27;测试通过!&#x27;);&#125; else &#123;    console.log(&#x27;测试失败!&#x27;);&#125;\n在传统的基于Class的语言如Java、C++中，继承的本质是扩展一个已有的Class，并生成新的Subclass。\n由于这类语言严格区分类和实例，继承实际上是类型的扩展。但是，JavaScript由于采用原型继承，我们无法直接扩展一个Class，因为根本不存在Class这种类型。\n但是办法还是有的。我们先回顾Student构造函数：\n1234567function Student(props) &#123;    this.name = props.name || &#x27;Unnamed&#x27;;&#125;Student.prototype.hello = function () &#123;    alert(&#x27;Hello, &#x27; + this.name + &#x27;!&#x27;);&#125;\n以及Student的原型链：\n\n现在，我们要基于Student扩展出PrimaryStudent，可以先定义出PrimaryStudent：\n12345function PrimaryStudent(props) &#123;    // 调用Student构造函数，绑定this变量:    Student.call(this, props);    this.grade = props.grade || 1;&#125;\n但是，调用了Student构造函数不等于继承了Student，PrimaryStudent创建的对象的原型是：\n1new PrimaryStudent() --&gt; PrimaryStudent.prototype --&gt; Object.prototype --&gt; null\n必须想办法把原型链修改为：\n1new PrimaryStudent() --&gt; PrimaryStudent.prototype --&gt; Student.prototype --&gt; Object.prototype --&gt; null\n这样，原型链对了，继承关系就对了。新的基于PrimaryStudent创建的对象不但能调用PrimaryStudent.prototype定义的方法，也可以调用Student.prototype定义的方法。\n如果你想用最简单粗暴的方法这么干：\n1PrimaryStudent.prototype = Student.prototype;\n是不行的！如果这样的话，PrimaryStudent和Student共享一个原型对象，那还要定义PrimaryStudent干啥？\n我们必须借助一个中间对象来实现正确的原型链，这个中间对象的原型要指向Student.prototype。为了实现这一点，参考道爷（就是发明JSON的那个道格拉斯）的代码，中间对象可以用一个空函数F来实现：\n123456789101112131415161718192021222324252627282930313233343536373839// PrimaryStudent构造函数:function PrimaryStudent(props) &#123;    Student.call(this, props);    this.grade = props.grade || 1;&#125;// 空函数F:function F() &#123;&#125;// 把F的原型指向Student.prototype:F.prototype = Student.prototype;// 把PrimaryStudent的原型指向一个新的F对象，F对象的原型正好指向Student.prototype:PrimaryStudent.prototype = new F();// 把PrimaryStudent原型的构造函数修复为PrimaryStudent:PrimaryStudent.prototype.constructor = PrimaryStudent;// 继续在PrimaryStudent原型（就是new F()对象）上定义方法：PrimaryStudent.prototype.getGrade = function () &#123;    return this.grade;&#125;;// 创建xiaoming:let xiaoming = new PrimaryStudent(&#123;    name: &#x27;小明&#x27;,    grade: 2&#125;);xiaoming.name; // &#x27;小明&#x27;xiaoming.grade; // 2// 验证原型:xiaoming.__proto__ === PrimaryStudent.prototype; // truexiaoming.__proto__.__proto__ === Student.prototype; // true// 验证继承关系:xiaoming instanceof PrimaryStudent; // truexiaoming instanceof Student; // true\n用一张图来表示新的原型链：\n\n注意，函数F仅用于桥接，我们仅创建了一个new F()实例，而且，没有改变原有的Student定义的原型链。\n如果把继承这个动作用一个inherits()函数封装起来，还可以隐藏F的定义，并简化代码：\n123456function inherits(Child, Parent) &#123;    let F = function () &#123;&#125;;    F.prototype = Parent.prototype;    Child.prototype = new F();    Child.prototype.constructor = Child;&#125;\n这个inherits()函数可以复用：\n1234567891011121314151617181920function Student(props) &#123;    this.name = props.name || &#x27;Unnamed&#x27;;&#125;Student.prototype.hello = function () &#123;    alert(&#x27;Hello, &#x27; + this.name + &#x27;!&#x27;);&#125;function PrimaryStudent(props) &#123;    Student.call(this, props);    this.grade = props.grade || 1;&#125;// 实现原型继承链:inherits(PrimaryStudent, Student);// 绑定其他方法到PrimaryStudent原型:PrimaryStudent.prototype.getGrade = function () &#123;    return this.grade;&#125;;\n小结\nJavaScript的原型继承实现方式就是：\n\n定义新的构造函数，并在内部用call()调用希望“继承”的构造函数，并绑定this；\n借助中间函数F实现原型链继承，最好通过封装的inherits函数完成；\n继续在新的构造函数的原型上定义新方法。\n\nclass继承\n在上面的章节中我们看到了JavaScript的对象模型是基于原型实现的，特点是简单，缺点是理解起来比传统的类－实例模型要困难，最大的缺点是继承的实现需要编写大量代码，并且需要正确实现原型链。\n有没有更简单的写法？有！\n新的关键字class从ES6开始正式被引入到JavaScript中。class的目的就是让定义类更简单。\n我们先回顾用函数实现Student的方法：\n1234567function Student(name) &#123;    this.name = name;&#125;Student.prototype.hello = function () &#123;    alert(&#x27;Hello, &#x27; + this.name + &#x27;!&#x27;);&#125;\n如果用新的class关键字来编写Student，可以这样写：\n123456789class Student &#123;    constructor(name) &#123;        this.name = name;    &#125;    hello() &#123;        alert(&#x27;Hello, &#x27; + this.name + &#x27;!&#x27;);    &#125;&#125;\n比较一下就可以发现，class的定义包含了构造函数constructor和定义在原型对象上的函数hello()（注意没有function关键字），这样就避免了Student.prototype.hello = function () &#123;...&#125;这样分散的代码。\n最后，创建一个Student对象代码和前面章节完全一样：\n12let xiaoming = new Student(&#x27;小明&#x27;);xiaoming.hello();\nclass继承\n用class定义对象的另一个巨大的好处是继承更方便了。想一想我们从Student派生一个PrimaryStudent需要编写的代码量。现在，原型继承的中间对象，原型对象的构造函数等等都不需要考虑了，直接通过extends来实现：\n12345678910class PrimaryStudent extends Student &#123;    constructor(name, grade) &#123;        super(name); // 记得用super调用父类的构造方法!        this.grade = grade;    &#125;    myGrade() &#123;        alert(&#x27;I am at grade &#x27; + this.grade);    &#125;&#125;\n注意PrimaryStudent的定义也是class关键字实现的，而extends则表示原型链对象来自Student。子类的构造函数可能会与父类不太相同，例如，PrimaryStudent需要name和grade两个参数，并且需要通过super(name)来调用父类的构造函数，否则父类的name属性无法正常初始化。\nPrimaryStudent已经自动获得了父类Student的hello方法，我们又在子类中定义了新的myGrade方法。\nES6引入的class和原有的JavaScript原型继承有什么区别呢？实际上它们没有任何区别，class的作用就是让JavaScript引擎去实现原来需要我们自己编写的原型链代码。简而言之，用class的好处就是极大地简化了原型链代码。\n练习\n请利用class重新定义Cat，并让它从已有的Animal继承，然后新增一个方法say()，返回字符串'Hello, xxx!'：\n123456789101112131415161718192021222324class Animal &#123;    constructor(name) &#123;        this.name = name;    &#125;&#125;// FIXME:class Cat ???// 测试:let kitty = new Cat(&#x27;Kitty&#x27;);let doraemon = new Cat(&#x27;哆啦A梦&#x27;);if ((new Cat(&#x27;x&#x27;) instanceof Animal)    &amp;&amp; kitty     &amp;&amp; kitty.name === &#x27;Kitty&#x27;    &amp;&amp; kitty.say    &amp;&amp; typeof kitty.say === &#x27;function&#x27;    &amp;&amp; kitty.say() === &#x27;Hello, Kitty!&#x27;    &amp;&amp; kitty.say === doraemon.say)&#123;    console.log(&#x27;测试通过!&#x27;);&#125; else &#123;    console.log(&#x27;测试失败!&#x27;);&#125;\n这个练习需要浏览器支持ES6的class，如果遇到SyntaxError，则说明浏览器不支持class语法，请换一个最新的浏览器试试。\n\n\n","dateCreated":"2025-05-26T21:16:23+08:00","dateModified":"2025-05-26T21:21:30+08:00","datePublished":"2025-05-26T21:16:23+08:00","description":"","headline":"JavaScript-面向对象编程","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/","keywords":"JavaScript, 前端"}</script>
+    <meta name="description" content="JavaScript的所有数据都可以看成对象，那是不是我们已经在使用面向对象编程了呢？ 当然不是。如果我们只使用Number、Array、string以及基本的&#123;...&#125;定义的对象，还无法发挥出面向对象编程的威力。 JavaScript的面向对象编程和大多数其他语言如Java、C#的面向对象编程都不太一样。如果你熟悉Java或C#，很好，你一定明白面向对象的两个基本概念：  类">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="JavaScript-面向对象编程">
+<meta property="og:url" content="https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="JavaScript的所有数据都可以看成对象，那是不是我们已经在使用面向对象编程了呢？ 当然不是。如果我们只使用Number、Array、string以及基本的&#123;...&#125;定义的对象，还无法发挥出面向对象编程的威力。 JavaScript的面向对象编程和大多数其他语言如Java、C#的面向对象编程都不太一样。如果你熟悉Java或C#，很好，你一定明白面向对象的两个基本概念：  类">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://liaoxuefeng.com/books/javascript/oop/proto.jpg">
+<meta property="og:image" content="https://liaoxuefeng.com/books/javascript/oop/create-object/prototypes.jpg">
+<meta property="og:image" content="https://liaoxuefeng.com/books/javascript/oop/create-object/proto-share.jpg">
+<meta property="og:image" content="https://liaoxuefeng.com/books/javascript/oop/prototype/prototype-chain.jpg">
+<meta property="og:image" content="https://liaoxuefeng.com/books/javascript/oop/prototype/prototype-inherit.jpg">
+<meta property="article:published_time" content="2025-05-26T13:16:23.000Z">
+<meta property="article:modified_time" content="2025-05-26T13:21:30.222Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="JavaScript">
+<meta property="article:tag" content="前端">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liaoxuefeng.com/books/javascript/oop/proto.jpg">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            JavaScript-面向对象编程
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2025-05-26T21:16:23+08:00">
+	
+		    2025 年 5 月 26 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/JavaScript/">JavaScript</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <p>JavaScript的所有数据都可以看成对象，那是不是我们已经在使用面向对象编程了呢？</p>
+<p>当然不是。如果我们只使用<code>Number</code>、<code>Array</code>、<code>string</code>以及基本的<code>&#123;...&#125;</code>定义的对象，还无法发挥出面向对象编程的威力。</p>
+<p>JavaScript的面向对象编程和大多数其他语言如Java、C#的面向对象编程都不太一样。如果你熟悉Java或C#，很好，你一定明白面向对象的两个基本概念：</p>
+<ol>
+<li>类：类是对象的类型模板，例如，定义<code>Student</code>类来表示学生，类本身是一种类型，<code>Student</code>表示学生类型，但不表示任何具体的某个学生；</li>
+<li>实例：实例是根据类创建的对象，例如，根据<code>Student</code>类可以创建出<code>xiaoming</code>、<code>xiaohong</code>、<code>xiaojun</code>等多个实例，每个实例表示一个具体的学生，他们全都属于<code>Student</code>类型。</li>
+</ol>
+<p>所以，类和实例是大多数面向对象编程语言的基本概念。</p>
+<p>不过，在JavaScript中，这个概念需要改一改。JavaScript不区分类和实例的概念，而是通过原型（prototype）来实现面向对象编程。</p>
+<p>原型是指当我们想要创建<code>xiaoming</code>这个具体的学生时，我们并没有一个<code>Student</code>类型可用。那怎么办？恰好有这么一个现成的对象：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> robot = &#123;</span><br><span class="line">    <span class="attr">name</span>: <span class="string">&#x27;Robot&#x27;</span>,</span><br><span class="line">    <span class="attr">height</span>: <span class="number">1.6</span>,</span><br><span class="line">    <span class="attr">run</span>: <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">        <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="variable language_">this</span>.<span class="property">name</span> + <span class="string">&#x27; is running...&#x27;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>我们看这个<code>robot</code>对象有名字，有身高，还会跑，有点像小明，干脆就根据它来“创建”小明得了！</p>
+<p>于是我们把它改名为<code>Student</code>，然后创建出<code>xiaoming</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="title class_">Student</span> = &#123;</span><br><span class="line">    <span class="attr">name</span>: <span class="string">&#x27;Robot&#x27;</span>,</span><br><span class="line">    <span class="attr">height</span>: <span class="number">1.2</span>,</span><br><span class="line">    <span class="attr">run</span>: <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">        <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="variable language_">this</span>.<span class="property">name</span> + <span class="string">&#x27; is running...&#x27;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> xiaoming = &#123;</span><br><span class="line">    <span class="attr">name</span>: <span class="string">&#x27;小明&#x27;</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">xiaoming.<span class="property">__proto__</span> = <span class="title class_">Student</span>;</span><br></pre></td></tr></table></figure>
+<p>注意最后一行代码把<code>xiaoming</code>的原型指向了对象<code>Student</code>，看上去<code>xiaoming</code>仿佛是从<code>Student</code>继承下来的：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">xiaoming.<span class="property">name</span>; <span class="comment">// &#x27;小明&#x27;</span></span><br><span class="line">xiaoming.<span class="title function_">run</span>(); <span class="comment">// 小明 is running...</span></span><br></pre></td></tr></table></figure>
+<p><code>xiaoming</code>有自己的<code>name</code>属性，但并没有定义<code>run()</code>方法。不过，由于小明是从<code>Student</code>继承而来，只要<code>Student</code>有<code>run()</code>方法，<code>xiaoming</code>也可以调用：</p>
+<p><img src="https://liaoxuefeng.com/books/javascript/oop/proto.jpg" alt="xiaoming-prototype"></p>
+<p>JavaScript的原型链和Java的Class区别就在，它没有“Class”的概念，所有对象都是实例，所谓继承关系不过是把一个对象的原型指向另一个对象而已。</p>
+<p>如果你把<code>xiaoming</code>的原型指向其他对象：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="title class_">Bird</span> = &#123;</span><br><span class="line">    <span class="attr">fly</span>: <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">        <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="variable language_">this</span>.<span class="property">name</span> + <span class="string">&#x27; is flying...&#x27;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">xiaoming.<span class="property">__proto__</span> = <span class="title class_">Bird</span>;</span><br></pre></td></tr></table></figure>
+<p>现在<code>xiaoming</code>已经无法<code>run()</code>了，他已经变成了一只鸟：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xiaoming.<span class="title function_">fly</span>(); <span class="comment">// 小明 is flying...</span></span><br></pre></td></tr></table></figure>
+<p>在JavaScrip代码运行时期，你可以把<code>xiaoming</code>从<code>Student</code>变成<code>Bird</code>，或者变成任何对象。</p>
+<p><em>请注意</em>，上述代码仅用于演示目的。在编写JavaScript代码时，不要直接用<code>obj.__proto__</code>去改变一个对象的原型，并且，低版本的IE也无法使用<code>__proto__</code>。<code>Object.create()</code>方法可以传入一个原型对象，并创建一个基于该原型的新对象，但是新对象什么属性都没有，因此，我们可以编写一个函数来创建<code>xiaoming</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 原型对象:</span></span><br><span class="line"><span class="keyword">let</span> <span class="title class_">Student</span> = &#123;</span><br><span class="line">    <span class="attr">name</span>: <span class="string">&#x27;Robot&#x27;</span>,</span><br><span class="line">    <span class="attr">height</span>: <span class="number">1.2</span>,</span><br><span class="line">    <span class="attr">run</span>: <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">        <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="variable language_">this</span>.<span class="property">name</span> + <span class="string">&#x27; is running...&#x27;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">createStudent</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="comment">// 基于Student原型创建一个新对象:</span></span><br><span class="line">    <span class="keyword">let</span> s = <span class="title class_">Object</span>.<span class="title function_">create</span>(<span class="title class_">Student</span>);</span><br><span class="line">    <span class="comment">// 初始化新对象:</span></span><br><span class="line">    s.<span class="property">name</span> = name;</span><br><span class="line">    <span class="keyword">return</span> s;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> xiaoming = <span class="title function_">createStudent</span>(<span class="string">&#x27;小明&#x27;</span>);</span><br><span class="line">xiaoming.<span class="title function_">run</span>(); <span class="comment">// 小明 is running...</span></span><br><span class="line">xiaoming.<span class="property">__proto__</span> === <span class="title class_">Student</span>; <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+<p>这是创建原型继承的一种方法，JavaScript还有其他方法来创建对象，我们在后面会一一讲到。</p>
+<p>JavaScript对每个创建的对象都会设置一个原型，指向它的原型对象。</p>
+<p>当我们用<code>obj.xxx</code>访问一个对象的属性时，JavaScript引擎先在当前对象上查找该属性，如果没有找到，就到其原型对象上找，如果还没有找到，就一直上溯到<code>Object.prototype</code>对象，最后，如果还没有找到，就只能返回<code>undefined</code>。</p>
+<p>例如，创建一个<code>Array</code>对象：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> arr = [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>];</span><br></pre></td></tr></table></figure>
+<p>其原型链是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">       null</span><br><span class="line">         ▲</span><br><span class="line">         │</span><br><span class="line">┌─────────────────┐</span><br><span class="line">│Object.prototype │</span><br><span class="line">└─────────────────┘</span><br><span class="line">         ▲</span><br><span class="line">         │</span><br><span class="line">┌─────────────────┐</span><br><span class="line">│ Array.prototype │</span><br><span class="line">└─────────────────┘</span><br><span class="line">         ▲</span><br><span class="line">         │</span><br><span class="line">┌─────────────────┐</span><br><span class="line">│       arr       │</span><br><span class="line">└─────────────────┘</span><br></pre></td></tr></table></figure>
+<p><code>Array.prototype</code>定义了<code>indexOf()</code>、<code>shift()</code>等方法，因此你可以在所有的<code>Array</code>对象上直接调用这些方法。</p>
+<p>当我们创建一个函数时：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">foo</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>函数也是一个对象，它的原型链是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">        null</span><br><span class="line">          ▲</span><br><span class="line">          │</span><br><span class="line">┌───────────────────┐</span><br><span class="line">│ Object.prototype  │</span><br><span class="line">└───────────────────┘</span><br><span class="line">          ▲</span><br><span class="line">          │</span><br><span class="line">┌───────────────────┐</span><br><span class="line">│Function.prototype │</span><br><span class="line">└───────────────────┘</span><br><span class="line">          ▲</span><br><span class="line">          │</span><br><span class="line">┌───────────────────┐</span><br><span class="line">│        foo        │</span><br><span class="line">└───────────────────┘</span><br></pre></td></tr></table></figure>
+<p>由于<code>Function.prototype</code>定义了<code>apply()</code>等方法，因此，所有函数都可以调用<code>apply()</code>方法。</p>
+<p>很容易想到，如果原型链很长，那么访问一个对象的属性就会因为花更多的时间查找而变得更慢，因此要注意不要把原型链搞得太长。</p>
+<h3 id="构造函数">构造函数</h3>
+<p>除了直接用<code>&#123; ... &#125;</code>创建一个对象外，JavaScript还可以用一种构造函数的方法来创建对象。它的用法是，先定义一个构造函数：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">Student</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">hello</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">        <span class="title function_">alert</span>(<span class="string">&#x27;Hello, &#x27;</span> + <span class="variable language_">this</span>.<span class="property">name</span> + <span class="string">&#x27;!&#x27;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>你会问，咦，这不是一个普通函数吗？</p>
+<p>这确实是一个普通函数，但是在JavaScript中，可以用关键字<code>new</code>来调用这个函数，并返回一个对象：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> xiaoming = <span class="keyword">new</span> <span class="title class_">Student</span>(<span class="string">&#x27;小明&#x27;</span>);</span><br><span class="line">xiaoming.<span class="property">name</span>; <span class="comment">// &#x27;小明&#x27;</span></span><br><span class="line">xiaoming.<span class="title function_">hello</span>(); <span class="comment">// Hello, 小明!</span></span><br></pre></td></tr></table></figure>
+<p><em>注意</em>，如果不写<code>new</code>，这就是一个普通函数，它返回<code>undefined</code>。但是，如果写了<code>new</code>，它就变成了一个构造函数，它绑定的<code>this</code>指向新创建的对象，并默认返回<code>this</code>，也就是说，不需要在最后写<code>return this;</code>。</p>
+<p>新创建的<code>xiaoming</code>的原型链是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">       null</span><br><span class="line">         ▲</span><br><span class="line">         │</span><br><span class="line">┌─────────────────┐</span><br><span class="line">│Object.prototype │</span><br><span class="line">└─────────────────┘</span><br><span class="line">         ▲</span><br><span class="line">         │</span><br><span class="line">┌─────────────────┐</span><br><span class="line">│Student.prototype│</span><br><span class="line">└─────────────────┘</span><br><span class="line">         ▲</span><br><span class="line">         │</span><br><span class="line">┌─────────────────┐</span><br><span class="line">│    xiaoming     │</span><br><span class="line">└─────────────────┘</span><br></pre></td></tr></table></figure>
+<p>也就是说，<code>xiaoming</code>的原型指向函数<code>Student</code>的原型。如果你又创建了<code>xiaohong</code>、<code>xiaojun</code>，那么这些对象的原型与<code>xiaoming</code>是一样的：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">              null</span><br><span class="line">                ▲</span><br><span class="line">                │</span><br><span class="line">       ┌─────────────────┐</span><br><span class="line">       │Object.prototype │</span><br><span class="line">       └─────────────────┘</span><br><span class="line">                ▲</span><br><span class="line">                │</span><br><span class="line">       ┌─────────────────┐</span><br><span class="line">       │Student.prototype│</span><br><span class="line">       └─────────────────┘</span><br><span class="line">         ▲      ▲      ▲</span><br><span class="line">         │      │      │</span><br><span class="line">┌─────────┐┌─────────┐┌─────────┐</span><br><span class="line">│xiaoming ││xiaohong ││ xiaojun │</span><br><span class="line">└─────────┘└─────────┘└─────────┘</span><br></pre></td></tr></table></figure>
+<p>用<code>new Student()</code>创建的对象还从原型上获得了一个<code>constructor</code>属性，它指向函数<code>Student</code>本身：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">xiaoming.<span class="property">constructor</span> === <span class="title class_">Student</span>.<span class="property"><span class="keyword">prototype</span></span>.<span class="property">constructor</span>; <span class="comment">// true</span></span><br><span class="line"><span class="title class_">Student</span>.<span class="property"><span class="keyword">prototype</span></span>.<span class="property">constructor</span> === <span class="title class_">Student</span>; <span class="comment">// true</span></span><br><span class="line"></span><br><span class="line"><span class="title class_">Object</span>.<span class="title function_">getPrototypeOf</span>(xiaoming) === <span class="title class_">Student</span>.<span class="property"><span class="keyword">prototype</span></span>; <span class="comment">// true</span></span><br><span class="line"></span><br><span class="line">xiaoming <span class="keyword">instanceof</span> <span class="title class_">Student</span>; <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+<p>看晕了吧？用一张图来表示这些乱七八糟的关系就是：</p>
+<p><img src="https://liaoxuefeng.com/books/javascript/oop/create-object/prototypes.jpg" alt="prototypes"></p>
+<p>红色箭头是原型链。注意，<code>Student.prototype</code>指向的对象就是<code>xiaoming</code>、<code>xiaohong</code>的原型对象，这个原型对象自己还有个属性<code>constructor</code>，指向<code>Student</code>函数本身。</p>
+<p>另外，函数<code>Student</code>恰好有个属性<code>prototype</code>指向<code>xiaoming</code>、<code>xiaohong</code>的原型对象，但是<code>xiaoming</code>、<code>xiaohong</code>这些对象可没有<code>prototype</code>这个属性，不过可以用<code>__proto__</code>这个非标准用法来查看。</p>
+<p>现在我们就认为<code>xiaoming</code>、<code>xiaohong</code>这些对象“继承”自<code>Student</code>。</p>
+<p>不过还有一个小问题，注意观察：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">xiaoming.<span class="property">name</span>; <span class="comment">// &#x27;小明&#x27;</span></span><br><span class="line">xiaohong.<span class="property">name</span>; <span class="comment">// &#x27;小红&#x27;</span></span><br><span class="line">xiaoming.<span class="property">hello</span>; <span class="comment">// function: Student.hello()</span></span><br><span class="line">xiaohong.<span class="property">hello</span>; <span class="comment">// function: Student.hello()</span></span><br><span class="line">xiaoming.<span class="property">hello</span> === xiaohong.<span class="property">hello</span>; <span class="comment">// false</span></span><br></pre></td></tr></table></figure>
+<p><code>xiaoming</code>和<code>xiaohong</code>各自的<code>name</code>不同，这是对的，否则我们无法区分谁是谁了。</p>
+<p><code>xiaoming</code>和<code>xiaohong</code>各自的<code>hello</code>是一个函数，但它们是两个不同的函数，虽然函数名称和代码都是相同的！</p>
+<p>如果我们通过<code>new Student()</code>创建了很多对象，这些对象的<code>hello</code>函数实际上只需要共享同一个函数就可以了，这样可以节省很多内存。</p>
+<p>要让创建的对象共享一个<code>hello</code>函数，根据对象的属性查找原则，我们只要把<code>hello</code>函数移动到<code>xiaoming</code>、<code>xiaohong</code>这些对象共同的原型上就可以了，也就是<code>Student.prototype</code>：</p>
+<p><img src="https://liaoxuefeng.com/books/javascript/oop/create-object/proto-share.jpg" alt="protos2"></p>
+<p>修改代码如下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">Student</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="title class_">Student</span>.<span class="property"><span class="keyword">prototype</span></span>.<span class="property">hello</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">    <span class="title function_">alert</span>(<span class="string">&#x27;Hello, &#x27;</span> + <span class="variable language_">this</span>.<span class="property">name</span> + <span class="string">&#x27;!&#x27;</span>);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>用<code>new</code>创建基于原型的JavaScript的对象就是这么简单！</p>
+<h3 id="忘记写new怎么办">忘记写new怎么办</h3>
+<p>如果一个函数被定义为用于创建对象的构造函数，但是调用时忘记了写<code>new</code>怎么办？</p>
+<p>在strict模式下，<code>this.name = name</code>将报错，因为<code>this</code>绑定为<code>undefined</code>，在非strict模式下，<code>this.name = name</code>不报错，因为<code>this</code>绑定为<code>window</code>，于是无意间创建了全局变量<code>name</code>，并且返回<code>undefined</code>，这个结果更糟糕。</p>
+<p>所以，调用构造函数千万不要忘记写<code>new</code>。为了区分普通函数和构造函数，按照约定，构造函数首字母应当大写，而普通函数首字母应当小写，这样，一些语法检查工具如<a target="_blank" rel="noopener" href="https://www.jslint.com/">jslint</a>将可以帮你检测到漏写的<code>new</code>。</p>
+<p>最后，我们还可以编写一个<code>createStudent()</code>函数，在内部封装所有的<code>new</code>操作。一个常用的编程模式像这样：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">Student</span>(<span class="params">props</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = props.<span class="property">name</span> || <span class="string">&#x27;匿名&#x27;</span>; <span class="comment">// 默认值为&#x27;匿名&#x27;</span></span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">grade</span> = props.<span class="property">grade</span> || <span class="number">1</span>; <span class="comment">// 默认值为1</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="title class_">Student</span>.<span class="property"><span class="keyword">prototype</span></span>.<span class="property">hello</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">    <span class="title function_">alert</span>(<span class="string">&#x27;Hello, &#x27;</span> + <span class="variable language_">this</span>.<span class="property">name</span> + <span class="string">&#x27;!&#x27;</span>);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">createStudent</span>(<span class="params">props</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">Student</span>(props || &#123;&#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个<code>createStudent()</code>函数有几个巨大的优点：一是不需要<code>new</code>来调用，二是参数非常灵活，可以不传，也可以这么传：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> xiaoming = <span class="title function_">createStudent</span>(&#123;</span><br><span class="line">    <span class="attr">name</span>: <span class="string">&#x27;小明&#x27;</span></span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">xiaoming.<span class="property">grade</span>; <span class="comment">// 1</span></span><br></pre></td></tr></table></figure>
+<p>如果创建的对象有很多属性，我们只需要传递需要的某些属性，剩下的属性可以用默认值。由于参数是一个Object，我们无需记忆参数的顺序。如果恰好从<code>JSON</code>拿到了一个对象，就可以直接创建出<code>xiaoming</code>。</p>
+<h3 id="练习">练习</h3>
+<p>请利用构造函数定义<code>Cat</code>，并让所有的Cat对象有一个<code>name</code>属性，并共享一个方法<code>say()</code>，返回字符串<code>'Hello, xxx!'</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">function Cat(name) &#123;</span><br><span class="line">    // TODO:</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 测试:</span><br><span class="line">let kitty = new Cat(&#x27;Kitty&#x27;);</span><br><span class="line">let doraemon = new Cat(&#x27;哆啦A梦&#x27;);</span><br><span class="line">if (kitty &amp;&amp; kitty.name === &#x27;Kitty&#x27;</span><br><span class="line">    &amp;&amp; kitty.say</span><br><span class="line">    &amp;&amp; typeof kitty.say === &#x27;function&#x27;</span><br><span class="line">    &amp;&amp; kitty.say() === &#x27;Hello, Kitty!&#x27;</span><br><span class="line">    &amp;&amp; kitty.say === doraemon.say</span><br><span class="line">) &#123;</span><br><span class="line">    console.log(&#x27;测试通过!&#x27;);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    console.log(&#x27;测试失败!&#x27;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在传统的基于Class的语言如Java、C++中，继承的本质是扩展一个已有的Class，并生成新的Subclass。</p>
+<p>由于这类语言严格区分类和实例，继承实际上是类型的扩展。但是，JavaScript由于采用原型继承，我们无法直接扩展一个Class，因为根本不存在Class这种类型。</p>
+<p>但是办法还是有的。我们先回顾<code>Student</code>构造函数：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">Student</span>(<span class="params">props</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = props.<span class="property">name</span> || <span class="string">&#x27;Unnamed&#x27;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="title class_">Student</span>.<span class="property"><span class="keyword">prototype</span></span>.<span class="property">hello</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">    <span class="title function_">alert</span>(<span class="string">&#x27;Hello, &#x27;</span> + <span class="variable language_">this</span>.<span class="property">name</span> + <span class="string">&#x27;!&#x27;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以及<code>Student</code>的原型链：</p>
+<p><img src="https://liaoxuefeng.com/books/javascript/oop/prototype/prototype-chain.jpg" alt="js-proto"></p>
+<p>现在，我们要基于<code>Student</code>扩展出<code>PrimaryStudent</code>，可以先定义出<code>PrimaryStudent</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">PrimaryStudent</span>(<span class="params">props</span>) &#123;</span><br><span class="line">    <span class="comment">// 调用Student构造函数，绑定this变量:</span></span><br><span class="line">    <span class="title class_">Student</span>.<span class="title function_">call</span>(<span class="variable language_">this</span>, props);</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">grade</span> = props.<span class="property">grade</span> || <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是，调用了<code>Student</code>构造函数不等于继承了<code>Student</code>，<code>PrimaryStudent</code>创建的对象的原型是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">new PrimaryStudent() --&gt; PrimaryStudent.prototype --&gt; Object.prototype --&gt; null</span><br></pre></td></tr></table></figure>
+<p>必须想办法把原型链修改为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">new PrimaryStudent() --&gt; PrimaryStudent.prototype --&gt; Student.prototype --&gt; Object.prototype --&gt; null</span><br></pre></td></tr></table></figure>
+<p>这样，原型链对了，继承关系就对了。新的基于<code>PrimaryStudent</code>创建的对象不但能调用<code>PrimaryStudent.prototype</code>定义的方法，也可以调用<code>Student.prototype</code>定义的方法。</p>
+<p>如果你想用最简单粗暴的方法这么干：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title class_">PrimaryStudent</span>.<span class="property"><span class="keyword">prototype</span></span> = <span class="title class_">Student</span>.<span class="property"><span class="keyword">prototype</span></span>;</span><br></pre></td></tr></table></figure>
+<p>是不行的！如果这样的话，<code>PrimaryStudent</code>和<code>Student</code>共享一个原型对象，那还要定义<code>PrimaryStudent</code>干啥？</p>
+<p>我们必须借助一个中间对象来实现正确的原型链，这个中间对象的原型要指向<code>Student.prototype</code>。为了实现这一点，参考道爷（就是发明JSON的那个道格拉斯）的代码，中间对象可以用一个空函数<code>F</code>来实现：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// PrimaryStudent构造函数:</span></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">PrimaryStudent</span>(<span class="params">props</span>) &#123;</span><br><span class="line">    <span class="title class_">Student</span>.<span class="title function_">call</span>(<span class="variable language_">this</span>, props);</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">grade</span> = props.<span class="property">grade</span> || <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 空函数F:</span></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">F</span>(<span class="params"></span>) &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 把F的原型指向Student.prototype:</span></span><br><span class="line">F.<span class="property"><span class="keyword">prototype</span></span> = <span class="title class_">Student</span>.<span class="property"><span class="keyword">prototype</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 把PrimaryStudent的原型指向一个新的F对象，F对象的原型正好指向Student.prototype:</span></span><br><span class="line"><span class="title class_">PrimaryStudent</span>.<span class="property"><span class="keyword">prototype</span></span> = <span class="keyword">new</span> <span class="title function_">F</span>();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 把PrimaryStudent原型的构造函数修复为PrimaryStudent:</span></span><br><span class="line"><span class="title class_">PrimaryStudent</span>.<span class="property"><span class="keyword">prototype</span></span>.<span class="property">constructor</span> = <span class="title class_">PrimaryStudent</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 继续在PrimaryStudent原型（就是new F()对象）上定义方法：</span></span><br><span class="line"><span class="title class_">PrimaryStudent</span>.<span class="property"><span class="keyword">prototype</span></span>.<span class="property">getGrade</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">grade</span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建xiaoming:</span></span><br><span class="line"><span class="keyword">let</span> xiaoming = <span class="keyword">new</span> <span class="title class_">PrimaryStudent</span>(&#123;</span><br><span class="line">    <span class="attr">name</span>: <span class="string">&#x27;小明&#x27;</span>,</span><br><span class="line">    <span class="attr">grade</span>: <span class="number">2</span></span><br><span class="line">&#125;);</span><br><span class="line">xiaoming.<span class="property">name</span>; <span class="comment">// &#x27;小明&#x27;</span></span><br><span class="line">xiaoming.<span class="property">grade</span>; <span class="comment">// 2</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 验证原型:</span></span><br><span class="line">xiaoming.<span class="property">__proto__</span> === <span class="title class_">PrimaryStudent</span>.<span class="property"><span class="keyword">prototype</span></span>; <span class="comment">// true</span></span><br><span class="line">xiaoming.<span class="property">__proto__</span>.<span class="property">__proto__</span> === <span class="title class_">Student</span>.<span class="property"><span class="keyword">prototype</span></span>; <span class="comment">// true</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 验证继承关系:</span></span><br><span class="line">xiaoming <span class="keyword">instanceof</span> <span class="title class_">PrimaryStudent</span>; <span class="comment">// true</span></span><br><span class="line">xiaoming <span class="keyword">instanceof</span> <span class="title class_">Student</span>; <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+<p>用一张图来表示新的原型链：</p>
+<p><img src="https://liaoxuefeng.com/books/javascript/oop/prototype/prototype-inherit.jpg" alt="js-proto-inherit"></p>
+<p>注意，函数<code>F</code>仅用于桥接，我们仅创建了一个<code>new F()</code>实例，而且，没有改变原有的<code>Student</code>定义的原型链。</p>
+<p>如果把继承这个动作用一个<code>inherits()</code>函数封装起来，还可以隐藏<code>F</code>的定义，并简化代码：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">inherits</span>(<span class="params">Child, Parent</span>) &#123;</span><br><span class="line">    <span class="keyword">let</span> F = <span class="keyword">function</span> (<span class="params"></span>) &#123;&#125;;</span><br><span class="line">    F.<span class="property"><span class="keyword">prototype</span></span> = <span class="title class_">Parent</span>.<span class="property"><span class="keyword">prototype</span></span>;</span><br><span class="line">    <span class="title class_">Child</span>.<span class="property"><span class="keyword">prototype</span></span> = <span class="keyword">new</span> <span class="title function_">F</span>();</span><br><span class="line">    <span class="title class_">Child</span>.<span class="property"><span class="keyword">prototype</span></span>.<span class="property">constructor</span> = <span class="title class_">Child</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个<code>inherits()</code>函数可以复用：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">Student</span>(<span class="params">props</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = props.<span class="property">name</span> || <span class="string">&#x27;Unnamed&#x27;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="title class_">Student</span>.<span class="property"><span class="keyword">prototype</span></span>.<span class="property">hello</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">    <span class="title function_">alert</span>(<span class="string">&#x27;Hello, &#x27;</span> + <span class="variable language_">this</span>.<span class="property">name</span> + <span class="string">&#x27;!&#x27;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">PrimaryStudent</span>(<span class="params">props</span>) &#123;</span><br><span class="line">    <span class="title class_">Student</span>.<span class="title function_">call</span>(<span class="variable language_">this</span>, props);</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">grade</span> = props.<span class="property">grade</span> || <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现原型继承链:</span></span><br><span class="line"><span class="title function_">inherits</span>(<span class="title class_">PrimaryStudent</span>, <span class="title class_">Student</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 绑定其他方法到PrimaryStudent原型:</span></span><br><span class="line"><span class="title class_">PrimaryStudent</span>.<span class="property"><span class="keyword">prototype</span></span>.<span class="property">getGrade</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">grade</span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h3 id="小结">小结</h3>
+<p>JavaScript的原型继承实现方式就是：</p>
+<ol>
+<li>定义新的构造函数，并在内部用<code>call()</code>调用希望“继承”的构造函数，并绑定<code>this</code>；</li>
+<li>借助中间函数<code>F</code>实现原型链继承，最好通过封装的<code>inherits</code>函数完成；</li>
+<li>继续在新的构造函数的原型上定义新方法。</li>
+</ol>
+<h2 id="class继承">class继承</h2>
+<p>在上面的章节中我们看到了JavaScript的对象模型是基于原型实现的，特点是简单，缺点是理解起来比传统的类－实例模型要困难，最大的缺点是继承的实现需要编写大量代码，并且需要正确实现原型链。</p>
+<p>有没有更简单的写法？有！</p>
+<p>新的关键字<code>class</code>从ES6开始正式被引入到JavaScript中。<code>class</code>的目的就是让定义类更简单。</p>
+<p>我们先回顾用函数实现<code>Student</code>的方法：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">Student</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="title class_">Student</span>.<span class="property"><span class="keyword">prototype</span></span>.<span class="property">hello</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">    <span class="title function_">alert</span>(<span class="string">&#x27;Hello, &#x27;</span> + <span class="variable language_">this</span>.<span class="property">name</span> + <span class="string">&#x27;!&#x27;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果用新的<code>class</code>关键字来编写<code>Student</code>，可以这样写：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Student</span> &#123;</span><br><span class="line">    <span class="title function_">constructor</span>(<span class="params">name</span>) &#123;</span><br><span class="line">        <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="title function_">hello</span>(<span class="params"></span>) &#123;</span><br><span class="line">        <span class="title function_">alert</span>(<span class="string">&#x27;Hello, &#x27;</span> + <span class="variable language_">this</span>.<span class="property">name</span> + <span class="string">&#x27;!&#x27;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>比较一下就可以发现，<code>class</code>的定义包含了构造函数<code>constructor</code>和定义在原型对象上的函数<code>hello()</code>（注意没有<code>function</code>关键字），这样就避免了<code>Student.prototype.hello = function () &#123;...&#125;</code>这样分散的代码。</p>
+<p>最后，创建一个<code>Student</code>对象代码和前面章节完全一样：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> xiaoming = <span class="keyword">new</span> <span class="title class_">Student</span>(<span class="string">&#x27;小明&#x27;</span>);</span><br><span class="line">xiaoming.<span class="title function_">hello</span>();</span><br></pre></td></tr></table></figure>
+<h3 id="class继承-2">class继承</h3>
+<p>用<code>class</code>定义对象的另一个巨大的好处是继承更方便了。想一想我们从<code>Student</code>派生一个<code>PrimaryStudent</code>需要编写的代码量。现在，原型继承的中间对象，原型对象的构造函数等等都不需要考虑了，直接通过<code>extends</code>来实现：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">PrimaryStudent</span> <span class="keyword">extends</span> <span class="title class_ inherited__">Student</span> &#123;</span><br><span class="line">    <span class="title function_">constructor</span>(<span class="params">name, grade</span>) &#123;</span><br><span class="line">        <span class="variable language_">super</span>(name); <span class="comment">// 记得用super调用父类的构造方法!</span></span><br><span class="line">        <span class="variable language_">this</span>.<span class="property">grade</span> = grade;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="title function_">myGrade</span>(<span class="params"></span>) &#123;</span><br><span class="line">        <span class="title function_">alert</span>(<span class="string">&#x27;I am at grade &#x27;</span> + <span class="variable language_">this</span>.<span class="property">grade</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意<code>PrimaryStudent</code>的定义也是class关键字实现的，而<code>extends</code>则表示原型链对象来自<code>Student</code>。子类的构造函数可能会与父类不太相同，例如，<code>PrimaryStudent</code>需要<code>name</code>和<code>grade</code>两个参数，并且需要通过<code>super(name)</code>来调用父类的构造函数，否则父类的<code>name</code>属性无法正常初始化。</p>
+<p><code>PrimaryStudent</code>已经自动获得了父类<code>Student</code>的<code>hello</code>方法，我们又在子类中定义了新的<code>myGrade</code>方法。</p>
+<p>ES6引入的<code>class</code>和原有的JavaScript原型继承有什么区别呢？实际上它们没有任何区别，<code>class</code>的作用就是让JavaScript引擎去实现原来需要我们自己编写的原型链代码。简而言之，用<code>class</code>的好处就是极大地简化了原型链代码。</p>
+<h3 id="练习-2">练习</h3>
+<p>请利用<code>class</code>重新定义<code>Cat</code>，并让它从已有的<code>Animal</code>继承，然后新增一个方法<code>say()</code>，返回字符串<code>'Hello, xxx!'</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">class Animal &#123;</span><br><span class="line">    constructor(name) &#123;</span><br><span class="line">        this.name = name;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// FIXME:</span><br><span class="line">class Cat ???</span><br><span class="line"></span><br><span class="line">// 测试:</span><br><span class="line">let kitty = new Cat(&#x27;Kitty&#x27;);</span><br><span class="line">let doraemon = new Cat(&#x27;哆啦A梦&#x27;);</span><br><span class="line">if ((new Cat(&#x27;x&#x27;) instanceof Animal)</span><br><span class="line">    &amp;&amp; kitty </span><br><span class="line">    &amp;&amp; kitty.name === &#x27;Kitty&#x27;</span><br><span class="line">    &amp;&amp; kitty.say</span><br><span class="line">    &amp;&amp; typeof kitty.say === &#x27;function&#x27;</span><br><span class="line">    &amp;&amp; kitty.say() === &#x27;Hello, Kitty!&#x27;</span><br><span class="line">    &amp;&amp; kitty.say === doraemon.say)</span><br><span class="line">&#123;</span><br><span class="line">    console.log(&#x27;测试通过!&#x27;);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    console.log(&#x27;测试失败!&#x27;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个练习需要浏览器支持ES6的<code>class</code>，如果遇到SyntaxError，则说明浏览器不支持<code>class</code>语法，请换一个最新的浏览器试试。</p>
+<hr>
+<hr>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/JavaScript/" rel="tag">JavaScript</a> <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/%E5%89%8D%E7%AB%AF/" rel="tag">前端</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../JavaScript-%E6%B5%8F%E8%A7%88%E5%99%A8/"
+                    data-tooltip="JavaScript-浏览器"
+                    aria-label="上一篇: JavaScript-浏览器"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../JavaScript-%E6%A0%87%E5%87%86%E5%AF%B9%E8%B1%A1/"
+                    data-tooltip="JavaScript-标准对象"
+                    aria-label="下一篇: JavaScript-标准对象"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../JavaScript-%E6%B5%8F%E8%A7%88%E5%99%A8/"
+                    data-tooltip="JavaScript-浏览器"
+                    aria-label="上一篇: JavaScript-浏览器"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../JavaScript-%E6%A0%87%E5%87%86%E5%AF%B9%E8%B1%A1/"
+                    data-tooltip="JavaScript-标准对象"
+                    aria-label="下一篇: JavaScript-标准对象"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/26/JavaScript/JavaScript-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>Kein目前居住在東京和澳門.</br>熱愛旅遊.已探訪日本40多個都道府縣.曾自駕環繞日本半個本州.</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macao
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 134 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>
