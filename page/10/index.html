@@ -301,6 +301,390 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
+                            aria-label=": 2.linux安装与包管理"
+                        >
+                            2.linux安装与包管理
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2020-05-07T16:29:52+08:00">
+	
+		    2020 年 5 月 7 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h1>Linux 安装与软件包管理</h1>
+<h2 id="1-硬盘分区布局">1. 硬盘分区布局</h2>
+<h3 id="1-1-标准目录结构">1.1 标准目录结构</h3>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/home     # 普通用户文件存储目录</span><br><span class="line">/var      # 存放日志文件、邮件队列等可变数据</span><br><span class="line">/usr      # 存放程序、库文件、文档等(通常占用空间最大)</span><br><span class="line">/boot     # 引导分区，通常100MB左右足够</span><br><span class="line">/swap     # 交换分区(建议大小为物理内存的1-2倍)</span><br></pre></td></tr></table></figure>
+<h2 id="2-引导加载程序-GRUB">2. 引导加载程序(GRUB)</h2>
+<h3 id="2-1-传统GRUB-GRUB-Legacy">2.1 传统GRUB (GRUB Legacy)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">grub-install /dev/sda   <span class="comment"># 安装GRUB到指定设备</span></span><br><span class="line">grub-install -v         <span class="comment"># 显示详细安装信息</span></span><br></pre></td></tr></table></figure>
+<h4 id="配置文件关键参数-boot-grub-menu-lst">配置文件关键参数(/boot/grub/menu.lst):</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">timeout      # 等待用户选择的时间(秒)</span><br><span class="line">default      # 默认启动项序号</span><br><span class="line">title        # 启动项标题</span><br><span class="line">root         # 指定根分区</span><br><span class="line">kernel       # 指定内核文件</span><br><span class="line">makeactive   # 激活分区</span><br><span class="line">chainloader  # 链式加载其他引导程序</span><br><span class="line">hiddenmenu   # 是否隐藏菜单</span><br></pre></td></tr></table></figure>
+<h3 id="2-2-GRUB2-现代Linux默认使用">2.2 GRUB2 (现代Linux默认使用)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">update-grub2   <span class="comment"># 更新GRUB2配置</span></span><br></pre></td></tr></table></figure>
+<h4 id="配置文件-etc-default-grub">配置文件(/etc/default/grub):</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">GRUB_DEFAULT                  # 默认启动项</span><br><span class="line">GRUB_HIDDEN_TIMEOUT           # 隐藏菜单超时</span><br><span class="line">GRUB_HIDDEN_TIMEOUT_QUIET     # 是否静默隐藏</span><br><span class="line">GRUB_TIMEOUT                  # 菜单显示时间</span><br><span class="line">GRUB_CMDLINE_LINUX_DEFAULT    # 默认内核参数</span><br><span class="line">GRUB_CMDLINE_LINUX            # 附加内核参数</span><br></pre></td></tr></table></figure>
+<h2 id="3-共享库管理">3. 共享库管理</h2>
+<h3 id="3-1-基本概念">3.1 基本概念</h3>
+<ul>
+<li><strong>共享库(Shared Library)</strong>: 通过动态链接方式被多个程序共同使用的库文件</li>
+<li>命名规则: <code>lib*.so*</code> (如 <code>libc.so.6</code>)</li>
+</ul>
+<h3 id="3-2-常用命令">3.2 常用命令</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ldd /bin/ls      <span class="comment"># 查看二进制文件依赖的共享库</span></span><br><span class="line">ldconfig         <span class="comment"># 重建共享库缓存</span></span><br><span class="line">ldconfig -p      <span class="comment"># 打印当前缓存内容</span></span><br></pre></td></tr></table></figure>
+<h3 id="3-3-共享库搜索顺序">3.3 共享库搜索顺序</h3>
+<ol>
+<li>可执行文件中的DT_RPATH或DT_RUNPATH段</li>
+<li>环境变量<code>LD_LIBRARY_PATH</code>指定的路径</li>
+<li><code>/etc/ld.so.cache</code>缓存中的路径(除非使用<code>-z nodeflib</code>选项)</li>
+<li>默认路径<code>/lib</code>和<code>/usr/lib</code>(除非使用<code>-z nodeflib</code>选项)</li>
+</ol>
+<h3 id="3-4-添加自定义库路径">3.4 添加自定义库路径</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 临时添加(当前会话有效)</span></span><br><span class="line"><span class="built_in">export</span> LD_LIBRARY_PATH=<span class="variable">$LD_LIBRARY_PATH</span>:/path/to/library</span><br><span class="line"></span><br><span class="line"><span class="comment"># 永久添加(需修改配置文件)</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;/path/to/library&quot;</span> &gt;&gt; /etc/ld.so.conf</span><br><span class="line">ldconfig</span><br></pre></td></tr></table></figure>
+<h2 id="4-Debian系包管理-Debian-Ubuntu等">4. Debian系包管理(Debian/Ubuntu等)</h2>
+<h3 id="4-1-包命名格式">4.1 包命名格式</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">tree_1.5.3-1_i386.deb</span><br><span class="line">├── 包名(tree)</span><br><span class="line">├── 版本号(1.5.3)</span><br><span class="line">├── 发布号(1)</span><br><span class="line">├── 架构(i386)</span><br><span class="line">└── 扩展名(.deb)</span><br></pre></td></tr></table></figure>
+<h3 id="4-2-dpkg命令-底层工具">4.2 dpkg命令(底层工具)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">dpkg -i package.deb       <span class="comment"># 安装包</span></span><br><span class="line">dpkg -r package           <span class="comment"># 移除包(保留配置)</span></span><br><span class="line">dpkg -P package           <span class="comment"># 完全清除包(包括配置)</span></span><br><span class="line">dpkg -l                   <span class="comment"># 列出已安装包</span></span><br><span class="line">dpkg -L package           <span class="comment"># 列出包安装的文件</span></span><br><span class="line">dpkg -s package           <span class="comment"># 显示包状态信息</span></span><br><span class="line">dpkg -S /path/to/file     <span class="comment"># 查找文件属于哪个包</span></span><br><span class="line">dpkg --configure package  <span class="comment"># 配置已解压的包</span></span><br><span class="line">dpkg --unpack package.deb <span class="comment"># 仅解压不配置</span></span><br></pre></td></tr></table></figure>
+<h3 id="4-3-apt-get命令-高级工具">4.3 apt-get命令(高级工具)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">apt-get update            <span class="comment"># 更新包数据库</span></span><br><span class="line">apt-get upgrade           <span class="comment"># 升级所有可升级包</span></span><br><span class="line">apt-get dist-upgrade      <span class="comment"># 智能升级(处理依赖变化)</span></span><br><span class="line">apt-get install package   <span class="comment"># 安装包</span></span><br><span class="line">apt-get remove package    <span class="comment"># 移除包</span></span><br><span class="line">apt-get clean             <span class="comment"># 清理下载的包文件</span></span><br><span class="line">apt-get -d install package <span class="comment"># 仅下载不安装</span></span><br><span class="line">apt-get -s install package <span class="comment"># 模拟安装(不实际执行)</span></span><br></pre></td></tr></table></figure>
+<h3 id="4-4-软件源配置-etc-apt-sources-list">4.4 软件源配置(/etc/apt/sources.list)</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">deb http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse</span><br><span class="line">↑         ↑                          ↑       ↑</span><br><span class="line">类型     镜像地址                    发行版   组件</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>类型</strong>: <code>deb</code>(二进制包)或<code>deb-src</code>(源代码包)</li>
+<li><strong>组件</strong>:
+<ul>
+<li><code>main</code>: 官方支持的免费软件</li>
+<li><code>contrib</code>: 非自由软件但有自由依赖</li>
+<li><code>non-free</code>: 有分发限制的软件</li>
+</ul>
+</li>
+</ul>
+<h3 id="4-5-apt-cache命令-查询工具">4.5 apt-cache命令(查询工具)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">apt-cache search keyword    <span class="comment"># 搜索包</span></span><br><span class="line">apt-cache show package      <span class="comment"># 显示包详细信息</span></span><br><span class="line">apt-cache depends package   <span class="comment"># 显示包依赖</span></span><br></pre></td></tr></table></figure>
+<h3 id="4-6-aptitude命令-交互式工具">4.6 aptitude命令(交互式工具)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">aptitude update          <span class="comment"># 更新包列表</span></span><br><span class="line">aptitude install package <span class="comment"># 安装包</span></span><br><span class="line">aptitude remove package  <span class="comment"># 移除包</span></span><br><span class="line">aptitude purge package   <span class="comment"># 完全清除包</span></span><br><span class="line">aptitude upgrade         <span class="comment"># 升级包</span></span><br><span class="line">aptitude dist-upgrade    <span class="comment"># 智能升级</span></span><br></pre></td></tr></table></figure>
+<h2 id="5-RedHat系包管理-RHEL-CentOS-Fedora">5. RedHat系包管理(RHEL/CentOS/Fedora)</h2>
+<h3 id="5-1-rpm命令-底层工具">5.1 rpm命令(底层工具)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">rpm -ivh package.rpm     <span class="comment"># 安装包(-v:详细,-h:进度条)</span></span><br><span class="line">rpm -Uvh package.rpm     <span class="comment"># 升级包</span></span><br><span class="line">rpm -Fvh *.rpm           <span class="comment"># 仅升级已安装的包</span></span><br><span class="line">rpm -e package           <span class="comment"># 卸载包</span></span><br><span class="line">rpm -qa                  <span class="comment"># 查询所有已安装包</span></span><br><span class="line">rpm -qf /path/to/file    <span class="comment"># 查询文件属于哪个包</span></span><br><span class="line">rpm -qi package          <span class="comment"># 查询包信息</span></span><br><span class="line">rpm -ql package          <span class="comment"># 列出包安装的文件</span></span><br><span class="line">rpm -qc package          <span class="comment"># 列出包配置文件</span></span><br><span class="line">rpm -qd package          <span class="comment"># 列出包文档文件</span></span><br><span class="line">rpm --nodeps             <span class="comment"># 忽略依赖关系(不推荐)</span></span><br><span class="line">rpm --<span class="built_in">test</span>               <span class="comment"># 测试模式(不实际执行)</span></span><br></pre></td></tr></table></figure>
+<h3 id="5-2-rpm文件提取">5.2 rpm文件提取</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rpm2cpio package.rpm | cpio -idv  <span class="comment"># 提取rpm包内容</span></span><br><span class="line">rpm2cpio package.rpm | cpio -t    <span class="comment"># 列出rpm包内容</span></span><br></pre></td></tr></table></figure>
+<h3 id="5-3-yum命令-高级工具">5.3 yum命令(高级工具)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">yum install package      <span class="comment"># 安装包</span></span><br><span class="line">yum remove package       <span class="comment"># 移除包</span></span><br><span class="line">yum update               <span class="comment"># 更新所有包</span></span><br><span class="line">yum update package       <span class="comment"># 更新指定包</span></span><br><span class="line">yum check-update         <span class="comment"># 检查可用更新</span></span><br><span class="line">yum info package         <span class="comment"># 显示包信息</span></span><br><span class="line">yum list                 <span class="comment"># 列出包</span></span><br><span class="line">yum search keyword       <span class="comment"># 搜索包</span></span><br><span class="line">yum groupinstall <span class="string">&quot;Development Tools&quot;</span> <span class="comment"># 安装软件组</span></span><br><span class="line">yum repolist             <span class="comment"># 列出已配置的仓库</span></span><br></pre></td></tr></table></figure>
+<h3 id="5-4-下载rpm包">5.4 下载rpm包</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yumdownloader package    <span class="comment"># 下载rpm包不安装</span></span><br></pre></td></tr></table></figure>
+<h3 id="5-5-zypper命令-SUSE系统">5.5 zypper命令(SUSE系统)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">zypper install package   <span class="comment"># 安装包</span></span><br><span class="line">zypper remove package    <span class="comment"># 移除包</span></span><br><span class="line">zypper update            <span class="comment"># 更新系统</span></span><br></pre></td></tr></table></figure>
+<h2 id="6-软件包管理对比">6. 软件包管理对比</h2>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>Debian系(apt)</th>
+<th>RedHat系(yum)</th>
+<th>SUSE系(zypper)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>安装包</td>
+<td>apt-get install</td>
+<td>yum install</td>
+<td>zypper install</td>
+</tr>
+<tr>
+<td>移除包</td>
+<td>apt-get remove</td>
+<td>yum remove</td>
+<td>zypper remove</td>
+</tr>
+<tr>
+<td>更新系统</td>
+<td>apt-get upgrade</td>
+<td>yum update</td>
+<td>zypper update</td>
+</tr>
+<tr>
+<td>搜索包</td>
+<td>apt-cache search</td>
+<td>yum search</td>
+<td>zypper search</td>
+</tr>
+<tr>
+<td>显示包信息</td>
+<td>apt-cache show</td>
+<td>yum info</td>
+<td>zypper info</td>
+</tr>
+<tr>
+<td>清理缓存</td>
+<td>apt-get clean</td>
+<td>yum clean</td>
+<td>zypper clean</td>
+</tr>
+</tbody>
+</table>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../2020/05/06/linux/1-%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/"
+                            aria-label=": 1.系统架构"
+                        >
+                            1.系统架构
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2020-05-06T16:06:24+08:00">
+	
+		    2020 年 5 月 6 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="1-系统架构">1. 系统架构</h2>
+<h3 id="1-1-PCI架构">1.1 PCI架构</h3>
+<ul>
+<li><strong>PCI(外围组件互连)</strong>: Intel Core系统的主要总线架构</li>
+<li><strong>组件</strong>:
+<ul>
+<li><strong>CPU</strong>:
+<ul>
+<li>显示: eDP(支持i7 CPU和DDR4内存)</li>
+<li>显示: HDMI(支持i7 CPU和DDR4内存)</li>
+</ul>
+</li>
+<li><strong>PCH(平台控制器中枢)</strong>:
+<ul>
+<li>USB 3.0接口</li>
+<li>PCI总线</li>
+<li>音频输出</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="1-2-lspci命令">1.2 lspci命令</h3>
+<ul>
+<li>显示PCI总线和连接设备的信息</li>
+<li>可以查看:
+<ul>
+<li>中断请求(IRQ)信息</li>
+<li>设备路径和速度</li>
+<li>制造商ID</li>
+</ul>
+</li>
+</ul>
+<h3 id="1-3-ACPI-高级配置与电源接口">1.3 ACPI(高级配置与电源接口)</h3>
+<ul>
+<li>电源管理规范标准</li>
+<li>管理功能包括:
+<ul>
+<li>电源按钮操作</li>
+<li>笔记本开合盖检测</li>
+<li>电池充电状态</li>
+<li>CPU速度调节</li>
+</ul>
+</li>
+<li><strong>重要说明</strong>:
+<ul>
+<li>不直接管理硬件，而是处理电源事件</li>
+<li>配置文件位置:
+<ul>
+<li><code>/etc/acpi/</code>目录</li>
+<li><code>/proc/acpi/</code>目录</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>守护进程</strong>:
+<ul>
+<li><code>acpid</code>:
+<ul>
+<li>配置目录: <code>/etc/acpi/</code></li>
+<li>示例: 查看电源配置<code>cat /etc/acpi/events/power.conf</code></li>
+</ul>
+</li>
+<li><code>systemd-logind</code>:
+<ul>
+<li>配置文件: <code>/etc/systemd/logind.conf</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-启动流程">2. 启动流程</h2>
+<h3 id="2-1-传统SysV-Init启动">2.1 传统SysV Init启动</h3>
+<ol>
+<li>电源启动</li>
+<li>BIOS初始化</li>
+<li>引导加载程序(GRUB)</li>
+<li>加载内核(<code>vmlinuz</code>, <code>initramfs</code>)</li>
+<li>执行内核</li>
+<li>执行initramfs</li>
+<li>init进程启动并挂载根文件系统</li>
+<li>init启动各种服务</li>
+</ol>
+<h3 id="2-2-现代systemd启动">2.2 现代systemd启动</h3>
+<ol>
+<li>电源启动</li>
+<li>UEFI初始化</li>
+<li>引导加载程序(GRUB2)</li>
+<li>加载内核(<code>vmlinuz</code>, <code>initramfs</code>)</li>
+<li>执行内核</li>
+<li>执行initramfs</li>
+<li>systemd启动并挂载根文件系统</li>
+<li>systemd启动各种服务</li>
+</ol>
+<h3 id="2-3-Init进程详情">2.3 Init进程详情</h3>
+<ul>
+<li>第一个用户空间进程路径: <code>/sbin/init</code></li>
+<li>传统init流程:
+<ol>
+<li>init读取<code>/etc/inittab</code></li>
+<li>init执行<code>/etc/rc.sysinit</code>脚本</li>
+<li>init执行<code>/etc/rc</code>脚本</li>
+<li><code>/etc/rc</code>执行<code>/etc/rc&lt;运行级别&gt;.d/</code>目录下的脚本</li>
+</ol>
+</li>
+</ul>
+<h2 id="3-分区表">3. 分区表</h2>
+<h3 id="3-1-GPT-GUID分区表">3.1 GPT(GUID分区表)</h3>
+<ul>
+<li>EFI规范的一部分</li>
+<li>支持最大9.4TB分区</li>
+<li>使用GUID标识:
+<ul>
+<li>设备标识</li>
+<li>分区标识</li>
+</ul>
+</li>
+</ul>
+<h3 id="3-2-MBR-主引导记录">3.2 MBR(主引导记录)</h3>
+<ul>
+<li>使用CHS(柱面/磁头/扇区)寻址</li>
+<li>最大只支持2TB分区</li>
+</ul>
+<h2 id="4-系统信息命令">4. 系统信息命令</h2>
+<h3 id="4-1-uname命令">4.1 uname命令</h3>
+<p>显示系统信息:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">uname</span> -m  <span class="comment"># 显示硬件架构类型</span></span><br><span class="line"><span class="built_in">uname</span> -n  <span class="comment"># 显示网络节点主机名</span></span><br><span class="line"><span class="built_in">uname</span> -r  <span class="comment"># 显示内核发行版本</span></span><br><span class="line"><span class="built_in">uname</span> -s  <span class="comment"># 显示操作系统名称</span></span><br><span class="line"><span class="built_in">uname</span> -v  <span class="comment"># 显示内核版本</span></span><br><span class="line"><span class="built_in">uname</span> -a  <span class="comment"># 显示所有信息</span></span><br></pre></td></tr></table></figure>
+<h3 id="4-2-wall命令">4.2 wall命令</h3>
+<p>向所有用户广播消息:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wall <span class="string">&quot;消息内容&quot;</span></span><br></pre></td></tr></table></figure>
+<h3 id="4-3-dmesg命令">4.3 dmesg命令</h3>
+<p>显示内核环形缓冲区消息(启动日志):</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dmesg</span><br></pre></td></tr></table></figure>
+<h3 id="4-4-lsmod命令">4.4 lsmod命令</h3>
+<p>列出已加载的内核模块:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsmod</span><br></pre></td></tr></table></figure>
+<h3 id="4-5-modprobe命令">4.5 modprobe命令</h3>
+<p>手动加载设备驱动:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">modprobe &lt;设备名称&gt;</span><br></pre></td></tr></table></figure>
+<h2 id="5-proc文件系统">5. /proc文件系统</h2>
+<p>/proc目录下的重要文件:</p>
+<ul>
+<li><code>/proc/bus/usb/*</code> - USB设备信息</li>
+<li><code>/proc/cpuinfo</code> - CPU信息</li>
+<li><code>/proc/interrupts</code> - 中断请求信息</li>
+<li><code>/proc/pci</code> - PCI设备信息</li>
+<li><code>/proc/scsi/scsi</code> - SCSI设备信息</li>
+<li><code>/proc/version</code> - 内核版本信息</li>
+<li><code>/proc/meminfo</code> - 内存信息</li>
+</ul>
+<h2 id="6-运行级别">6. 运行级别</h2>
+<p>运行级别配置文件:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/etc/inittab</span><br></pre></td></tr></table></figure>
+<h2 id="7-模拟器">7. 模拟器</h2>
+<p>通过软件模拟硬件环境来运行不同操作系统的工具</p>
+<h2 id="8-启动顺序图示">8. 启动顺序图示</h2>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">graph TD</span><br><span class="line">    A[BIOS/UEFI固件] --&gt; B[引导加载程序]</span><br><span class="line">    B --&gt; C[Linux内核]</span><br><span class="line">    C --&gt; D[Init/Systemd]</span><br><span class="line">    D --&gt; E[系统服务]</span><br></pre></td></tr></table></figure>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2020/05/06/linux/1-%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../2019/10/28/%E6%95%B0%E5%AD%A6/%E6%A6%82%E7%8E%872-%E8%BF%9E%E7%BB%AD%E5%9E%8B%E9%9A%8F%E6%9C%BA%E5%88%86%E5%B8%83%E5%BE%8B/"
                             aria-label=": 概率2-连续型随机分布律"
                         >
@@ -1578,398 +1962,6 @@ F'(x) = {\color{red}{d \Psi \over dt}} \cdot {\color{blue}{dt \over dx}} = {\col
         
     </article>
     
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2019/10/13/%E6%95%B0%E5%AD%A6/5-%E5%BE%AE%E5%88%86%E4%B8%AD%E5%80%BC%E5%AE%9A%E7%90%86/"
-                            aria-label=": 5.微分中值定理"
-                        >
-                            5.微分中值定理
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2019-10-13T21:11:58+08:00">
-	
-		    2019 年 10 月 13 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h4 id="费马定理">费马定理</h4>
-\begin{align*}
-{设函数}f(x) {在点} x_0 {的某邻域} U(x_0) {内有定义，且在} x_0 {处可导。若对任意} x \in U(x_0)
-\end{align*}
-
-<p>有：</p>
-\begin{align*}
-f(x) \leq f(x_0) \quad \text{（或} \ f(x) \geq f(x_0)\text{）}
-\end{align*}
-
-<p>则：</p>
-\begin{align*}
-f'(x_0) = 0
-\end{align*}
-
-<p><strong>证明</strong>：<br>
-对于</p>
-\begin{align*}
-x_0 + \Delta x \in U(x_0)，
-\end{align*}
-
-<p>有</p>
-\begin{align*}
-
-f(x_0 + \Delta x) \leq f(x_0) \\
-\end{align*}
-
-<p>当 $$\Delta x &gt; 0$$ 时：</p>
-\begin{align*}
-\frac{f(x_0 + \Delta x) - f(x_0)}{\Delta x} \leq 0 \quad \text{（右导数非正）}
-\end{align*}
-
-<p>当 $$\Delta x &lt; 0$$ 时：</p>
-\begin{align*}
-\frac{f(x_0 + \Delta x) - f(x_0)}{\Delta x} \geq 0 \quad \text{（左导数非负）}
-\end{align*}
-
-<p>由可导性知左右导数相等，故 $$f’(x_0) = 0$$。</p>
-<hr>
-<h4 id="罗尔定理">罗尔定理</h4>
-<p>若函数 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>f</mi><mo>(</mo><mi>x</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">f(x)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base textstyle uncramped"><span class="mord mathit" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathit">x</span><span class="mclose">)</span></span></span></span> 满足：</p>
-<ol>
-<li>在闭区间 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mo>[</mo><mi>a</mi><mo separator="true">,</mo><mi>b</mi><mo>]</mo></mrow><annotation encoding="application/x-tex">[a,b]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base textstyle uncramped"><span class="mopen">[</span><span class="mord mathit">a</span><span class="mpunct">,</span><span class="mord mathit">b</span><span class="mclose">]</span></span></span></span> 上连续；</li>
-<li>在开区间 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mo>(</mo><mi>a</mi><mo separator="true">,</mo><mi>b</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">(a,b)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base textstyle uncramped"><span class="mopen">(</span><span class="mord mathit">a</span><span class="mpunct">,</span><span class="mord mathit">b</span><span class="mclose">)</span></span></span></span> 内可导；</li>
-<li>在区间端点处的函数值相等，即 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>f</mi><mo>(</mo><mi>a</mi><mo>)</mo><mo>=</mo><mi>f</mi><mo>(</mo><mi>b</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">f(a) = f(b)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base textstyle uncramped"><span class="mord mathit" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathit">a</span><span class="mclose">)</span><span class="mrel">=</span><span class="mord mathit" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathit">b</span><span class="mclose">)</span></span></span></span>，</li>
-</ol>
-<p>则在 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mo>(</mo><mi>a</mi><mo separator="true">,</mo><mi>b</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">(a,b)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base textstyle uncramped"><span class="mopen">(</span><span class="mord mathit">a</span><span class="mpunct">,</span><span class="mord mathit">b</span><span class="mclose">)</span></span></span></span> 内至少存在一点 \xi{(a < ξ < b)} 使得 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><msup><mi>f</mi><mrow><mi mathvariant="normal">′</mi></mrow></msup><mo>(</mo><mi>ξ</mi><mo>)</mo><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f&#x27;(\xi) = 0</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.751892em;"></span><span class="strut bottom" style="height:1.001892em;vertical-align:-0.25em;"></span><span class="base textstyle uncramped"><span class="mord"><span class="mord mathit" style="margin-right:0.10764em;">f</span><span class="vlist"><span style="top:-0.363em;margin-right:0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord scriptstyle uncramped"><span class="mord mathrm">′</span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span>​</span></span></span><span class="mopen">(</span><span class="mord mathit" style="margin-right:0.04601em;">ξ</span><span class="mclose">)</span><span class="mrel">=</span><span class="mord mathrm">0</span></span></span></span>。</p>
-<hr>
-<h4 id="拉格朗日中值定理">拉格朗日中值定理</h4>
-<p>如果函数f(x)满足</p>
-<p>(1)在闭区间[a,b]上连续;</p>
-<p>(2)在开区间(a,b)内可导;</p>
-<p>那么在(a,b)内至少有一点ξ(a&lt;ξ&lt;b) 使等式</p>
-\begin{align*}
-f(b)-f(a)=f'(\xi)(b-a)
-\end{align*}
-
-<p>成立</p>
-<hr>
-<p><strong>证:</strong></p>
-<ol>
-<li>构造辅助函数ψ(x)，等于f(x)曲线跟直线AB之间的垂直距离:</li>
-</ol>
-<p>有</p>
-<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>ψ</mi><mo>(</mo><mi>a</mi><mo>)</mo><mo>=</mo><mi>ψ</mi><mo>(</mo><mi>b</mi><mo>)</mo><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\psi(a)=\psi(b)=0
-</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base displaystyle textstyle uncramped"><span class="mord mathit" style="margin-right:0.03588em;">ψ</span><span class="mopen">(</span><span class="mord mathit">a</span><span class="mclose">)</span><span class="mrel">=</span><span class="mord mathit" style="margin-right:0.03588em;">ψ</span><span class="mopen">(</span><span class="mord mathit">b</span><span class="mclose">)</span><span class="mrel">=</span><span class="mord mathrm">0</span></span></span></span></span></p>
-<p>设直线AB的方程为y=L(x),则</p>
-\begin{align*}
-L(x) = f(a)+\frac{f(b)-f(a)}{b-a}(x-a)
-\end{align*}
-
-<p>由于M,N的纵坐标为f(x)及L(x)，有:</p>
-\begin{align*}
-\psi(x)=f(x)-L(x)=f(x)-\left[f(a)+\frac{f(b)-f(a)}{b-a}(x-a)\right] \quad (1)
-\end{align*}
-
-<ol start="2">
-<li>验证罗尔定理条件:</li>
-</ol>
-<ul>
-<li>ψ(x)在[a,b]上连续</li>
-<li>ψ(x)在(a,b)内可导</li>
-<li>ψ(a)=ψ(b)=0</li>
-</ul>
-<p>对(1)式求导:</p>
-\begin{align*}
-\psi'(x)=f'(x)-\frac{f(b)-f(a)}{b-a}
-\end{align*}
-
-<ol start="3">
-<li>应用罗尔定理:<br>
-在(a,b)内至少存在一点ξ(a&lt;ξ&lt;b)使得ψ’(ξ)=0,即:</li>
-</ol>
-\begin{align*}
-f'(\xi)-\frac{f(b)-f(a)}{b-a}=0
-\end{align*}
-
-<p>从而得到:</p>
-\begin{align*}
-f(b)-f(a)=f'(\xi)(b-a) \quad (2)
-\end{align*}
-
-<ol start="4">
-<li>推论:<br>
-如果函数f(x)在区间I上的导数恒为0，那么f(x)在区间I上是一个常数。</li>
-</ol>
-<p>证明:<br>
-由(2)式，当$ f’(ξ)=0 $时，有f(b)-f(a)=0，即f(b)=f(a)。由于a,b是I上任意两点，故f(x)在I上为常数。</p>
-<hr>
-<p><strong>注:</strong></p>
-<ol>
-<li>式(2)表明存在点ξ处的切线斜率等于弦AB的斜率</li>
-<li>辅助函数ψ(x)的构造是关键，它表示曲线与弦的垂直距离</li>
-<li>当f(a)=f(b)时，即为罗尔定理的特殊情形</li>
-</ol>
-<hr>
-<h4 id="柯西中值定理">柯西中值定理</h4>
-<p>若函数 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>f</mi><mo>(</mo><mi>x</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">f(x)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base textstyle uncramped"><span class="mord mathit" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathit">x</span><span class="mclose">)</span></span></span></span> 和 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>F</mi><mo>(</mo><mi>x</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">F(x)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base textstyle uncramped"><span class="mord mathit" style="margin-right:0.13889em;">F</span><span class="mopen">(</span><span class="mord mathit">x</span><span class="mclose">)</span></span></span></span> 满足：</p>
-<ol>
-<li>在闭区间 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mo>[</mo><mi>a</mi><mo separator="true">,</mo><mi>b</mi><mo>]</mo></mrow><annotation encoding="application/x-tex">[a,b]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base textstyle uncramped"><span class="mopen">[</span><span class="mord mathit">a</span><span class="mpunct">,</span><span class="mord mathit">b</span><span class="mclose">]</span></span></span></span> 上连续；</li>
-<li>在开区间 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mo>(</mo><mi>a</mi><mo separator="true">,</mo><mi>b</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">(a,b)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base textstyle uncramped"><span class="mopen">(</span><span class="mord mathit">a</span><span class="mpunct">,</span><span class="mord mathit">b</span><span class="mclose">)</span></span></span></span> 内可导；</li>
-<li><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi mathvariant="normal">∀</mi><mi>x</mi><mo>∈</mo><mo>(</mo><mi>a</mi><mo separator="true">,</mo><mi>b</mi><mo>)</mo><mo separator="true">,</mo><msup><mi>F</mi><mrow><mi mathvariant="normal">′</mi></mrow></msup><mo>(</mo><mi>x</mi><mo>)</mo><mo>≠</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\forall x \in (a,b), F&#x27;(x) \neq 0</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.751892em;"></span><span class="strut bottom" style="height:1.001892em;vertical-align:-0.25em;"></span><span class="base textstyle uncramped"><span class="mord mathrm">∀</span><span class="mord mathit">x</span><span class="mrel">∈</span><span class="mopen">(</span><span class="mord mathit">a</span><span class="mpunct">,</span><span class="mord mathit">b</span><span class="mclose">)</span><span class="mpunct">,</span><span class="mord"><span class="mord mathit" style="margin-right:0.13889em;">F</span><span class="vlist"><span style="top:-0.363em;margin-right:0.05em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord scriptstyle uncramped"><span class="mord mathrm">′</span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span>​</span></span></span><span class="mopen">(</span><span class="mord mathit">x</span><span class="mclose">)</span><span class="mrel">≠</span><span class="mord mathrm">0</span></span></span></span>，</li>
-</ol>
-<p>则在 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mo>(</mo><mi>a</mi><mo separator="true">,</mo><mi>b</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">(a,b)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base textstyle uncramped"><span class="mopen">(</span><span class="mord mathit">a</span><span class="mpunct">,</span><span class="mord mathit">b</span><span class="mclose">)</span></span></span></span> 内至少存在一点 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>ξ</mi></mrow><annotation encoding="application/x-tex">\xi</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.69444em;"></span><span class="strut bottom" style="height:0.8888799999999999em;vertical-align:-0.19444em;"></span><span class="base textstyle uncramped"><span class="mord mathit" style="margin-right:0.04601em;">ξ</span></span></span></span> 使得：</p>
-\begin{align*}
-\frac{f(b)-f(a)}{F(b)-F(a)} = \frac{f'(\xi)}{F'(\xi)} \quad \text{（两函数变化率之比相等）}
-\end{align*}
-
-<p><strong>证:</strong><br>
-f(x),F(x)应用(2)式，上下一除即可</p>
-<hr>
-<h4 id="洛必达法则">洛必达法则</h4>
-<p><strong>定理1</strong>（<span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>x</mi><mo>→</mo><mi>a</mi></mrow><annotation encoding="application/x-tex">x \to a</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.43056em;"></span><span class="strut bottom" style="height:0.43056em;vertical-align:0em;"></span><span class="base textstyle uncramped"><span class="mord mathit">x</span><span class="mrel">→</span><span class="mord mathit">a</span></span></span></span> 型）：<br>
-若：</p>
-\begin{align*}
-&1. \lim\limits_{x \to a} f(x) = \lim\limits_{x \to a} F(x) = 0 ； \\
-&2. 在 a 的去心邻域内 f'(x), F'(x) 存在且 F'(x) \neq 0； \\
-&3. \lim\limits_{x \to a} \frac{f'(x)}{F'(x)} 存在（或为无穷大）， \\
-\end{align*}
-
-<p>则：</p>
-\begin{align*}
-\lim_{x \to a} \frac{f(x)}{F(x)} = \lim_{x \to a} \frac{f'(x)}{F'(x)}
-\end{align*}
-
-<p><strong>定理2</strong>（<span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>x</mi><mo>→</mo><mi mathvariant="normal">∞</mi></mrow><annotation encoding="application/x-tex">x \to \infty</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.43056em;"></span><span class="strut bottom" style="height:0.43056em;vertical-align:0em;"></span><span class="base textstyle uncramped"><span class="mord mathit">x</span><span class="mrel">→</span><span class="mord mathrm">∞</span></span></span></span> 型）：<br>
-将定理1中的 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>x</mi><mo>→</mo><mi>a</mi></mrow><annotation encoding="application/x-tex">x \to a</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.43056em;"></span><span class="strut bottom" style="height:0.43056em;vertical-align:0em;"></span><span class="base textstyle uncramped"><span class="mord mathit">x</span><span class="mrel">→</span><span class="mord mathit">a</span></span></span></span> 改为 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>x</mi><mo>→</mo><mi mathvariant="normal">∞</mi></mrow><annotation encoding="application/x-tex">x \to \infty</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.43056em;"></span><span class="strut bottom" style="height:0.43056em;vertical-align:0em;"></span><span class="base textstyle uncramped"><span class="mord mathit">x</span><span class="mrel">→</span><span class="mord mathrm">∞</span></span></span></span>，条件类似。</p>
-<hr>
-<h4 id="重要极限例子">重要极限例子</h4>
-<ol>
-<li>对数函数与幂函数：</li>
-</ol>
-\begin{align*}
-\lim_{x \to \infty} \frac{\ln x}{x^n} 
-&= \lim_{x \to \infty} {f'(x) \over F'(x)} \\
-&= \lim_{x \to \infty} \frac{1/x}{n x^{n-1}} \\
-&= \lim_{x \to \infty} \frac{1}{n x^n} \\
-&= 0 \quad \text{（对数增长慢于幂函数）}
-\end{align*}
-
-<ol start="2">
-<li>幂函数与指数函数：</li>
-</ol>
-\begin{align*}
-\lim_{x \to \infty} \frac{x^n}{e^{\lambda x}} 
-&= \lim_{x \to \infty} {f'(x) \over F'(x)} \\
-&= \lim_{x \to \infty} \frac{n x^{n-1}}{\lambda e^{\lambda x}} \\
-&= \cdots \\
-&= \lim_{x \to \infty} \frac{n!}{\lambda^n e^{\lambda x}} \\
-&= 0 \quad \text{（指数增长快于幂函数）}
-\end{align*}
-
-<hr>
-<h4 id="泰勒公式">泰勒公式</h4>
-<p><strong>泰勒中值定理</strong>：</p>
-\begin{align*} 
-若 f(x) 在含 x_0 的开区间 (a,b) 内有直到 (n+1) 阶导数，则对任意 x \in (a,b) 有：
-\end{align*}
-
-\begin{align*}
-f(x) &= f(x_0) + f'(x_0)(x-x_0) + \frac{f''(x_0)}{2!}(x-x_0)^2 + \cdots \\
-&\quad + \frac{f^{(n)}(x_0)}{n!}(x-x_0)^n + R_n(x)
-\end{align*}
-
-<p>其中余项：</p>
-\begin{align*}
-R_n(x) = \frac{f^{(n+1)}(\xi)}{(n+1)!}(x-x_0)^{n+1} \quad \text{（$\xi$ 在 $x_0$ 与 $x$ 之间）}
-\end{align*}
-
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2019/10/13/%E6%95%B0%E5%AD%A6/5-%E5%BE%AE%E5%88%86%E4%B8%AD%E5%80%BC%E5%AE%9A%E7%90%86/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2019/09/28/%E6%95%B0%E5%AD%A6/4-%E5%BE%AE%E5%88%86/"
-                            aria-label=": 4.微分"
-                        >
-                            4.微分
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2019-09-28T21:11:58+08:00">
-	
-		    2019 年 9 月 28 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h3 id="定义">定义</h3>
-<p><strong>微分的基本概念：</strong></p>
-\begin{align*}
-\Delta y &= f(x_0 + \Delta x) - f(x_0) \quad \text{（函数增量）} \\
-\Delta y &= A \Delta x + o(\Delta x) \quad \text{（线性近似+高阶无穷小）}
-\end{align*}
-
-<p><strong>微分表达式：</strong></p>
-\begin{align*}
-dy = y'_x(x)dx = f'(u)g'(x)dx \quad \text{（链式法则微分形式）}
-\end{align*}
-
-<hr>
-<h4 id="复合函数的微分法则">复合函数的微分法则</h4>
-<p><strong>乘法法则的微分形式：</strong></p>
-\begin{align*}
-d(uv) &= (uv)'dx \\[5pt]
-\text{∵}\quad (uv)' &= u'v + v'u \quad \text{（乘积导数法则）} \\[5pt]
-u'dx &= du \\[5pt]
-v'dx &= dv \\[5pt]
-\text{∴}\quad d(uv) 
-&=(u'v+v'u)dx \\
-&=u'vdx+v'udx \\
-&= vdu + udv \quad \text{（微分乘积法则）} \\
-\end{align*}
-
-<p><strong>复合函数示例：</strong></p>
-\begin{align*}
-y &= \sin(2x+1) \\
-dy &= d(\sin u) = \cos(2x+1)d(2x+1) \\
-&= \cos(2x+1) \cdot 2dx = 2\cos(2x+1)dx \text{（先外函数后内函数）}
-\end{align*}
-
-<hr>
-<h4 id="近似计算原理">近似计算原理</h4>
-<p><strong>线性近似公式：</strong></p>
-\begin{align*}
-\text{∵} \Delta y=f(x_0 + \Delta x) - f(x_0)&\approx dy = f'(x_0)\Delta x \quad \text{（用切线近似函数）} \\[5pt]
-\text{∴} f(x_0 + \Delta x) \approx f(x_0) + f'(x_0) \Delta x \\[5pt]
-for \ x=(x_0 + \Delta x): \\[5pt]
-f(x) &\approx f(x_0) + f'(x_0)(x-x_0) \quad \text{（泰勒展开一阶项）}
-\end{align*}
-
-<hr>
-<h4 id="常用近似公式（当-x-很小时）：">常用近似公式（当|x|很小时）：</h4>
-<ol>
-<li>
-<p><strong>n次方根：</strong></p>
-\begin{align*}
-\sqrt[n]{1+x} \approx f(0) + f'(0)x (x - 0) =1 +(\frac{1}{n})(x)  = 1 + \frac{1}{n}x
-\end{align*}
-
-<p>如 $$\sqrt{1.02} \approx 1.01$$</p>
-</li>
-<li>
-<p><strong>正弦函数：</strong></p>
-\begin{align*}
-\sin x \approx f(0) + f'(0)(x - 0) = 0 + \cos(0)x = x
-\end{align*}
-
-<p>小角度时正弦值≈弧度值</p>
-</li>
-<li>
-<p><strong>正切函数：</strong></p>
-\begin{align*}
-\tan x &= \frac{\sin x}{\cos x} \\[5pt]
-\text{∵}\quad \tan'x &= \frac{\cos^2x + \sin^2x}{\cos^2x} = \frac{1}{\cos^2x} = \sec^2x \\[5pt]
-\text{∴}\quad \tan x &\approx f(0) + f'(0)(x - 0) = 0 + 1 \cdot x = x
-\end{align*}
-
-<p>小角度时正切值≈弧度值</p>
-</li>
-<li>
-<p><strong>指数函数：</strong></p>
-\begin{align*}
-e^x \approx f(0) + f'(0)(x - 0) = 1 + x
-\end{align*}
-
-<p>如 $$e^{0.01} \approx 1.01$$</p>
-</li>
-<li>
-<p><strong>对数函数：</strong></p>
-\begin{align*}
-\ln(1+x) \approx f(0) + f'(0)(x - 0) = 0 + 1 \cdot x = x
-\end{align*}
-
-<p>如 $$\ln(1.02) \approx 0.02$$</p>
-</li>
-</ol>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2019/09/28/%E6%95%B0%E5%AD%A6/4-%E5%BE%AE%E5%88%86/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -2307,7 +2299,7 @@ e^x \approx f(0) + f'(0)(x - 0) = 1 + x
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 135 篇文章
+                找到 137 篇文章
             </p>
         </div>
     </div>

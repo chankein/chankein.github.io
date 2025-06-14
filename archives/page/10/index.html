@@ -302,6 +302,382 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../../2020/05/06/linux/1-%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/"
+                            aria-label=": 1.系统架构"
+                        >
+                            1.系统架构
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2020-05-06T16:06:24+08:00">
+	
+		    2020 年 5 月 6 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="1-系统架构">1. 系统架构</h2>
+<h3 id="1-1-PCI架构">1.1 PCI架构</h3>
+<ul>
+<li><strong>PCI(外围组件互连)</strong>: Intel Core系统的主要总线架构</li>
+<li><strong>组件</strong>:
+<ul>
+<li><strong>CPU</strong>:
+<ul>
+<li>显示: eDP(支持i7 CPU和DDR4内存)</li>
+<li>显示: HDMI(支持i7 CPU和DDR4内存)</li>
+</ul>
+</li>
+<li><strong>PCH(平台控制器中枢)</strong>:
+<ul>
+<li>USB 3.0接口</li>
+<li>PCI总线</li>
+<li>音频输出</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="1-2-lspci命令">1.2 lspci命令</h3>
+<ul>
+<li>显示PCI总线和连接设备的信息</li>
+<li>可以查看:
+<ul>
+<li>中断请求(IRQ)信息</li>
+<li>设备路径和速度</li>
+<li>制造商ID</li>
+</ul>
+</li>
+</ul>
+<h3 id="1-3-ACPI-高级配置与电源接口">1.3 ACPI(高级配置与电源接口)</h3>
+<ul>
+<li>电源管理规范标准</li>
+<li>管理功能包括:
+<ul>
+<li>电源按钮操作</li>
+<li>笔记本开合盖检测</li>
+<li>电池充电状态</li>
+<li>CPU速度调节</li>
+</ul>
+</li>
+<li><strong>重要说明</strong>:
+<ul>
+<li>不直接管理硬件，而是处理电源事件</li>
+<li>配置文件位置:
+<ul>
+<li><code>/etc/acpi/</code>目录</li>
+<li><code>/proc/acpi/</code>目录</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>守护进程</strong>:
+<ul>
+<li><code>acpid</code>:
+<ul>
+<li>配置目录: <code>/etc/acpi/</code></li>
+<li>示例: 查看电源配置<code>cat /etc/acpi/events/power.conf</code></li>
+</ul>
+</li>
+<li><code>systemd-logind</code>:
+<ul>
+<li>配置文件: <code>/etc/systemd/logind.conf</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-启动流程">2. 启动流程</h2>
+<h3 id="2-1-传统SysV-Init启动">2.1 传统SysV Init启动</h3>
+<ol>
+<li>电源启动</li>
+<li>BIOS初始化</li>
+<li>引导加载程序(GRUB)</li>
+<li>加载内核(<code>vmlinuz</code>, <code>initramfs</code>)</li>
+<li>执行内核</li>
+<li>执行initramfs</li>
+<li>init进程启动并挂载根文件系统</li>
+<li>init启动各种服务</li>
+</ol>
+<h3 id="2-2-现代systemd启动">2.2 现代systemd启动</h3>
+<ol>
+<li>电源启动</li>
+<li>UEFI初始化</li>
+<li>引导加载程序(GRUB2)</li>
+<li>加载内核(<code>vmlinuz</code>, <code>initramfs</code>)</li>
+<li>执行内核</li>
+<li>执行initramfs</li>
+<li>systemd启动并挂载根文件系统</li>
+<li>systemd启动各种服务</li>
+</ol>
+<h3 id="2-3-Init进程详情">2.3 Init进程详情</h3>
+<ul>
+<li>第一个用户空间进程路径: <code>/sbin/init</code></li>
+<li>传统init流程:
+<ol>
+<li>init读取<code>/etc/inittab</code></li>
+<li>init执行<code>/etc/rc.sysinit</code>脚本</li>
+<li>init执行<code>/etc/rc</code>脚本</li>
+<li><code>/etc/rc</code>执行<code>/etc/rc&lt;运行级别&gt;.d/</code>目录下的脚本</li>
+</ol>
+</li>
+</ul>
+<h2 id="3-分区表">3. 分区表</h2>
+<h3 id="3-1-GPT-GUID分区表">3.1 GPT(GUID分区表)</h3>
+<ul>
+<li>EFI规范的一部分</li>
+<li>支持最大9.4TB分区</li>
+<li>使用GUID标识:
+<ul>
+<li>设备标识</li>
+<li>分区标识</li>
+</ul>
+</li>
+</ul>
+<h3 id="3-2-MBR-主引导记录">3.2 MBR(主引导记录)</h3>
+<ul>
+<li>使用CHS(柱面/磁头/扇区)寻址</li>
+<li>最大只支持2TB分区</li>
+</ul>
+<h2 id="4-系统信息命令">4. 系统信息命令</h2>
+<h3 id="4-1-uname命令">4.1 uname命令</h3>
+<p>显示系统信息:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">uname</span> -m  <span class="comment"># 显示硬件架构类型</span></span><br><span class="line"><span class="built_in">uname</span> -n  <span class="comment"># 显示网络节点主机名</span></span><br><span class="line"><span class="built_in">uname</span> -r  <span class="comment"># 显示内核发行版本</span></span><br><span class="line"><span class="built_in">uname</span> -s  <span class="comment"># 显示操作系统名称</span></span><br><span class="line"><span class="built_in">uname</span> -v  <span class="comment"># 显示内核版本</span></span><br><span class="line"><span class="built_in">uname</span> -a  <span class="comment"># 显示所有信息</span></span><br></pre></td></tr></table></figure>
+<h3 id="4-2-wall命令">4.2 wall命令</h3>
+<p>向所有用户广播消息:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wall <span class="string">&quot;消息内容&quot;</span></span><br></pre></td></tr></table></figure>
+<h3 id="4-3-dmesg命令">4.3 dmesg命令</h3>
+<p>显示内核环形缓冲区消息(启动日志):</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dmesg</span><br></pre></td></tr></table></figure>
+<h3 id="4-4-lsmod命令">4.4 lsmod命令</h3>
+<p>列出已加载的内核模块:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsmod</span><br></pre></td></tr></table></figure>
+<h3 id="4-5-modprobe命令">4.5 modprobe命令</h3>
+<p>手动加载设备驱动:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">modprobe &lt;设备名称&gt;</span><br></pre></td></tr></table></figure>
+<h2 id="5-proc文件系统">5. /proc文件系统</h2>
+<p>/proc目录下的重要文件:</p>
+<ul>
+<li><code>/proc/bus/usb/*</code> - USB设备信息</li>
+<li><code>/proc/cpuinfo</code> - CPU信息</li>
+<li><code>/proc/interrupts</code> - 中断请求信息</li>
+<li><code>/proc/pci</code> - PCI设备信息</li>
+<li><code>/proc/scsi/scsi</code> - SCSI设备信息</li>
+<li><code>/proc/version</code> - 内核版本信息</li>
+<li><code>/proc/meminfo</code> - 内存信息</li>
+</ul>
+<h2 id="6-运行级别">6. 运行级别</h2>
+<p>运行级别配置文件:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/etc/inittab</span><br></pre></td></tr></table></figure>
+<h2 id="7-模拟器">7. 模拟器</h2>
+<p>通过软件模拟硬件环境来运行不同操作系统的工具</p>
+<h2 id="8-启动顺序图示">8. 启动顺序图示</h2>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">graph TD</span><br><span class="line">    A[BIOS/UEFI固件] --&gt; B[引导加载程序]</span><br><span class="line">    B --&gt; C[Linux内核]</span><br><span class="line">    C --&gt; D[Init/Systemd]</span><br><span class="line">    D --&gt; E[系统服务]</span><br></pre></td></tr></table></figure>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../2020/05/06/linux/1-%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../../2019/10/28/%E6%95%B0%E5%AD%A6/%E6%A6%82%E7%8E%872-%E8%BF%9E%E7%BB%AD%E5%9E%8B%E9%9A%8F%E6%9C%BA%E5%88%86%E5%B8%83%E5%BE%8B/"
+                            aria-label=": 概率2-连续型随机分布律"
+                        >
+                            概率2-连续型随机分布律
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2019-10-28T23:11:58+08:00">
+	
+		    2019 年 10 月 28 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h5 id="1-均匀分布">1,均匀分布</h5>
+<p>若连续型随机变量X具有概率密度</p>
+\begin{align*}
+f(x)= \begin{cases}{1 \over {b-a}} ,a < x < b,\\0\end{cases}
+\end{align*}
+
+<p>则称X在区间(a,b)上服从均匀分布，记为X〜U(a,b)</p>
+<p>分布函数：</p>
+\begin{align*}
+F(x)= 
+\begin{cases} 
+0, & x < a \\
+\frac{x-a}{b-a}, & a \leq x < b \\
+1, & x \geq b 
+\end{cases}
+\end{align*}
+
+<hr>
+<h3 id="2-指数分布">2. 指数分布</h3>
+<p>若连续型随机变量X具有概率密度：</p>
+\begin{align*}
+f(x)= \begin{cases}
+\frac{1}{\theta} e^{-x/\theta}, & x > 0 \\
+0, & \text{其他}
+\end{cases}
+\end{align*}
+
+<p>其中θ&gt;0为常数，则称X服从参数为θ的指数分布。</p>
+<p>易知f(x)≥0，且：</p>
+\begin{align*}
+\int^\infty_{-\infty}f(x)dx = \left[-e^{-x/\theta}\right]^\infty_0 = 1
+\end{align*}
+
+<p>分布函数：</p>
+\begin{align*}
+F(x)= \begin{cases}
+1-e^{-x/\theta}, & x > 0 \\
+0, & \text{其他}
+\end{cases}
+\end{align*}
+
+<p>服从指数分布的随机变量X具有无记忆性：<br>
+对于任意s,t&gt;0，有</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>P</mi><mo>{</mo><mi>X</mi><mo>&gt;</mo><mi>s</mi><mo>+</mo><mi>t</mi><mi mathvariant="normal">∣</mi><mi>X</mi><mo>&gt;</mo><mi>s</mi><mo>}</mo><mo>=</mo><mi>P</mi><mo>(</mo><mi>X</mi><mo>&gt;</mo><mi>t</mi><mo>)</mo></mrow><annotation encoding="application/x-tex">P\{X&gt;s+t|X&gt;s\} = P(X&gt;t)
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.75em;"></span><span class="strut bottom" style="height:1em;vertical-align:-0.25em;"></span><span class="base displaystyle textstyle uncramped"><span class="mord mathit" style="margin-right:0.13889em;">P</span><span class="mopen">{</span><span class="mord mathit" style="margin-right:0.07847em;">X</span><span class="mrel">&gt;</span><span class="mord mathit">s</span><span class="mbin">+</span><span class="mord mathit">t</span><span class="mord mathrm">∣</span><span class="mord mathit" style="margin-right:0.07847em;">X</span><span class="mrel">&gt;</span><span class="mord mathit">s</span><span class="mclose">}</span><span class="mrel">=</span><span class="mord mathit" style="margin-right:0.13889em;">P</span><span class="mopen">(</span><span class="mord mathit" style="margin-right:0.07847em;">X</span><span class="mrel">&gt;</span><span class="mord mathit">t</span><span class="mclose">)</span></span></span></span></span></p>
+<p>证明：</p>
+\begin{align*}
+P\{X>s+t|X>s\} 
+&= \frac{P\{X>s+t\} \cap P\{X>s\}}{P\{X>s\}} \\
+&= \frac{P\{X>s+t\}}{P\{X>s\}} \\
+&= \frac{1-F(s+t)}{1-F(s)} \\
+&= \frac{e^{-(s+t)/\theta}}{e^{-s/\theta}} \\
+&= e^{-t/\theta} \\
+&= P\{X>t\}
+\end{align*}
+
+<hr>
+<h3 id="3-正态分布">3. 正态分布</h3>
+<p>若连续型随机变量X具有概率密度：</p>
+\begin{align*}
+f(x) = \frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{(x-\mu)^2}{2\sigma^2}}
+\end{align*}
+
+<p>其中μ,σ(σ&gt;0)为常数，则称X服从参数为μ,σ的正态分布，记为X～N(μ,σ²)。</p>
+<p>显然f(x)≥0，下面证明：</p>
+\begin{align*}
+\int^\infty_{-\infty}f(x)dx = 1
+\end{align*}
+
+<p>令<span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>t</mi><mo>=</mo><mfrac><mrow><mi>x</mi><mo>−</mo><mi>μ</mi></mrow><mrow><mi>σ</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">t = \frac{x-\mu}{\sigma}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="strut" style="height:0.854439em;"></span><span class="strut bottom" style="height:1.199439em;vertical-align:-0.345em;"></span><span class="base textstyle uncramped"><span class="mord mathit">t</span><span class="mrel">=</span><span class="mord reset-textstyle textstyle uncramped"><span class="sizing reset-size5 size5 reset-textstyle textstyle uncramped nulldelimiter"></span><span class="mfrac"><span class="vlist"><span style="top:0.345em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle scriptstyle cramped"><span class="mord scriptstyle cramped"><span class="mord mathit" style="margin-right:0.03588em;">σ</span></span></span></span><span style="top:-0.22999999999999998em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle textstyle uncramped frac-line"></span></span><span style="top:-0.44610799999999995em;"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span><span class="reset-textstyle scriptstyle uncramped"><span class="mord scriptstyle uncramped"><span class="mord mathit">x</span><span class="mbin">−</span><span class="mord mathit">μ</span></span></span></span><span class="baseline-fix"><span class="fontsize-ensurer reset-size5 size5"><span style="font-size:0em;">​</span></span>​</span></span></span><span class="sizing reset-size5 size5 reset-textstyle textstyle uncramped nulldelimiter"></span></span></span></span></span>，则：</p>
+\begin{align*}
+σ=(x-μ)/t,
+
+t'(x)=1/σ
+\end{align*}
+
+<p>得到:</p>
+\begin{align*}
+\int^\infty_{-\infty}\frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{(x-\mu)^2}{2\sigma^2}}dx &=\int^\infty_{-\infty}{1 \over {\sqrt{2 \pi}}(x-μ)/t}e^{-t^2 \over 2}dt \\
+&= \frac{1}{\sqrt{2\pi}}\int^\infty_{-\infty}e^{-\frac{t^2}{2}}dt
+\end{align*}
+
+<p>记：</p>
+\begin{align*}
+I = \int^\infty_{-\infty}e^{-\frac{t^2}{2}}dt
+\end{align*}
+
+<p>则有：</p>
+\begin{align*}
+I^2 = \int^\infty_{-\infty}\int^\infty_{-\infty}e^{-\frac{t^2+u^2}{2}}dtdu
+\end{align*}
+
+<p>利用极坐标变换：</p>
+\begin{align*}
+I^2 = \int^{2\pi}_0\int^\infty_0 re^{-\frac{r^2}{2}}drd\theta = 2\pi
+\end{align*}
+
+<p>（p55）</p>
+<hr>
+<h3 id="附：">附：</h3>
+<p>计算：</p>
+\begin{align*}
+\iint_D^\infty e^{-\frac{x^2+y^2}{2}}dxdy
+\end{align*}
+
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../2019/10/28/%E6%95%B0%E5%AD%A6/%E6%A6%82%E7%8E%872-%E8%BF%9E%E7%BB%AD%E5%9E%8B%E9%9A%8F%E6%9C%BA%E5%88%86%E5%B8%83%E5%BE%8B/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../../2019/10/28/%E6%95%B0%E5%AD%A6/%E6%A6%82%E7%8E%871-%E7%A6%BB%E6%95%A3%E5%9E%8B%E9%9A%8F%E6%9C%BA%E5%88%86%E5%B8%83%E5%BE%8B/"
                             aria-label=": 概率1-离散型随机分布律"
                         >
@@ -1663,225 +2039,6 @@ R_n(x) = \frac{f^{(n+1)}(\xi)}{(n+1)!}(x-x_0)^{n+1} \quad \text{（$\xi$ 在 $x_
         
     </article>
     
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../../2019/09/28/%E6%95%B0%E5%AD%A6/4-%E5%BE%AE%E5%88%86/"
-                            aria-label=": 4.微分"
-                        >
-                            4.微分
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2019-09-28T21:11:58+08:00">
-	
-		    2019 年 9 月 28 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h3 id="定义">定义</h3>
-<p><strong>微分的基本概念：</strong></p>
-\begin{align*}
-\Delta y &= f(x_0 + \Delta x) - f(x_0) \quad \text{（函数增量）} \\
-\Delta y &= A \Delta x + o(\Delta x) \quad \text{（线性近似+高阶无穷小）}
-\end{align*}
-
-<p><strong>微分表达式：</strong></p>
-\begin{align*}
-dy = y'_x(x)dx = f'(u)g'(x)dx \quad \text{（链式法则微分形式）}
-\end{align*}
-
-<hr>
-<h4 id="复合函数的微分法则">复合函数的微分法则</h4>
-<p><strong>乘法法则的微分形式：</strong></p>
-\begin{align*}
-d(uv) &= (uv)'dx \\[5pt]
-\text{∵}\quad (uv)' &= u'v + v'u \quad \text{（乘积导数法则）} \\[5pt]
-u'dx &= du \\[5pt]
-v'dx &= dv \\[5pt]
-\text{∴}\quad d(uv) 
-&=(u'v+v'u)dx \\
-&=u'vdx+v'udx \\
-&= vdu + udv \quad \text{（微分乘积法则）} \\
-\end{align*}
-
-<p><strong>复合函数示例：</strong></p>
-\begin{align*}
-y &= \sin(2x+1) \\
-dy &= d(\sin u) = \cos(2x+1)d(2x+1) \\
-&= \cos(2x+1) \cdot 2dx = 2\cos(2x+1)dx \text{（先外函数后内函数）}
-\end{align*}
-
-<hr>
-<h4 id="近似计算原理">近似计算原理</h4>
-<p><strong>线性近似公式：</strong></p>
-\begin{align*}
-\text{∵} \Delta y=f(x_0 + \Delta x) - f(x_0)&\approx dy = f'(x_0)\Delta x \quad \text{（用切线近似函数）} \\[5pt]
-\text{∴} f(x_0 + \Delta x) \approx f(x_0) + f'(x_0) \Delta x \\[5pt]
-for \ x=(x_0 + \Delta x): \\[5pt]
-f(x) &\approx f(x_0) + f'(x_0)(x-x_0) \quad \text{（泰勒展开一阶项）}
-\end{align*}
-
-<hr>
-<h4 id="常用近似公式（当-x-很小时）：">常用近似公式（当|x|很小时）：</h4>
-<ol>
-<li>
-<p><strong>n次方根：</strong></p>
-\begin{align*}
-\sqrt[n]{1+x} \approx f(0) + f'(0)x (x - 0) =1 +(\frac{1}{n})(x)  = 1 + \frac{1}{n}x
-\end{align*}
-
-<p>如 $$\sqrt{1.02} \approx 1.01$$</p>
-</li>
-<li>
-<p><strong>正弦函数：</strong></p>
-\begin{align*}
-\sin x \approx f(0) + f'(0)(x - 0) = 0 + \cos(0)x = x
-\end{align*}
-
-<p>小角度时正弦值≈弧度值</p>
-</li>
-<li>
-<p><strong>正切函数：</strong></p>
-\begin{align*}
-\tan x &= \frac{\sin x}{\cos x} \\[5pt]
-\text{∵}\quad \tan'x &= \frac{\cos^2x + \sin^2x}{\cos^2x} = \frac{1}{\cos^2x} = \sec^2x \\[5pt]
-\text{∴}\quad \tan x &\approx f(0) + f'(0)(x - 0) = 0 + 1 \cdot x = x
-\end{align*}
-
-<p>小角度时正切值≈弧度值</p>
-</li>
-<li>
-<p><strong>指数函数：</strong></p>
-\begin{align*}
-e^x \approx f(0) + f'(0)(x - 0) = 1 + x
-\end{align*}
-
-<p>如 $$e^{0.01} \approx 1.01$$</p>
-</li>
-<li>
-<p><strong>对数函数：</strong></p>
-\begin{align*}
-\ln(1+x) \approx f(0) + f'(0)(x - 0) = 0 + 1 \cdot x = x
-\end{align*}
-
-<p>如 $$\ln(1.02) \approx 0.02$$</p>
-</li>
-</ol>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../../2019/09/28/%E6%95%B0%E5%AD%A6/4-%E5%BE%AE%E5%88%86/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../../2019/09/28/%E6%95%B0%E5%AD%A6/3-%E8%8E%B1%E5%B8%83%E5%B0%BC%E5%85%B9%E5%85%AC%E5%BC%8F/"
-                            aria-label=": 3.莱布尼兹公式"
-                        >
-                            3.莱布尼兹公式
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2019-09-28T18:11:58+08:00">
-	
-		    2019 年 9 月 28 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <p>对于幂函数：</p>
-\begin{align*}
-&y=x^n \\
-&y' = n x^{n-1} \\
-&y''=n(n-1)x^{n-2}  \\
-&...\\
-&y^{(m)}=n(n-1)...(n-m+1) x^{(n-m)}=n!/m! x^{(n-m)} \\
-if  \ n=m: \\
-&y^{(n)}=n!
-\end{align*}
-
-<p>莱布尼兹公式:</p>
-\begin{align*}
-(uv)^{(n)} = \sum^n_{k=0}C^k_nu^{(n-k)}v^{(k)}
-\end{align*}
-
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../../2019/09/28/%E6%95%B0%E5%AD%A6/3-%E8%8E%B1%E5%B8%83%E5%B0%BC%E5%85%B9%E5%85%AC%E5%BC%8F/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -2220,7 +2377,7 @@ if  \ n=m: \\
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 135 篇文章
+                找到 137 篇文章
             </p>
         </div>
     </div>
