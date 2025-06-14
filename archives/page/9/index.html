@@ -302,6 +302,281 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../../2020/06/12/pytest%E5%9F%BA%E7%A1%80/"
+                            aria-label=": pytest基础"
+                        >
+                            pytest基础
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2020-06-12T07:43:28+08:00">
+	
+		    2020 年 6 月 12 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../categories/devops/">devops</a>, <a class="category-link" href="../../../categories/devops/pytest/">pytest</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="1-概述">1. 概述</h2>
+<p>pytest 是一个功能强大的 Python 测试框架，具有以下特点：</p>
+<ul>
+<li>简单灵活，文档丰富</li>
+<li>支持参数化测试</li>
+<li>可用于单元测试、功能测试、自动化测试（如 Selenium/Appium）和接口测试</li>
+<li>丰富的插件生态系统</li>
+<li>支持测试跳过（skip）和预期失败（xfail）</li>
+<li>良好的 CI 工具集成（如 Jenkins）</li>
+</ul>
+<h3 id="主要插件">主要插件</h3>
+<table>
+<thead>
+<tr>
+<th>插件名称</th>
+<th>功能描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pytest-selenium</td>
+<td>Selenium 集成</td>
+</tr>
+<tr>
+<td>pytest-html</td>
+<td>生成 HTML 测试报告</td>
+</tr>
+<tr>
+<td>pytest-rerunfailures</td>
+<td>失败用例重试</td>
+</tr>
+<tr>
+<td>pytest-xdist</td>
+<td>多 CPU 并行测试</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-使用介绍">2. 使用介绍</h2>
+<h3 id="2-1-安装">2.1 安装</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install pytest</span><br></pre></td></tr></table></figure>
+<h3 id="2-2-编写规则">2.2 编写规则</h3>
+<ul>
+<li>测试文件：<code>test_*.py</code> 或 <code>*_test.py</code></li>
+<li>测试类：以 <code>Test</code> 开头，不能有 <code>__init__</code> 方法</li>
+<li>测试函数：以 <code>test_</code> 开头</li>
+<li>断言：使用 Python 原生 <code>assert</code></li>
+</ul>
+<h3 id="2-3-示例代码">2.3 示例代码</h3>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># pytest1.py</span></span><br><span class="line"><span class="keyword">import</span> pytest</span><br><span class="line"></span><br><span class="line"><span class="meta">@pytest.fixture(<span class="params">scope=<span class="string">&#x27;function&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">setup_function</span>(<span class="params">request</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">teardown_function</span>():</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;teardown_function called.&quot;</span>)</span><br><span class="line">    request.addfinalizer(teardown_function)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;setup_function called.&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@pytest.fixture(<span class="params">scope=<span class="string">&#x27;module&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">setup_module</span>(<span class="params">request</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">teardown_module</span>():</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;teardown_module called.&quot;</span>)</span><br><span class="line">    request.addfinalizer(teardown_module)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;setup_module called.&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@pytest.mark.website</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_1</span>(<span class="params">setup_function</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;Test_1 called.&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_2</span>(<span class="params">setup_module</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;Test_2 called.&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_3</span>(<span class="params">setup_module</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;Test_3 called.&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="2-4-fixture-的-scope-参数">2.4 fixture 的 scope 参数</h3>
+<table>
+<thead>
+<tr>
+<th>参数值</th>
+<th>作用范围</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>function</td>
+<td>每个测试函数运行一次（默认）</td>
+</tr>
+<tr>
+<td>class</td>
+<td>每个测试类运行一次</td>
+</tr>
+<tr>
+<td>module</td>
+<td>每个模块运行一次</td>
+</tr>
+<tr>
+<td>session</td>
+<td>每次会话运行一次</td>
+</tr>
+</tbody>
+</table>
+<h3 id="2-5-setup-和-teardown">2.5 setup 和 teardown</h3>
+<ul>
+<li><strong>setup</strong>：测试前的准备工作</li>
+<li><strong>teardown</strong>：测试后的清理工作</li>
+<li>替代方案：使用 <code>yield</code> 实现 setup/teardown</li>
+</ul>
+<h2 id="3-测试执行">3. 测试执行</h2>
+<h3 id="3-1-基本执行命令">3.1 基本执行命令</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pytest</code></td>
+<td>运行当前目录下所有测试</td>
+</tr>
+<tr>
+<td><code>pytest test_mod.py</code></td>
+<td>运行指定模块的测试</td>
+</tr>
+<tr>
+<td><code>pytest somepath/</code></td>
+<td>运行指定路径下的测试</td>
+</tr>
+<tr>
+<td><code>pytest -k &quot;stringexpr&quot;</code></td>
+<td>运行名称匹配表达式的测试</td>
+</tr>
+<tr>
+<td><code>pytest test_mod.py::test_func</code></td>
+<td>运行指定模块的特定测试函数</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-2-标记执行">3.2 标记执行</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 执行标记为 website 的测试</span></span><br><span class="line">pytest -v -m <span class="string">&quot;website&quot;</span> pytest1.py</span><br><span class="line"></span><br><span class="line"><span class="comment"># 执行未标记为 website 的测试</span></span><br><span class="line">pytest -v -m <span class="string">&quot;not website&quot;</span> pytest1.py</span><br></pre></td></tr></table></figure>
+<h3 id="3-3-常用命令行参数">3.3 常用命令行参数</h3>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-v</code></td>
+<td>显示详细测试结果</td>
+</tr>
+<tr>
+<td><code>-q</code></td>
+<td>只显示简要结果</td>
+</tr>
+<tr>
+<td><code>-s</code></td>
+<td>显示 print 输出</td>
+</tr>
+<tr>
+<td><code>-x</code></td>
+<td>遇到第一个失败立即停止</td>
+</tr>
+<tr>
+<td><code>--exitfirst</code></td>
+<td>同 <code>-x</code></td>
+</tr>
+<tr>
+<td><code>-h</code></td>
+<td>显示帮助信息</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-扩展插件">4. 扩展插件</h2>
+<h3 id="4-1-测试覆盖率-pytest-cov">4.1 测试覆盖率 (pytest-cov)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pip install pytest-cov</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成 HTML 覆盖率报告</span></span><br><span class="line">pytest --cov-report=html --cov=./ test_code_target_dir</span><br></pre></td></tr></table></figure>
+<p><strong>覆盖率参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--cov=[path]</code></td>
+<td>指定计算覆盖率的路径</td>
+</tr>
+<tr>
+<td><code>--cov-report=type</code></td>
+<td>报告类型：term, html, xml 等</td>
+</tr>
+<tr>
+<td><code>--cov-fail-under=MIN</code></td>
+<td>设置覆盖率最低阈值</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-2-其他实用插件">4.2 其他实用插件</h3>
+<table>
+<thead>
+<tr>
+<th>插件</th>
+<th>功能</th>
+<th>安装命令</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pytest-randomly</td>
+<td>随机执行测试</td>
+<td><code>pip install pytest-randomly</code></td>
+</tr>
+<tr>
+<td>pytest-xdist</td>
+<td>分布式测试</td>
+<td><code>pip install pytest-xdist</code></td>
+</tr>
+<tr>
+<td>pytest-instafail</td>
+<td>立即显示失败</td>
+<td><code>pip install pytest-instafail</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-示例输出">5. 示例输出</h2>
+<h3 id="5-1-详细模式-v">5.1 详细模式 (-v)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ pytest -v pytest1.py</span><br><span class="line">==============================================================================</span><br><span class="line">platform linux2 -- Python 2.7.14, pytest-3.0.0</span><br><span class="line">collected 3 items</span><br><span class="line"></span><br><span class="line">pytest1.py::test_1 PASSED</span><br><span class="line">pytest1.py::test_3 PASSED</span><br><span class="line">pytest1.py::test_2 PASSED</span><br></pre></td></tr></table></figure>
+<h3 id="5-2-显示输出-s">5.2 显示输出 (-s)</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ pytest -s pytest1.py</span><br><span class="line">==============================================================================</span><br><span class="line">setup_function called.</span><br><span class="line">Test_1 called.</span><br><span class="line">.teardown_function called.</span><br><span class="line">setup_module called.</span><br><span class="line">Test_2 called.</span><br><span class="line">.Test_3 called.</span><br><span class="line">.teardown_module called.</span><br></pre></td></tr></table></figure>
+<h3 id="5-3-覆盖率报告">5.3 覆盖率报告</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">---------------------------------------------------------------- coverage: platform linux2, python 2.7.14-final-0 ----------------------------------------------------------------</span><br><span class="line">Name         Stmts   Miss  Cover</span><br><span class="line">--------------------------------</span><br><span class="line">pytest1.py      18      0   100%</span><br></pre></td></tr></table></figure>
+<h2 id="6-参考资源">6. 参考资源</h2>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://wiki.python.org/moin/PythonTestingToolsTaxonomy">Python 测试工具大全</a></li>
+<li><a target="_blank" rel="noopener" href="http://docs.python-guide.org/en/latest/writing/tests/">主流测试工具比较</a></li>
+<li><a target="_blank" rel="noopener" href="http://pythontesting.net/test-podcast/">pytest 官方播客</a></li>
+<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/liuchunming033/article/details/46501653">pytest 简介</a></li>
+</ol>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../2020/06/12/pytest%E5%9F%BA%E7%A1%80/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../../2020/05/24/linux/8-%E7%B3%BB%E7%BB%9F%E7%AE%A1%E7%90%86/"
                             aria-label=": 8.系统管理"
                         >
@@ -2920,149 +3195,6 @@ I^2 = \int^{2\pi}_0\int^\infty_0 re^{-\frac{r^2}{2}}drd\theta = 2\pi
         
     </article>
     
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../../2019/10/28/%E6%95%B0%E5%AD%A6/%E6%A6%82%E7%8E%871-%E7%A6%BB%E6%95%A3%E5%9E%8B%E9%9A%8F%E6%9C%BA%E5%88%86%E5%B8%83%E5%BE%8B/"
-                            aria-label=": 概率1-离散型随机分布律"
-                        >
-                            概率1-离散型随机分布律
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2019-10-28T22:11:58+08:00">
-	
-		    2019 年 10 月 28 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../../categories/%E5%9F%BA%E7%A1%80/">基础</a>, <a class="category-link" href="../../../categories/%E5%9F%BA%E7%A1%80/%E6%95%B0%E5%AD%A6/">数学</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h5 id="１-不放回抽样表达式">１.不放回抽样表达式:</h5>
-<p>a件产品中抽取n件（不放回），则可能的取法有</p>
-\begin{align*}
-\left( \begin{matrix} a\\ n \\ \end{matrix} \right) =C^n_a=A^n_a/n!= { {a(a-1)...(a-n+1)} \over n!} ={a! \over n!(a-n)!}
-\end{align*}
-
-<hr>
-<h5 id="伯努利试验-二项分布">伯努利试验,二项分布</h5>
-<p>设试验E只有两种可能结果:A及非A,则称E为伯努利试验，设P(A)=p (0&lt;p&lt;1),此时P(非A)=1-p.将E独立重复地进行N次，则称这一串重复的独立试验为n重伯努利试验。</p>
-<p>标记为<br>
-X〜b(n,p).</p>
-\begin{align*}
-P\{X = k\}=\left( \begin{matrix} n\\ k \\ \end{matrix} \right) p^k q^{n-k}
-\end{align*}
-
-<p>当n=1时，化为二项分布：</p>
-\begin{align*}
-P\{X = k\}= p^k q^{1-k}
-\end{align*}
-
-\begin{align*}
-\sum_{k=0}^n P\{X = k\}=\sum_{k=0}^n {\left( \begin{matrix} n\\ k \\ \end{matrix} \right) } p^k q^{n-k} =(p+q)^n=1
-\end{align*}
-
-<hr>
-<h5 id="泊松分布">泊松分布</h5>
-<p>设随机变量X所有可能取的值为0,1,2,…,2而取各个值的概率为</p>
-\begin{align*}
-P\{X=k\}={λ^ke^{-λ} \over {k!}} ,k=0,1,2,...,
-\end{align*}
-
-<p>其中λ&gt;0是常数.则称X服从参数为λ的泊松分布，记为X〜π(λ).</p>
-<p>易知,P{X=k}≥0,k=0,1,2,…,且有</p>
-\begin{align*}
-
-\sum_{k=0}^\infty P\{X = k\}=\sum_{k=0}^\infty {λ^ke^{-λ} \over {k!}}=e^{-λ}\sum_{k=0}^\infty {λ^k\over {k!}}=e^{-λ}e^λ=1
-
-\end{align*}
-
-<p>倒数第二步是<strong>泰勒级数</strong>(见附表)</p>
-<p><strong>泊松定理</strong>  设λ&gt;0是一个常数,n是任意正整数,设np=λ,则对于任一固定的非负整数k，有</p>
-\begin{align*}
-\lim_{n \to \infty} \binom{n}{k} p_n^k (1-p_n)^{n-k} = \frac{\color{red}\lambda^k \color{purple}e^{-\lambda}}{\color{red}k!}.
-\end{align*}
-
-<p><strong>证</strong> 由</p>
-\begin{align*}
-p_n= {λ \over n}
-\end{align*}
-
-<p>,有</p>
-\begin{align*}
-{\left( \begin{matrix} n\\ k \\ \end{matrix} \right)}p^k_n(1-p_n)^{n-k}&={\color{blue}{n(n-1)(n-2)...(n-k+1)} \over {\color{red}k!}}{({\color{red}{λ} \over \color{blue}n})^k}{(1-{λ \over n})^{n-k}} \\
-&={\color{red}{λ^k \over k!}}{[\color{blue}1 \cdot ({1-{1 \over n})}\cdot ({1-{2 \over n})...(1-{(k+1) \over n})}}]{\color{purple}(1-{λ \over n})^{n}}{(1-{λ \over n})^{-k}}
-\end{align*}
-
-<p>对于任意固定的k,当n→∞,</p>
-\begin{align*}
-\lim_{n \to \infty}[1 \cdot ({1-{1 \over n})}\cdot ({1-{2 \over n})...(1-{(k+1) \over n})}]=1, \\
-
-\lim_{n \to \infty}(1-{λ \over n})^{n}={\color{purple}e^{-λ}}, \\
-
-\lim_{n \to \infty}(1-{λ \over n})^{-k}=1
-\end{align*}
-
-<p>Q.E.D.</p>
-<hr>
-<p><strong>泰勒中值定理</strong> 如果函数f(x)在含有x₀的某个开区间(a,b)内具有直到(n+1)阶的导数，则对任一x∈(a,b),有</p>
-\begin{align*}
-f(x)=f(x_0)+f'(x_0)(x-x_0)+{f''(x_0) \over 2!}(x-x_0)^2+...+{f^{(n)}(x_0) \over n!}(x-x_0)^n+R_n(x),
-\end{align*}
-
-<p>其中</p>
-\begin{align*}
-R_n(x)={f^{(n+1)}(\xi) \over ({n+1})!} (x-x_0)^{n+1}
-\end{align*}
-
-<p>当</p>
-\begin{align*}
-&x_0=0,f(λ)=e^λ \\
-
-&f(λ)=e^λ \\
-&= e^0+{(e^0)(λ-0) \over {1!}}+{(e^0)(λ-0)^2 \over {2!}}+{(e^0)(λ-0)^3 \over {3!}}+...+{(e^0)(λ-0)^k \over {k!}} \\
-&= \sum_{k=0}^\infty {λ^k\over {k!}}
-\end{align*}
-
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../../2019/10/28/%E6%95%B0%E5%AD%A6/%E6%A6%82%E7%8E%871-%E7%A6%BB%E6%95%A3%E5%9E%8B%E9%9A%8F%E6%9C%BA%E5%88%86%E5%B8%83%E5%BE%8B/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -3401,7 +3533,7 @@ R_n(x)={f^{(n+1)}(\xi) \over ({n+1})!} (x-x_0)^{n+1}
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 134 篇文章
+                找到 135 篇文章
             </p>
         </div>
     </div>

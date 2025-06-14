@@ -302,6 +302,228 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../../2025/05/24/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
+                            aria-label=": JAVA-多线程1"
+                        >
+                            JAVA-多线程1
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2025-05-24T15:55:43+08:00">
+	
+		    2025 年 5 月 24 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Java/">Java</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <p>现代操作系统（Windows，macOS，Linux）都可以执行多任务。多任务就是同时运行多个任务，例如：</p>
+<p><img src="https://liaoxuefeng.com/books/java/threading/basic/multitask.jpg" alt="multitask"></p>
+<p>CPU执行代码都是一条一条顺序执行的，但是，即使是单核cpu，也可以同时运行多个任务。因为操作系统执行多任务实际上就是让CPU对多个任务轮流交替执行。</p>
+<p>例如，假设我们有语文、数学、英语3门作业要做，每个作业需要30分钟。我们把这3门作业看成是3个任务，可以做1分钟语文作业，再做1分钟数学作业，再做1分钟英语作业：</p>
+<p><img src="https://liaoxuefeng.com/books/java/threading/basic/hurry.jpg" alt="hurry"></p>
+<p>这样轮流做下去，在某些人眼里看来，做作业的速度就非常快，看上去就像同时在做3门作业一样</p>
+<p><img src="https://liaoxuefeng.com/books/java/threading/basic/fast.gif" alt="ooops"></p>
+<p>类似的，操作系统轮流让多个任务交替执行，例如，让浏览器执行0.001秒，让QQ执行0.001秒，再让音乐播放器执行0.001秒，在人看来，CPU就是在同时执行多个任务。</p>
+<p>即使是多核CPU，因为通常任务的数量远远多于CPU的核数，所以任务也是交替执行的。</p>
+<h3 id="进程">进程</h3>
+<p>在计算机中，我们把一个任务称为一个进程，浏览器就是一个进程，视频播放器是另一个进程，类似的，音乐播放器和Word都是进程。</p>
+<p>某些进程内部还需要同时执行多个子任务。例如，我们在使用Word时，Word可以让我们一边打字，一边进行拼写检查，同时还可以在后台进行打印，我们把子任务称为线程。</p>
+<p>进程和线程的关系就是：一个进程可以包含一个或多个线程，但至少会有一个线程。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">                        ┌──────────┐</span><br><span class="line">                        │Process   │</span><br><span class="line">                        │┌────────┐│</span><br><span class="line">            ┌──────────┐││ Thread ││┌──────────┐</span><br><span class="line">            │Process   ││└────────┘││Process   │</span><br><span class="line">            │┌────────┐││┌────────┐││┌────────┐│</span><br><span class="line">┌──────────┐││ Thread ││││ Thread ││││ Thread ││</span><br><span class="line">│Process   ││└────────┘││└────────┘││└────────┘│</span><br><span class="line">│┌────────┐││┌────────┐││┌────────┐││┌────────┐│</span><br><span class="line">││ Thread ││││ Thread ││││ Thread ││││ Thread ││</span><br><span class="line">│└────────┘││└────────┘││└────────┘││└────────┘│</span><br><span class="line">└──────────┘└──────────┘└──────────┘└──────────┘</span><br><span class="line">┌──────────────────────────────────────────────┐</span><br><span class="line">│               Operating System               │</span><br><span class="line">└──────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+<p>操作系统调度的最小任务单位其实不是进程，而是线程。常用的Windows、Linux等操作系统都采用抢占式多任务，如何调度线程完全由操作系统决定，程序自己不能决定什么时候执行，以及执行多长时间。</p>
+<p>因为同一个应用程序，既可以有多个进程，也可以有多个线程，因此，实现多任务的方法，有以下几种：</p>
+<p>多进程模式（每个进程只有一个线程）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">┌──────────┐ ┌──────────┐ ┌──────────┐</span><br><span class="line">│Process   │ │Process   │ │Process   │</span><br><span class="line">│┌────────┐│ │┌────────┐│ │┌────────┐│</span><br><span class="line">││ Thread ││ ││ Thread ││ ││ Thread ││</span><br><span class="line">│└────────┘│ │└────────┘│ │└────────┘│</span><br><span class="line">└──────────┘ └──────────┘ └──────────┘</span><br></pre></td></tr></table></figure>
+<p>多线程模式（一个进程有多个线程）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">┌────────────────────┐</span><br><span class="line">│Process             │</span><br><span class="line">│┌────────┐┌────────┐│</span><br><span class="line">││ Thread ││ Thread ││</span><br><span class="line">│└────────┘└────────┘│</span><br><span class="line">│┌────────┐┌────────┐│</span><br><span class="line">││ Thread ││ Thread ││</span><br><span class="line">│└────────┘└────────┘│</span><br><span class="line">└────────────────────┘</span><br></pre></td></tr></table></figure>
+<p>多进程＋多线程模式（复杂度最高）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">┌──────────┐┌──────────┐┌──────────┐</span><br><span class="line">│Process   ││Process   ││Process   │</span><br><span class="line">│┌────────┐││┌────────┐││┌────────┐│</span><br><span class="line">││ Thread ││││ Thread ││││ Thread ││</span><br><span class="line">│└────────┘││└────────┘││└────────┘│</span><br><span class="line">│┌────────┐││┌────────┐││┌────────┐│</span><br><span class="line">││ Thread ││││ Thread ││││ Thread ││</span><br><span class="line">│└────────┘││└────────┘││└────────┘│</span><br><span class="line">└──────────┘└──────────┘└──────────┘</span><br></pre></td></tr></table></figure>
+<h3 id="进程-vs-线程">进程 vs 线程</h3>
+<p>进程和线程是包含关系，但是多任务既可以由多进程实现，也可以由单进程内的多线程实现，还可以混合多进程＋多线程。</p>
+<p>具体采用哪种方式，要考虑到进程和线程的特点。</p>
+<p>和多线程相比，多进程的缺点在于：</p>
+<ul>
+<li>创建进程比创建线程开销大，尤其是在Windows系统上；</li>
+<li>进程间通信比线程间通信要慢，因为线程间通信就是读写同一个变量，速度很快。</li>
+</ul>
+<p>而多进程的优点在于：</p>
+<p>多进程稳定性比多线程高，因为在多进程的情况下，一个进程崩溃不会影响其他进程，而在多线程的情况下，任何一个线程崩溃会直接导致整个进程崩溃。</p>
+<h3 id="多线程">多线程</h3>
+<p>Java语言内置了多线程支持：一个Java程序实际上是一个JVM进程，JVM进程用一个主线程来执行<code>main()</code>方法，在<code>main()</code>方法内部，我们又可以启动多个线程。此外，JVM还有负责垃圾回收的其他工作线程等。</p>
+<p>因此，对于大多数Java程序来说，我们说多任务，实际上是说如何使用多线程实现多任务。</p>
+<p>和单线程相比，多线程编程的特点在于：多线程经常需要读写共享数据，并且需要同步。例如，播放电影时，就必须由一个线程播放视频，另一个线程播放音频，两个线程需要协调运行，否则画面和声音就不同步。因此，多线程编程的复杂度高，调试更困难。</p>
+<p>Java多线程编程的特点又在于：</p>
+<ul>
+<li>多线程模型是Java程序最基本的并发模型；</li>
+<li>后续读写网络、数据库、Web开发等都依赖Java多线程模型。</li>
+</ul>
+<p>因此，必须掌握Java多线程编程才能继续深入学习其他内容。</p>
+<p>Java语言内置了多线程支持。当Java程序启动的时候，实际上是启动了一个JVM进程，然后，JVM启动主线程来执行<code>main()</code>方法。在<code>main()</code>方法中，我们又可以启动其他线程。</p>
+<p>要创建一个新线程非常容易，我们需要实例化一个<code>Thread</code>实例，然后调用它的<code>start()</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 多线程</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Thread</span>();</span><br><span class="line">        t.start(); <span class="comment">// 启动新线程</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是这个线程启动后实际上什么也不做就立刻结束了。我们希望新线程能执行指定的代码，有以下几种方法：</p>
+<p>方法一：从<code>Thread</code>派生一个自定义类，然后覆写<code>run()</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 多线程</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MyThread</span>();</span><br><span class="line">        t.start(); <span class="comment">// 启动新线程</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyThread</span> <span class="keyword">extends</span> <span class="title class_">Thread</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;start new thread!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行上述代码，注意到<code>start()</code>方法会在内部自动调用实例的<code>run()</code>方法。</p>
+<p>方法二：创建<code>Thread</code>实例时，传入一个<code>Runnable</code>实例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 多线程</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(<span class="keyword">new</span> <span class="title class_">MyRunnable</span>());</span><br><span class="line">        t.start(); <span class="comment">// 启动新线程</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyRunnable</span> <span class="keyword">implements</span> <span class="title class_">Runnable</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;start new thread!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>或者用Java 8引入的lambda语法进一步简写为：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 多线程</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;start new thread!&quot;</span>);</span><br><span class="line">        &#125;);</span><br><span class="line">        t.start(); <span class="comment">// 启动新线程</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>有童鞋会问，使用线程执行的打印语句，和直接在<code>main()</code>方法执行有区别吗？</p>
+<p>区别大了去了。我们看以下代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">public class Main &#123;</span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line">        System.out.println(&quot;main start...&quot;);</span><br><span class="line">        Thread t = new Thread() &#123;</span><br><span class="line">            public void run() &#123;</span><br><span class="line">                System.out.println(&quot;thread run...&quot;);</span><br><span class="line">                System.out.println(&quot;thread end.&quot;);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        t.start();</span><br><span class="line">        System.out.println(&quot;main end...&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们用蓝色表示主线程，也就是<code>main</code>线程，<code>main</code>线程执行的代码有4行，首先打印<code>main start</code>，然后创建<code>Thread</code>对象，紧接着调用<code>start()</code>启动新线程。当<code>start()</code>方法被调用时，JVM就创建了一个新线程，我们通过实例变量<code>t</code>来表示这个新线程对象，并开始执行。</p>
+<p>接着，<code>main</code>线程继续执行打印<code>main end</code>语句，而<code>t</code>线程在<code>main</code>线程执行的同时会并发执行，打印<code>thread run</code>和<code>thread end</code>语句。</p>
+<p>当<code>run()</code>方法结束时，新线程就结束了。而<code>main()</code>方法结束时，主线程也结束了。</p>
+<p>我们再来看线程的执行顺序：</p>
+<ol>
+<li><code>main</code>线程肯定是先打印<code>main start</code>，再打印<code>main end</code>；</li>
+<li><code>t</code>线程肯定是先打印<code>thread run</code>，再打印<code>thread end</code>。</li>
+</ol>
+<p>但是，除了可以肯定，<code>main start</code>会先打印外，<code>main end</code>打印在<code>thread run</code>之前、<code>thread end</code>之后或者之间，都无法确定。因为从<code>t</code>线程开始运行以后，两个线程就开始同时运行了，并且由操作系统调度，程序本身无法确定线程的调度顺序。</p>
+<p>要模拟并发执行的效果，我们可以在线程中调用<code>Thread.sleep()</code>，强迫当前线程暂停一段时间：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 多线程</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;main start...&quot;</span>);</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Thread</span>() &#123;</span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;thread run...&quot;</span>);</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    Thread.sleep(<span class="number">10</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;&#125;</span><br><span class="line">                System.out.println(<span class="string">&quot;thread end.&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        t.start();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">20</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;&#125;</span><br><span class="line">        System.out.println(<span class="string">&quot;main end...&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>sleep()</code>传入的参数是毫秒。调整暂停时间的大小，我们可以看到<code>main</code>线程和<code>t</code>线程执行的先后顺序。</p>
+<p>要特别注意：直接调用<code>Thread</code>实例的<code>run()</code>方法是无效的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MyThread</span>();</span><br><span class="line">        t.run();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyThread</span> <span class="keyword">extends</span> <span class="title class_">Thread</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;hello&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>直接调用<code>run()</code>方法，相当于调用了一个普通的Java方法，当前线程并没有任何改变，也不会启动新线程。上述代码实际上是在<code>main()</code>方法内部又调用了<code>run()</code>方法，打印<code>hello</code>语句是在<code>main</code>线程中执行的，没有任何新线程被创建。</p>
+<p>必须调用<code>Thread</code>实例的<code>start()</code>方法才能启动新线程，如果我们查看<code>Thread</code>类的源代码，会看到<code>start()</code>方法内部调用了一个<code>private native void start0()</code>方法，<code>native</code>修饰符表示这个方法是由JVM虚拟机内部的C代码实现的，不是由Java代码实现的。</p>
+<h3 id="线程的优先级">线程的优先级</h3>
+<p>可以对线程设定优先级，设定优先级的方法是：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Thread.setPriority(<span class="type">int</span> n) <span class="comment">// 1~10, 默认值5</span></span><br></pre></td></tr></table></figure>
+<p>JVM自动把1（低）~10（高）的优先级映射到操作系统实际优先级上（不同操作系统有不同的优先级数量）。优先级高的线程被操作系统调度的优先级较高，操作系统对高优先级线程可能调度更频繁，但我们决不能通过设置优先级来确保高优先级的线程一定会先执行。</p>
+<h3 id="练习">练习</h3>
+<p>创建一个新线程。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/threading/new-thread/thread-multi.zip">下载练习</a></p>
+<h3 id="小结">小结</h3>
+<p>Java用<code>Thread</code>对象表示一个线程，通过调用<code>start()</code>启动一个新线程；</p>
+<p>一个线程对象只能调用一次<code>start()</code>方法；</p>
+<p>线程的执行代码写在<code>run()</code>方法中；</p>
+<p>线程调度由操作系统决定，程序本身无法决定调度顺序；</p>
+<p><code>Thread.sleep()</code>可以把当前线程暂停一段时间。</p>
+<h2 id="线程的状态">线程的状态</h2>
+<p>在Java程序中，一个线程对象只能调用一次<code>start()</code>方法启动新线程，并在新线程中执行<code>run()</code>方法。一旦<code>run()</code>方法执行完毕，线程就结束了。因此，Java线程的状态有以下几种：</p>
+<ul>
+<li>New：新创建的线程，尚未执行；</li>
+<li>Runnable：运行中的线程，正在执行<code>run()</code>方法的Java代码；</li>
+<li>Blocked：运行中的线程，因为某些操作被阻塞而挂起；</li>
+<li>Waiting：运行中的线程，因为某些操作在等待中；</li>
+<li>Timed Waiting：运行中的线程，因为执行<code>sleep()</code>方法正在计时等待；</li>
+<li>Terminated：线程已终止，因为<code>run()</code>方法执行完毕。</li>
+</ul>
+<p>用一个状态转移图表示如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">         ┌─────────────┐</span><br><span class="line">         │     New     │</span><br><span class="line">         └─────────────┘</span><br><span class="line">                │</span><br><span class="line">                ▼</span><br><span class="line">┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐</span><br><span class="line"> ┌─────────────┐ ┌─────────────┐</span><br><span class="line">││  Runnable   │ │   Blocked   ││</span><br><span class="line"> └─────────────┘ └─────────────┘</span><br><span class="line">│┌─────────────┐ ┌─────────────┐│</span><br><span class="line"> │   Waiting   │ │Timed Waiting│</span><br><span class="line">│└─────────────┘ └─────────────┘│</span><br><span class="line"> ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─</span><br><span class="line">                │</span><br><span class="line">                ▼</span><br><span class="line">         ┌─────────────┐</span><br><span class="line">         │ Terminated  │</span><br><span class="line">         └─────────────┘</span><br></pre></td></tr></table></figure>
+<p>当线程启动后，它可以在<code>Runnable</code>、<code>Blocked</code>、<code>Waiting</code>和<code>Timed Waiting</code>这几个状态之间切换，直到最后变成<code>Terminated</code>状态，线程终止。</p>
+<p>线程终止的原因有：</p>
+<ul>
+<li>线程正常终止：<code>run()</code>方法执行到<code>return</code>语句返回；</li>
+<li>线程意外终止：<code>run()</code>方法因为未捕获的异常导致线程终止；</li>
+<li>对某个线程的<code>Thread</code>实例调用<code>stop()</code>方法强制终止（强烈不推荐使用）。</li>
+</ul>
+<p>一个线程还可以等待另一个线程直到其运行结束。例如，<code>main</code>线程在启动<code>t</code>线程后，可以通过<code>t.join()</code>等待<code>t</code>线程结束后再继续运行：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 多线程</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;hello&quot;</span>);</span><br><span class="line">        &#125;);</span><br><span class="line">        System.out.println(<span class="string">&quot;start&quot;</span>);</span><br><span class="line">        t.start(); <span class="comment">// 启动t线程</span></span><br><span class="line">        t.join(); <span class="comment">// 此处main线程会等待t结束</span></span><br><span class="line">        System.out.println(<span class="string">&quot;end&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当<code>main</code>线程对线程对象<code>t</code>调用<code>join()</code>方法时，主线程将等待变量<code>t</code>表示的线程运行结束，即<code>join</code>就是指等待该线程结束，然后才继续往下执行自身线程。所以，上述代码打印顺序可以肯定是<code>main</code>线程先打印<code>start</code>，<code>t</code>线程再打印<code>hello</code>，<code>main</code>线程最后再打印<code>end</code>。</p>
+<p>如果<code>t</code>线程已经结束，对实例<code>t</code>调用<code>join()</code>会立刻返回。此外，<code>join(long)</code>的重载方法也可以指定一个等待时间，超过等待时间后就不再继续等待。</p>
+<h3 id="小结-2">小结</h3>
+<p>Java线程对象<code>Thread</code>的状态包括：<code>New</code>、<code>Runnable</code>、<code>Blocked</code>、<code>Waiting</code>、<code>Timed Waiting</code>和<code>Terminated</code>；</p>
+<p>通过对另一个线程对象调用<code>join()</code>方法可以等待其执行结束；</p>
+<p>可以指定等待时间，超过等待时间线程仍然没有结束就不再等待；</p>
+<p>对已经运行结束的线程调用<code>join()</code>方法会立刻返回。</p>
+<hr>
+<hr>
+<p>如果线程需要执行一个长时间任务，就可能需要能中断线程。中断线程就是其他线程给该线程发一个信号，该线程收到信号后结束执行<code>run()</code>方法，使得自身线程能立刻结束运行。</p>
+<p>我们举个栗子：假设从网络下载一个100M的文件，如果网速很慢，用户等得不耐烦，就可能在下载过程中点“取消”，这时，程序就需要中断下载线程的执行。</p>
+<p>中断一个线程非常简单，只需要在其他线程中对目标线程调用<code>interrupt()</code>方法，目标线程需要反复检测自身状态是否是interrupted状态，如果是，就立刻结束运行。</p>
+<p>我们还是看示例代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 中断线程</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MyThread</span>();</span><br><span class="line">        t.start();</span><br><span class="line">        Thread.sleep(<span class="number">1</span>); <span class="comment">// 暂停1毫秒</span></span><br><span class="line">        t.interrupt(); <span class="comment">// 中断t线程</span></span><br><span class="line">        t.join(); <span class="comment">// 等待t线程结束</span></span><br><span class="line">        System.out.println(<span class="string">&quot;end&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyThread</span> <span class="keyword">extends</span> <span class="title class_">Thread</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (! isInterrupted()) &#123;</span><br><span class="line">            n ++;</span><br><span class="line">            System.out.println(n + <span class="string">&quot; hello!&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>仔细看上述代码，<code>main</code>线程通过调用<code>t.interrupt()</code>方法中断<code>t</code>线程，但是要注意，<code>interrupt()</code>方法仅仅向<code>t</code>线程发出了“中断请求”，至于<code>t</code>线程是否能立刻响应，要看具体代码。而<code>t</code>线程的<code>while</code>循环会检测<code>isInterrupted()</code>，所以上述代码能正确响应<code>interrupt()</code>请求，使得自身立刻结束运行<code>run()</code>方法。</p>
+<p>如果线程处于等待状态，例如，<code>t.join()</code>会让<code>main</code>线程进入等待状态，此时，如果对<code>main</code>线程调用<code>interrupt()</code>，<code>join()</code>方法会立刻抛出<code>InterruptedException</code>，因此，目标线程只要捕获到<code>join()</code>方法抛出的<code>InterruptedException</code>，就说明有其他线程对其调用了<code>interrupt()</code>方法，通常情况下该线程应该立刻结束运行。</p>
+<p>我们来看下面的示例代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 中断线程</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MyThread</span>();</span><br><span class="line">        t.start();</span><br><span class="line">        Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        t.interrupt(); <span class="comment">// 中断t线程</span></span><br><span class="line">        t.join(); <span class="comment">// 等待t线程结束</span></span><br><span class="line">        System.out.println(<span class="string">&quot;end&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyThread</span> <span class="keyword">extends</span> <span class="title class_">Thread</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">hello</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HelloThread</span>();</span><br><span class="line">        hello.start(); <span class="comment">// 启动hello线程</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            hello.join(); <span class="comment">// 等待hello线程结束</span></span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;interrupted!&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        hello.interrupt();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">HelloThread</span> <span class="keyword">extends</span> <span class="title class_">Thread</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (!isInterrupted()) &#123;</span><br><span class="line">            n++;</span><br><span class="line">            System.out.println(n + <span class="string">&quot; hello!&quot;</span>);</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                Thread.sleep(<span class="number">100</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>main</code>线程通过调用<code>t.interrupt()</code>从而通知<code>t</code>线程中断，而此时<code>t</code>线程正位于<code>hello.join()</code>的等待中，此方法会立刻结束等待并抛出<code>InterruptedException</code>。由于我们在<code>t</code>线程中捕获了<code>InterruptedException</code>，因此，就可以准备结束该线程。在<code>t</code>线程结束前，对<code>hello</code>线程也进行了<code>interrupt()</code>调用通知其中断。如果去掉这一行代码，可以发现<code>hello</code>线程仍然会继续运行，且JVM不会退出。</p>
+<p>另一个常用的中断线程的方法是设置标志位。我们通常会用一个<code>running</code>标志位来标识线程是否应该继续运行，在外部线程中，通过把<code>HelloThread.running</code>置为<code>false</code>，就可以让线程结束：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 中断线程</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span>  <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">        <span class="type">HelloThread</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HelloThread</span>();</span><br><span class="line">        t.start();</span><br><span class="line">        Thread.sleep(<span class="number">1</span>);</span><br><span class="line">        t.running = <span class="literal">false</span>; <span class="comment">// 标志位置为false</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">HelloThread</span> <span class="keyword">extends</span> <span class="title class_">Thread</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">volatile</span> <span class="type">boolean</span> <span class="variable">running</span> <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (running) &#123;</span><br><span class="line">            n ++;</span><br><span class="line">            System.out.println(n + <span class="string">&quot; hello!&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">&quot;end!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意到<code>HelloThread</code>的标志位<code>boolean running</code>是一个线程间共享的变量。线程间共享变量需要使用<code>volatile</code>关键字标记，确保每个线程都能读取到更新后的变量值。</p>
+<p>为什么要对线程间共享的变量用关键字<code>volatile</code>声明？这涉及到Java的内存模型。在Java虚拟机中，变量的值保存在主内存中，但是，当线程访问变量时，它会先获取一个副本，并保存在自己的工作内存中。如果线程修改了变量的值，虚拟机会在某个时刻把修改后的值回写到主内存，但是，这个时间是不确定的！</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐</span><br><span class="line">           Main Memory</span><br><span class="line">│                               │</span><br><span class="line">   ┌───────┐┌───────┐┌───────┐</span><br><span class="line">│  │ var A ││ var B ││ var C │  │</span><br><span class="line">   └───────┘└───────┘└───────┘</span><br><span class="line">│     │ ▲               │ ▲     │</span><br><span class="line"> ─ ─ ─│─│─ ─ ─ ─ ─ ─ ─ ─│─│─ ─ ─</span><br><span class="line">      │ │               │ │</span><br><span class="line">┌ ─ ─ ┼ ┼ ─ ─ ┐   ┌ ─ ─ ┼ ┼ ─ ─ ┐</span><br><span class="line">      ▼ │               ▼ │</span><br><span class="line">│  ┌───────┐  │   │  ┌───────┐  │</span><br><span class="line">   │ var A │         │ var C │</span><br><span class="line">│  └───────┘  │   │  └───────┘  │</span><br><span class="line">   Thread 1          Thread 2</span><br><span class="line">└ ─ ─ ─ ─ ─ ─ ┘   └ ─ ─ ─ ─ ─ ─ ┘</span><br></pre></td></tr></table></figure>
+<p>这会导致如果一个线程更新了某个变量，另一个线程读取的值可能还是更新前的。例如，主内存的变量<code>a = true</code>，线程1执行<code>a = false</code>时，它在此刻仅仅是把变量<code>a</code>的副本变成了<code>false</code>，主内存的变量<code>a</code>还是<code>true</code>，在JVM把修改后的<code>a</code>回写到主内存之前，其他线程读取到的<code>a</code>的值仍然是<code>true</code>，这就造成了多线程之间共享的变量不一致。</p>
+<p>因此，<code>volatile</code>关键字的目的是告诉虚拟机：</p>
+<ul>
+<li>每次访问变量时，总是获取主内存的最新值；</li>
+<li>每次修改变量后，立刻回写到主内存。</li>
+</ul>
+<p><code>volatile</code>关键字解决的是可见性问题：当一个线程修改了某个共享变量的值，其他线程能够立刻看到修改后的值。</p>
+<p>如果我们去掉<code>volatile</code>关键字，运行上述程序，发现效果和带<code>volatile</code>差不多，这是因为在x86的架构下，JVM回写主内存的速度非常快，但是，换成ARM的架构，就会有显著的延迟。</p>
+<h3 id="小结-3">小结</h3>
+<p>对目标线程调用<code>interrupt()</code>方法可以请求中断一个线程，目标线程通过检测<code>isInterrupted()</code>标志获取自身是否已中断。如果目标线程处于等待状态，该线程会捕获到<code>InterruptedException</code>；</p>
+<p>目标线程检测到<code>isInterrupted()</code>为<code>true</code>或者捕获了<code>InterruptedException</code>都应该立刻结束自身线程；</p>
+<p>通过标志位判断需要正确使用<code>volatile</code>关键字；</p>
+<p><code>volatile</code>关键字解决了共享变量在线程间的可见性问题。</p>
+<h2 id="守护线程">守护线程</h2>
+<p>Java程序入口就是由JVM启动<code>main</code>线程，<code>main</code>线程又可以启动其他线程。当所有线程都运行结束时，JVM退出，进程结束。</p>
+<p>如果有一个线程没有退出，JVM进程就不会退出。所以，必须保证所有线程都能及时结束。</p>
+<p>但是有一种线程的目的就是无限循环，例如，一个定时触发任务的线程：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TimerThread</span> <span class="keyword">extends</span> <span class="title class_">Thread</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">            System.out.println(LocalTime.now());</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果这个线程不结束，JVM进程就无法结束。问题是，由谁负责结束这个线程？</p>
+<p>然而这类线程经常没有负责人来负责结束它们。但是，当其他线程结束时，JVM进程又必须要结束，怎么办？</p>
+<p>答案是使用守护线程（Daemon Thread）。</p>
+<p>守护线程是指为其他线程服务的线程。在JVM中，所有非守护线程都执行完毕后，无论有没有守护线程，虚拟机都会自动退出。</p>
+<p>因此，JVM退出时，不必关心守护线程是否已结束。</p>
+<p>如何创建守护线程呢？方法和普通线程一样，只是在调用<code>start()</code>方法前，调用<code>setDaemon(true)</code>把该线程标记为守护线程：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MyThread</span>();</span><br><span class="line">t.setDaemon(<span class="literal">true</span>);</span><br><span class="line">t.start();</span><br></pre></td></tr></table></figure>
+<p>在守护线程中，编写代码要注意：守护线程不能持有任何需要关闭的资源，例如打开文件等，因为虚拟机退出时，守护线程没有任何机会来关闭文件，这会导致数据丢失。</p>
+<h3 id="练习-2">练习</h3>
+<p>使用守护线程。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/threading/daemon/thread-daemon.zip">下载练习</a></p>
+<h3 id="小结-4">小结</h3>
+<p>守护线程是为其他线程服务的线程；</p>
+<p>所有非守护线程都执行完毕后，虚拟机退出，守护线程随之结束；</p>
+<p>守护线程不能持有需要关闭的资源（如打开文件等）。</p>
+<hr>
+<hr>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../2025/05/24/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../../2025/05/24/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B2(%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5)/"
                             aria-label=": JAVA-多线程2(线程同步)"
                         >
@@ -4671,208 +4893,6 @@
         
     </article>
     
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../../2025/05/24/java/JAVA-%E6%B3%A8%E8%A7%A3/"
-                            aria-label=": JAVA-注解"
-                        >
-                            JAVA-注解
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2025-05-24T12:44:14+08:00">
-	
-		    2025 年 5 月 24 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Java/">Java</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h2 id="使用注解">使用注解</h2>
-<p>什么是注解（Annotation）？注解是放在Java源码的类、方法、字段、参数前的一种特殊“注释”：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// this is a component:</span></span><br><span class="line"><span class="meta">@Resource(&quot;hello&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Hello</span> &#123;</span><br><span class="line">    <span class="meta">@Inject</span></span><br><span class="line">    <span class="type">int</span> n;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@PostConstruct</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">hello</span><span class="params">(<span class="meta">@Param</span> String name)</span> &#123;</span><br><span class="line">        System.out.println(name);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">toString</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;Hello&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注释会被编译器直接忽略，注解则可以被编译器打包进入class文件，因此，注解是一种用作标注的“元数据”。</p>
-<h3 id="注解的作用">注解的作用</h3>
-<p>从JVM的角度看，注解本身对代码逻辑没有任何影响，如何使用注解完全由工具决定。</p>
-<p>Java的注解可以分为三类：</p>
-<p>第一类是由编译器使用的注解，例如：</p>
-<ul>
-<li><code>@Override</code>：让编译器检查该方法是否正确地实现了覆写；</li>
-<li><code>@SuppressWarnings</code>：告诉编译器忽略此处代码产生的警告。</li>
-</ul>
-<p>这类注解不会被编译进入<code>.class</code>文件，它们在编译后就被编译器扔掉了。</p>
-<p>第二类是由工具处理<code>.class</code>文件使用的注解，比如有些工具会在加载class的时候，对class做动态修改，实现一些特殊的功能。这类注解会被编译进入<code>.class</code>文件，但加载结束后并不会存在于内存中。这类注解只被一些底层库使用，一般我们不必自己处理。</p>
-<p>第三类是在程序运行期能够读取的注解，它们在加载后一直存在于JVM中，这也是最常用的注解。例如，一个配置了<code>@PostConstruct</code>的方法会在调用构造方法后自动被调用（这是Java代码读取该注解实现的功能，JVM并不会识别该注解）。</p>
-<p>定义一个注解时，还可以定义配置参数。配置参数可以包括：</p>
-<ul>
-<li>所有基本类型；</li>
-<li>String；</li>
-<li>枚举类型；</li>
-<li>基本类型、String、Class以及枚举的数组。</li>
-</ul>
-<p>因为配置参数必须是常量，所以，上述限制保证了注解在定义时就已经确定了每个参数的值。</p>
-<p>注解的配置参数可以有默认值，缺少某个配置参数时将使用默认值。</p>
-<p>此外，大部分注解会有一个名为<code>value</code>的配置参数，对此参数赋值，可以只写常量，相当于省略了value参数。</p>
-<p>如果只写注解，相当于全部使用默认值。</p>
-<p>举个栗子，对以下代码：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Hello</span> &#123;</span><br><span class="line">    <span class="meta">@Check(min=0, max=100, value=55)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> n;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Check(value=99)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> p;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Check(99)</span> <span class="comment">// @Check(value=99)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> x;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Check</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> y;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>@Check</code>就是一个注解。第一个<code>@Check(min=0, max=100, value=55)</code>明确定义了三个参数，第二个<code>@Check(value=99)</code>只定义了一个<code>value</code>参数，它实际上和<code>@Check(99)</code>是完全一样的。最后一个<code>@Check</code>表示所有参数都使用默认值。</p>
-<h3 id="小结">小结</h3>
-<p>注解（Annotation）是Java语言用于工具处理的标注：</p>
-<p>注解可以配置参数，没有指定配置的参数使用默认值；</p>
-<p>如果参数名称是<code>value</code>，且只有一个参数，那么可以省略参数名称。</p>
-<hr>
-<hr>
-<p>Java语言使用<code>@interface</code>语法来定义注解（<code>Annotation</code>），它的格式如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> Report &#123;</span><br><span class="line">    <span class="type">int</span> <span class="title function_">type</span><span class="params">()</span> <span class="keyword">default</span> <span class="number">0</span>;</span><br><span class="line">    String <span class="title function_">level</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;info&quot;</span>;</span><br><span class="line">    String <span class="title function_">value</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注解的参数类似无参数方法，可以用<code>default</code>设定一个默认值（强烈推荐）。最常用的参数应当命名为<code>value</code>。</p>
-<h3 id="元注解">元注解</h3>
-<p>有一些注解可以修饰其他注解，这些注解就称为元注解（meta annotation）。Java标准库已经定义了一些元注解，我们只需要使用元注解，通常不需要自己去编写元注解。</p>
-<h4 id="Target">@Target</h4>
-<p>最常用的元注解是<code>@Target</code>。使用<code>@Target</code>可以定义<code>Annotation</code>能够被应用于源码的哪些位置：</p>
-<ul>
-<li>类或接口：<code>ElementType.TYPE</code>；</li>
-<li>字段：<code>ElementType.FIELD</code>；</li>
-<li>方法：<code>ElementType.METHOD</code>；</li>
-<li>构造方法：<code>ElementType.CONSTRUCTOR</code>；</li>
-<li>方法参数：<code>ElementType.PARAMETER</code>。</li>
-</ul>
-<p>例如，定义注解<code>@Report</code>可用在方法上，我们必须添加一个<code>@Target(ElementType.METHOD)</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Target(ElementType.METHOD)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> Report &#123;</span><br><span class="line">    <span class="type">int</span> <span class="title function_">type</span><span class="params">()</span> <span class="keyword">default</span> <span class="number">0</span>;</span><br><span class="line">    String <span class="title function_">level</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;info&quot;</span>;</span><br><span class="line">    String <span class="title function_">value</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>定义注解<code>@Report</code>可用在方法或字段上，可以把<code>@Target</code>注解参数变为数组<code>&#123; ElementType.METHOD, ElementType.FIELD &#125;</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Target(&#123;</span></span><br><span class="line"><span class="meta">    ElementType.METHOD,</span></span><br><span class="line"><span class="meta">    ElementType.FIELD</span></span><br><span class="line"><span class="meta">&#125;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> Report &#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>实际上<code>@Target</code>定义的<code>value</code>是<code>ElementType[]</code>数组，只有一个元素时，可以省略数组的写法。</p>
-<h4 id="Retention">@Retention</h4>
-<p>另一个重要的元注解<code>@Retention</code>定义了<code>Annotation</code>的生命周期：</p>
-<ul>
-<li>仅编译期：<code>RetentionPolicy.SOURCE</code>；</li>
-<li>仅class文件：<code>RetentionPolicy.CLASS</code>；</li>
-<li>运行期：<code>RetentionPolicy.RUNTIME</code>。</li>
-</ul>
-<p>如果<code>@Retention</code>不存在，则该<code>Annotation</code>默认为<code>CLASS</code>。因为通常我们自定义的<code>Annotation</code>都是<code>RUNTIME</code>，所以，务必要加上<code>@Retention(RetentionPolicy.RUNTIME)</code>这个元注解：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Retention(RetentionPolicy.RUNTIME)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> Report &#123;</span><br><span class="line">    <span class="type">int</span> <span class="title function_">type</span><span class="params">()</span> <span class="keyword">default</span> <span class="number">0</span>;</span><br><span class="line">    String <span class="title function_">level</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;info&quot;</span>;</span><br><span class="line">    String <span class="title function_">value</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="Repeatable">@Repeatable</h4>
-<p>使用<code>@Repeatable</code>这个元注解可以定义<code>Annotation</code>是否可重复。这个注解应用不是特别广泛。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Repeatable(Reports.class)</span></span><br><span class="line"><span class="meta">@Target(ElementType.TYPE)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> Report &#123;</span><br><span class="line">    <span class="type">int</span> <span class="title function_">type</span><span class="params">()</span> <span class="keyword">default</span> <span class="number">0</span>;</span><br><span class="line">    String <span class="title function_">level</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;info&quot;</span>;</span><br><span class="line">    String <span class="title function_">value</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Target(ElementType.TYPE)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> Reports &#123;</span><br><span class="line">    Report[] value();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>经过<code>@Repeatable</code>修饰后，在某个类型声明处，就可以添加多个<code>@Report</code>注解：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Report(type=1, level=&quot;debug&quot;)</span></span><br><span class="line"><span class="meta">@Report(type=2, level=&quot;warning&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Hello</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="Inherited">@Inherited</h4>
-<p>使用<code>@Inherited</code>定义子类是否可继承父类定义的<code>Annotation</code>。<code>@Inherited</code>仅针对<code>@Target(ElementType.TYPE)</code>类型的<code>annotation</code>有效，并且仅针对<code>class</code>的继承，对<code>interface</code>的继承无效：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Inherited</span></span><br><span class="line"><span class="meta">@Target(ElementType.TYPE)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> Report &#123;</span><br><span class="line">    <span class="type">int</span> <span class="title function_">type</span><span class="params">()</span> <span class="keyword">default</span> <span class="number">0</span>;</span><br><span class="line">    String <span class="title function_">level</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;info&quot;</span>;</span><br><span class="line">    String <span class="title function_">value</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在使用的时候，如果一个类用到了<code>@Report</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Report(type=1)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>则它的子类默认也定义了该注解：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Student</span> <span class="keyword">extends</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="如何定义Annotation">如何定义Annotation</h3>
-<p>我们总结一下定义<code>Annotation</code>的步骤：</p>
-<p>第一步，用<code>@interface</code>定义注解：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> Report &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>第二步，添加参数、默认值：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> Report &#123;</span><br><span class="line">    <span class="type">int</span> <span class="title function_">type</span><span class="params">()</span> <span class="keyword">default</span> <span class="number">0</span>;</span><br><span class="line">    String <span class="title function_">level</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;info&quot;</span>;</span><br><span class="line">    String <span class="title function_">value</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>把最常用的参数定义为<code>value()</code>，推荐所有参数都尽量设置默认值。</p>
-<p>第三步，用元注解配置注解：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Target(ElementType.TYPE)</span></span><br><span class="line"><span class="meta">@Retention(RetentionPolicy.RUNTIME)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> Report &#123;</span><br><span class="line">    <span class="type">int</span> <span class="title function_">type</span><span class="params">()</span> <span class="keyword">default</span> <span class="number">0</span>;</span><br><span class="line">    String <span class="title function_">level</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;info&quot;</span>;</span><br><span class="line">    String <span class="title function_">value</span><span class="params">()</span> <span class="keyword">default</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>其中，必须设置<code>@Target</code>和<code>@Retention</code>，<code>@Retention</code>一般设置为<code>RUNTIME</code>，因为我们自定义的注解通常要求在运行期读取。一般情况下，不必写<code>@Inherited</code>和<code>@Repeatable</code>。</p>
-<h3 id="小结-2">小结</h3>
-<p>Java使用<code>@interface</code>定义注解；</p>
-<p>可定义多个参数和默认值，核心参数使用<code>value</code>名称；</p>
-<p>必须设置<code>@Target</code>来指定<code>Annotation</code>可以应用的范围；</p>
-<p>应当设置<code>@Retention(RetentionPolicy.RUNTIME)</code>便于运行期读取该<code>Annotation</code>。</p>
-<p>Java的注解本身对代码逻辑没有任何影响。根据<code>@Retention</code>的配置：</p>
-<ul>
-<li><code>SOURCE</code>类型的注解在编译期就被丢掉了；</li>
-<li><code>CLASS</code>类型的注解仅保存在class文件中，它们不会被加载进JVM；</li>
-<li><code>RUNTIME</code>类型的注解会被加载进JVM，并且在运行期可以被程序读取。</li>
-</ul>
-<p>如何使用注解完全由工具决定。<code>SOURCE</code>类型的注解主要由编译器使用，因此我们一般只使用，不编写。<code>CLASS</code>类型的注解主要由底层工具库使用，涉及到class的加载，一般我们很少用到。只有<code>RUNTIME</code>类型的注解不但要使用，还经常需要编写。</p>
-<p>因此，我们只讨论如何读取<code>RUNTIME</code>类型的注解。</p>
-<p>因为注解定义后也是一种<code>class</code>，所有的注解都继承自<code>java.lang.annotation.Annotation</code>，因此，读取注解，需要使用反射API。</p>
-<p>Java提供的使用反射API读取<code>Annotation</code>的方法包括：</p>
-<p>判断某个注解是否存在于<code>Class</code>、<code>Field</code>、<code>Method</code>或<code>Constructor</code>：</p>
-<ul>
-<li>Class.isAnnotationPresent(Class)</li>
-<li>Field.isAnnotationPresent(Class)</li>
-<li>Method.isAnnotationPresent(Class)</li>
-<li>Constructor.isAnnotationPresent(Class)</li>
-</ul>
-<p>例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 判断@Report是否存在于Person类:</span></span><br><span class="line">Person.class.isAnnotationPresent(Report.class);</span><br></pre></td></tr></table></figure>
-<p>使用反射API读取Annotation：</p>
-<ul>
-<li>Class.getAnnotation(Class)</li>
-<li>Field.getAnnotation(Class)</li>
-<li>Method.getAnnotation(Class)</li>
-<li>Constructor.getAnnotation(Class)</li>
-</ul>
-<p>例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取Person定义的@Report注解:</span></span><br><span class="line"><span class="type">Report</span> <span class="variable">report</span> <span class="operator">=</span> Person.class.getAnnotation(Report.class);</span><br><span class="line"><span class="type">int</span> <span class="variable">type</span> <span class="operator">=</span> report.type();</span><br><span class="line"><span class="type">String</span> <span class="variable">level</span> <span class="operator">=</span> report.level();</span><br></pre></td></tr></table></figure>
-<p>使用反射API读取<code>Annotation</code>有两种方法。方法一是先判断<code>Annotation</code>是否存在，如果存在，就直接读取：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Class</span> <span class="variable">cls</span> <span class="operator">=</span> Person.class;</span><br><span class="line"><span class="keyword">if</span> (cls.isAnnotationPresent(Report.class)) &#123;</span><br><span class="line">    <span class="type">Report</span> <span class="variable">report</span> <span class="operator">=</span> cls.getAnnotation(Report.class);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>第二种方法是直接读取<code>Annotation</code>，如果<code>Annotation</code>不存在，将返回<code>null</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Class</span> <span class="variable">cls</span> <span class="operator">=</span> Person.class;</span><br><span class="line"><span class="type">Report</span> <span class="variable">report</span> <span class="operator">=</span> cls.getAnnotation(Report.class);</span><br><span class="line"><span class="keyword">if</span> (report != <span class="literal">null</span>) &#123;</span><br><span class="line">   ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>读取方法、字段和构造方法的<code>Annotation</code>和Class类似。但要读取方法参数的<code>Annotation</code>就比较麻烦一点，因为方法参数本身可以看成一个数组，而每个参数又可以定义多个注解，所以，一次获取方法参数的所有注解就必须用一个二维数组来表示。例如，对于以下方法定义的注解：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">hello</span><span class="params">(<span class="meta">@NotNull</span> <span class="meta">@Range(max=5)</span> String name, <span class="meta">@NotNull</span> String prefix)</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>要读取方法参数的注解，我们先用反射获取<code>Method</code>实例，然后读取方法参数的所有注解：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取Method实例:</span></span><br><span class="line"><span class="type">Method</span> <span class="variable">m</span> <span class="operator">=</span> ...</span><br><span class="line"><span class="comment">// 获取所有参数的Annotation:</span></span><br><span class="line">Annotation[][] annos = m.getParameterAnnotations();</span><br><span class="line"><span class="comment">// 第一个参数（索引为0）的所有Annotation:</span></span><br><span class="line">Annotation[] annosOfName = annos[<span class="number">0</span>];</span><br><span class="line"><span class="keyword">for</span> (Annotation anno : annosOfName) &#123;</span><br><span class="line">    <span class="keyword">if</span> (anno <span class="keyword">instanceof</span> Range r) &#123; <span class="comment">// @Range注解</span></span><br><span class="line">        r.max();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (anno <span class="keyword">instanceof</span> NotNull n) &#123; <span class="comment">// @NotNull注解</span></span><br><span class="line">        <span class="comment">//</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="使用注解-2">使用注解</h3>
-<p>注解如何使用，完全由程序自己决定。例如，JUnit是一个测试框架，它会自动运行所有标记为<code>@Test</code>的方法。</p>
-<p>我们来看一个<code>@Range</code>注解，我们希望用它来定义一个<code>String</code>字段的规则：字段长度满足<code>@Range</code>的参数定义：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Retention(RetentionPolicy.RUNTIME)</span></span><br><span class="line"><span class="meta">@Target(ElementType.FIELD)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> Range &#123;</span><br><span class="line">    <span class="type">int</span> <span class="title function_">min</span><span class="params">()</span> <span class="keyword">default</span> <span class="number">0</span>;</span><br><span class="line">    <span class="type">int</span> <span class="title function_">max</span><span class="params">()</span> <span class="keyword">default</span> <span class="number">255</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在某个JavaBean中，我们可以使用该注解：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">    <span class="meta">@Range(min=1, max=20)</span></span><br><span class="line">    <span class="keyword">public</span> String name;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Range(max=10)</span></span><br><span class="line">    <span class="keyword">public</span> String city;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>但是，定义了注解，本身对程序逻辑没有任何影响。我们必须自己编写代码来使用注解。这里，我们编写一个<code>Person</code>实例的检查方法，它可以检查<code>Person</code>实例的<code>String</code>字段长度是否满足<code>@Range</code>的定义：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">check</span><span class="params">(Person person)</span> <span class="keyword">throws</span> IllegalArgumentException, ReflectiveOperationException &#123;</span><br><span class="line">    <span class="comment">// 遍历所有Field:</span></span><br><span class="line">    <span class="keyword">for</span> (Field field : person.getClass().getFields()) &#123;</span><br><span class="line">        <span class="comment">// 获取Field定义的@Range:</span></span><br><span class="line">        <span class="type">Range</span> <span class="variable">range</span> <span class="operator">=</span> field.getAnnotation(Range.class);</span><br><span class="line">        <span class="comment">// 如果@Range存在:</span></span><br><span class="line">        <span class="keyword">if</span> (range != <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="comment">// 获取Field的值:</span></span><br><span class="line">            <span class="type">Object</span> <span class="variable">value</span> <span class="operator">=</span> field.get(person);</span><br><span class="line">            <span class="comment">// 如果值是String:</span></span><br><span class="line">            <span class="keyword">if</span> (value <span class="keyword">instanceof</span> String s) &#123;</span><br><span class="line">                <span class="comment">// 判断值是否满足@Range的min/max:</span></span><br><span class="line">                <span class="keyword">if</span> (s.length() &lt; range.min() || s.length() &gt; range.max()) &#123;</span><br><span class="line">                    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;Invalid field: &quot;</span> + field.getName());</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这样一来，我们通过<code>@Range</code>注解，配合<code>check()</code>方法，就可以完成<code>Person</code>实例的检查。注意检查逻辑完全是我们自己编写的，JVM不会自动给注解添加任何额外的逻辑。</p>
-<h3 id="练习">练习</h3>
-<p>使用<code>@Range</code>注解来检查Java Bean的字段。如果字段类型是<code>String</code>，就检查<code>String</code>的长度，如果字段是<code>int</code>，就检查<code>int</code>的范围。</p>
-<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/annotation/process-annotation/annotation-range-check.zip">下载练习</a></p>
-<h3 id="小结-3">小结</h3>
-<p>可以在运行期通过反射读取<code>RUNTIME</code>类型的注解，注意千万不要漏写<code>@Retention(RetentionPolicy.RUNTIME)</code>，否则运行期无法读取到该注解。</p>
-<p>可以通过程序处理注解来实现相应的功能：</p>
-<ul>
-<li>对JavaBean的属性值按规则进行检查；</li>
-<li>JUnit会自动运行<code>@Test</code>标记的测试方法。</li>
-</ul>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../../2025/05/24/java/JAVA-%E6%B3%A8%E8%A7%A3/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -5211,7 +5231,7 @@
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 134 篇文章
+                找到 135 篇文章
             </p>
         </div>
     </div>
