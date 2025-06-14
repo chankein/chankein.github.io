@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"使用注解\n什么是注解（Annotation）？注解是放在Java源码的类、方法、字段、参数前的一种特殊“注释”：\n12345678910111213141516// this is a component:@Resource(&quot;hello&quot;)public class Hello &#123;    @Inject    int n;    @PostConstruct    public void hello(@Param String name) &#123;        System.out.println(name);    &#125;    @Override    public String toString() &#123;        return &quot;Hello&quot;;    &#125;&#125;\n注释会被编译器直接忽略，注解则可以被编译器打包进入class文件，因此，注解是一种用作标注的“元数据”。\n注解的作用\n从JVM的角度看，注解本身对代码逻辑没有任何影响，如何使用注解完全由工具决定。\nJava的注解可以分为三类：\n第一类是由编译器使用的注解，例如：\n\n@Override：让编译器检查该方法是否正确地实现了覆写；\n@SuppressWarnings：告诉编译器忽略此处代码产生的警告。\n\n这类注解不会被编译进入.class文件，它们在编译后就被编译器扔掉了。\n第二类是由工具处理.class文件使用的注解，比如有些工具会在加载class的时候，对class做动态修改，实现一些特殊的功能。这类注解会被编译进入.class文件，但加载结束后并不会存在于内存中。这类注解只被一些底层库使用，一般我们不必自己处理。\n第三类是在程序运行期能够读取的注解，它们在加载后一直存在于JVM中，这也是最常用的注解。例如，一个配置了@PostConstruct的方法会在调用构造方法后自动被调用（这是Java代码读取该注解实现的功能，JVM并不会识别该注解）。\n定义一个注解时，还可以定义配置参数。配置参数可以包括：\n\n所有基本类型；\nString；\n枚举类型；\n基本类型、String、Class以及枚举的数组。\n\n因为配置参数必须是常量，所以，上述限制保证了注解在定义时就已经确定了每个参数的值。\n注解的配置参数可以有默认值，缺少某个配置参数时将使用默认值。\n此外，大部分注解会有一个名为value的配置参数，对此参数赋值，可以只写常量，相当于省略了value参数。\n如果只写注解，相当于全部使用默认值。\n举个栗子，对以下代码：\n12345678910111213public class Hello &#123;    @Check(min=0, max=100, value=55)    public int n;    @Check(value=99)    public int p;    @Check(99) // @Check(value=99)    public int x;    @Check    public int y;&#125;\n@Check就是一个注解。第一个@Check(min=0, max=100, value=55)明确定义了三个参数，第二个@Check(value=99)只定义了一个value参数，它实际上和@Check(99)是完全一样的。最后一个@Check表示所有参数都使用默认值。\n小结\n注解（Annotation）是Java语言用于工具处理的标注：\n注解可以配置参数，没有指定配置的参数使用默认值；\n如果参数名称是value，且只有一个参数，那么可以省略参数名称。\n\n\nJava语言使用@interface语法来定义注解（Annotation），它的格式如下：\n12345public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;\n注解的参数类似无参数方法，可以用default设定一个默认值（强烈推荐）。最常用的参数应当命名为value。\n元注解\n有一些注解可以修饰其他注解，这些注解就称为元注解（meta annotation）。Java标准库已经定义了一些元注解，我们只需要使用元注解，通常不需要自己去编写元注解。\n@Target\n最常用的元注解是@Target。使用@Target可以定义Annotation能够被应用于源码的哪些位置：\n\n类或接口：ElementType.TYPE；\n字段：ElementType.FIELD；\n方法：ElementType.METHOD；\n构造方法：ElementType.CONSTRUCTOR；\n方法参数：ElementType.PARAMETER。\n\n例如，定义注解@Report可用在方法上，我们必须添加一个@Target(ElementType.METHOD)：\n123456@Target(ElementType.METHOD)public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;\n定义注解@Report可用在方法或字段上，可以把@Target注解参数变为数组&#123; ElementType.METHOD, ElementType.FIELD &#125;：\n1234567@Target(&#123;    ElementType.METHOD,    ElementType.FIELD&#125;)public @interface Report &#123;    ...&#125;\n实际上@Target定义的value是ElementType[]数组，只有一个元素时，可以省略数组的写法。\n@Retention\n另一个重要的元注解@Retention定义了Annotation的生命周期：\n\n仅编译期：RetentionPolicy.SOURCE；\n仅class文件：RetentionPolicy.CLASS；\n运行期：RetentionPolicy.RUNTIME。\n\n如果@Retention不存在，则该Annotation默认为CLASS。因为通常我们自定义的Annotation都是RUNTIME，所以，务必要加上@Retention(RetentionPolicy.RUNTIME)这个元注解：\n123456@Retention(RetentionPolicy.RUNTIME)public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;\n@Repeatable\n使用@Repeatable这个元注解可以定义Annotation是否可重复。这个注解应用不是特别广泛。\n123456789101112@Repeatable(Reports.class)@Target(ElementType.TYPE)public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;@Target(ElementType.TYPE)public @interface Reports &#123;    Report[] value();&#125;\n经过@Repeatable修饰后，在某个类型声明处，就可以添加多个@Report注解：\n1234@Report(type=1, level=&quot;debug&quot;)@Report(type=2, level=&quot;warning&quot;)public class Hello &#123;&#125;\n@Inherited\n使用@Inherited定义子类是否可继承父类定义的Annotation。@Inherited仅针对@Target(ElementType.TYPE)类型的annotation有效，并且仅针对class的继承，对interface的继承无效：\n1234567@Inherited@Target(ElementType.TYPE)public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;\n在使用的时候，如果一个类用到了@Report：\n123@Report(type=1)public class Person &#123;&#125;\n则它的子类默认也定义了该注解：\n12public class Student extends Person &#123;&#125;\n如何定义Annotation\n我们总结一下定义Annotation的步骤：\n第一步，用@interface定义注解：\n12public @interface Report &#123;&#125;\n第二步，添加参数、默认值：\n12345public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;\n把最常用的参数定义为value()，推荐所有参数都尽量设置默认值。\n第三步，用元注解配置注解：\n1234567@Target(ElementType.TYPE)@Retention(RetentionPolicy.RUNTIME)public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;\n其中，必须设置@Target和@Retention，@Retention一般设置为RUNTIME，因为我们自定义的注解通常要求在运行期读取。一般情况下，不必写@Inherited和@Repeatable。\n小结\nJava使用@interface定义注解；\n可定义多个参数和默认值，核心参数使用value名称；\n必须设置@Target来指定Annotation可以应用的范围；\n应当设置@Retention(RetentionPolicy.RUNTIME)便于运行期读取该Annotation。\nJava的注解本身对代码逻辑没有任何影响。根据@Retention的配置：\n\nSOURCE类型的注解在编译期就被丢掉了；\nCLASS类型的注解仅保存在class文件中，它们不会被加载进JVM；\nRUNTIME类型的注解会被加载进JVM，并且在运行期可以被程序读取。\n\n如何使用注解完全由工具决定。SOURCE类型的注解主要由编译器使用，因此我们一般只使用，不编写。CLASS类型的注解主要由底层工具库使用，涉及到class的加载，一般我们很少用到。只有RUNTIME类型的注解不但要使用，还经常需要编写。\n因此，我们只讨论如何读取RUNTIME类型的注解。\n因为注解定义后也是一种class，所有的注解都继承自java.lang.annotation.Annotation，因此，读取注解，需要使用反射API。\nJava提供的使用反射API读取Annotation的方法包括：\n判断某个注解是否存在于Class、Field、Method或Constructor：\n\nClass.isAnnotationPresent(Class)\nField.isAnnotationPresent(Class)\nMethod.isAnnotationPresent(Class)\nConstructor.isAnnotationPresent(Class)\n\n例如：\n12// 判断@Report是否存在于Person类:Person.class.isAnnotationPresent(Report.class);\n使用反射API读取Annotation：\n\nClass.getAnnotation(Class)\nField.getAnnotation(Class)\nMethod.getAnnotation(Class)\nConstructor.getAnnotation(Class)\n\n例如：\n1234// 获取Person定义的@Report注解:Report report = Person.class.getAnnotation(Report.class);int type = report.type();String level = report.level();\n使用反射API读取Annotation有两种方法。方法一是先判断Annotation是否存在，如果存在，就直接读取：\n12345Class cls = Person.class;if (cls.isAnnotationPresent(Report.class)) &#123;    Report report = cls.getAnnotation(Report.class);    ...&#125;\n第二种方法是直接读取Annotation，如果Annotation不存在，将返回null：\n12345Class cls = Person.class;Report report = cls.getAnnotation(Report.class);if (report != null) &#123;   ...&#125;\n读取方法、字段和构造方法的Annotation和Class类似。但要读取方法参数的Annotation就比较麻烦一点，因为方法参数本身可以看成一个数组，而每个参数又可以定义多个注解，所以，一次获取方法参数的所有注解就必须用一个二维数组来表示。例如，对于以下方法定义的注解：\n12public void hello(@NotNull @Range(max=5) String name, @NotNull String prefix) &#123;&#125;\n要读取方法参数的注解，我们先用反射获取Method实例，然后读取方法参数的所有注解：\n1234567891011121314// 获取Method实例:Method m = ...// 获取所有参数的Annotation:Annotation[][] annos = m.getParameterAnnotations();// 第一个参数（索引为0）的所有Annotation:Annotation[] annosOfName = annos[0];for (Annotation anno : annosOfName) &#123;    if (anno instanceof Range r) &#123; // @Range注解        r.max();    &#125;    if (anno instanceof NotNull n) &#123; // @NotNull注解        //    &#125;&#125;\n使用注解\n注解如何使用，完全由程序自己决定。例如，JUnit是一个测试框架，它会自动运行所有标记为@Test的方法。\n我们来看一个@Range注解，我们希望用它来定义一个String字段的规则：字段长度满足@Range的参数定义：\n123456@Retention(RetentionPolicy.RUNTIME)@Target(ElementType.FIELD)public @interface Range &#123;    int min() default 0;    int max() default 255;&#125;\n在某个JavaBean中，我们可以使用该注解：\n1234567public class Person &#123;    @Range(min=1, max=20)    public String name;    @Range(max=10)    public String city;&#125;\n但是，定义了注解，本身对程序逻辑没有任何影响。我们必须自己编写代码来使用注解。这里，我们编写一个Person实例的检查方法，它可以检查Person实例的String字段长度是否满足@Range的定义：\n12345678910111213141516171819void check(Person person) throws IllegalArgumentException, ReflectiveOperationException &#123;    // 遍历所有Field:    for (Field field : person.getClass().getFields()) &#123;        // 获取Field定义的@Range:        Range range = field.getAnnotation(Range.class);        // 如果@Range存在:        if (range != null) &#123;            // 获取Field的值:            Object value = field.get(person);            // 如果值是String:            if (value instanceof String s) &#123;                // 判断值是否满足@Range的min/max:                if (s.length() &lt; range.min() || s.length() &gt; range.max()) &#123;                    throw new IllegalArgumentException(&quot;Invalid field: &quot; + field.getName());                &#125;            &#125;        &#125;    &#125;&#125;\n这样一来，我们通过@Range注解，配合check()方法，就可以完成Person实例的检查。注意检查逻辑完全是我们自己编写的，JVM不会自动给注解添加任何额外的逻辑。\n练习\n使用@Range注解来检查Java Bean的字段。如果字段类型是String，就检查String的长度，如果字段是int，就检查int的范围。\n下载练习\n小结\n可以在运行期通过反射读取RUNTIME类型的注解，注意千万不要漏写@Retention(RetentionPolicy.RUNTIME)，否则运行期无法读取到该注解。\n可以通过程序处理注解来实现相应的功能：\n\n对JavaBean的属性值按规则进行检查；\nJUnit会自动运行@Test标记的测试方法。\n\n","dateCreated":"2025-05-24T12:44:14+08:00","dateModified":"2025-05-24T12:48:14+08:00","datePublished":"2025-05-24T12:44:14+08:00","description":"","headline":"JAVA-注解","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/","keywords":"Java"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"使用注解\n什么是注解（Annotation）？注解是放在Java源码的类、方法、字段、参数前的一种特殊“注释”：\n12345678910111213141516// this is a component:@Resource(&quot;hello&quot;)public class Hello &#123;    @Inject    int n;    @PostConstruct    public void hello(@Param String name) &#123;        System.out.println(name);    &#125;    @Override    public String toString() &#123;        return &quot;Hello&quot;;    &#125;&#125;\n注释会被编译器直接忽略，注解则可以被编译器打包进入class文件，因此，注解是一种用作标注的“元数据”。\n注解的作用\n从JVM的角度看，注解本身对代码逻辑没有任何影响，如何使用注解完全由工具决定。\nJava的注解可以分为三类：\n第一类是由编译器使用的注解，例如：\n\n@Override：让编译器检查该方法是否正确地实现了覆写；\n@SuppressWarnings：告诉编译器忽略此处代码产生的警告。\n\n这类注解不会被编译进入.class文件，它们在编译后就被编译器扔掉了。\n第二类是由工具处理.class文件使用的注解，比如有些工具会在加载class的时候，对class做动态修改，实现一些特殊的功能。这类注解会被编译进入.class文件，但加载结束后并不会存在于内存中。这类注解只被一些底层库使用，一般我们不必自己处理。\n第三类是在程序运行期能够读取的注解，它们在加载后一直存在于JVM中，这也是最常用的注解。例如，一个配置了@PostConstruct的方法会在调用构造方法后自动被调用（这是Java代码读取该注解实现的功能，JVM并不会识别该注解）。\n定义一个注解时，还可以定义配置参数。配置参数可以包括：\n\n所有基本类型；\nString；\n枚举类型；\n基本类型、String、Class以及枚举的数组。\n\n因为配置参数必须是常量，所以，上述限制保证了注解在定义时就已经确定了每个参数的值。\n注解的配置参数可以有默认值，缺少某个配置参数时将使用默认值。\n此外，大部分注解会有一个名为value的配置参数，对此参数赋值，可以只写常量，相当于省略了value参数。\n如果只写注解，相当于全部使用默认值。\n举个栗子，对以下代码：\n12345678910111213public class Hello &#123;    @Check(min=0, max=100, value=55)    public int n;    @Check(value=99)    public int p;    @Check(99) // @Check(value=99)    public int x;    @Check    public int y;&#125;\n@Check就是一个注解。第一个@Check(min=0, max=100, value=55)明确定义了三个参数，第二个@Check(value=99)只定义了一个value参数，它实际上和@Check(99)是完全一样的。最后一个@Check表示所有参数都使用默认值。\n小结\n注解（Annotation）是Java语言用于工具处理的标注：\n注解可以配置参数，没有指定配置的参数使用默认值；\n如果参数名称是value，且只有一个参数，那么可以省略参数名称。\n\n\nJava语言使用@interface语法来定义注解（Annotation），它的格式如下：\n12345public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;\n注解的参数类似无参数方法，可以用default设定一个默认值（强烈推荐）。最常用的参数应当命名为value。\n元注解\n有一些注解可以修饰其他注解，这些注解就称为元注解（meta annotation）。Java标准库已经定义了一些元注解，我们只需要使用元注解，通常不需要自己去编写元注解。\n@Target\n最常用的元注解是@Target。使用@Target可以定义Annotation能够被应用于源码的哪些位置：\n\n类或接口：ElementType.TYPE；\n字段：ElementType.FIELD；\n方法：ElementType.METHOD；\n构造方法：ElementType.CONSTRUCTOR；\n方法参数：ElementType.PARAMETER。\n\n例如，定义注解@Report可用在方法上，我们必须添加一个@Target(ElementType.METHOD)：\n123456@Target(ElementType.METHOD)public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;\n定义注解@Report可用在方法或字段上，可以把@Target注解参数变为数组&#123; ElementType.METHOD, ElementType.FIELD &#125;：\n1234567@Target(&#123;    ElementType.METHOD,    ElementType.FIELD&#125;)public @interface Report &#123;    ...&#125;\n实际上@Target定义的value是ElementType[]数组，只有一个元素时，可以省略数组的写法。\n@Retention\n另一个重要的元注解@Retention定义了Annotation的生命周期：\n\n仅编译期：RetentionPolicy.SOURCE；\n仅class文件：RetentionPolicy.CLASS；\n运行期：RetentionPolicy.RUNTIME。\n\n如果@Retention不存在，则该Annotation默认为CLASS。因为通常我们自定义的Annotation都是RUNTIME，所以，务必要加上@Retention(RetentionPolicy.RUNTIME)这个元注解：\n123456@Retention(RetentionPolicy.RUNTIME)public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;\n@Repeatable\n使用@Repeatable这个元注解可以定义Annotation是否可重复。这个注解应用不是特别广泛。\n123456789101112@Repeatable(Reports.class)@Target(ElementType.TYPE)public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;@Target(ElementType.TYPE)public @interface Reports &#123;    Report[] value();&#125;\n经过@Repeatable修饰后，在某个类型声明处，就可以添加多个@Report注解：\n1234@Report(type=1, level=&quot;debug&quot;)@Report(type=2, level=&quot;warning&quot;)public class Hello &#123;&#125;\n@Inherited\n使用@Inherited定义子类是否可继承父类定义的Annotation。@Inherited仅针对@Target(ElementType.TYPE)类型的annotation有效，并且仅针对class的继承，对interface的继承无效：\n1234567@Inherited@Target(ElementType.TYPE)public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;\n在使用的时候，如果一个类用到了@Report：\n123@Report(type=1)public class Person &#123;&#125;\n则它的子类默认也定义了该注解：\n12public class Student extends Person &#123;&#125;\n如何定义Annotation\n我们总结一下定义Annotation的步骤：\n第一步，用@interface定义注解：\n12public @interface Report &#123;&#125;\n第二步，添加参数、默认值：\n12345public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;\n把最常用的参数定义为value()，推荐所有参数都尽量设置默认值。\n第三步，用元注解配置注解：\n1234567@Target(ElementType.TYPE)@Retention(RetentionPolicy.RUNTIME)public @interface Report &#123;    int type() default 0;    String level() default &quot;info&quot;;    String value() default &quot;&quot;;&#125;\n其中，必须设置@Target和@Retention，@Retention一般设置为RUNTIME，因为我们自定义的注解通常要求在运行期读取。一般情况下，不必写@Inherited和@Repeatable。\n小结\nJava使用@interface定义注解；\n可定义多个参数和默认值，核心参数使用value名称；\n必须设置@Target来指定Annotation可以应用的范围；\n应当设置@Retention(RetentionPolicy.RUNTIME)便于运行期读取该Annotation。\nJava的注解本身对代码逻辑没有任何影响。根据@Retention的配置：\n\nSOURCE类型的注解在编译期就被丢掉了；\nCLASS类型的注解仅保存在class文件中，它们不会被加载进JVM；\nRUNTIME类型的注解会被加载进JVM，并且在运行期可以被程序读取。\n\n如何使用注解完全由工具决定。SOURCE类型的注解主要由编译器使用，因此我们一般只使用，不编写。CLASS类型的注解主要由底层工具库使用，涉及到class的加载，一般我们很少用到。只有RUNTIME类型的注解不但要使用，还经常需要编写。\n因此，我们只讨论如何读取RUNTIME类型的注解。\n因为注解定义后也是一种class，所有的注解都继承自java.lang.annotation.Annotation，因此，读取注解，需要使用反射API。\nJava提供的使用反射API读取Annotation的方法包括：\n判断某个注解是否存在于Class、Field、Method或Constructor：\n\nClass.isAnnotationPresent(Class)\nField.isAnnotationPresent(Class)\nMethod.isAnnotationPresent(Class)\nConstructor.isAnnotationPresent(Class)\n\n例如：\n12// 判断@Report是否存在于Person类:Person.class.isAnnotationPresent(Report.class);\n使用反射API读取Annotation：\n\nClass.getAnnotation(Class)\nField.getAnnotation(Class)\nMethod.getAnnotation(Class)\nConstructor.getAnnotation(Class)\n\n例如：\n1234// 获取Person定义的@Report注解:Report report = Person.class.getAnnotation(Report.class);int type = report.type();String level = report.level();\n使用反射API读取Annotation有两种方法。方法一是先判断Annotation是否存在，如果存在，就直接读取：\n12345Class cls = Person.class;if (cls.isAnnotationPresent(Report.class)) &#123;    Report report = cls.getAnnotation(Report.class);    ...&#125;\n第二种方法是直接读取Annotation，如果Annotation不存在，将返回null：\n12345Class cls = Person.class;Report report = cls.getAnnotation(Report.class);if (report != null) &#123;   ...&#125;\n读取方法、字段和构造方法的Annotation和Class类似。但要读取方法参数的Annotation就比较麻烦一点，因为方法参数本身可以看成一个数组，而每个参数又可以定义多个注解，所以，一次获取方法参数的所有注解就必须用一个二维数组来表示。例如，对于以下方法定义的注解：\n12public void hello(@NotNull @Range(max=5) String name, @NotNull String prefix) &#123;&#125;\n要读取方法参数的注解，我们先用反射获取Method实例，然后读取方法参数的所有注解：\n1234567891011121314// 获取Method实例:Method m = ...// 获取所有参数的Annotation:Annotation[][] annos = m.getParameterAnnotations();// 第一个参数（索引为0）的所有Annotation:Annotation[] annosOfName = annos[0];for (Annotation anno : annosOfName) &#123;    if (anno instanceof Range r) &#123; // @Range注解        r.max();    &#125;    if (anno instanceof NotNull n) &#123; // @NotNull注解        //    &#125;&#125;\n使用注解\n注解如何使用，完全由程序自己决定。例如，JUnit是一个测试框架，它会自动运行所有标记为@Test的方法。\n我们来看一个@Range注解，我们希望用它来定义一个String字段的规则：字段长度满足@Range的参数定义：\n123456@Retention(RetentionPolicy.RUNTIME)@Target(ElementType.FIELD)public @interface Range &#123;    int min() default 0;    int max() default 255;&#125;\n在某个JavaBean中，我们可以使用该注解：\n1234567public class Person &#123;    @Range(min=1, max=20)    public String name;    @Range(max=10)    public String city;&#125;\n但是，定义了注解，本身对程序逻辑没有任何影响。我们必须自己编写代码来使用注解。这里，我们编写一个Person实例的检查方法，它可以检查Person实例的String字段长度是否满足@Range的定义：\n12345678910111213141516171819void check(Person person) throws IllegalArgumentException, ReflectiveOperationException &#123;    // 遍历所有Field:    for (Field field : person.getClass().getFields()) &#123;        // 获取Field定义的@Range:        Range range = field.getAnnotation(Range.class);        // 如果@Range存在:        if (range != null) &#123;            // 获取Field的值:            Object value = field.get(person);            // 如果值是String:            if (value instanceof String s) &#123;                // 判断值是否满足@Range的min/max:                if (s.length() &lt; range.min() || s.length() &gt; range.max()) &#123;                    throw new IllegalArgumentException(&quot;Invalid field: &quot; + field.getName());                &#125;            &#125;        &#125;    &#125;&#125;\n这样一来，我们通过@Range注解，配合check()方法，就可以完成Person实例的检查。注意检查逻辑完全是我们自己编写的，JVM不会自动给注解添加任何额外的逻辑。\n练习\n使用@Range注解来检查Java Bean的字段。如果字段类型是String，就检查String的长度，如果字段是int，就检查int的范围。\n下载练习\n小结\n可以在运行期通过反射读取RUNTIME类型的注解，注意千万不要漏写@Retention(RetentionPolicy.RUNTIME)，否则运行期无法读取到该注解。\n可以通过程序处理注解来实现相应的功能：\n\n对JavaBean的属性值按规则进行检查；\nJUnit会自动运行@Test标记的测试方法。\n\n","dateCreated":"2025-05-24T12:44:14+08:00","dateModified":"2025-05-24T12:48:14+08:00","datePublished":"2025-05-24T12:44:14+08:00","description":"","headline":"JAVA-注解","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/","keywords":"Java"}</script>
     <meta name="description" content="使用注解 什么是注解（Annotation）？注解是放在Java源码的类、方法、字段、参数前的一种特殊“注释”： 12345678910111213141516&#x2F;&#x2F; this is a component:@Resource(&quot;hello&quot;)public class Hello &#123;    @Inject    int n;    @PostConstruct    p">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="JAVA-注解">
-<meta property="og:url" content="https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/index.html">
+<meta property="og:url" content="https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="使用注解 什么是注解（Annotation）？注解是放在Java源码的类、方法、字段、参数前的一种特殊“注释”： 12345678910111213141516&#x2F;&#x2F; this is a component:@Resource(&quot;hello&quot;)public class Hello &#123;    @Inject    int n;    @PostConstruct    p">
 <meta property="og:locale" content="zh_TW">
@@ -528,7 +528,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Diesen Beitrag teilen"
+                aria-label="Share this post"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -539,7 +539,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -552,7 +552,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -565,7 +565,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -578,7 +578,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -591,7 +591,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -656,7 +656,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Diesen Beitrag teilen"
+                aria-label="Share this post"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -667,7 +667,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -680,7 +680,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -693,7 +693,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -706,7 +706,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -719,7 +719,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -740,7 +740,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -753,7 +753,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -766,7 +766,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -779,7 +779,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/24/JAVA/JAVA-%E6%B3%A8%E8%A7%A3/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/24/Java/JAVA-%E6%B3%A8%E8%A7%A3/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>

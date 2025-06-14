@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"在大型应用程序中，配置主从数据库并使用读写分离是常见的设计模式。在Spring应用程序中，要实现读写分离，最好不要对现有代码进行改动，而是在底层透明地支持。\nSpring内置了一个AbstractRoutingDataSource，它可以把多个数据源配置成一个Map，然后，根据不同的key返回不同的数据源。因为AbstractRoutingDataSource也是一个DataSource接口，因此，应用程序可以先设置好key， 访问数据库的代码就可以从AbstractRoutingDataSource拿到对应的一个真实的数据源，从而访问指定的数据库。它的结构看起来像这样：\n123456789101112131415161718192021222324252627   ┌───────────────────────────┐   │        controller         │   │  set routing-key = &quot;xxx&quot;  │   └───────────────────────────┘                 │                 ▼   ┌───────────────────────────┐   │        logic code         │   └───────────────────────────┘                 │                 ▼   ┌───────────────────────────┐   │    routing datasource     │   └───────────────────────────┘                 │       ┌─────────┴─────────┐       │                   │       ▼                   ▼┌─────────────┐     ┌─────────────┐│ read-write  │     │  read-only  ││ datasource  │     │ datasource  │└─────────────┘     └─────────────┘       │                   │       ▼                   ▼┌─────────────┐     ┌─────────────┐│  Master DB  │────▶│  Slave DB   │└─────────────┘     └─────────────┘\n第一步：配置多数据源\n首先，我们在SpringBoot中配置两个数据源，其中第二个数据源是ro-datasource：\n12345678910111213141516171819spring:  datasource:    jdbc-url: jdbc:mysql://localhost/test    username: rw    password: rw_password    driver-class-name: com.mysql.jdbc.Driver    hikari:      pool-name: HikariCP      auto-commit: false      ...  ro-datasource:    jdbc-url: jdbc:mysql://localhost/test    username: ro    password: ro_password    driver-class-name: com.mysql.jdbc.Driver    hikari:      pool-name: HikariCP      auto-commit: false      ...\n在开发环境下，没有必要配置主从数据库。只需要给数据库设置两个用户，一个rw具有读写权限，一个ro只有SELECT权限，这样就模拟了生产环境下对主从数据库的读写分离。\n在SpringBoot的配置代码中，我们初始化两个数据源：\n123456789101112131415161718192021222324@SpringBootApplicationpublic class MySpringBootApplication &#123;    /**     * Master data source.     */    @Bean(&quot;masterDataSource&quot;)    @ConfigurationProperties(prefix = &quot;spring.datasource&quot;)    DataSource masterDataSource() &#123;       logger.info(&quot;create master datasource...&quot;);        return DataSourceBuilder.create().build();    &#125;    /**     * Slave (read only) data source.     */    @Bean(&quot;slaveDataSource&quot;)    @ConfigurationProperties(prefix = &quot;spring.ro-datasource&quot;)    DataSource slaveDataSource() &#123;        logger.info(&quot;create slave datasource...&quot;);        return DataSourceBuilder.create().build();    &#125;    ...&#125;\n第二步：编写RoutingDataSource\n然后，我们用Spring内置的RoutingDataSource，把两个真实的数据源代理为一个动态数据源：\n123456public class RoutingDataSource extends AbstractRoutingDataSource &#123;    @Override    protected Object determineCurrentLookupKey() &#123;        return &quot;masterDataSource&quot;;    &#125;&#125;\n对这个RoutingDataSource，需要在SpringBoot中配置好并设置为主数据源：\n12345678910111213141516171819@SpringBootApplicationpublic class MySpringBootApplication &#123;    @Bean    @Primary    DataSource primaryDataSource(            @Autowired @Qualifier(&quot;masterDataSource&quot;) DataSource masterDataSource,            @Autowired @Qualifier(&quot;slaveDataSource&quot;) DataSource slaveDataSource    ) &#123;        logger.info(&quot;create routing datasource...&quot;);        Map&lt;Object, Object&gt; map = new HashMap&lt;&gt;();        map.put(&quot;masterDataSource&quot;, masterDataSource);        map.put(&quot;slaveDataSource&quot;, slaveDataSource);        RoutingDataSource routing = new RoutingDataSource();        routing.setTargetDataSources(map);        routing.setDefaultTargetDataSource(masterDataSource);        return routing;    &#125;    ...&#125;\n现在，RoutingDataSource配置好了，但是，路由的选择是写死的，即永远返回&quot;masterDataSource&quot;，\n现在问题来了：如何存储动态选择的key以及在哪设置key？\n在Servlet的线程模型中，使用ThreadLocal存储key最合适，因此，我们编写一个RoutingDataSourceContext，来设置并动态存储key：\n123456789101112131415161718public class RoutingDataSourceContext implements AutoCloseable &#123;    // holds data source key in thread local:    static final ThreadLocal&lt;String&gt; threadLocalDataSourceKey = new ThreadLocal&lt;&gt;();    public static String getDataSourceRoutingKey() &#123;        String key = threadLocalDataSourceKey.get();        return key == null ? &quot;masterDataSource&quot; : key;    &#125;    public RoutingDataSourceContext(String key) &#123;        threadLocalDataSourceKey.set(key);    &#125;    public void close() &#123;        threadLocalDataSourceKey.remove();    &#125;&#125;\n然后，修改RoutingDataSource，获取key的代码如下：\n12345public class RoutingDataSource extends AbstractRoutingDataSource &#123;    protected Object determineCurrentLookupKey() &#123;        return RoutingDataSourceContext.getDataSourceRoutingKey();    &#125;&#125;\n这样，在某个地方，例如一个Controller的方法内部，就可以动态设置DataSource的Key：\n1234567891011@Controllerpublic class MyController &#123;    @Get(&quot;/&quot;)    public String index() &#123;        String key = &quot;slaveDataSource&quot;;        try (RoutingDataSourceContext ctx = new RoutingDataSourceContext(key)) &#123;            // TODO:            return &quot;html... www.liaoxuefeng.com&quot;;        &#125;    &#125;&#125;\n到此为止，我们已经成功实现了数据库的动态路由访问。\n这个方法是可行的，但是，需要读从数据库的地方，就需要加上一大段try (RoutingDataSourceContext ctx = ...) &#123;&#125;代码，使用起来十分不便。有没有方法可以简化呢？\n有！\n我们仔细想想，Spring提供的声明式事务管理，就只需要一个@Transactional()注解，放在某个Java方法上，这个方法就自动具有了事务。\n我们也可以编写一个类似的@RoutingWith(&quot;slaveDataSource&quot;)注解，放到某个Controller的方法上，这个方法内部就自动选择了对应的数据源。代码看起来应该像这样：\n12345678@Controllerpublic class MyController &#123;    @Get(&quot;/&quot;)    @RoutingWith(&quot;slaveDataSource&quot;)    public String index() &#123;        return &quot;html... www.liaoxuefeng.com&quot;;    &#125;&#125;\n这样，完全不修改应用程序的逻辑，只在必要的地方加上注解，自动实现动态数据源切换，这个方法是最简单的。\n想要在应用程序中少写代码，我们就得多做一点底层工作：必须使用类似Spring实现声明式事务的机制，即用AOP实现动态数据源切换。\n实现这个功能也非常简单，编写一个RoutingAspect，利用AspectJ实现一个Around拦截：\n1234567891011@Aspect@Componentpublic class RoutingAspect &#123;    @Around(&quot;@annotation(routingWith)&quot;)    public Object routingWithDataSource(ProceedingJoinPoint joinPoint, RoutingWith routingWith) throws Throwable &#123;        String key = routingWith.value();        try (RoutingDataSourceContext ctx = new RoutingDataSourceContext(key)) &#123;            return joinPoint.proceed();\t\t&#125;\t&#125;&#125;\n注意方法的第二个参数RoutingWith是Spring传入的注解实例，我们根据注解的value()获取配置的key。编译前需要添加一个Maven依赖：\n1234&lt;dependency&gt;    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;    &lt;artifactId&gt;spring-boot-starter-aop&lt;/artifactId&gt;&lt;/dependency&gt;\n到此为止，我们就实现了用注解动态选择数据源的功能。最后一步重构是用字符串常量替换散落在各处的&quot;masterDataSource&quot;和&quot;slaveDataSource&quot;。\n使用限制\n受Servlet线程模型的局限，动态数据源不能在一个请求内设定后再修改，也就是@RoutingWith不能嵌套。此外，@RoutingWith和@Transactional混用时，要设定AOP的优先级。\n本文代码需要SpringBoot支持，JDK 1.8编译并打开-parameters编译参数。\n","dateCreated":"2025-05-24T18:44:46+08:00","dateModified":"2025-05-26T16:15:48+08:00","datePublished":"2025-05-24T18:44:46+08:00","description":"","headline":"JAVA-Spring主从数据库的配置和动态数据源切换原理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/","keywords":"Java, Spirng"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"在大型应用程序中，配置主从数据库并使用读写分离是常见的设计模式。在Spring应用程序中，要实现读写分离，最好不要对现有代码进行改动，而是在底层透明地支持。\nSpring内置了一个AbstractRoutingDataSource，它可以把多个数据源配置成一个Map，然后，根据不同的key返回不同的数据源。因为AbstractRoutingDataSource也是一个DataSource接口，因此，应用程序可以先设置好key， 访问数据库的代码就可以从AbstractRoutingDataSource拿到对应的一个真实的数据源，从而访问指定的数据库。它的结构看起来像这样：\n123456789101112131415161718192021222324252627   ┌───────────────────────────┐   │        controller         │   │  set routing-key = &quot;xxx&quot;  │   └───────────────────────────┘                 │                 ▼   ┌───────────────────────────┐   │        logic code         │   └───────────────────────────┘                 │                 ▼   ┌───────────────────────────┐   │    routing datasource     │   └───────────────────────────┘                 │       ┌─────────┴─────────┐       │                   │       ▼                   ▼┌─────────────┐     ┌─────────────┐│ read-write  │     │  read-only  ││ datasource  │     │ datasource  │└─────────────┘     └─────────────┘       │                   │       ▼                   ▼┌─────────────┐     ┌─────────────┐│  Master DB  │────▶│  Slave DB   │└─────────────┘     └─────────────┘\n第一步：配置多数据源\n首先，我们在SpringBoot中配置两个数据源，其中第二个数据源是ro-datasource：\n12345678910111213141516171819spring:  datasource:    jdbc-url: jdbc:mysql://localhost/test    username: rw    password: rw_password    driver-class-name: com.mysql.jdbc.Driver    hikari:      pool-name: HikariCP      auto-commit: false      ...  ro-datasource:    jdbc-url: jdbc:mysql://localhost/test    username: ro    password: ro_password    driver-class-name: com.mysql.jdbc.Driver    hikari:      pool-name: HikariCP      auto-commit: false      ...\n在开发环境下，没有必要配置主从数据库。只需要给数据库设置两个用户，一个rw具有读写权限，一个ro只有SELECT权限，这样就模拟了生产环境下对主从数据库的读写分离。\n在SpringBoot的配置代码中，我们初始化两个数据源：\n123456789101112131415161718192021222324@SpringBootApplicationpublic class MySpringBootApplication &#123;    /**     * Master data source.     */    @Bean(&quot;masterDataSource&quot;)    @ConfigurationProperties(prefix = &quot;spring.datasource&quot;)    DataSource masterDataSource() &#123;       logger.info(&quot;create master datasource...&quot;);        return DataSourceBuilder.create().build();    &#125;    /**     * Slave (read only) data source.     */    @Bean(&quot;slaveDataSource&quot;)    @ConfigurationProperties(prefix = &quot;spring.ro-datasource&quot;)    DataSource slaveDataSource() &#123;        logger.info(&quot;create slave datasource...&quot;);        return DataSourceBuilder.create().build();    &#125;    ...&#125;\n第二步：编写RoutingDataSource\n然后，我们用Spring内置的RoutingDataSource，把两个真实的数据源代理为一个动态数据源：\n123456public class RoutingDataSource extends AbstractRoutingDataSource &#123;    @Override    protected Object determineCurrentLookupKey() &#123;        return &quot;masterDataSource&quot;;    &#125;&#125;\n对这个RoutingDataSource，需要在SpringBoot中配置好并设置为主数据源：\n12345678910111213141516171819@SpringBootApplicationpublic class MySpringBootApplication &#123;    @Bean    @Primary    DataSource primaryDataSource(            @Autowired @Qualifier(&quot;masterDataSource&quot;) DataSource masterDataSource,            @Autowired @Qualifier(&quot;slaveDataSource&quot;) DataSource slaveDataSource    ) &#123;        logger.info(&quot;create routing datasource...&quot;);        Map&lt;Object, Object&gt; map = new HashMap&lt;&gt;();        map.put(&quot;masterDataSource&quot;, masterDataSource);        map.put(&quot;slaveDataSource&quot;, slaveDataSource);        RoutingDataSource routing = new RoutingDataSource();        routing.setTargetDataSources(map);        routing.setDefaultTargetDataSource(masterDataSource);        return routing;    &#125;    ...&#125;\n现在，RoutingDataSource配置好了，但是，路由的选择是写死的，即永远返回&quot;masterDataSource&quot;，\n现在问题来了：如何存储动态选择的key以及在哪设置key？\n在Servlet的线程模型中，使用ThreadLocal存储key最合适，因此，我们编写一个RoutingDataSourceContext，来设置并动态存储key：\n123456789101112131415161718public class RoutingDataSourceContext implements AutoCloseable &#123;    // holds data source key in thread local:    static final ThreadLocal&lt;String&gt; threadLocalDataSourceKey = new ThreadLocal&lt;&gt;();    public static String getDataSourceRoutingKey() &#123;        String key = threadLocalDataSourceKey.get();        return key == null ? &quot;masterDataSource&quot; : key;    &#125;    public RoutingDataSourceContext(String key) &#123;        threadLocalDataSourceKey.set(key);    &#125;    public void close() &#123;        threadLocalDataSourceKey.remove();    &#125;&#125;\n然后，修改RoutingDataSource，获取key的代码如下：\n12345public class RoutingDataSource extends AbstractRoutingDataSource &#123;    protected Object determineCurrentLookupKey() &#123;        return RoutingDataSourceContext.getDataSourceRoutingKey();    &#125;&#125;\n这样，在某个地方，例如一个Controller的方法内部，就可以动态设置DataSource的Key：\n1234567891011@Controllerpublic class MyController &#123;    @Get(&quot;/&quot;)    public String index() &#123;        String key = &quot;slaveDataSource&quot;;        try (RoutingDataSourceContext ctx = new RoutingDataSourceContext(key)) &#123;            // TODO:            return &quot;html... www.liaoxuefeng.com&quot;;        &#125;    &#125;&#125;\n到此为止，我们已经成功实现了数据库的动态路由访问。\n这个方法是可行的，但是，需要读从数据库的地方，就需要加上一大段try (RoutingDataSourceContext ctx = ...) &#123;&#125;代码，使用起来十分不便。有没有方法可以简化呢？\n有！\n我们仔细想想，Spring提供的声明式事务管理，就只需要一个@Transactional()注解，放在某个Java方法上，这个方法就自动具有了事务。\n我们也可以编写一个类似的@RoutingWith(&quot;slaveDataSource&quot;)注解，放到某个Controller的方法上，这个方法内部就自动选择了对应的数据源。代码看起来应该像这样：\n12345678@Controllerpublic class MyController &#123;    @Get(&quot;/&quot;)    @RoutingWith(&quot;slaveDataSource&quot;)    public String index() &#123;        return &quot;html... www.liaoxuefeng.com&quot;;    &#125;&#125;\n这样，完全不修改应用程序的逻辑，只在必要的地方加上注解，自动实现动态数据源切换，这个方法是最简单的。\n想要在应用程序中少写代码，我们就得多做一点底层工作：必须使用类似Spring实现声明式事务的机制，即用AOP实现动态数据源切换。\n实现这个功能也非常简单，编写一个RoutingAspect，利用AspectJ实现一个Around拦截：\n1234567891011@Aspect@Componentpublic class RoutingAspect &#123;    @Around(&quot;@annotation(routingWith)&quot;)    public Object routingWithDataSource(ProceedingJoinPoint joinPoint, RoutingWith routingWith) throws Throwable &#123;        String key = routingWith.value();        try (RoutingDataSourceContext ctx = new RoutingDataSourceContext(key)) &#123;            return joinPoint.proceed();\t\t&#125;\t&#125;&#125;\n注意方法的第二个参数RoutingWith是Spring传入的注解实例，我们根据注解的value()获取配置的key。编译前需要添加一个Maven依赖：\n1234&lt;dependency&gt;    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;    &lt;artifactId&gt;spring-boot-starter-aop&lt;/artifactId&gt;&lt;/dependency&gt;\n到此为止，我们就实现了用注解动态选择数据源的功能。最后一步重构是用字符串常量替换散落在各处的&quot;masterDataSource&quot;和&quot;slaveDataSource&quot;。\n使用限制\n受Servlet线程模型的局限，动态数据源不能在一个请求内设定后再修改，也就是@RoutingWith不能嵌套。此外，@RoutingWith和@Transactional混用时，要设定AOP的优先级。\n本文代码需要SpringBoot支持，JDK 1.8编译并打开-parameters编译参数。\n","dateCreated":"2025-05-24T18:44:46+08:00","dateModified":"2025-05-26T16:15:48+08:00","datePublished":"2025-05-24T18:44:46+08:00","description":"","headline":"JAVA-Spring主从数据库的配置和动态数据源切换原理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/","keywords":"Java, Spirng"}</script>
     <meta name="description" content="在大型应用程序中，配置主从数据库并使用读写分离是常见的设计模式。在Spring应用程序中，要实现读写分离，最好不要对现有代码进行改动，而是在底层透明地支持。 Spring内置了一个AbstractRoutingDataSource，它可以把多个数据源配置成一个Map，然后，根据不同的key返回不同的数据源。因为AbstractRoutingDataSource也是一个DataSource接口，因此">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="JAVA-Spring主从数据库的配置和动态数据源切换原理">
-<meta property="og:url" content="https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/index.html">
+<meta property="og:url" content="https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="在大型应用程序中，配置主从数据库并使用读写分离是常见的设计模式。在Spring应用程序中，要实现读写分离，最好不要对现有代码进行改动，而是在底层透明地支持。 Spring内置了一个AbstractRoutingDataSource，它可以把多个数据源配置成一个Map，然后，根据不同的key返回不同的数据源。因为AbstractRoutingDataSource也是一个DataSource接口，因此">
 <meta property="og:locale" content="zh_TW">
@@ -422,7 +422,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Diesen Beitrag teilen"
+                aria-label="Share this post"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -433,7 +433,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -446,7 +446,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -459,7 +459,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -472,7 +472,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -485,7 +485,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -550,7 +550,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Diesen Beitrag teilen"
+                aria-label="Share this post"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -561,7 +561,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -574,7 +574,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -587,7 +587,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -600,7 +600,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -613,7 +613,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -634,7 +634,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -647,7 +647,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -660,7 +660,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -673,7 +673,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/24/JAVA/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/24/Java/JAVA-Spring%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E9%85%8D%E7%BD%AE%E5%92%8C%E5%8A%A8%E6%80%81%E6%95%B0%E6%8D%AE%E6%BA%90%E5%88%87%E6%8D%A2%E5%8E%9F%E7%90%86/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
