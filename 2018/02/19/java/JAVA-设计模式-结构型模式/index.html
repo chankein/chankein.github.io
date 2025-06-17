@@ -1,0 +1,1229 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>JAVA-设计模式-结构型模式 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"结构型模式主要涉及如何组合各种对象以便获得更好、更灵活的结构。虽然面向对象的继承机制提供了最基本的子类扩展父类的功能，但结构型模式不仅仅简单地使用继承，而更多地通过组合与运行期的动态组合来实现更灵活的功能。\n结构型模式有：\n\n适配器\n桥接\n组合\n装饰器\n外观\n享元\n代理\n\n\n将一个类的接口转换成客户希望的另外一个接口，使得原本由于接口不兼容而不能一起工作的那些类可以一起工作。\n\n适配器模式是Adapter，也称Wrapper，是指如果一个接口需要B接口，但是待传入的对象却是A接口，怎么办？\n我们举个例子。如果去美国，我们随身带的电器是无法直接使用的，因为美国的插座标准和中国不同，所以，我们需要一个适配器：\n\n在程序设计中，适配器也是类似的。我们已经有一个Task类，实现了Callable接口：\n123456789101112131415public class Task implements Callable&lt;Long&gt; &#123;    private long num;    public Task(long num) &#123;        this.num = num;    &#125;    public Long call() throws Exception &#123;        long r = 0;        for (long n = 1; n &lt;= this.num; n++) &#123;            r = r + n;        &#125;        System.out.println(&quot;Result: &quot; + r);        return r;    &#125;&#125;\n现在，我们想通过一个线程去执行它：\n123Callable&lt;Long&gt; callable = new Task(123450000L);Thread thread = new Thread(callable); // compile error!thread.start();\n发现编译不过！因为Thread接收Runnable接口，但不接收Callable接口，肿么办？\n一个办法是改写Task类，把实现的Callable改为Runnable，但这样做不好，因为Task很可能在其他地方作为Callable被引用，改写Task的接口，会导致其他正常工作的代码无法编译。\n另一个办法不用改写Task类，而是用一个Adapter，把这个Callable接口“变成”Runnable接口，这样，就可以正常编译：\n123Callable&lt;Long&gt; callable = new Task(123450000L);Thread thread = new Thread(new RunnableAdapter(callable));thread.start();\n这个RunnableAdapter类就是Adapter，它接收一个Callable，输出一个Runnable。怎么实现这个RunnableAdapter呢？我们先看完整的代码：\n123456789101112131415161718public class RunnableAdapter implements Runnable &#123;    // 引用待转换接口:    private Callable&lt;?&gt; callable;    public RunnableAdapter(Callable&lt;?&gt; callable) &#123;        this.callable = callable;    &#125;    // 实现指定接口:    public void run() &#123;        // 将指定接口调用委托给转换接口调用:        try &#123;            callable.call();        &#125; catch (Exception e) &#123;            throw new RuntimeException(e);        &#125;    &#125;&#125;\n编写一个Adapter的步骤如下：\n\n实现目标接口，这里是Runnable；\n内部持有一个待转换接口的引用，这里是通过字段持有Callable接口；\n在目标接口的实现方法内部，调用待转换接口的方法。\n\n这样一来，Thread就可以接收这个RunnableAdapter，因为它实现了Runnable接口。Thread作为调用方，它会调用RunnableAdapter的run()方法，在这个run()方法内部，又调用了Callable的call()方法，相当于Thread通过一层转换，间接调用了Callable的call()方法。\n适配器模式在Java标准库中有广泛应用。比如我们持有数据类型是String[]，但是需要List接口时，可以用一个Adapter：\n12String[] exist = new String[] &#123;&quot;Good&quot;, &quot;morning&quot;, &quot;Bob&quot;, &quot;and&quot;, &quot;Alice&quot;&#125;;Set&lt;String&gt; set = new HashSet&lt;&gt;(Arrays.asList(exist));\n注意到List&lt;T&gt; Arrays.asList(T[])就相当于一个转换器，它可以把数组转换为List。\n我们再看一个例子：假设我们持有一个InputStream，希望调用readText(Reader)方法，但它的参数类型是Reader而不是InputStream，怎么办？\n当然是使用适配器，把InputStream“变成”Reader：\n123InputStream input = Files.newInputStream(Paths.get(&quot;/path/to/file&quot;));Reader reader = new InputStreamReader(input, &quot;UTF-8&quot;);readText(reader);\nInputStreamReader就是Java标准库提供的Adapter，它负责把一个InputStream适配为Reader。类似的还有OutputStreamWriter。\n如果我们把readText(Reader)方法参数从Reader改为FileReader，会有什么问题？这个时候，因为我们需要一个FileReader类型，就必须把InputStream适配为FileReader：\n1FileReader reader = new InputStreamReader(input, &quot;UTF-8&quot;); // compile error!\n直接使用InputStreamReader这个Adapter是不行的，因为它只能转换出Reader接口。事实上，要把InputStream转换为FileReader也不是不可能，但需要花费十倍以上的功夫。这时，面向抽象编程这一原则就体现出了威力：持有高层接口不但代码更灵活，而且把各种接口组合起来也更容易。一旦持有某个具体的子类类型，要想做一些改动就非常困难。\n练习\n使用Adapter模式将Callable接口适配为Runnable。\n下载练习\n小结\nAdapter模式可以将一个A接口转换为B接口，使得新的对象符合B接口规范。\n编写Adapter实际上就是编写一个实现了B接口，并且内部持有A接口的类：\n123456789public BAdapter implements B &#123;    private A a;    public BAdapter(A a) &#123;        this.a = a;    &#125;    public void b() &#123;        a.a();    &#125;&#125;\n在Adapter内部将B接口的调用“转换”为对A接口的调用。\n只有A、B接口均为抽象接口时，才能非常简单地实现Adapter模式。\n\n将抽象部分与它的实现部分分离，使它们都可以独立地变化。\n\n桥接模式的定义非常玄乎，直接理解不太容易，所以我们还是举例子。\n假设某个汽车厂商生产三种品牌的汽车：Big、Tiny和Boss，每种品牌又可以选择燃油、纯电和混合动力。如果用传统的继承来表示各个最终车型，一共有3个抽象类加9个最终子类：\n1234567891011121314151617181920                   ┌───────┐                   │  Car  │                   └───────┘                       ▲    ┌──────────────────┼───────────────────┐    │                  │                   │┌───────┐          ┌───────┐          ┌───────┐│BigCar │          │TinyCar│          │BossCar│└───────┘          └───────┘          └───────┘    ▲                  ▲                  ▲    │                  │                  │    │ ┌───────────────┐│ ┌───────────────┐│ ┌───────────────┐    ├─│  BigFuelCar   │├─│  TinyFuelCar  │├─│  BossFuelCar  │    │ └───────────────┘│ └───────────────┘│ └───────────────┘    │ ┌───────────────┐│ ┌───────────────┐│ ┌───────────────┐    ├─│BigElectricCar │├─│TinyElectricCar│├─│BossElectricCar│    │ └───────────────┘│ └───────────────┘│ └───────────────┘    │ ┌───────────────┐│ ┌───────────────┐│ ┌───────────────┐    └─│ BigHybridCar  │└─│ TinyHybridCar │└─│ BossHybridCar │      └───────────────┘  └───────────────┘  └───────────────┘\n如果要新增一个品牌，或者加一个新的引擎（比如核动力），那么子类的数量增长更快。\n所以，桥接模式就是为了避免直接继承带来的子类爆炸。\n我们来看看桥接模式如何解决上述问题。\n在桥接模式中，首先把Car按品牌进行子类化，但是，每个品牌选择什么发动机，不再使用子类扩充，而是通过一个抽象的“修正”类，以组合的形式引入。我们来看看具体的实现。\n首先定义抽象类Car，它引用一个Engine：\n12345678910public abstract class Car &#123;    // 引用Engine:    protected Engine engine;    public Car(Engine engine) &#123;        this.engine = engine;    &#125;    public abstract void drive();&#125;\nEngine的定义如下：\n123public interface Engine &#123;    void start();&#125;\n紧接着，在一个“修正”的抽象类RefinedCar中定义一些额外操作：\n123456789101112public abstract class RefinedCar extends Car &#123;    public RefinedCar(Engine engine) &#123;        super(engine);    &#125;    public void drive() &#123;        this.engine.start();        System.out.println(&quot;Drive &quot; + getBrand() + &quot; car...&quot;);    &#125;    public abstract String getBrand();&#125;\n这样一来，最终的不同品牌继承自RefinedCar，例如BossCar：\n123456789public class BossCar extends RefinedCar &#123;    public BossCar(Engine engine) &#123;        super(engine);    &#125;    public String getBrand() &#123;        return &quot;Boss&quot;;    &#125;&#125;\n而针对每一种引擎，继承自Engine，例如HybridEngine：\n12345public class HybridEngine implements Engine &#123;    public void start() &#123;        System.out.println(&quot;Start Hybrid Engine...&quot;);    &#125;&#125;\n客户端通过自己选择一个品牌，再配合一种引擎，得到最终的Car：\n12RefinedCar car = new BossCar(new HybridEngine());car.drive();\n使用桥接模式的好处在于，如果要增加一种引擎，只需要针对Engine派生一个新的子类，如果要增加一个品牌，只需要针对RefinedCar派生一个子类，任何RefinedCar的子类都可以和任何一种Engine自由组合，即一辆汽车的两个维度：品牌和引擎都可以独立地变化。\n123456789101112131415161718       ┌───────────┐       │    Car    │       └───────────┘             ▲             │       ┌───────────┐       ┌─────────┐       │RefinedCar │ ─ ─ ─▶│ Engine  │       └───────────┘       └─────────┘             ▲                  ▲    ┌────────┼────────┐         │ ┌──────────────┐    │        │        │         ├─│  FuelEngine  │┌───────┐┌───────┐┌───────┐     │ └──────────────┘│BigCar ││TinyCar││BossCar│     │ ┌──────────────┐└───────┘└───────┘└───────┘     ├─│ElectricEngine│                                │ └──────────────┘                                │ ┌──────────────┐                                └─│ HybridEngine │                                  └──────────────┘\n桥接模式实现比较复杂，实际应用也非常少，但它提供的设计思想值得借鉴，即不要过度使用继承，而是优先拆分某些部件，使用组合的方式来扩展功能。\n练习\n使用桥接模式扩展一种新的品牌和新的核动力引擎。\n下载练习\n小结\n桥接模式通过分离一个抽象接口和它的实现部分，使得设计可以按两个维度独立扩展。\n组合\n\n将对象组合成树形结构以表示“部分-整体”的层次结构，使得用户对单个对象和组合对象的使用具有一致性。\n\n组合模式（Composite）经常用于树形结构，为了简化代码，使用Composite可以把一个叶子节点与一个父节点统一起来处理。\n我们来看一个具体的例子。在XML或HTML中，从根节点开始，每个节点都可能包含任意个其他节点，这些层层嵌套的节点就构成了一颗树。\n要以树的结构表示XML，我们可以先抽象出节点类型Node：\n12345678public interface Node &#123;    // 添加一个节点为子节点:    Node add(Node node);    // 获取子节点:    List&lt;Node&gt; children();    // 输出为XML:    String toXml();&#125;\n对于一个&lt;abc&gt;这样的节点，我们称之为ElementNode，它可以作为容器包含多个子节点：\n123456789101112131415161718192021222324252627public class ElementNode implements Node &#123;    private String name;    private List&lt;Node&gt; list = new ArrayList&lt;&gt;();    public ElementNode(String name) &#123;        this.name = name;    &#125;    public Node add(Node node) &#123;        list.add(node);        return this;    &#125;    public List&lt;Node&gt; children() &#123;        return list;    &#125;    public String toXml() &#123;        String start = &quot;&lt;&quot; + name + &quot;&gt;\\n&quot;;        String end = &quot;&lt;/&quot; + name + &quot;&gt;\\n&quot;;        StringJoiner sj = new StringJoiner(&quot;&quot;, start, end);        list.forEach(node -&gt; &#123;            sj.add(node.toXml() + &quot;\\n&quot;);        &#125;);        return sj.toString();    &#125;&#125;\n对于普通文本，我们把它看作TextNode，它没有子节点：\n12345678910111213141516171819public class TextNode implements Node &#123;\tprivate String text;\tpublic TextNode(String text) &#123;\t\tthis.text = text;\t&#125;\tpublic Node add(Node node) &#123;\t\tthrow new UnsupportedOperationException();\t&#125;\tpublic List&lt;Node&gt; children() &#123;\t\treturn List.of();\t&#125;\tpublic String toXml() &#123;\t\treturn text;\t&#125;&#125;\n此外，还可以有注释节点：\n12345678910111213141516171819public class CommentNode implements Node &#123;\tprivate String text;\tpublic CommentNode(String text) &#123;\t\tthis.text = text;\t&#125;\tpublic Node add(Node node) &#123;\t\tthrow new UnsupportedOperationException();\t&#125;\tpublic List&lt;Node&gt; children() &#123;\t\treturn List.of();\t&#125;\tpublic String toXml() &#123;\t\treturn &quot;&lt;!-- &quot; + text + &quot; --&gt;&quot;;\t&#125;&#125;\n通过ElementNode、TextNode和CommentNode，我们就可以构造出一颗树：\n123456789Node root = new ElementNode(&quot;school&quot;);root.add(new ElementNode(&quot;classA&quot;)        .add(new TextNode(&quot;Tom&quot;))        .add(new TextNode(&quot;Alice&quot;)));root.add(new ElementNode(&quot;classB&quot;)        .add(new TextNode(&quot;Bob&quot;))        .add(new TextNode(&quot;Grace&quot;))        .add(new CommentNode(&quot;comment...&quot;)));System.out.println(root.toXml());\n最后通过root节点输出的XML如下：\n1234567891011&lt;school&gt;&lt;classA&gt;TomAlice&lt;/classA&gt;&lt;classB&gt;BobGrace&lt;!-- comment... --&gt;&lt;/classB&gt;&lt;/school&gt;\n可见，使用Composite模式时，需要先统一单个节点以及“容器”节点的接口：\n123456789             ┌───────────┐             │   Node    │             └───────────┘                   ▲      ┌────────────┼────────────┐      │            │            │┌───────────┐┌───────────┐┌───────────┐│ElementNode││ TextNode  ││CommentNode│└───────────┘└───────────┘└───────────┘\n作为容器节点的ElementNode又可以添加任意个Node，这样就可以构成层级结构。\n类似的，像文件夹和文件、GUI窗口的各种组件，都符合Composite模式的定义，因为它们的结构天生就是层级结构。\n练习\n使用Composite模式构造XML。\n下载练习\n小结\nComposite模式使得叶子对象和容器对象具有一致性，从而形成统一的树形结构，并用一致的方式去处理它们。\n\n\n\n动态地给一个对象添加一些额外的职责。就增加功能来说，相比生成子类更为灵活。\n\n装饰器（Decorator）模式，是一种在运行期动态给某个对象的实例增加功能的方法。\n我们在IO的Filter模式一节中其实已经讲过装饰器模式了。在Java标准库中，InputStream是抽象类，FileInputStream、ServletInputStream、Socket.getInputStream()这些InputStream都是最终数据源。\n现在，如果要给不同的最终数据源增加缓冲功能、计算签名功能、加密解密功能，那么，3个最终数据源、3种功能一共需要9个子类。如果继续增加最终数据源，或者增加新功能，子类会爆炸式增长，这种设计方式显然是不可取的。\nDecorator模式的目的就是把一个一个的附加功能，用Decorator的方式给一层一层地累加到原始数据源上，最终，通过组合获得我们想要的功能。\n例如：给FileInputStream增加缓冲和解压缩功能，用Decorator模式写出来如下：\n123456// 创建原始的数据源:InputStream fis = new FileInputStream(&quot;test.gz&quot;);// 增加缓冲功能:InputStream bis = new BufferedInputStream(fis);// 增加解压缩功能:InputStream gis = new GZIPInputStream(bis);\n或者一次性写成这样：\n1234InputStream input = new GZIPInputStream( // 第二层装饰                        new BufferedInputStream( // 第一层装饰                            new FileInputStream(&quot;test.gz&quot;) // 核心功能                        ));\n观察BufferedInputStream和GZIPInputStream，它们实际上都是从FilterInputStream继承的，这个FilterInputStream就是一个抽象的Decorator。我们用图把Decorator模式画出来如下：\n123456789101112131415             ┌───────────┐             │ Component │             └───────────┘                   ▲      ┌────────────┼─────────────────┐      │            │                 │┌───────────┐┌───────────┐     ┌───────────┐│ComponentA ││ComponentB │...  │ Decorator │└───────────┘└───────────┘     └───────────┘                                     ▲                              ┌──────┴──────┐                              │             │                        ┌───────────┐ ┌───────────┐                        │DecoratorA │ │DecoratorB │...                        └───────────┘ └───────────┘\n最顶层的Component是接口，对应到IO的就是InputStream这个抽象类。ComponentA、ComponentB是实际的子类，对应到IO的就是FileInputStream、ServletInputStream这些数据源。Decorator是用于实现各个附加功能的抽象装饰器，对应到IO的就是FilterInputStream。而从Decorator派生的就是一个一个的装饰器，它们每个都有独立的功能，对应到IO的就是BufferedInputStream、GZIPInputStream等。\nDecorator模式有什么好处？它实际上把核心功能和附加功能给分开了。核心功能指FileInputStream这些真正读数据的源头，附加功能指加缓冲、压缩、解密这些功能。如果我们要新增核心功能，就增加Component的子类，例如ByteInputStream。如果我们要增加附加功能，就增加Decorator的子类，例如CipherInputStream。两部分都可以独立地扩展，而具体如何附加功能，由调用方自由组合，从而极大地增强了灵活性。\n如果我们要自己设计完整的Decorator模式，应该如何设计？\n我们还是举个栗子：假设我们需要渲染一个HTML的文本，但是文本还可以附加一些效果，比如加粗、变斜体、加下划线等。为了实现动态附加效果，可以采用Decorator模式。\n首先，仍然需要定义顶层接口TextNode：\n123456public interface TextNode &#123;    // 设置text:    void setText(String text);    // 获取text:    String getText();&#125;\n对于核心节点，例如&lt;span&gt;，它需要从TextNode直接继承：\n1234567891011public class SpanNode implements TextNode &#123;    private String text;    public void setText(String text) &#123;        this.text = text;    &#125;    public String getText() &#123;        return &quot;&lt;span&gt;&quot; + text + &quot;&lt;/span&gt;&quot;;    &#125;&#125;\n紧接着，为了实现Decorator模式，需要有一个抽象的Decorator类：\n1234567891011public abstract class NodeDecorator implements TextNode &#123;    protected final TextNode target;    protected NodeDecorator(TextNode target) &#123;        this.target = target;    &#125;    public void setText(String text) &#123;        this.target.setText(text);    &#125;&#125;\n这个NodeDecorator类的核心是持有一个TextNode，即将要把功能附加到的TextNode实例。接下来就可以写一个加粗功能：\n123456789public class BoldDecorator extends NodeDecorator &#123;    public BoldDecorator(TextNode target) &#123;        super(target);    &#125;    public String getText() &#123;        return &quot;&lt;b&gt;&quot; + target.getText() + &quot;&lt;/b&gt;&quot;;    &#125;&#125;\n类似的，可以继续加ItalicDecorator、UnderlineDecorator等。客户端可以自由组合这些Decorator：\n1234567891011121314TextNode n1 = new SpanNode();TextNode n2 = new BoldDecorator(new UnderlineDecorator(new SpanNode()));TextNode n3 = new ItalicDecorator(new BoldDecorator(new SpanNode()));n1.setText(&quot;Hello&quot;);n2.setText(&quot;Decorated&quot;);n3.setText(&quot;World&quot;);System.out.println(n1.getText());// 输出&lt;span&gt;Hello&lt;/span&gt;System.out.println(n2.getText());// 输出&lt;b&gt;&lt;u&gt;&lt;span&gt;Decorated&lt;/span&gt;&lt;/u&gt;&lt;/b&gt;System.out.println(n3.getText());// 输出&lt;i&gt;&lt;b&gt;&lt;span&gt;World&lt;/span&gt;&lt;/b&gt;&lt;/i&gt;\n练习\n使用Decorator添加一个&lt;del&gt;标签表示删除。\n下载练习\n小结\n使用Decorator模式，可以独立增加核心功能，也可以独立增加附加功能，二者互不影响；\n可以在运行期动态地给核心功能增加任意个附加功能。\n外观\n\n为子系统中的一组接口提供一个一致的界面。Facade模式定义了一个高层接口，这个接口使得这一子系统更加容易使用。\n\n外观模式，即Facade，是一个比较简单的模式。它的基本思想如下：\n如果客户端要跟许多子系统打交道，那么客户端需要了解各个子系统的接口，比较麻烦。如果有一个统一的“中介”，让客户端只跟中介打交道，中介再去跟各个子系统打交道，对客户端来说就比较简单。所以Facade就相当于搞了一个中介。\n我们以注册公司为例，假设注册公司需要三步：\n\n向工商局申请公司营业执照；\n在银行开设账户；\n在税务局开设纳税号。\n\n以下是三个系统的接口：\n1234567891011121314151617181920// 工商注册:public class AdminOfIndustry &#123;    public Company register(String name) &#123;        ...    &#125;&#125;// 银行开户:public class Bank &#123;    public String openAccount(String companyId) &#123;        ...    &#125;&#125;// 纳税登记:public class Taxation &#123;    public String applyTaxCode(String companyId) &#123;        ...    &#125;&#125;\n如果子系统比较复杂，并且客户对流程也不熟悉，那就把这些流程全部委托给中介：\n12345678910public class Facade &#123;    public Company openCompany(String name) &#123;        Company c = this.admin.register(name);        String bankAccount = this.bank.openAccount(c.getId());        c.setBankAccount(bankAccount);        String taxCode = this.taxation.applyTaxCode(c.getId());        c.setTaxCode(taxCode);        return c;    &#125;&#125;\n这样，客户端只跟Facade打交道，一次完成公司注册的所有繁琐流程：\n1Company c = facade.openCompany(&quot;Facade Software Ltd.&quot;);\n很多Web程序，内部有多个子系统提供服务，经常使用一个统一的Facade入口，例如一个RestApiController，使得外部用户调用的时候，只关心Facade提供的接口，不用管内部到底是哪个子系统处理的。\n更复杂的Web程序，会有多个Web服务，这个时候，经常会使用一个统一的网关入口来自动转发到不同的Web服务，这种提供统一入口的网关就是Gateway，它本质上也是一个Facade，但可以附加一些用户认证、限流限速的额外服务。\n练习\n使用Facade模式实现一个注册公司的“中介”服务。\n下载练习\n小结\nFacade模式是为了给客户端提供一个统一入口，并对外屏蔽内部子系统的调用细节。\n\n\n享元\n\n运用共享技术有效地支持大量细粒度的对象。\n\n享元（Flyweight）的核心思想很简单：如果一个对象实例一经创建就不可变，那么反复创建相同的实例就没有必要，直接向调用方返回一个共享的实例就行，这样即节省内存，又可以减少创建对象的过程，提高运行速度。\n享元模式在Java标准库中有很多应用。我们知道，包装类型如Byte、Integer都是不变类，因此，反复创建同一个值相同的包装类型是没有必要的。以Integer为例，如果我们通过Integer.valueOf()这个静态工厂方法创建Integer实例，当传入的int范围在-128~+127之间时，会直接返回缓存的Integer实例：\n12345678// 享元模式public class Main &#123;    public static void main(String[] args) throws InterruptedException &#123;        Integer n1 = Integer.valueOf(100);        Integer n2 = Integer.valueOf(100);        System.out.println(n1 == n2); // true    &#125;&#125;\n对于Byte来说，因为它一共只有256个状态，所以，通过Byte.valueOf()创建的Byte实例，全部都是缓存对象。\n因此，享元模式就是通过工厂方法创建对象，在工厂方法内部，很可能返回缓存的实例，而不是新创建实例，从而实现不可变实例的复用。\n提示\n总是使用工厂方法而不是new操作符创建实例，可获得享元模式的好处。\n在实际应用中，享元模式主要应用于缓存，即客户端如果重复请求某些对象，不必每次查询数据库或者读取文件，而是直接返回内存中缓存的数据。\n我们以Student为例，设计一个静态工厂方法，它在内部可以返回缓存的对象：\n123456789101112131415161718192021222324252627282930public class Student &#123;    // 持有缓存:    private static final Map&lt;String, Student&gt; cache = new HashMap&lt;&gt;();    // 静态工厂方法:    public static Student create(int id, String name) &#123;        String key = id + &quot;\\n&quot; + name;        // 先查找缓存:        Student std = cache.get(key);        if (std == null) &#123;            // 未找到,创建新对象:            System.out.println(String.format(&quot;create new Student(%s, %s)&quot;, id, name));            std = new Student(id, name);            // 放入缓存:            cache.put(key, std);        &#125; else &#123;            // 缓存中存在:            System.out.println(String.format(&quot;return cached Student(%s, %s)&quot;, std.id, std.name));        &#125;        return std;    &#125;    private final int id;    private final String name;    public Student(int id, String name) &#123;        this.id = id;        this.name = name;    &#125;&#125;\n在实际应用中，我们经常使用成熟的缓存库，例如Guava的Cache，因为它提供了最大缓存数量限制、定时过期等实用功能。\n练习\n使用享元模式实现缓存。\n下载练习\n小结\n享元模式的设计思想是尽量复用已创建的对象，常用于工厂方法内部的优化。\n\n\n\n为其他对象提供一种代理以控制对这个对象的访问。\n\n代理模式，即Proxy，它和Adapter模式很类似。我们先回顾Adapter模式，它用于把A接口转换为B接口：\n123456789public class BAdapter implements B &#123;    private A a;    public BAdapter(A a) &#123;        this.a = a;    &#125;    public void b() &#123;        a.a();    &#125;&#125;\n而Proxy模式不是把A接口转换成B接口，它还是转换成A接口：\n123456789public class AProxy implements A &#123;    private A a;    public AProxy(A a) &#123;        this.a = a;    &#125;    public void a() &#123;        this.a.a();    &#125;&#125;\n合着Proxy就是为了给A接口再包一层，这不是脱了裤子放屁吗？\n当然不是。我们观察Proxy的实现A接口的方法：\n123public void a() &#123;    this.a.a();&#125;\n这样写当然没啥卵用。但是，如果我们在调用a.a()的前后，加一些额外的代码：\n1234567public void a() &#123;    if (getCurrentUser().isRoot()) &#123;        this.a.a();    &#125; else &#123;        throw new SecurityException(&quot;Forbidden&quot;);    &#125;&#125;\n这样一来，我们就实现了权限检查，只有符合要求的用户，才会真正调用目标方法，否则，会直接抛出异常。\n有的童鞋会问，为啥不把权限检查的功能直接写到目标实例A的内部？\n因为我们编写代码的原则有：\n\n职责清晰：一个类只负责一件事；\n易于测试：一次只测一个功能。\n\n用Proxy实现这个权限检查，我们可以获得更清晰、更简洁的代码：\n\nA接口：只定义接口；\nABusiness类：只实现A接口的业务逻辑；\nAPermissionProxy类：只实现A接口的权限检查代理。\n\n如果我们希望编写其他类型的代理，可以继续增加类似ALogProxy，而不必对现有的A接口、ABusiness类进行修改。\n实际上权限检查只是代理模式的一种应用。Proxy还广泛应用在：\n远程代理\n远程代理即Remote Proxy，本地的调用者持有的接口实际上是一个代理，这个代理负责把对接口的方法访问转换成远程调用，然后返回结果。Java内置的RMI机制就是一个完整的远程代理模式。\n虚代理\n虚代理即Virtual Proxy，它让调用者先持有一个代理对象，但真正的对象尚未创建。如果没有必要，这个真正的对象是不会被创建的，直到客户端需要真的必须调用时，才创建真正的对象。JDBC的连接池返回的JDBC连接（Connection对象）就可以是一个虚代理，即获取连接时根本没有任何实际的数据库连接，直到第一次执行JDBC查询或更新操作时，才真正创建实际的JDBC连接。\n保护代理\n保护代理即Protection Proxy，它用代理对象控制对原始对象的访问，常用于鉴权。\n智能引用\n智能引用即Smart Reference，它也是一种代理对象，如果有很多客户端对它进行访问，通过内部的计数器可以在外部调用者都不使用后自动释放它。\n我们来看一下如何应用代理模式编写一个JDBC连接池（DataSource）。我们首先来编写一个虚代理，即如果调用者获取到Connection后，并没有执行任何SQL操作，那么这个Connection Proxy实际上并不会真正打开JDBC连接。调用者代码如下：\n123456789101112131415DataSource lazyDataSource = new LazyDataSource(jdbcUrl, jdbcUsername, jdbcPassword);System.out.println(&quot;get lazy connection...&quot;);try (Connection conn1 = lazyDataSource.getConnection()) &#123;    // 并没有实际打开真正的Connection&#125;System.out.println(&quot;get lazy connection...&quot;);try (Connection conn2 = lazyDataSource.getConnection()) &#123;    try (PreparedStatement ps = conn2.prepareStatement(&quot;SELECT * FROM students&quot;)) &#123; // 打开了真正的Connection        try (ResultSet rs = ps.executeQuery()) &#123;            while (rs.next()) &#123;                System.out.println(rs.getString(&quot;name&quot;));            &#125;        &#125;    &#125;&#125;\n现在我们来思考如何实现这个LazyConnectionProxy。为了简化代码，我们首先针对Connection接口做一个抽象的代理类：\n12345678910111213141516public abstract class AbstractConnectionProxy implements Connection &#123;    // 抽象方法获取实际的Connection:    protected abstract Connection getRealConnection();    // 实现Connection接口的每一个方法:    public Statement createStatement() throws SQLException &#123;        return getRealConnection().createStatement();    &#125;    public PreparedStatement prepareStatement(String sql) throws SQLException &#123;        return getRealConnection().prepareStatement(sql);    &#125;    ...其他代理方法...&#125;\n这个AbstractConnectionProxy代理类的作用是把Connection接口定义的方法全部实现一遍，因为Connection接口定义的方法太多了，后面我们要编写的LazyConnectionProxy只需要继承AbstractConnectionProxy，就不必再把Connection接口方法挨个实现一遍。\nLazyConnectionProxy实现如下：\n123456789101112131415161718192021222324public class LazyConnectionProxy extends AbstractConnectionProxy &#123;    private Supplier&lt;Connection&gt; supplier;    private Connection target = null;    public LazyConnectionProxy(Supplier&lt;Connection&gt; supplier) &#123;        this.supplier = supplier;    &#125;    // 覆写close方法：只有target不为null时才需要关闭:    public void close() throws SQLException &#123;        if (target != null) &#123;            System.out.println(&quot;Close connection: &quot; + target);            super.close();        &#125;    &#125;    @Override    protected Connection getRealConnection() &#123;        if (target == null) &#123;            target = supplier.get();        &#125;        return target;    &#125;&#125;\n如果调用者没有执行任何SQL语句，那么target字段始终为null。只有第一次执行SQL语句时（即调用任何类似prepareStatement()方法时，触发getRealConnection()调用），才会真正打开实际的JDBC Connection。\n最后，我们还需要编写一个LazyDataSource来支持这个LazyConnectionProxy：\n123456789101112131415161718192021222324public class LazyDataSource implements DataSource &#123;    private String url;    private String username;    private String password;    public LazyDataSource(String url, String username, String password) &#123;        this.url = url;        this.username = username;        this.password = password;    &#125;    public Connection getConnection(String username, String password) throws SQLException &#123;        return new LazyConnectionProxy(() -&gt; &#123;            try &#123;                Connection conn = DriverManager.getConnection(url, username, password);                System.out.println(&quot;Open connection: &quot; + conn);                return conn;            &#125; catch (SQLException e) &#123;                throw new RuntimeException(e);            &#125;        &#125;);    &#125;    ...&#125;\n我们执行代码，输出如下：\n123456789get lazy connection...get lazy connection...Open connection: com.mysql.jdbc.JDBC4Connection@7a36aefa小明小红小军小白...Close connection: com.mysql.jdbc.JDBC4Connection@7a36aefa\n可见第一个getConnection()调用获取到的LazyConnectionProxy并没有实际打开真正的JDBC Connection。\n使用连接池的时候，我们更希望能重复使用连接。如果调用方编写这样的代码：\n123456789DataSource pooledDataSource = new PooledDataSource(jdbcUrl, jdbcUsername, jdbcPassword);try (Connection conn = pooledDataSource.getConnection()) &#123;&#125;try (Connection conn = pooledDataSource.getConnection()) &#123;    // 获取到的是同一个Connection&#125;try (Connection conn = pooledDataSource.getConnection()) &#123;    // 获取到的是同一个Connection&#125;\n调用方并不关心是否复用了Connection，但从PooledDataSource获取的Connection确实自带这个优化功能。如何实现可复用Connection的连接池？答案仍然是使用代理模式。\n12345678910111213141516171819202122public class PooledConnectionProxy extends AbstractConnectionProxy &#123;    // 实际的Connection:    Connection target;    // 空闲队列:    Queue&lt;PooledConnectionProxy&gt; idleQueue;    public PooledConnectionProxy(Queue&lt;PooledConnectionProxy&gt; idleQueue, Connection target) &#123;        this.idleQueue = idleQueue;        this.target = target;    &#125;    public void close() throws SQLException &#123;        System.out.println(&quot;Fake close and released to idle queue for future reuse: &quot; + target);        // 并没有调用实际Connection的close()方法,        // 而是把自己放入空闲队列:        idleQueue.offer(this);    &#125;    protected Connection getRealConnection() &#123;        return target;    &#125;&#125;\n复用连接的关键在于覆写close()方法，它并没有真正关闭底层JDBC连接，而是把自己放回一个空闲队列，以便下次使用。\n空闲队列由PooledDataSource负责维护：\n123456789101112131415161718192021222324252627282930313233public class PooledDataSource implements DataSource &#123;    private String url;    private String username;    private String password;    // 维护一个空闲队列:    private Queue&lt;PooledConnectionProxy&gt; idleQueue = new ArrayBlockingQueue&lt;&gt;(100);    public PooledDataSource(String url, String username, String password) &#123;        this.url = url;        this.username = username;        this.password = password;    &#125;    public Connection getConnection(String username, String password) throws SQLException &#123;        // 首先试图获取一个空闲连接:        PooledConnectionProxy conn = idleQueue.poll();        if (conn == null) &#123;            // 没有空闲连接时，打开一个新连接:            conn = openNewConnection();        &#125; else &#123;            System.out.println(&quot;Return pooled connection: &quot; + conn.target);        &#125;        return conn;    &#125;    private PooledConnectionProxy openNewConnection() throws SQLException &#123;        Connection conn = DriverManager.getConnection(url, username, password);        System.out.println(&quot;Open new connection: &quot; + conn);        return new PooledConnectionProxy(idleQueue, conn);    &#125;    ...&#125;\n我们执行调用方代码，输出如下：\n123456Open new connection: com.mysql.jdbc.JDBC4Connection@61ca2dfaFake close and released to idle queue for future reuse: com.mysql.jdbc.JDBC4Connection@61ca2dfaReturn pooled connection: com.mysql.jdbc.JDBC4Connection@61ca2dfaFake close and released to idle queue for future reuse: com.mysql.jdbc.JDBC4Connection@61ca2dfaReturn pooled connection: com.mysql.jdbc.JDBC4Connection@61ca2dfaFake close and released to idle queue for future reuse: com.mysql.jdbc.JDBC4Connection@61ca2dfa\n除了第一次打开了一个真正的JDBC Connection，后续获取的Connection实际上是同一个JDBC Connection。但是，对于调用方来说，完全不需要知道底层做了哪些优化。\n我们实际使用的DataSource，例如HikariCP，都是基于代理模式实现的，原理同上，但增加了更多的如动态伸缩的功能（一个连接空闲一段时间后自动关闭）。\n有的童鞋会发现Proxy模式和Decorator模式有些类似。确实，这两者看起来很像，但区别在于：Decorator模式让调用者自己创建核心类，然后组合各种功能，而Proxy模式决不能让调用者自己创建再组合，否则就失去了代理的功能。Proxy模式让调用者认为获取到的是核心类接口，但实际上是代理类。\n练习\n使用代理模式编写一个JDBC连接池。\n下载练习\n小结\n代理模式通过封装一个已有接口，并向调用方返回相同的接口类型，能让调用方在不改变任何代码的前提下增强某些功能（例如，鉴权、延迟加载、连接池复用等）。\n使用Proxy模式要求调用方持有接口，作为Proxy的类也必须实现相同的接口类型。\n","dateCreated":"2018-02-19T18:27:27+08:00","dateModified":"2025-06-17T18:10:15+08:00","datePublished":"2018-02-19T18:27:27+08:00","description":"","headline":"JAVA-设计模式-结构型模式","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/","keywords":"Java"}</script>
+    <meta name="description" content="结构型模式主要涉及如何组合各种对象以便获得更好、更灵活的结构。虽然面向对象的继承机制提供了最基本的子类扩展父类的功能，但结构型模式不仅仅简单地使用继承，而更多地通过组合与运行期的动态组合来实现更灵活的功能。 结构型模式有：  适配器 桥接 组合 装饰器 外观 享元 代理   将一个类的接口转换成客户希望的另外一个接口，使得原本由于接口不兼容而不能一起工作的那些类可以一起工作。  适配器模式是Ada">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="JAVA-设计模式-结构型模式">
+<meta property="og:url" content="https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="结构型模式主要涉及如何组合各种对象以便获得更好、更灵活的结构。虽然面向对象的继承机制提供了最基本的子类扩展父类的功能，但结构型模式不仅仅简单地使用继承，而更多地通过组合与运行期的动态组合来实现更灵活的功能。 结构型模式有：  适配器 桥接 组合 装饰器 外观 享元 代理   将一个类的接口转换成客户希望的另外一个接口，使得原本由于接口不兼容而不能一起工作的那些类可以一起工作。  适配器模式是Ada">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://liaoxuefeng.com/books/java/design-patterns/structural/adapter/adapter.jpg">
+<meta property="article:published_time" content="2018-02-19T10:27:27.000Z">
+<meta property="article:modified_time" content="2025-06-17T10:10:15.572Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="Java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liaoxuefeng.com/books/java/design-patterns/structural/adapter/adapter.jpg">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            JAVA-设计模式-结构型模式
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2018-02-19T18:27:27+08:00">
+	
+		    2018 年 2 月 19 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Java/">Java</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <p>结构型模式主要涉及如何组合各种对象以便获得更好、更灵活的结构。虽然面向对象的继承机制提供了最基本的子类扩展父类的功能，但结构型模式不仅仅简单地使用继承，而更多地通过组合与运行期的动态组合来实现更灵活的功能。</p>
+<p>结构型模式有：</p>
+<ul>
+<li>适配器</li>
+<li>桥接</li>
+<li>组合</li>
+<li>装饰器</li>
+<li>外观</li>
+<li>享元</li>
+<li>代理</li>
+</ul>
+<blockquote>
+<p>将一个类的接口转换成客户希望的另外一个接口，使得原本由于接口不兼容而不能一起工作的那些类可以一起工作。</p>
+</blockquote>
+<p>适配器模式是Adapter，也称Wrapper，是指如果一个接口需要B接口，但是待传入的对象却是A接口，怎么办？</p>
+<p>我们举个例子。如果去美国，我们随身带的电器是无法直接使用的，因为美国的插座标准和中国不同，所以，我们需要一个适配器：</p>
+<p><img src="https://liaoxuefeng.com/books/java/design-patterns/structural/adapter/adapter.jpg" alt="adapter"></p>
+<p>在程序设计中，适配器也是类似的。我们已经有一个<code>Task</code>类，实现了<code>Callable</code>接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Task</span> <span class="keyword">implements</span> <span class="title class_">Callable</span>&lt;Long&gt; &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">long</span> num;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Task</span><span class="params">(<span class="type">long</span> num)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.num = num;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> Long <span class="title function_">call</span><span class="params">()</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">long</span> <span class="variable">r</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">long</span> <span class="variable">n</span> <span class="operator">=</span> <span class="number">1</span>; n &lt;= <span class="built_in">this</span>.num; n++) &#123;</span><br><span class="line">            r = r + n;</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">&quot;Result: &quot;</span> + r);</span><br><span class="line">        <span class="keyword">return</span> r;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>现在，我们想通过一个线程去执行它：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Callable&lt;Long&gt; callable = <span class="keyword">new</span> <span class="title class_">Task</span>(<span class="number">123450000L</span>);</span><br><span class="line"><span class="type">Thread</span> <span class="variable">thread</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(callable); <span class="comment">// compile error!</span></span><br><span class="line">thread.start();</span><br></pre></td></tr></table></figure>
+<p>发现编译不过！因为<code>Thread</code>接收<code>Runnable</code>接口，但不接收<code>Callable</code>接口，肿么办？</p>
+<p>一个办法是改写<code>Task</code>类，把实现的<code>Callable</code>改为<code>Runnable</code>，但这样做不好，因为<code>Task</code>很可能在其他地方作为<code>Callable</code>被引用，改写<code>Task</code>的接口，会导致其他正常工作的代码无法编译。</p>
+<p>另一个办法不用改写<code>Task</code>类，而是用一个Adapter，把这个<code>Callable</code>接口“变成”<code>Runnable</code>接口，这样，就可以正常编译：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Callable&lt;Long&gt; callable = <span class="keyword">new</span> <span class="title class_">Task</span>(<span class="number">123450000L</span>);</span><br><span class="line"><span class="type">Thread</span> <span class="variable">thread</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Thread</span>(<span class="keyword">new</span> <span class="title class_">RunnableAdapter</span>(callable));</span><br><span class="line">thread.start();</span><br></pre></td></tr></table></figure>
+<p>这个<code>RunnableAdapter</code>类就是Adapter，它接收一个<code>Callable</code>，输出一个<code>Runnable</code>。怎么实现这个<code>RunnableAdapter</code>呢？我们先看完整的代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RunnableAdapter</span> <span class="keyword">implements</span> <span class="title class_">Runnable</span> &#123;</span><br><span class="line">    <span class="comment">// 引用待转换接口:</span></span><br><span class="line">    <span class="keyword">private</span> Callable&lt;?&gt; callable;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">RunnableAdapter</span><span class="params">(Callable&lt;?&gt; callable)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.callable = callable;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 实现指定接口:</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="comment">// 将指定接口调用委托给转换接口调用:</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            callable.call();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>编写一个Adapter的步骤如下：</p>
+<ol>
+<li>实现目标接口，这里是<code>Runnable</code>；</li>
+<li>内部持有一个待转换接口的引用，这里是通过字段持有<code>Callable</code>接口；</li>
+<li>在目标接口的实现方法内部，调用待转换接口的方法。</li>
+</ol>
+<p>这样一来，Thread就可以接收这个<code>RunnableAdapter</code>，因为它实现了<code>Runnable</code>接口。<code>Thread</code>作为调用方，它会调用<code>RunnableAdapter</code>的<code>run()</code>方法，在这个<code>run()</code>方法内部，又调用了<code>Callable</code>的<code>call()</code>方法，相当于<code>Thread</code>通过一层转换，间接调用了<code>Callable</code>的<code>call()</code>方法。</p>
+<p>适配器模式在Java标准库中有广泛应用。比如我们持有数据类型是<code>String[]</code>，但是需要<code>List</code>接口时，可以用一个Adapter：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">String[] exist = <span class="keyword">new</span> <span class="title class_">String</span>[] &#123;<span class="string">&quot;Good&quot;</span>, <span class="string">&quot;morning&quot;</span>, <span class="string">&quot;Bob&quot;</span>, <span class="string">&quot;and&quot;</span>, <span class="string">&quot;Alice&quot;</span>&#125;;</span><br><span class="line">Set&lt;String&gt; set = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;&gt;(Arrays.asList(exist));</span><br></pre></td></tr></table></figure>
+<p>注意到<code>List&lt;T&gt; Arrays.asList(T[])</code>就相当于一个转换器，它可以把数组转换为<code>List</code>。</p>
+<p>我们再看一个例子：假设我们持有一个<code>InputStream</code>，希望调用<code>readText(Reader)</code>方法，但它的参数类型是<code>Reader</code>而不是<code>InputStream</code>，怎么办？</p>
+<p>当然是使用适配器，把<code>InputStream</code>“变成”<code>Reader</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">InputStream</span> <span class="variable">input</span> <span class="operator">=</span> Files.newInputStream(Paths.get(<span class="string">&quot;/path/to/file&quot;</span>));</span><br><span class="line"><span class="type">Reader</span> <span class="variable">reader</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">InputStreamReader</span>(input, <span class="string">&quot;UTF-8&quot;</span>);</span><br><span class="line">readText(reader);</span><br></pre></td></tr></table></figure>
+<p><code>InputStreamReader</code>就是Java标准库提供的<code>Adapter</code>，它负责把一个<code>InputStream</code>适配为<code>Reader</code>。类似的还有<code>OutputStreamWriter</code>。</p>
+<p>如果我们把<code>readText(Reader)</code>方法参数从<code>Reader</code>改为<code>FileReader</code>，会有什么问题？这个时候，因为我们需要一个<code>FileReader</code>类型，就必须把<code>InputStream</code>适配为<code>FileReader</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">FileReader</span> <span class="variable">reader</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">InputStreamReader</span>(input, <span class="string">&quot;UTF-8&quot;</span>); <span class="comment">// compile error!</span></span><br></pre></td></tr></table></figure>
+<p>直接使用<code>InputStreamReader</code>这个Adapter是不行的，因为它只能转换出<code>Reader</code>接口。事实上，要把<code>InputStream</code>转换为<code>FileReader</code>也不是不可能，但需要花费十倍以上的功夫。这时，面向抽象编程这一原则就体现出了威力：持有高层接口不但代码更灵活，而且把各种接口组合起来也更容易。一旦持有某个具体的子类类型，要想做一些改动就非常困难。</p>
+<h3 id="练习">练习</h3>
+<p>使用Adapter模式将<code>Callable</code>接口适配为<code>Runnable</code>。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/design-patterns/structural/adapter/pattern-adapter.zip">下载练习</a></p>
+<h3 id="小结">小结</h3>
+<p>Adapter模式可以将一个A接口转换为B接口，使得新的对象符合B接口规范。</p>
+<p>编写Adapter实际上就是编写一个实现了B接口，并且内部持有A接口的类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> BAdapter <span class="keyword">implements</span> <span class="title class_">B</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> A a;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BAdapter</span><span class="params">(A a)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.a = a;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">b</span><span class="params">()</span> &#123;</span><br><span class="line">        a.a();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在Adapter内部将B接口的调用“转换”为对A接口的调用。</p>
+<p>只有A、B接口均为抽象接口时，才能非常简单地实现Adapter模式。</p>
+<blockquote>
+<p>将抽象部分与它的实现部分分离，使它们都可以独立地变化。</p>
+</blockquote>
+<p>桥接模式的定义非常玄乎，直接理解不太容易，所以我们还是举例子。</p>
+<p>假设某个汽车厂商生产三种品牌的汽车：Big、Tiny和Boss，每种品牌又可以选择燃油、纯电和混合动力。如果用传统的继承来表示各个最终车型，一共有3个抽象类加9个最终子类：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">                   ┌───────┐</span><br><span class="line">                   │  Car  │</span><br><span class="line">                   └───────┘</span><br><span class="line">                       ▲</span><br><span class="line">    ┌──────────────────┼───────────────────┐</span><br><span class="line">    │                  │                   │</span><br><span class="line">┌───────┐          ┌───────┐          ┌───────┐</span><br><span class="line">│BigCar │          │TinyCar│          │BossCar│</span><br><span class="line">└───────┘          └───────┘          └───────┘</span><br><span class="line">    ▲                  ▲                  ▲</span><br><span class="line">    │                  │                  │</span><br><span class="line">    │ ┌───────────────┐│ ┌───────────────┐│ ┌───────────────┐</span><br><span class="line">    ├─│  BigFuelCar   │├─│  TinyFuelCar  │├─│  BossFuelCar  │</span><br><span class="line">    │ └───────────────┘│ └───────────────┘│ └───────────────┘</span><br><span class="line">    │ ┌───────────────┐│ ┌───────────────┐│ ┌───────────────┐</span><br><span class="line">    ├─│BigElectricCar │├─│TinyElectricCar│├─│BossElectricCar│</span><br><span class="line">    │ └───────────────┘│ └───────────────┘│ └───────────────┘</span><br><span class="line">    │ ┌───────────────┐│ ┌───────────────┐│ ┌───────────────┐</span><br><span class="line">    └─│ BigHybridCar  │└─│ TinyHybridCar │└─│ BossHybridCar │</span><br><span class="line">      └───────────────┘  └───────────────┘  └───────────────┘</span><br></pre></td></tr></table></figure>
+<p>如果要新增一个品牌，或者加一个新的引擎（比如核动力），那么子类的数量增长更快。</p>
+<p>所以，桥接模式就是为了避免直接继承带来的子类爆炸。</p>
+<p>我们来看看桥接模式如何解决上述问题。</p>
+<p>在桥接模式中，首先把<code>Car</code>按品牌进行子类化，但是，每个品牌选择什么发动机，不再使用子类扩充，而是通过一个抽象的“修正”类，以组合的形式引入。我们来看看具体的实现。</p>
+<p>首先定义抽象类<code>Car</code>，它引用一个<code>Engine</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">class</span> <span class="title class_">Car</span> &#123;</span><br><span class="line">    <span class="comment">// 引用Engine:</span></span><br><span class="line">    <span class="keyword">protected</span> Engine engine;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Car</span><span class="params">(Engine engine)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.engine = engine;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title function_">drive</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Engine</code>的定义如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Engine</span> &#123;</span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">start</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>紧接着，在一个“修正”的抽象类<code>RefinedCar</code>中定义一些额外操作：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">class</span> <span class="title class_">RefinedCar</span> <span class="keyword">extends</span> <span class="title class_">Car</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">RefinedCar</span><span class="params">(Engine engine)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>(engine);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">drive</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.engine.start();</span><br><span class="line">        System.out.println(<span class="string">&quot;Drive &quot;</span> + getBrand() + <span class="string">&quot; car...&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">abstract</span> String <span class="title function_">getBrand</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样一来，最终的不同品牌继承自<code>RefinedCar</code>，例如<code>BossCar</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BossCar</span> <span class="keyword">extends</span> <span class="title class_">RefinedCar</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BossCar</span><span class="params">(Engine engine)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>(engine);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">getBrand</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;Boss&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而针对每一种引擎，继承自<code>Engine</code>，例如<code>HybridEngine</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HybridEngine</span> <span class="keyword">implements</span> <span class="title class_">Engine</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">start</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Start Hybrid Engine...&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>客户端通过自己选择一个品牌，再配合一种引擎，得到最终的Car：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">RefinedCar</span> <span class="variable">car</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BossCar</span>(<span class="keyword">new</span> <span class="title class_">HybridEngine</span>());</span><br><span class="line">car.drive();</span><br></pre></td></tr></table></figure>
+<p>使用桥接模式的好处在于，如果要增加一种引擎，只需要针对<code>Engine</code>派生一个新的子类，如果要增加一个品牌，只需要针对<code>RefinedCar</code>派生一个子类，任何<code>RefinedCar</code>的子类都可以和任何一种<code>Engine</code>自由组合，即一辆汽车的两个维度：品牌和引擎都可以独立地变化。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">       ┌───────────┐</span><br><span class="line">       │    Car    │</span><br><span class="line">       └───────────┘</span><br><span class="line">             ▲</span><br><span class="line">             │</span><br><span class="line">       ┌───────────┐       ┌─────────┐</span><br><span class="line">       │RefinedCar │ ─ ─ ─▶│ Engine  │</span><br><span class="line">       └───────────┘       └─────────┘</span><br><span class="line">             ▲                  ▲</span><br><span class="line">    ┌────────┼────────┐         │ ┌──────────────┐</span><br><span class="line">    │        │        │         ├─│  FuelEngine  │</span><br><span class="line">┌───────┐┌───────┐┌───────┐     │ └──────────────┘</span><br><span class="line">│BigCar ││TinyCar││BossCar│     │ ┌──────────────┐</span><br><span class="line">└───────┘└───────┘└───────┘     ├─│ElectricEngine│</span><br><span class="line">                                │ └──────────────┘</span><br><span class="line">                                │ ┌──────────────┐</span><br><span class="line">                                └─│ HybridEngine │</span><br><span class="line">                                  └──────────────┘</span><br></pre></td></tr></table></figure>
+<p>桥接模式实现比较复杂，实际应用也非常少，但它提供的设计思想值得借鉴，即不要过度使用继承，而是优先拆分某些部件，使用组合的方式来扩展功能。</p>
+<h3 id="练习-2">练习</h3>
+<p>使用桥接模式扩展一种新的品牌和新的核动力引擎。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/design-patterns/structural/bridge/pattern-bridge.zip">下载练习</a></p>
+<h3 id="小结-2">小结</h3>
+<p>桥接模式通过分离一个抽象接口和它的实现部分，使得设计可以按两个维度独立扩展。</p>
+<h2 id="组合">组合</h2>
+<blockquote>
+<p>将对象组合成树形结构以表示“部分-整体”的层次结构，使得用户对单个对象和组合对象的使用具有一致性。</p>
+</blockquote>
+<p>组合模式（Composite）经常用于树形结构，为了简化代码，使用Composite可以把一个叶子节点与一个父节点统一起来处理。</p>
+<p>我们来看一个具体的例子。在XML或HTML中，从根节点开始，每个节点都可能包含任意个其他节点，这些层层嵌套的节点就构成了一颗树。</p>
+<p>要以树的结构表示XML，我们可以先抽象出节点类型<code>Node</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Node</span> &#123;</span><br><span class="line">    <span class="comment">// 添加一个节点为子节点:</span></span><br><span class="line">    Node <span class="title function_">add</span><span class="params">(Node node)</span>;</span><br><span class="line">    <span class="comment">// 获取子节点:</span></span><br><span class="line">    List&lt;Node&gt; <span class="title function_">children</span><span class="params">()</span>;</span><br><span class="line">    <span class="comment">// 输出为XML:</span></span><br><span class="line">    String <span class="title function_">toXml</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于一个<code>&lt;abc&gt;</code>这样的节点，我们称之为<code>ElementNode</code>，它可以作为容器包含多个子节点：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ElementNode</span> <span class="keyword">implements</span> <span class="title class_">Node</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> List&lt;Node&gt; list = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">ElementNode</span><span class="params">(String name)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> Node <span class="title function_">add</span><span class="params">(Node node)</span> &#123;</span><br><span class="line">        list.add(node);</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> List&lt;Node&gt; <span class="title function_">children</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> list;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">toXml</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">start</span> <span class="operator">=</span> <span class="string">&quot;&lt;&quot;</span> + name + <span class="string">&quot;&gt;\n&quot;</span>;</span><br><span class="line">        <span class="type">String</span> <span class="variable">end</span> <span class="operator">=</span> <span class="string">&quot;&lt;/&quot;</span> + name + <span class="string">&quot;&gt;\n&quot;</span>;</span><br><span class="line">        <span class="type">StringJoiner</span> <span class="variable">sj</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringJoiner</span>(<span class="string">&quot;&quot;</span>, start, end);</span><br><span class="line">        list.forEach(node -&gt; &#123;</span><br><span class="line">            sj.add(node.toXml() + <span class="string">&quot;\n&quot;</span>);</span><br><span class="line">        &#125;);</span><br><span class="line">        <span class="keyword">return</span> sj.toString();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于普通文本，我们把它看作<code>TextNode</code>，它没有子节点：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TextNode</span> <span class="keyword">implements</span> <span class="title class_">Node</span> &#123;</span><br><span class="line">	<span class="keyword">private</span> String text;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> <span class="title function_">TextNode</span><span class="params">(String text)</span> &#123;</span><br><span class="line">		<span class="built_in">this</span>.text = text;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> Node <span class="title function_">add</span><span class="params">(Node node)</span> &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">UnsupportedOperationException</span>();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> List&lt;Node&gt; <span class="title function_">children</span><span class="params">()</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> List.of();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> String <span class="title function_">toXml</span><span class="params">()</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> text;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此外，还可以有注释节点：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CommentNode</span> <span class="keyword">implements</span> <span class="title class_">Node</span> &#123;</span><br><span class="line">	<span class="keyword">private</span> String text;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> <span class="title function_">CommentNode</span><span class="params">(String text)</span> &#123;</span><br><span class="line">		<span class="built_in">this</span>.text = text;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> Node <span class="title function_">add</span><span class="params">(Node node)</span> &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">UnsupportedOperationException</span>();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> List&lt;Node&gt; <span class="title function_">children</span><span class="params">()</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> List.of();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> String <span class="title function_">toXml</span><span class="params">()</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="string">&quot;&lt;!-- &quot;</span> + text + <span class="string">&quot; --&gt;&quot;</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过<code>ElementNode</code>、<code>TextNode</code>和<code>CommentNode</code>，我们就可以构造出一颗树：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Node</span> <span class="variable">root</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ElementNode</span>(<span class="string">&quot;school&quot;</span>);</span><br><span class="line">root.add(<span class="keyword">new</span> <span class="title class_">ElementNode</span>(<span class="string">&quot;classA&quot;</span>)</span><br><span class="line">        .add(<span class="keyword">new</span> <span class="title class_">TextNode</span>(<span class="string">&quot;Tom&quot;</span>))</span><br><span class="line">        .add(<span class="keyword">new</span> <span class="title class_">TextNode</span>(<span class="string">&quot;Alice&quot;</span>)));</span><br><span class="line">root.add(<span class="keyword">new</span> <span class="title class_">ElementNode</span>(<span class="string">&quot;classB&quot;</span>)</span><br><span class="line">        .add(<span class="keyword">new</span> <span class="title class_">TextNode</span>(<span class="string">&quot;Bob&quot;</span>))</span><br><span class="line">        .add(<span class="keyword">new</span> <span class="title class_">TextNode</span>(<span class="string">&quot;Grace&quot;</span>))</span><br><span class="line">        .add(<span class="keyword">new</span> <span class="title class_">CommentNode</span>(<span class="string">&quot;comment...&quot;</span>)));</span><br><span class="line">System.out.println(root.toXml());</span><br></pre></td></tr></table></figure>
+<p>最后通过<code>root</code>节点输出的XML如下：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">school</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">classA</span>&gt;</span></span><br><span class="line">Tom</span><br><span class="line">Alice</span><br><span class="line"><span class="tag">&lt;/<span class="name">classA</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">classB</span>&gt;</span></span><br><span class="line">Bob</span><br><span class="line">Grace</span><br><span class="line"><span class="comment">&lt;!-- comment... --&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">classB</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">school</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>可见，使用Composite模式时，需要先统一单个节点以及“容器”节点的接口：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">             ┌───────────┐</span><br><span class="line">             │   Node    │</span><br><span class="line">             └───────────┘</span><br><span class="line">                   ▲</span><br><span class="line">      ┌────────────┼────────────┐</span><br><span class="line">      │            │            │</span><br><span class="line">┌───────────┐┌───────────┐┌───────────┐</span><br><span class="line">│ElementNode││ TextNode  ││CommentNode│</span><br><span class="line">└───────────┘└───────────┘└───────────┘</span><br></pre></td></tr></table></figure>
+<p>作为容器节点的<code>ElementNode</code>又可以添加任意个<code>Node</code>，这样就可以构成层级结构。</p>
+<p>类似的，像文件夹和文件、GUI窗口的各种组件，都符合Composite模式的定义，因为它们的结构天生就是层级结构。</p>
+<h3 id="练习-3">练习</h3>
+<p>使用Composite模式构造XML。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/design-patterns/structural/composite/pattern-composite.zip">下载练习</a></p>
+<h3 id="小结-3">小结</h3>
+<p>Composite模式使得叶子对象和容器对象具有一致性，从而形成统一的树形结构，并用一致的方式去处理它们。</p>
+<hr>
+<hr>
+<blockquote>
+<p>动态地给一个对象添加一些额外的职责。就增加功能来说，相比生成子类更为灵活。</p>
+</blockquote>
+<p>装饰器（Decorator）模式，是一种在运行期动态给某个对象的实例增加功能的方法。</p>
+<p>我们在IO的<a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/io/filter/index.html">Filter模式</a>一节中其实已经讲过装饰器模式了。在Java标准库中，<code>InputStream</code>是抽象类，<code>FileInputStream</code>、<code>ServletInputStream</code>、<code>Socket.getInputStream()</code>这些<code>InputStream</code>都是最终数据源。</p>
+<p>现在，如果要给不同的最终数据源增加缓冲功能、计算签名功能、加密解密功能，那么，3个最终数据源、3种功能一共需要9个子类。如果继续增加最终数据源，或者增加新功能，子类会爆炸式增长，这种设计方式显然是不可取的。</p>
+<p>Decorator模式的目的就是把一个一个的附加功能，用Decorator的方式给一层一层地累加到原始数据源上，最终，通过组合获得我们想要的功能。</p>
+<p>例如：给<code>FileInputStream</code>增加缓冲和解压缩功能，用Decorator模式写出来如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建原始的数据源:</span></span><br><span class="line"><span class="type">InputStream</span> <span class="variable">fis</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">FileInputStream</span>(<span class="string">&quot;test.gz&quot;</span>);</span><br><span class="line"><span class="comment">// 增加缓冲功能:</span></span><br><span class="line"><span class="type">InputStream</span> <span class="variable">bis</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedInputStream</span>(fis);</span><br><span class="line"><span class="comment">// 增加解压缩功能:</span></span><br><span class="line"><span class="type">InputStream</span> <span class="variable">gis</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">GZIPInputStream</span>(bis);</span><br></pre></td></tr></table></figure>
+<p>或者一次性写成这样：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">InputStream</span> <span class="variable">input</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">GZIPInputStream</span>( <span class="comment">// 第二层装饰</span></span><br><span class="line">                        <span class="keyword">new</span> <span class="title class_">BufferedInputStream</span>( <span class="comment">// 第一层装饰</span></span><br><span class="line">                            <span class="keyword">new</span> <span class="title class_">FileInputStream</span>(<span class="string">&quot;test.gz&quot;</span>) <span class="comment">// 核心功能</span></span><br><span class="line">                        ));</span><br></pre></td></tr></table></figure>
+<p>观察<code>BufferedInputStream</code>和<code>GZIPInputStream</code>，它们实际上都是从<code>FilterInputStream</code>继承的，这个<code>FilterInputStream</code>就是一个抽象的Decorator。我们用图把Decorator模式画出来如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">             ┌───────────┐</span><br><span class="line">             │ Component │</span><br><span class="line">             └───────────┘</span><br><span class="line">                   ▲</span><br><span class="line">      ┌────────────┼─────────────────┐</span><br><span class="line">      │            │                 │</span><br><span class="line">┌───────────┐┌───────────┐     ┌───────────┐</span><br><span class="line">│ComponentA ││ComponentB │...  │ Decorator │</span><br><span class="line">└───────────┘└───────────┘     └───────────┘</span><br><span class="line">                                     ▲</span><br><span class="line">                              ┌──────┴──────┐</span><br><span class="line">                              │             │</span><br><span class="line">                        ┌───────────┐ ┌───────────┐</span><br><span class="line">                        │DecoratorA │ │DecoratorB │...</span><br><span class="line">                        └───────────┘ └───────────┘</span><br></pre></td></tr></table></figure>
+<p>最顶层的Component是接口，对应到IO的就是<code>InputStream</code>这个抽象类。ComponentA、ComponentB是实际的子类，对应到IO的就是<code>FileInputStream</code>、<code>ServletInputStream</code>这些数据源。Decorator是用于实现各个附加功能的抽象装饰器，对应到IO的就是<code>FilterInputStream</code>。而从Decorator派生的就是一个一个的装饰器，它们每个都有独立的功能，对应到IO的就是<code>BufferedInputStream</code>、<code>GZIPInputStream</code>等。</p>
+<p>Decorator模式有什么好处？它实际上把核心功能和附加功能给分开了。核心功能指<code>FileInputStream</code>这些真正读数据的源头，附加功能指加缓冲、压缩、解密这些功能。如果我们要新增核心功能，就增加Component的子类，例如<code>ByteInputStream</code>。如果我们要增加附加功能，就增加Decorator的子类，例如<code>CipherInputStream</code>。两部分都可以独立地扩展，而具体如何附加功能，由调用方自由组合，从而极大地增强了灵活性。</p>
+<p>如果我们要自己设计完整的Decorator模式，应该如何设计？</p>
+<p>我们还是举个栗子：假设我们需要渲染一个HTML的文本，但是文本还可以附加一些效果，比如加粗、变斜体、加下划线等。为了实现动态附加效果，可以采用Decorator模式。</p>
+<p>首先，仍然需要定义顶层接口<code>TextNode</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">TextNode</span> &#123;</span><br><span class="line">    <span class="comment">// 设置text:</span></span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">setText</span><span class="params">(String text)</span>;</span><br><span class="line">    <span class="comment">// 获取text:</span></span><br><span class="line">    String <span class="title function_">getText</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于核心节点，例如<code>&lt;span&gt;</code>，它需要从<code>TextNode</code>直接继承：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SpanNode</span> <span class="keyword">implements</span> <span class="title class_">TextNode</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String text;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setText</span><span class="params">(String text)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.text = text;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">getText</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;&lt;span&gt;&quot;</span> + text + <span class="string">&quot;&lt;/span&gt;&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>紧接着，为了实现Decorator模式，需要有一个抽象的Decorator类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">class</span> <span class="title class_">NodeDecorator</span> <span class="keyword">implements</span> <span class="title class_">TextNode</span> &#123;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> TextNode target;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">protected</span> <span class="title function_">NodeDecorator</span><span class="params">(TextNode target)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.target = target;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setText</span><span class="params">(String text)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.target.setText(text);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个<code>NodeDecorator</code>类的核心是持有一个<code>TextNode</code>，即将要把功能附加到的<code>TextNode</code>实例。接下来就可以写一个加粗功能：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BoldDecorator</span> <span class="keyword">extends</span> <span class="title class_">NodeDecorator</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BoldDecorator</span><span class="params">(TextNode target)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>(target);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">getText</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;&lt;b&gt;&quot;</span> + target.getText() + <span class="string">&quot;&lt;/b&gt;&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>类似的，可以继续加<code>ItalicDecorator</code>、<code>UnderlineDecorator</code>等。客户端可以自由组合这些Decorator：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">TextNode</span> <span class="variable">n1</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SpanNode</span>();</span><br><span class="line"><span class="type">TextNode</span> <span class="variable">n2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BoldDecorator</span>(<span class="keyword">new</span> <span class="title class_">UnderlineDecorator</span>(<span class="keyword">new</span> <span class="title class_">SpanNode</span>()));</span><br><span class="line"><span class="type">TextNode</span> <span class="variable">n3</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ItalicDecorator</span>(<span class="keyword">new</span> <span class="title class_">BoldDecorator</span>(<span class="keyword">new</span> <span class="title class_">SpanNode</span>()));</span><br><span class="line">n1.setText(<span class="string">&quot;Hello&quot;</span>);</span><br><span class="line">n2.setText(<span class="string">&quot;Decorated&quot;</span>);</span><br><span class="line">n3.setText(<span class="string">&quot;World&quot;</span>);</span><br><span class="line">System.out.println(n1.getText());</span><br><span class="line"><span class="comment">// 输出&lt;span&gt;Hello&lt;/span&gt;</span></span><br><span class="line"></span><br><span class="line">System.out.println(n2.getText());</span><br><span class="line"><span class="comment">// 输出&lt;b&gt;&lt;u&gt;&lt;span&gt;Decorated&lt;/span&gt;&lt;/u&gt;&lt;/b&gt;</span></span><br><span class="line"></span><br><span class="line">System.out.println(n3.getText());</span><br><span class="line"><span class="comment">// 输出&lt;i&gt;&lt;b&gt;&lt;span&gt;World&lt;/span&gt;&lt;/b&gt;&lt;/i&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="练习-4">练习</h3>
+<p>使用Decorator添加一个<code>&lt;del&gt;</code>标签表示删除。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/design-patterns/structural/decorator/pattern-decorator.zip">下载练习</a></p>
+<h3 id="小结-4">小结</h3>
+<p>使用Decorator模式，可以独立增加核心功能，也可以独立增加附加功能，二者互不影响；</p>
+<p>可以在运行期动态地给核心功能增加任意个附加功能。</p>
+<h2 id="外观">外观</h2>
+<blockquote>
+<p>为子系统中的一组接口提供一个一致的界面。Facade模式定义了一个高层接口，这个接口使得这一子系统更加容易使用。</p>
+</blockquote>
+<p>外观模式，即Facade，是一个比较简单的模式。它的基本思想如下：</p>
+<p>如果客户端要跟许多子系统打交道，那么客户端需要了解各个子系统的接口，比较麻烦。如果有一个统一的“中介”，让客户端只跟中介打交道，中介再去跟各个子系统打交道，对客户端来说就比较简单。所以Facade就相当于搞了一个中介。</p>
+<p>我们以注册公司为例，假设注册公司需要三步：</p>
+<ol>
+<li>向工商局申请公司营业执照；</li>
+<li>在银行开设账户；</li>
+<li>在税务局开设纳税号。</li>
+</ol>
+<p>以下是三个系统的接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 工商注册:</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">AdminOfIndustry</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> Company <span class="title function_">register</span><span class="params">(String name)</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 银行开户:</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Bank</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">openAccount</span><span class="params">(String companyId)</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 纳税登记:</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Taxation</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">applyTaxCode</span><span class="params">(String companyId)</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果子系统比较复杂，并且客户对流程也不熟悉，那就把这些流程全部委托给中介：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Facade</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> Company <span class="title function_">openCompany</span><span class="params">(String name)</span> &#123;</span><br><span class="line">        <span class="type">Company</span> <span class="variable">c</span> <span class="operator">=</span> <span class="built_in">this</span>.admin.register(name);</span><br><span class="line">        <span class="type">String</span> <span class="variable">bankAccount</span> <span class="operator">=</span> <span class="built_in">this</span>.bank.openAccount(c.getId());</span><br><span class="line">        c.setBankAccount(bankAccount);</span><br><span class="line">        <span class="type">String</span> <span class="variable">taxCode</span> <span class="operator">=</span> <span class="built_in">this</span>.taxation.applyTaxCode(c.getId());</span><br><span class="line">        c.setTaxCode(taxCode);</span><br><span class="line">        <span class="keyword">return</span> c;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样，客户端只跟Facade打交道，一次完成公司注册的所有繁琐流程：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Company</span> <span class="variable">c</span> <span class="operator">=</span> facade.openCompany(<span class="string">&quot;Facade Software Ltd.&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p>很多Web程序，内部有多个子系统提供服务，经常使用一个统一的Facade入口，例如一个<code>RestApiController</code>，使得外部用户调用的时候，只关心Facade提供的接口，不用管内部到底是哪个子系统处理的。</p>
+<p>更复杂的Web程序，会有多个Web服务，这个时候，经常会使用一个统一的网关入口来自动转发到不同的Web服务，这种提供统一入口的网关就是Gateway，它本质上也是一个Facade，但可以附加一些用户认证、限流限速的额外服务。</p>
+<h3 id="练习-5">练习</h3>
+<p>使用Facade模式实现一个注册公司的“中介”服务。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/design-patterns/structural/facade/pattern-facade.zip">下载练习</a></p>
+<h3 id="小结-5">小结</h3>
+<p>Facade模式是为了给客户端提供一个统一入口，并对外屏蔽内部子系统的调用细节。</p>
+<hr>
+<hr>
+<h2 id="享元">享元</h2>
+<blockquote>
+<p>运用共享技术有效地支持大量细粒度的对象。</p>
+</blockquote>
+<p>享元（Flyweight）的核心思想很简单：如果一个对象实例一经创建就不可变，那么反复创建相同的实例就没有必要，直接向调用方返回一个共享的实例就行，这样即节省内存，又可以减少创建对象的过程，提高运行速度。</p>
+<p>享元模式在Java标准库中有很多应用。我们知道，包装类型如<code>Byte</code>、<code>Integer</code>都是不变类，因此，反复创建同一个值相同的包装类型是没有必要的。以<code>Integer</code>为例，如果我们通过<code>Integer.valueOf()</code>这个静态工厂方法创建<code>Integer</code>实例，当传入的<code>int</code>范围在<code>-128</code>~<code>+127</code>之间时，会直接返回缓存的<code>Integer</code>实例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 享元模式</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">        <span class="type">Integer</span> <span class="variable">n1</span> <span class="operator">=</span> Integer.valueOf(<span class="number">100</span>);</span><br><span class="line">        <span class="type">Integer</span> <span class="variable">n2</span> <span class="operator">=</span> Integer.valueOf(<span class="number">100</span>);</span><br><span class="line">        System.out.println(n1 == n2); <span class="comment">// true</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于<code>Byte</code>来说，因为它一共只有256个状态，所以，通过<code>Byte.valueOf()</code>创建的<code>Byte</code>实例，全部都是缓存对象。</p>
+<p>因此，享元模式就是通过工厂方法创建对象，在工厂方法内部，很可能返回缓存的实例，而不是新创建实例，从而实现不可变实例的复用。</p>
+<p>提示</p>
+<p>总是使用工厂方法而不是new操作符创建实例，可获得享元模式的好处。</p>
+<p>在实际应用中，享元模式主要应用于缓存，即客户端如果重复请求某些对象，不必每次查询数据库或者读取文件，而是直接返回内存中缓存的数据。</p>
+<p>我们以<code>Student</code>为例，设计一个静态工厂方法，它在内部可以返回缓存的对象：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Student</span> &#123;</span><br><span class="line">    <span class="comment">// 持有缓存:</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Map&lt;String, Student&gt; cache = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 静态工厂方法:</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> Student <span class="title function_">create</span><span class="params">(<span class="type">int</span> id, String name)</span> &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> id + <span class="string">&quot;\n&quot;</span> + name;</span><br><span class="line">        <span class="comment">// 先查找缓存:</span></span><br><span class="line">        <span class="type">Student</span> <span class="variable">std</span> <span class="operator">=</span> cache.get(key);</span><br><span class="line">        <span class="keyword">if</span> (std == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="comment">// 未找到,创建新对象:</span></span><br><span class="line">            System.out.println(String.format(<span class="string">&quot;create new Student(%s, %s)&quot;</span>, id, name));</span><br><span class="line">            std = <span class="keyword">new</span> <span class="title class_">Student</span>(id, name);</span><br><span class="line">            <span class="comment">// 放入缓存:</span></span><br><span class="line">            cache.put(key, std);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 缓存中存在:</span></span><br><span class="line">            System.out.println(String.format(<span class="string">&quot;return cached Student(%s, %s)&quot;</span>, std.id, std.name));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> std;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">int</span> id;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String name;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Student</span><span class="params">(<span class="type">int</span> id, String name)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.id = id;</span><br><span class="line">        <span class="built_in">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在实际应用中，我们经常使用成熟的缓存库，例如<a target="_blank" rel="noopener" href="https://github.com/google/guava">Guava</a>的<a target="_blank" rel="noopener" href="https://github.com/google/guava/blob/master/guava/src/com/google/common/cache/Cache.java">Cache</a>，因为它提供了最大缓存数量限制、定时过期等实用功能。</p>
+<h3 id="练习-6">练习</h3>
+<p>使用享元模式实现缓存。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/design-patterns/structural/flyweight/pattern-flyweight.zip">下载练习</a></p>
+<h3 id="小结-6">小结</h3>
+<p>享元模式的设计思想是尽量复用已创建的对象，常用于工厂方法内部的优化。</p>
+<hr>
+<hr>
+<blockquote>
+<p>为其他对象提供一种代理以控制对这个对象的访问。</p>
+</blockquote>
+<p>代理模式，即Proxy，它和Adapter模式很类似。我们先回顾Adapter模式，它用于把A接口转换为B接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BAdapter</span> <span class="keyword">implements</span> <span class="title class_">B</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> A a;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BAdapter</span><span class="params">(A a)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.a = a;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">b</span><span class="params">()</span> &#123;</span><br><span class="line">        a.a();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而Proxy模式不是把A接口转换成B接口，它还是转换成A接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">AProxy</span> <span class="keyword">implements</span> <span class="title class_">A</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> A a;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">AProxy</span><span class="params">(A a)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.a = a;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">a</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.a.a();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>合着Proxy就是为了给A接口再包一层，这不是脱了裤子放屁吗？</p>
+<p>当然不是。我们观察Proxy的实现A接口的方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">a</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.a.a();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样写当然没啥卵用。但是，如果我们在调用<code>a.a()</code>的前后，加一些额外的代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">a</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (getCurrentUser().isRoot()) &#123;</span><br><span class="line">        <span class="built_in">this</span>.a.a();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">SecurityException</span>(<span class="string">&quot;Forbidden&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样一来，我们就实现了权限检查，只有符合要求的用户，才会真正调用目标方法，否则，会直接抛出异常。</p>
+<p>有的童鞋会问，为啥不把权限检查的功能直接写到目标实例A的内部？</p>
+<p>因为我们编写代码的原则有：</p>
+<ul>
+<li>职责清晰：一个类只负责一件事；</li>
+<li>易于测试：一次只测一个功能。</li>
+</ul>
+<p>用Proxy实现这个权限检查，我们可以获得更清晰、更简洁的代码：</p>
+<ul>
+<li>A接口：只定义接口；</li>
+<li>ABusiness类：只实现A接口的业务逻辑；</li>
+<li>APermissionProxy类：只实现A接口的权限检查代理。</li>
+</ul>
+<p>如果我们希望编写其他类型的代理，可以继续增加类似ALogProxy，而不必对现有的A接口、ABusiness类进行修改。</p>
+<p>实际上权限检查只是代理模式的一种应用。Proxy还广泛应用在：</p>
+<h3 id="远程代理">远程代理</h3>
+<p>远程代理即Remote Proxy，本地的调用者持有的接口实际上是一个代理，这个代理负责把对接口的方法访问转换成远程调用，然后返回结果。Java内置的RMI机制就是一个完整的远程代理模式。</p>
+<h3 id="虚代理">虚代理</h3>
+<p>虚代理即Virtual Proxy，它让调用者先持有一个代理对象，但真正的对象尚未创建。如果没有必要，这个真正的对象是不会被创建的，直到客户端需要真的必须调用时，才创建真正的对象。JDBC的连接池返回的JDBC连接（Connection对象）就可以是一个虚代理，即获取连接时根本没有任何实际的数据库连接，直到第一次执行JDBC查询或更新操作时，才真正创建实际的JDBC连接。</p>
+<h3 id="保护代理">保护代理</h3>
+<p>保护代理即Protection Proxy，它用代理对象控制对原始对象的访问，常用于鉴权。</p>
+<h3 id="智能引用">智能引用</h3>
+<p>智能引用即Smart Reference，它也是一种代理对象，如果有很多客户端对它进行访问，通过内部的计数器可以在外部调用者都不使用后自动释放它。</p>
+<p>我们来看一下如何应用代理模式编写一个JDBC连接池（<code>DataSource</code>）。我们首先来编写一个虚代理，即如果调用者获取到<code>Connection</code>后，并没有执行任何SQL操作，那么这个Connection Proxy实际上并不会真正打开JDBC连接。调用者代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">DataSource</span> <span class="variable">lazyDataSource</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">LazyDataSource</span>(jdbcUrl, jdbcUsername, jdbcPassword);</span><br><span class="line">System.out.println(<span class="string">&quot;get lazy connection...&quot;</span>);</span><br><span class="line"><span class="keyword">try</span> (<span class="type">Connection</span> <span class="variable">conn1</span> <span class="operator">=</span> lazyDataSource.getConnection()) &#123;</span><br><span class="line">    <span class="comment">// 并没有实际打开真正的Connection</span></span><br><span class="line">&#125;</span><br><span class="line">System.out.println(<span class="string">&quot;get lazy connection...&quot;</span>);</span><br><span class="line"><span class="keyword">try</span> (<span class="type">Connection</span> <span class="variable">conn2</span> <span class="operator">=</span> lazyDataSource.getConnection()) &#123;</span><br><span class="line">    <span class="keyword">try</span> (<span class="type">PreparedStatement</span> <span class="variable">ps</span> <span class="operator">=</span> conn2.prepareStatement(<span class="string">&quot;SELECT * FROM students&quot;</span>)) &#123; <span class="comment">// 打开了真正的Connection</span></span><br><span class="line">        <span class="keyword">try</span> (<span class="type">ResultSet</span> <span class="variable">rs</span> <span class="operator">=</span> ps.executeQuery()) &#123;</span><br><span class="line">            <span class="keyword">while</span> (rs.next()) &#123;</span><br><span class="line">                System.out.println(rs.getString(<span class="string">&quot;name&quot;</span>));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>现在我们来思考如何实现这个<code>LazyConnectionProxy</code>。为了简化代码，我们首先针对<code>Connection</code>接口做一个抽象的代理类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">class</span> <span class="title class_">AbstractConnectionProxy</span> <span class="keyword">implements</span> <span class="title class_">Connection</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 抽象方法获取实际的Connection:</span></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">abstract</span> Connection <span class="title function_">getRealConnection</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 实现Connection接口的每一个方法:</span></span><br><span class="line">    <span class="keyword">public</span> Statement <span class="title function_">createStatement</span><span class="params">()</span> <span class="keyword">throws</span> SQLException &#123;</span><br><span class="line">        <span class="keyword">return</span> getRealConnection().createStatement();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> PreparedStatement <span class="title function_">prepareStatement</span><span class="params">(String sql)</span> <span class="keyword">throws</span> SQLException &#123;</span><br><span class="line">        <span class="keyword">return</span> getRealConnection().prepareStatement(sql);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ...其他代理方法...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个<code>AbstractConnectionProxy</code>代理类的作用是把<code>Connection</code>接口定义的方法全部实现一遍，因为<code>Connection</code>接口定义的方法太多了，后面我们要编写的<code>LazyConnectionProxy</code>只需要继承<code>AbstractConnectionProxy</code>，就不必再把<code>Connection</code>接口方法挨个实现一遍。</p>
+<p><code>LazyConnectionProxy</code>实现如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LazyConnectionProxy</span> <span class="keyword">extends</span> <span class="title class_">AbstractConnectionProxy</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> Supplier&lt;Connection&gt; supplier;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">Connection</span> <span class="variable">target</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">LazyConnectionProxy</span><span class="params">(Supplier&lt;Connection&gt; supplier)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.supplier = supplier;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 覆写close方法：只有target不为null时才需要关闭:</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">close</span><span class="params">()</span> <span class="keyword">throws</span> SQLException &#123;</span><br><span class="line">        <span class="keyword">if</span> (target != <span class="literal">null</span>) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;Close connection: &quot;</span> + target);</span><br><span class="line">            <span class="built_in">super</span>.close();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">protected</span> Connection <span class="title function_">getRealConnection</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (target == <span class="literal">null</span>) &#123;</span><br><span class="line">            target = supplier.get();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> target;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果调用者没有执行任何SQL语句，那么<code>target</code>字段始终为<code>null</code>。只有第一次执行SQL语句时（即调用任何类似<code>prepareStatement()</code>方法时，触发<code>getRealConnection()</code>调用），才会真正打开实际的JDBC Connection。</p>
+<p>最后，我们还需要编写一个<code>LazyDataSource</code>来支持这个<code>LazyConnectionProxy</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LazyDataSource</span> <span class="keyword">implements</span> <span class="title class_">DataSource</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String url;</span><br><span class="line">    <span class="keyword">private</span> String username;</span><br><span class="line">    <span class="keyword">private</span> String password;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">LazyDataSource</span><span class="params">(String url, String username, String password)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.url = url;</span><br><span class="line">        <span class="built_in">this</span>.username = username;</span><br><span class="line">        <span class="built_in">this</span>.password = password;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> Connection <span class="title function_">getConnection</span><span class="params">(String username, String password)</span> <span class="keyword">throws</span> SQLException &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">LazyConnectionProxy</span>(() -&gt; &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> DriverManager.getConnection(url, username, password);</span><br><span class="line">                System.out.println(<span class="string">&quot;Open connection: &quot;</span> + conn);</span><br><span class="line">                <span class="keyword">return</span> conn;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (SQLException e) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们执行代码，输出如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">get lazy connection...</span><br><span class="line">get lazy connection...</span><br><span class="line">Open connection: com.mysql.jdbc.JDBC4Connection@7a36aefa</span><br><span class="line">小明</span><br><span class="line">小红</span><br><span class="line">小军</span><br><span class="line">小白</span><br><span class="line">...</span><br><span class="line">Close connection: com.mysql.jdbc.JDBC4Connection@7a36aefa</span><br></pre></td></tr></table></figure>
+<p>可见第一个<code>getConnection()</code>调用获取到的<code>LazyConnectionProxy</code>并没有实际打开真正的JDBC Connection。</p>
+<p>使用连接池的时候，我们更希望能重复使用连接。如果调用方编写这样的代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">DataSource</span> <span class="variable">pooledDataSource</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">PooledDataSource</span>(jdbcUrl, jdbcUsername, jdbcPassword);</span><br><span class="line"><span class="keyword">try</span> (<span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> pooledDataSource.getConnection()) &#123;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">try</span> (<span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> pooledDataSource.getConnection()) &#123;</span><br><span class="line">    <span class="comment">// 获取到的是同一个Connection</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">try</span> (<span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> pooledDataSource.getConnection()) &#123;</span><br><span class="line">    <span class="comment">// 获取到的是同一个Connection</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用方并不关心是否复用了<code>Connection</code>，但从<code>PooledDataSource</code>获取的<code>Connection</code>确实自带这个优化功能。如何实现可复用<code>Connection</code>的连接池？答案仍然是使用代理模式。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PooledConnectionProxy</span> <span class="keyword">extends</span> <span class="title class_">AbstractConnectionProxy</span> &#123;</span><br><span class="line">    <span class="comment">// 实际的Connection:</span></span><br><span class="line">    Connection target;</span><br><span class="line">    <span class="comment">// 空闲队列:</span></span><br><span class="line">    Queue&lt;PooledConnectionProxy&gt; idleQueue;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">PooledConnectionProxy</span><span class="params">(Queue&lt;PooledConnectionProxy&gt; idleQueue, Connection target)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.idleQueue = idleQueue;</span><br><span class="line">        <span class="built_in">this</span>.target = target;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">close</span><span class="params">()</span> <span class="keyword">throws</span> SQLException &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Fake close and released to idle queue for future reuse: &quot;</span> + target);</span><br><span class="line">        <span class="comment">// 并没有调用实际Connection的close()方法,</span></span><br><span class="line">        <span class="comment">// 而是把自己放入空闲队列:</span></span><br><span class="line">        idleQueue.offer(<span class="built_in">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">protected</span> Connection <span class="title function_">getRealConnection</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> target;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>复用连接的关键在于覆写<code>close()</code>方法，它并没有真正关闭底层JDBC连接，而是把自己放回一个空闲队列，以便下次使用。</p>
+<p>空闲队列由<code>PooledDataSource</code>负责维护：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PooledDataSource</span> <span class="keyword">implements</span> <span class="title class_">DataSource</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String url;</span><br><span class="line">    <span class="keyword">private</span> String username;</span><br><span class="line">    <span class="keyword">private</span> String password;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 维护一个空闲队列:</span></span><br><span class="line">    <span class="keyword">private</span> Queue&lt;PooledConnectionProxy&gt; idleQueue = <span class="keyword">new</span> <span class="title class_">ArrayBlockingQueue</span>&lt;&gt;(<span class="number">100</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">PooledDataSource</span><span class="params">(String url, String username, String password)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.url = url;</span><br><span class="line">        <span class="built_in">this</span>.username = username;</span><br><span class="line">        <span class="built_in">this</span>.password = password;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> Connection <span class="title function_">getConnection</span><span class="params">(String username, String password)</span> <span class="keyword">throws</span> SQLException &#123;</span><br><span class="line">        <span class="comment">// 首先试图获取一个空闲连接:</span></span><br><span class="line">        <span class="type">PooledConnectionProxy</span> <span class="variable">conn</span> <span class="operator">=</span> idleQueue.poll();</span><br><span class="line">        <span class="keyword">if</span> (conn == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="comment">// 没有空闲连接时，打开一个新连接:</span></span><br><span class="line">            conn = openNewConnection();</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;Return pooled connection: &quot;</span> + conn.target);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> conn;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> PooledConnectionProxy <span class="title function_">openNewConnection</span><span class="params">()</span> <span class="keyword">throws</span> SQLException &#123;</span><br><span class="line">        <span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> DriverManager.getConnection(url, username, password);</span><br><span class="line">        System.out.println(<span class="string">&quot;Open new connection: &quot;</span> + conn);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">PooledConnectionProxy</span>(idleQueue, conn);</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们执行调用方代码，输出如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Open new connection: com.mysql.jdbc.JDBC4Connection@61ca2dfa</span><br><span class="line">Fake close and released to idle queue for future reuse: com.mysql.jdbc.JDBC4Connection@61ca2dfa</span><br><span class="line">Return pooled connection: com.mysql.jdbc.JDBC4Connection@61ca2dfa</span><br><span class="line">Fake close and released to idle queue for future reuse: com.mysql.jdbc.JDBC4Connection@61ca2dfa</span><br><span class="line">Return pooled connection: com.mysql.jdbc.JDBC4Connection@61ca2dfa</span><br><span class="line">Fake close and released to idle queue for future reuse: com.mysql.jdbc.JDBC4Connection@61ca2dfa</span><br></pre></td></tr></table></figure>
+<p>除了第一次打开了一个真正的JDBC Connection，后续获取的<code>Connection</code>实际上是同一个JDBC Connection。但是，对于调用方来说，完全不需要知道底层做了哪些优化。</p>
+<p>我们实际使用的DataSource，例如HikariCP，都是基于代理模式实现的，原理同上，但增加了更多的如动态伸缩的功能（一个连接空闲一段时间后自动关闭）。</p>
+<p>有的童鞋会发现Proxy模式和Decorator模式有些类似。确实，这两者看起来很像，但区别在于：Decorator模式让调用者自己创建核心类，然后组合各种功能，而Proxy模式决不能让调用者自己创建再组合，否则就失去了代理的功能。Proxy模式让调用者认为获取到的是核心类接口，但实际上是代理类。</p>
+<h3 id="练习-7">练习</h3>
+<p>使用代理模式编写一个JDBC连接池。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/design-patterns/structural/proxy/pattern-proxy.zip">下载练习</a></p>
+<h3 id="小结-7">小结</h3>
+<p>代理模式通过封装一个已有接口，并向调用方返回相同的接口类型，能让调用方在不改变任何代码的前提下增强某些功能（例如，鉴权、延迟加载、连接池复用等）。</p>
+<p>使用Proxy模式要求调用方持有接口，作为Proxy的类也必须实现相同的接口类型。</p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/Java/" rel="tag">Java</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../20/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E8%A1%8C%E4%B8%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                    data-tooltip="JAVA-设计模式-行为型模式"
+                    aria-label="上一篇: JAVA-设计模式-行为型模式"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../18/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                    data-tooltip="JAVA-设计模式-创建型模式"
+                    aria-label="下一篇: JAVA-设计模式-创建型模式"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../20/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E8%A1%8C%E4%B8%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                    data-tooltip="JAVA-设计模式-行为型模式"
+                    aria-label="上一篇: JAVA-设计模式-行为型模式"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../18/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E5%88%9B%E5%BB%BA%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                    data-tooltip="JAVA-设计模式-创建型模式"
+                    aria-label="下一篇: JAVA-设计模式-创建型模式"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/02/19/java/JAVA-%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E7%BB%93%E6%9E%84%E5%9E%8B%E6%A8%A1%E5%BC%8F/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 199 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

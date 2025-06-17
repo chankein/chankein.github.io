@@ -3645,6 +3645,190 @@ L = ∣ x 1 − x 2 ∣ + ∣ y 1 − y 2 ∣ L = \lvert x_1 - x_2 \rvert + \lve
         
     </article>
     
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../2023/01/17/Terraform-%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5-Provider/"
+                            aria-label=": Terraform 基础概念-Provider"
+                        >
+                            Terraform 基础概念-Provider
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2023-01-17T17:43:45+08:00">
+	
+		    2023 年 1 月 17 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/devops/">devops</a>, <a class="category-link" href="../../categories/devops/Terraform/">Terraform</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <ul>
+<li>
+<p><a href="#terraform-%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5-%E2%80%94%E2%80%94-provider"><strong>1.3.1.1.</strong> Terraform 基础概念 —— Provider</a></p>
+</li>
+<li>
+<p><a href="#%E4%B8%8B%E8%BD%BD-provider"><strong>1.3.1.1.1.</strong> 下载 Provider</a></p>
+</li>
+<li>
+<p><a href="#%E6%90%9C%E7%B4%A2-provider"><strong>1.3.1.1.2.</strong> 搜索 Provider</a></p>
+</li>
+<li>
+<p><a href="#provider-%E7%9A%84%E5%A3%B0%E6%98%8E"><strong>1.3.1.1.3.</strong> Provider 的声明</a></p>
+</li>
+<li>
+<p><a href="#%E5%86%85%E5%BB%BA-provider"><strong>1.3.1.1.4.</strong> 内建 Provider</a></p>
+</li>
+<li>
+<p><a href="#provider-%E7%9A%84%E9%85%8D%E7%BD%AE"><strong>1.3.1.1.5.</strong> Provider 的配置</a></p>
+</li>
+<li>
+<p><a href="#%E5%A4%9A-provider-%E5%AE%9E%E4%BE%8B"><strong>1.3.1.1.6.</strong> 多 Provider 实例</a></p>
+</li>
+<li>
+<p><a href="#%E9%BB%98%E8%AE%A4-provider-%E9%85%8D%E7%BD%AE"><strong>1.3.1.1.6.1.</strong> 默认 Provider 配置</a></p>
+</li>
+<li>
+<p><a href="#%E5%BC%95%E7%94%A8%E5%A4%87%E7%94%A8-provider-%E9%85%8D%E7%BD%AE"><strong>1.3.1.1.6.2.</strong> 引用备用 Provider 配置</a></p>
+</li>
+<li>
+<p><a href="#%E9%80%89%E6%8B%A9%E5%A4%87%E7%94%A8-provider-%E9%85%8D%E7%BD%AE"><strong>1.3.1.1.6.3.</strong> 选择备用 Provider 配置</a></p>
+</li>
+</ul>
+<p><a href="#terraform-%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5-%E2%80%94%E2%80%94-provider"></a></p>
+<h2 id="1-3-1-1-Terraform-基础概念-——-Provider"><a href="#terraform-%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5-%E2%80%94%E2%80%94-provider"></a>1.3.1.1. Terraform 基础概念 —— Provider</h2>
+<p>Terraform 被设计成一个多云基础设施编排工具，不像 CloudFormation 那样绑定 AWS 平台，Terraform 可以同时编排各种云平台或是其他基础设施的资源。Terraform 实现多云编排的方法就是 Provider 插件机制。</p>
+<p><img src="https://raw.githubusercontent.com/lonegunmanb/introduction-to-terraform-pic/master/2020-11-16/1605496195438-image.png" alt="Terraform通过RPC调用插件，插件代码通过调用SDK操作远程资源"></p>
+<p>图 1.3.1/1 - Terraform通过RPC调用插件，插件代码通过调用SDK操作远程资源</p>
+<p>Terraform 使用的是 HashiCorp 自研的 <a target="_blank" rel="noopener" href="https://github.com/hashicorp/go-plugin"><code>go-plugin</code> 库</a>)，本质上各个 Provider 插件都是独立的进程，与 Terraform 进程之间通过 Rpc 进行调用。Terraform 引擎首先读取并分析用户编写的 Terraform 代码，形成一个由 <code>data</code> 与 <code>resource</code> 组成的图(Graph)，再通过 Rpc 调用这些 <code>data</code> 与 <code>resource</code> 所对应的 Provider 插件；Provider 插件的编写者根据 Terraform 所制定的插件框架来定义各种 <code>data</code> 和 <code>resource</code>，并实现相应的 CRUD 方法；在实现这些 CRUD 方法时，可以调用目标平台提供的 SDK，或是直接通过调用 Http(s) API来操作目标平台。</p>
+<h2 id="1-3-1-1-1-下载-Provider"><a href="#%E4%B8%8B%E8%BD%BD-provider"></a>1.3.1.1.1. 下载 Provider</h2>
+<p>我们在第一章的小例子中，写完代码后在 <code>apply</code> 之前，首先我们执行了一次<code>terraform init</code>。<code>terraform init</code>会分析代码中所使用到的 Provider，并尝试下载 Provider 插件到本地。如果我们观察执行完第一章例子的文件夹，我们会发现有一个 <code>.terraform</code> 文件夹，我们所使用的 AWS Provider 插件就被下载安装在里面。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">.terraform</span><br><span class="line">└── providers</span><br><span class="line">    └── registry.terraform.io</span><br><span class="line">        └── hashicorp</span><br><span class="line">            └── aws</span><br><span class="line">                └── 5.37.0</span><br><span class="line">                    └── windows_amd64</span><br><span class="line">                        └── terraform-provider-aws_v5.37.0_x5.exe</span><br></pre></td></tr></table></figure>
+<p>有的时候下载某些 Provider 会非常缓慢，或是在开发环境中存在许多的 Terraform 项目，每个项目都保有自己独立的插件文件夹非常浪费磁盘，这时我们可以使用插件缓存。</p>
+<p>有两种方式可以启用插件缓存：</p>
+<p><strong>第一种方法</strong>是配置 <code>TF_PLUGIN_CACHE_DIR</code> 这个环境变量：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> TF_PLUGIN_CACHE_DIR=<span class="string">&quot;<span class="variable">$HOME</span>/.terraform.d/plugin-cache&quot;</span></span><br></pre></td></tr></table></figure>
+<p><strong>第二种方法</strong>是使用 CLI 配置文件。Windows 下是在相关用户的 <code>%APPDATA%</code> 目录下创建名为 <code>&quot;terraform.rc&quot;</code> 的文件，Macos 和 Linux 用户则是在用户的 <code>home</code> 下创建名为 <code>&quot;.terraformrc&quot;</code> 的文件。在文件中配置如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">plugin_cache_dir = &quot;$HOME/.terraform.d/plugin-cache&quot;</span><br></pre></td></tr></table></figure>
+<p>当启用插件缓存之后，每当执行 <code>terraform init</code> 命令时，Terraform 引擎会首先检查期望使用的插件在缓存文件夹中是否已经存在，如果存在，那么就会将缓存的插件拷贝到当前工作目录下的 <code>.terraform</code> 文件夹内。如果插件不存在，那么 Terraform 仍然会像之前那样下载插件，并首先保存在插件文件夹中，随后再从插件文件夹拷贝到当前工作目录下的 <code>.terraform</code> 文件夹内。为了尽量避免同一份插件被保存多次，只要操作系统提供支持，Terraform 就会使用符号连接而不是实际从插件缓存目录拷贝到工作目录。</p>
+<p><strong>需要特别注意的是，Windows 系统下 <code>plugin_cache_dir</code> 的路径也必须使用 <code>/</code> 作为分隔符，应使用 <code>C:/somefolder/plugin_cahce</code> 而不是 <code>C:\somefolder\plugin_cache</code></strong></p>
+<p>Terraform 引擎永远不会主动删除缓存文件夹中的插件，缓存文件夹的尺寸可能会随着时间而增长到非常大，这时需要手工清理。</p>
+<h2 id="1-3-1-1-2-搜索-Provider"><a href="#%E6%90%9C%E7%B4%A2-provider"></a>1.3.1.1.2. 搜索 Provider</h2>
+<p>想要了解有哪些被官方接纳的 Provider，就是前往<a target="_blank" rel="noopener" href="https://registry.terraform.io/browse/providers">registry.terraform.io</a>进行搜索：</p>
+<p><img src="https://raw.githubusercontent.com/lonegunmanb/introduction-to-terraform-pic/master/2020-11-19/1605799350775-image.png" alt="registry.terraform.io上的插件页面"></p>
+<p>图 1.3.1/2 - registry.terraform.io上的插件页面</p>
+<p><img src="https://raw.githubusercontent.com/lonegunmanb/introduction-to-terraform-pic/master/2020-11-16/1605498907942-image.png" alt="registry.terraform.io的搜索页面"></p>
+<p>图 1.3.1/3 - registry.terraform.io的搜索页面</p>
+<p>一般来说，相关 Provider 如何声明，以及相关 <code>data</code>、<code>resource</code> 的使用说明，都可以在 registry 上查阅到相关文档。</p>
+<p><a target="_blank" rel="noopener" href="https://registry.terraform.io/"><code>registry.terraform.io</code></a> 不但可以查询 Provider，也可以用来发布 Provider；并且它也可以用来查询和发布模块(Module)，不过模块将是我们后续篇章讨论的话题。</p>
+<h2 id="1-3-1-1-3-Provider-的声明"><a href="#provider-%E7%9A%84%E5%A3%B0%E6%98%8E"></a>1.3.1.1.3. Provider 的声明</h2>
+<p>一组 Terraform 代码要被执行，相关的 Provider 必须在代码中被声明。不少的 Provider 在声明时需要传入一些关键信息才能被使用，例如我们在第一章的例子中，必须给出访问密钥以及期望执行的 AWS 区域（Region）信息。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">terraform &#123;</span><br><span class="line">  required_providers &#123;</span><br><span class="line">    aws = &#123;</span><br><span class="line">      source = &quot;hashicorp/aws&quot;</span><br><span class="line">      version = &quot;~&gt;5.0&quot;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">provider &quot;aws&quot; &#123;</span><br><span class="line">  access_key                  = &quot;test&quot;</span><br><span class="line">  secret_key                  = &quot;test&quot;</span><br><span class="line">  region                      = &quot;us-east-1&quot;</span><br><span class="line">  s3_use_path_style           = false</span><br><span class="line">  skip_credentials_validation = true</span><br><span class="line">  skip_metadata_api_check     = true</span><br><span class="line">  skip_requesting_account_id  = true</span><br><span class="line"></span><br><span class="line">  endpoints &#123;</span><br><span class="line">    apigateway     = &quot;http://localhost:4566&quot;</span><br><span class="line">    apigatewayv2   = &quot;http://localhost:4566&quot;</span><br><span class="line">    cloudformation = &quot;http://localhost:4566&quot;</span><br><span class="line">    cloudwatch     = &quot;http://localhost:4566&quot;</span><br><span class="line">    dynamodb       = &quot;http://localhost:4566&quot;</span><br><span class="line">    ec2            = &quot;http://localhost:4566&quot;</span><br><span class="line">    es             = &quot;http://localhost:4566&quot;</span><br><span class="line">    elasticache    = &quot;http://localhost:4566&quot;</span><br><span class="line">    firehose       = &quot;http://localhost:4566&quot;</span><br><span class="line">    iam            = &quot;http://localhost:4566&quot;</span><br><span class="line">    kinesis        = &quot;http://localhost:4566&quot;</span><br><span class="line">    lambda         = &quot;http://localhost:4566&quot;</span><br><span class="line">    rds            = &quot;http://localhost:4566&quot;</span><br><span class="line">    redshift       = &quot;http://localhost:4566&quot;</span><br><span class="line">    route53        = &quot;http://localhost:4566&quot;</span><br><span class="line">    s3             = &quot;http://s3.localhost.localstack.cloud:4566&quot;</span><br><span class="line">    secretsmanager = &quot;http://localhost:4566&quot;</span><br><span class="line">    ses            = &quot;http://localhost:4566&quot;</span><br><span class="line">    sns            = &quot;http://localhost:4566&quot;</span><br><span class="line">    sqs            = &quot;http://localhost:4566&quot;</span><br><span class="line">    ssm            = &quot;http://localhost:4566&quot;</span><br><span class="line">    stepfunctions  = &quot;http://localhost:4566&quot;</span><br><span class="line">    sts            = &quot;http://localhost:4566&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这段 Provider 声明中，首先在 <code>terraform</code> 块的 <code>required_providers</code> 里声明了本段代码必须要名为 <code>aws</code> 的 Provider 才可以执行，<code>source = &quot;hashicorp/aws&quot;</code>这一行声明了 <code>aws</code> 这个插件的源地址(Source Address)。一个源地址是全球唯一的，它指示了 Terraform 如何下载该插件。一个源地址由三部分组成：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[&lt;HOSTNAME&gt;/]&lt;NAMESPACE&gt;/&lt;TYPE&gt;</span><br></pre></td></tr></table></figure>
+<p><code>Hostname</code> 是选填的，默认是官方的 <code>registry.terraform.io</code>，读者也可以构建自己私有的Terraform仓库。<code>Namespace</code> 是在 Terraform 仓库内注册的组织名，这代表了发布和维护插件的组织或是个人。<code>Type</code> 是代表插件的一个短名，在特定的 <code>HostName</code>/<code>Namespace</code> 下 <code>Type</code> 必须唯一。</p>
+<p><code>required_providers</code> 中的插件声明还声明了该源码所需要的插件的版本约束，在例子里就是 <code>version = &quot;~&gt;5.0&quot;</code>。Terraform 插件的版本号采用 <code>MAJOR.MINOR.PATCH</code> 的语义化格式，版本约束通常使用操作符和版本号表达约束条件，条件之间可以用逗号拼接，表达 <code>AND</code> 关联，例如 <code>&quot;&gt;= 1.2.0, &lt; 2.0.0&quot;</code>。可以采用的操作符有：</p>
+<ul>
+<li><code>=</code>(或者不加 <code>=</code>，直接使用版本号)：只允许特定版本号，不允许与其他条件合并使用</li>
+<li><code>!=</code>：不允许特定版本号</li>
+<li><code>\&gt;</code>,<code>&gt;=</code>,<code>&lt;</code>,<code>&lt;=</code>：与特定版本号进行比较，可以是大于、大于等于、小于、小于等于</li>
+<li><code>~&gt;</code>：只允许 <em>最右边</em> 的版本号增加。这种格式被称为 <em>悲观约束</em> 操作符。例如，要允许在特定的 <code>MINOR</code> 版本中允许新的 <code>PATCH</code> 版本：
+<ul>
+<li><code>~&gt; 1.0.4</code>：允许 Terraform 安装 <code>1.0.5</code> 和 <code>1.0.10</code>，但不允许 <code>1.1.0</code>。</li>
+<li><code>~&gt; 1.1</code>：允许 Terraform 安装 <code>1.2</code> 和 <code>1.10</code>，但不允许 <code>2.0</code>。</li>
+</ul>
+</li>
+</ul>
+<p>Terraform 会检查当前工作环境或是插件缓存中是否存在满足版本约束的插件，如果不存在，那么 Terraform 会尝试下载。如果 Terraform 无法获得任何满足版本约束条件的插件，那么它会拒绝继续执行任何后续操作。</p>
+<p>可以用添加后缀的方式来声明预览版，例如：<code>1.2.0-beta</code>。预览版只能通过 <code>&quot;=&quot;</code> 操作符(或是忽略操作符)后接明确的版本号的方式来指定，不可以与<code>&gt;=</code>、<code>~&gt;</code>等搭配使用。</p>
+<ul>
+<li>当依赖第三方模块时，需要指定特定版本，以确保只在您需要的时候进行更新。</li>
+<li>对于在您的组织内维护的模块，如果一致使用语义版本控制，或者有一个定义良好的发布流程可以避免不必要的更新，那么指定版本范围可能是合适的。</li>
+<li>可重用的模块应仅限制其 Terraform 和 Provider 的最低允许版本，例如 <code>&gt;= 0.12.0</code>。这有助于避免已知的不兼容性，同时允许模块的用户在不改变模块的情况下升级到 Terraform 的新版本。</li>
+<li>根模块应使用 <code>~&gt;</code> 约束为它们依赖的每个 Provider 设置一个下限和上限版本。</li>
+</ul>
+<p>以上建议来自于 <a target="_blank" rel="noopener" href="https://developer.hashicorp.com/terraform/language/expressions/version-constraints#best-practices">HashiCorp 官方文档</a>，笔者个人给出一条个人建议：</p>
+<ul>
+<li>可复用的模块不但应该限制 Provider 的最低版本，同时也应该限制 Provider 的 <code>MAJOR</code> 版本。例如，<code>&gt;= 1.5.0, &lt; 2.0</code>。这样可以避免在 Provider 的 <code>MAJOR</code> 版本升级时，因为不兼容性导致的问题，Provider 的 <code>MAJOR</code> 版本升级通常会伴随着不兼容的改动，不应该在未加测试的情况下轻易升级。</li>
+</ul>
+<h2 id="1-3-1-1-4-内建-Provider"><a href="#%E5%86%85%E5%BB%BA-provider"></a>1.3.1.1.4. 内建 Provider</h2>
+<p>绝大多数 Provider 是以插件形式单独分发的，但是目前有一个 Provider 是内建于Terraform主进程中的，那就是 <code>terraform_remote_state</code> data source。该 Provider 由于是内建的，所以使用时不需要在 <code>terraform</code> 中声明 <code>required_providers</code>。这个内建Provider的源地址是 <code>terraform.io/builtin/terraform</code>。这个地址有时可能出现在 Terraform 的错误消息和其他输出中，以便无歧义地引用内建 Provider，而不是假设的第三方提供者，其类型名称为 “terraform”。</p>
+<p>还存在一个源地址为 <code>hashicorp/terraform</code> 的 Provider，这是现在内置 Provider 的旧版本，被 Terraform 的旧版本使用。<code>hashicorp/terraform</code> 与 Terraform v0.11 或更高版本不兼容，因此永远不应在 <code>required_providers</code> 块中声明。</p>
+<h2 id="1-3-1-1-5-Provider-的配置"><a href="#provider-%E7%9A%84%E9%85%8D%E7%BD%AE"></a>1.3.1.1.5. Provider 的配置</h2>
+<p>Provider 的配置是声明在根模块中的一组 Terraform 配置。（子模块接收来自于根模块的 Provider 配置，更多信息，请参阅<a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/5.Terraform%E6%A8%A1%E5%9D%97/2.%E4%BD%BF%E7%94%A8%E6%A8%A1%E5%9D%97#%E6%98%BE%E5%BC%8F%E4%BC%A0%E9%80%92-provider">模块的 <code>provider</code> 元参数</a>）</p>
+<p>一个 Provider 配置是通过 <code>provider</code> 块来创建的：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">provider &quot;google&quot; &#123;</span><br><span class="line">  project = &quot;acme-app&quot;</span><br><span class="line">  region  = &quot;us-central1&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>块头部设置的名称（例子中的 <code>&quot;google&quot;</code>）就是要配置的 Provider 的<a target="_blank" rel="noopener" href="https://developer.hashicorp.com/terraform/language/providers/requirements#local-names">Local Name</a>。这个 Provider 必须已在 <code>required_providers</code> 块中声明。</p>
+<p>块体（<code>&#123;</code> 和 <code>&#125;</code> 中间的内容）包含了 Provider 的配置参数。这些参数大多数是由 Provider 自己定义的；在这个例子中，<code>project</code> 和 <code>region</code> 都是 <code>google</code> Provider 特有的。</p>
+<p>你可以在这些配置的值当中使用<a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/3.Terraform%E4%BB%A3%E7%A0%81%E7%9A%84%E4%B9%A6%E5%86%99/8.%E8%A1%A8%E8%BE%BE%E5%BC%8F">表达式</a>，但是只能引用在配置 Provider 时已知的值。这意味着你可以安全地引用输入变量，但是不能引用从 <code>resource</code> 返回的属性（一个例外是直接在配置中硬编码的 <code>resource</code> 参数）。</p>
+<p>一个 Provider 的文档应该列出它所需要的配置参数。对那些注册在 <a target="_blank" rel="noopener" href="https://registry.terraform.io/">Terraform Registry</a> 上的 Provider 来说，每个 Provider 的页面上都有版本化的文档，可以通过 Provider 页头的 “Documentation” 链接访问。</p>
+<p>一些 Provider 可以使用环境变量（或是其他替代配置源，例如 AWS 的虚拟机实例 Profile）作为某些配置参数的值；我们建议尽可能使用这种方式来避免将凭证保存于版本控制的 Terraform 代码中。</p>
+<p>There are also two “meta-arguments” that are defined by Terraform itself and available for all <code>provider</code> blocks:</p>
+<p>有两个由 Terraform 自身定义的“元参数”，对所有 <code>provider</code> 块都可用：</p>
+<ul>
+<li><a href="#%E5%A4%9A-provider-%E5%AE%9E%E4%BE%8B"><code>alias</code>，用以为不同的 <code>resource</code> 块配置参数不同的同类 Provider 实例</a></li>
+<li><code>version</code>， 废弃，不推荐使用，现在请使用 <a href="#provider-%E7%9A%84%E5%A3%B0%E6%98%8E"><code>required_providers</code></a></li>
+</ul>
+<p>与 Terraform 语言中的许多其他对象不同，如果 <code>provider</code> 块的内容为空，则可以省略该块。Terraform 假定未显式配置的任何 Provider 程序都具有空的默认配置。</p>
+<h2 id="1-3-1-1-6-多-Provider-实例"><a href="#%E5%A4%9A-provider-%E5%AE%9E%E4%BE%8B"></a>1.3.1.1.6. 多 Provider 实例</h2>
+<p><code>provider</code> 块声明了 <code>aws</code> 这个 Provider 所需要的各项配置。在上文的代码示例中，<code>provider &quot;aws&quot;</code>和<code>required_providers</code>中<code>aws = &#123;...&#125;</code>块里的<code>aws</code>，都是 Provider 的 Local Name，一个 Local Name 是在一个模块中对一个 Provider 的唯一的标识。</p>
+<p>你可以选择为同一个 Provider 定义多个配置，并且可以根据每个资源或每个模块来选择使用哪一个。这主要是为了支持云平台的多个区域；其他例子包括针对多个 Docker 主机，多个 Consul 主机等。</p>
+<p>要为某一个 Provider 创建多个配置，包括具有相同提供者名称的多个 <code>provider</code> 块。对于每个额外的非默认配置，使用 <code>alias</code> 元参数提供额外的名称段。例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># The default provider configuration; resources that begin with `aws_` will use</span><br><span class="line"># it as the default, and it can be referenced as `aws`.</span><br><span class="line">provider &quot;aws&quot; &#123;</span><br><span class="line">  region = &quot;us-east-1&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># Additional provider configuration for west coast region; resources can</span><br><span class="line"># reference this as `aws.west`.</span><br><span class="line">provider &quot;aws&quot; &#123;</span><br><span class="line">  alias  = &quot;west&quot;</span><br><span class="line">  region = &quot;us-west-2&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在模块内声明配置 <code>alias</code> 以从父模块接收备用的 <code>provider</code> 配置，需要在该 <code>provider</code> 的 <code>required_providers</code> 条目中添加 <code>configuration_aliases</code> 参数。以下示例在包含的模块中声明了 <code>mycloud</code> 和 <code>mycloud.alternate</code> 的 <code>provider</code> 配置名称：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">terraform &#123;</span><br><span class="line">  required_providers &#123;</span><br><span class="line">    mycloud = &#123;</span><br><span class="line">      source  = &quot;mycorp/mycloud&quot;</span><br><span class="line">      version = &quot;~&gt; 1.0&quot;</span><br><span class="line">      configuration_aliases = [ mycloud.alternate ]</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="1-3-1-1-6-1-默认-Provider-配置"><a href="#%E9%BB%98%E8%AE%A4-provider-%E9%85%8D%E7%BD%AE"></a>1.3.1.1.6.1. 默认 Provider 配置</h3>
+<p>没有 <code>alias</code> 参数的 <code>provider</code> 块是该 provider 的 <em>默认</em> 配置。未设置 <code>provider</code> 元参数的资源将使用与资源类型名称的第一个单词匹配的默认 provider 配置。（例如，除非另有说明，否则 <code>aws_instance</code> 资源将使用默认的 <code>aws</code> provider 配置。）</p>
+<p>如果 provider 的每个显式配置都有别名，Terraform 将使用隐含的空配置作为该 provider 的默认配置。（如果 provider 有任何必需的配置参数，当资源默认使用空配置时，Terraform 将引发错误。）</p>
+<h3 id="1-3-1-1-6-2-引用备用-Provider-配置"><a href="#%E5%BC%95%E7%94%A8%E5%A4%87%E7%94%A8-provider-%E9%85%8D%E7%BD%AE"></a>1.3.1.1.6.2. 引用备用 Provider 配置</h3>
+<p>当 Terraform 需要 provider 配置的名称时，它期望的是 <code>&lt;PROVIDER NAME&gt;.&lt;ALIAS&gt;</code> 形式的引用。在上面的例子中，<code>aws.west</code> 将引用 <code>us-west-2</code> 区域的 provider。</p>
+<p>这些引用是特殊的表达式。像对其他命名实体（例如 <code>var.image_id</code>）的引用一样，它们不是字符串，不需要引号。但是它们只在 <code>resource</code>、<code>data</code> 和 <code>module</code> 块的特定元参数中有效，不能在任意表达式中使用。</p>
+<h3 id="1-3-1-1-6-3-选择备用-Provider-配置"><a href="#%E9%80%89%E6%8B%A9%E5%A4%87%E7%94%A8-provider-%E9%85%8D%E7%BD%AE"></a>1.3.1.1.6.3. 选择备用 Provider 配置</h3>
+<p>默认情况下，资源使用从资源类型名称的第一个单词推断出的默认 provider 配置（没有 <code>alias</code> 参数的配置）。</p>
+<p>要为资源或数据源指定备用 provider 配置，将其 <code>provider</code> 元参数设置为 <code>&lt;PROVIDER NAME&gt;.&lt;ALIAS&gt;</code> 引用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">resource &quot;aws_instance&quot; &quot;foo&quot; &#123;</span><br><span class="line">  provider = aws.west</span><br><span class="line"></span><br><span class="line">  # ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>要为子模块指定备用 provider 配置，使用其 <code>providers</code> 元参数指定应将哪些 provider 配置映射到模块内的哪些本地 provider 名称：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">module &quot;aws_vpc&quot; &#123;</span><br><span class="line">  source = &quot;./aws_vpc&quot;</span><br><span class="line">  providers = &#123;</span><br><span class="line">    aws = aws.west</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在传递 provider 时，模块有一些特殊要求；有关更多详细信息，请参见 <a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/5.Terraform%E6%A8%A1%E5%9D%97/2.%E4%BD%BF%E7%94%A8%E6%A8%A1%E5%9D%97.html#module-providers">模块 <code>providers</code> 元参数</a>。在大多数情况下，只有 <em>根模块</em> 应定义 provider 配置，所有子模块都应从其父模块获取其 provider 配置。</p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2023/01/17/Terraform-%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5-Provider/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -3961,7 +4145,7 @@ L = ∣ x 1 − x 2 ∣ + ∣ y 1 − y 2 ∣ L = \lvert x_1 - x_2 \rvert + \lve
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 198 篇文章
+                找到 199 篇文章
             </p>
         </div>
     </div>
