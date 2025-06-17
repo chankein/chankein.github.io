@@ -302,6 +302,115 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../../2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
+                            aria-label=": CentOs7.3 hadoop ssh 免密登录"
+                        >
+                            CentOs7.3 hadoop ssh 免密登录
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2017-11-16T18:42:22+08:00">
+	
+		    2017 年 11 月 16 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../categories/database/">database</a>, <a class="category-link" href="../../../categories/database/hadoop/">hadoop</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h3 id="环境">环境</h3>
+<p>三台虚拟机(IP)：</p>
+<ul>
+<li>192.168.252.121</li>
+<li>192.168.252.122</li>
+<li>192.168.252.123</li>
+</ul>
+<h3 id="1-修改主机名">1.修改主机名</h3>
+<p>修改三台主机名，以此类推，node1，node3，node3</p>
+<p>命令格式</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hostnamectl set-hostname &lt;hostname&gt;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo hostnamectl set-hostname node1</span><br></pre></td></tr></table></figure>
+<p>剩下的虚拟机依次修改<code>hostnamectl set-hostname[1-3]</code></p>
+<p><strong>重启操作系统</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ reboot</span><br></pre></td></tr></table></figure>
+<h3 id="2-修改映射关系">2.修改映射关系</h3>
+<p>1.在 node1 的 <code>/etc/hosts</code> 文件下添加如下内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">su hadoop</span><br><span class="line">vi /etc/hosts</span><br></pre></td></tr></table></figure>
+<p>2.查看修改后的<code>/etc/hosts</code> 文件内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ cat /etc/hosts</span><br><span class="line">127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4</span><br><span class="line">::1         localhost localhost.localdomain localhost6 localhost6.localdomain6</span><br><span class="line"># 以下是添加的</span><br><span class="line">192.168.252.121 node1</span><br><span class="line">192.168.252.122 node2</span><br><span class="line">192.168.252.123 node3</span><br></pre></td></tr></table></figure>
+<p>2.将集群node1 上的文件<code>hosts</code>文件 通过 <code>scp</code> 命令复制发送到集群的每一个节点</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">for a in &#123;1..3&#125; ; do sudo scp /etc/hosts hadoop@node$a:/etc/hosts ; done</span><br></pre></td></tr></table></figure>
+<p>3.检查是否集群每一个节点的 <code>hosts</code> 文件都已经修改过来了</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">for a in &#123;1..3&#125; ; do sudo ssh hadoop@node$a cat /etc/hosts ; done</span><br></pre></td></tr></table></figure>
+<h3 id="3-启动-ssh-无密登录">3.启动 ssh 无密登录</h3>
+<p>1.在集群node1的 <code>/etc/ssh/sshd_config</code> 文件去掉以下选项的注释</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vi /etc/ssh/sshd_config </span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">RSAAuthentication yes      #开启私钥验证</span><br><span class="line">PubkeyAuthentication yes   #开启公钥验证</span><br></pre></td></tr></table></figure>
+<p>2.将集群node1 修改后的 <code>/etc/ssh/sshd_config</code> 通过 <code>scp</code> 命令复制发送到集群的每一个节点</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">for a in &#123;1..3&#125; ; do  sudo scp /etc/ssh/sshd_config hadoop@node$a:/etc/ssh/sshd_config ; done</span><br></pre></td></tr></table></figure>
+<h3 id="4-生成公钥、私钥">4.生成公钥、私钥</h3>
+<p>1.在集群的每一个节点节点输入命令 <code>ssh-keygen -t rsa -P ''</code>，生成 key，一律回车</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ssh-keygen -t rsa -P &#x27;&#x27;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">Generating public/private rsa key pair.</span><br><span class="line">Enter file in which to save the key (/home/hadoop/.ssh/id_rsa): </span><br><span class="line">Created directory &#x27;/home/hadoop/.ssh&#x27;.</span><br><span class="line">Your identification has been saved in /home/hadoop/.ssh/id_rsa.</span><br><span class="line">Your public key has been saved in /home/hadoop/.ssh/id_rsa.pub.</span><br><span class="line">The key fingerprint is:</span><br><span class="line">aa:be:0e:46:9a:e8:d5:dc:79:ea:5a:b8:9b:08:e2:dd hadoop@node2</span><br><span class="line">The key&#x27;s randomart image is:</span><br><span class="line">+--[ RSA 2048]----+</span><br><span class="line">|                 |</span><br><span class="line">|                 |</span><br><span class="line">|                 |</span><br><span class="line">|                 |</span><br><span class="line">|  .     S        |</span><br><span class="line">|.+  o o..        |</span><br><span class="line">|=.o. +.+ .       |</span><br><span class="line">|+.+.o.+ o        |</span><br><span class="line">| o ==E+o         |</span><br><span class="line">+-----------------+</span><br></pre></td></tr></table></figure>
+<p>2.在集群的node1 节点输入命令</p>
+<p>将集群每一个节点的公钥<code>id_rsa.pub</code>放入到自己的认证文件中<code>authorized_keys</code>;</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">for a in &#123;1..3&#125;; do sudo ssh hadoop@node$a cat /home/hadoop/.ssh/id_rsa.pub &gt;&gt; /home/hadoop/.ssh/authorized_keys; done</span><br></pre></td></tr></table></figure>
+<p>3.在集群的node1 节点输入命令</p>
+<p>将自己的认证文件 <code>authorized_keys</code> <code>通过</code> scp <code>命令复制发送到每一个节点上去:</code> /home/hadoop/.ssh/authorized_keys`</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">for a in &#123;1..3&#125;; do sudo scp /home/hadoop/.ssh/authorized_keys hadoop@node$a:/home/hadoop/.ssh/authorized_keys ; done</span><br></pre></td></tr></table></figure>
+<p>4.非ROOT 用户需赋权限</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">chmod 700 /home/hadoop/.ssh/</span><br><span class="line">chmod 700 /home/hadoop/</span><br><span class="line">chmod 600 /home/hadoop/.ssh/authorized_keys </span><br></pre></td></tr></table></figure>
+<p>5.在集群的每一个节点节点输入命令</p>
+<p>接重启ssh服务</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl restart sshd.service</span><br></pre></td></tr></table></figure>
+<h3 id="6-验证-ssh-无密登录">6.验证 ssh 无密登录</h3>
+<p>开一个其他窗口测试下能否免密登陆</p>
+<p>例如：在node3</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ssh hadoop@node2</span><br></pre></td></tr></table></figure>
+<p><code>exit</code> 退出</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[hadoop@node1 ~]# exit</span><br><span class="line">logout</span><br><span class="line">Connection to node1 closed.</span><br></pre></td></tr></table></figure>
+<p>注意：开新的其他窗口测试下能否免密登陆，把当前窗口都关了</p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../../2017/11/16/database/HBase-%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA/"
                             aria-label=": HBase 深入浅出"
                         >
@@ -1928,192 +2037,6 @@ Git 作了合并，但没有提交，它会停下来等你解决冲突。要看�
         
     </article>
     
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../../2017/06/16/database/Hadoop-2-7-4-%E9%9B%86%E7%BE%A4%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA/"
-                            aria-label=": Hadoop-2.7.4 集群快速搭建"
-                        >
-                            Hadoop-2.7.4 集群快速搭建
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2017-06-16T18:25:42+08:00">
-	
-		    2017 年 6 月 16 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Hadoop/">Hadoop</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h2 id="Hadoop简介">Hadoop简介</h2>
-<p>2003-2004年，Google公开了部分GFS和Mapreduce思想的细节，以此为基础Doug Cutting等人用了2年业余时间实现了DFS和Mapreduce机制，一个微缩版：Nutch</p>
-<p>Hadoop 于 2005 年秋天作为 Lucene的子项目 Nutch的一部分正式引入Apache基金会。2006 年 3 月份，Map-Reduce 和 Nutch Distributed File System (NDFS) 分别被纳入称为 Hadoop 的项目中</p>
-<h3 id="Hadoop">Hadoop</h3>
-<p><strong>分布式存储系统HDFS （Hadoop Distributed File System ）</strong></p>
-<ul>
-<li>分布式存储系统</li>
-<li>提供了 高可靠性、高扩展性和高吞吐率的数据存储服务</li>
-</ul>
-<p><strong>分布式计算框架MapReduce</strong></p>
-<ul>
-<li>分布式计算框架</li>
-<li>具有 易于编程、高容错性和高扩展性等优点。</li>
-</ul>
-<h3 id="HDFS优点">HDFS优点</h3>
-<p><strong>高容错性</strong></p>
-<ul>
-<li>数据自动保存多个副本</li>
-<li>副本丢失后，自动恢复</li>
-</ul>
-<p><strong>适合批处理</strong></p>
-<ul>
-<li>移动计算而非数据</li>
-<li>数据位置暴露给计算框架</li>
-</ul>
-<p><strong>适合大数据处理</strong></p>
-<ul>
-<li>GB 、TB 、甚至PB 级数据</li>
-<li>百万规模以上的文件数量</li>
-<li>10K+ 节点</li>
-</ul>
-<p><strong>可构建在廉价机器上</strong></p>
-<ul>
-<li>通过多副本提高可靠性</li>
-<li>提供了容错和恢复 机制</li>
-</ul>
-<h3 id="HDFS缺点">HDFS缺点</h3>
-<p><strong>低延迟数据访问</strong></p>
-<ul>
-<li>比如毫秒级</li>
-<li>低延迟与高吞吐率</li>
-</ul>
-<p><strong>小文件存取</strong></p>
-<ul>
-<li>占用NameNode 大量内存</li>
-<li>寻道时间超过读取时间</li>
-</ul>
-<p><strong>并发写入、文件随机修改</strong></p>
-<ul>
-<li>一个文件只能有一个写者</li>
-<li>仅支持append</li>
-</ul>
-<h2 id="准备工作">准备工作</h2>
-<h3 id="环境">环境</h3>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">JDK:1.8  </span><br><span class="line">Hadoop Release:2.7.4  </span><br><span class="line">centos:7.3  </span><br><span class="line"></span><br><span class="line">node1（master）  主机: 192.168.252.121  </span><br><span class="line">node2（slave1）  从机: 192.168.252.122  </span><br><span class="line">node3（slave2）  从机: 192.168.252.123  </span><br></pre></td></tr></table></figure>
-<p><strong>安装 JDK</strong></p>
-<p><a href="https://chankein.github.io/2018/01/07/java/CentOs7-3-%E5%AE%89%E8%A3%85-JDK1-8/">CentOs7.3 安装 JDK1.8</a></p>
-<p><strong>SSH 免秘钥</strong></p>
-<p><a href="https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/">CentOs7.3 Hadoop 用户 ssh 免密登录</a></p>
-<h3 id="创建用户">创建用户</h3>
-<p>建议创建一个单独的用户Hadoop以从Unix文件系统隔离Hadoop文件系统</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ useradd hadoop</span><br><span class="line">$ passwd hadoop</span><br><span class="line">New password: </span><br><span class="line">Retype new password: </span><br></pre></td></tr></table></figure>
-<p>授权 root 权限,在<code>root</code>下面加一条<code>hadoop</code>的<code>hadoop ALL=(ALL) ALL</code></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ chmod 777 /etc/sudoers</span><br><span class="line">$ vi /etc/sudoers</span><br><span class="line">root    ALL=(ALL)       ALL</span><br><span class="line">hadoop  ALL=(ALL)       NOPASSWD:ALL</span><br><span class="line">$ pkexec chmod 0440 /etc/sudoers</span><br></pre></td></tr></table></figure>
-<h3 id="免秘钥登录">免秘钥登录</h3>
-<h2 id="安装">安装</h2>
-<h3 id="下载解压">下载解压</h3>
-<p>在 ndoe1 上操作</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">su hadoop</span><br><span class="line">cd /home/hadoop/</span><br><span class="line">wget https://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoop-2.7.4/hadoop-2.7.4.tar.gz</span><br><span class="line">tar -zxvf hadoop-2.7.4.tar.gz</span><br></pre></td></tr></table></figure>
-<h3 id="环境变量">环境变量</h3>
-<p>如果是对所有的用户都生效就修改<code>vi /etc/profile</code> 文件<br>
-如果只针对当前用户生效就修改 <code>vi ~/.bahsrc</code> 文件</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vi /etc/profile</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#hadoop</span><br><span class="line">export PATH=$&#123;HADOOP_HOME&#125;/bin:$PATH</span><br><span class="line">export HADOOP_HOME=/home/hadoop/hadoop-2.7.4/</span><br></pre></td></tr></table></figure>
-<p>使环境变量生效，运行 <code>source /etc/profile</code>使<code>/etc/profile</code>文件生效</p>
-<h3 id="配置Hadoop">配置Hadoop</h3>
-<p>进入hadoop 配置文件目录</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hadoop-2.7.4/etc/hadoop/</span><br></pre></td></tr></table></figure>
-<p>编辑 <code>hadoop-env.sh</code> 文件,找到 <code>JAVA_HOME</code> 改为 JDK 的安装目录</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vi hadoop-env.sh</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">export JAVA_HOME=/lib/jvm</span><br></pre></td></tr></table></figure>
-<h4 id="修改-core-site-xml">修改 core-site.xml</h4>
-<p>打开 core-site.xml文件并对其进行编辑，如下图所示。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi core-site.xml</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.defaultFS&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://node1:9000&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;file:/home/hadoop/hadoop-2.7.4/tmp&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<h4 id="修改-hdfs-site-xml">修改 hdfs-site.xml</h4>
-<p>打开hdfs-site.xml文件并对其进行编辑，如下图所示。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi hdfs-site.xml</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.namenode.secondary.http-address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;node1:50090&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.replication&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;2&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.namenode.name.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;file:/home/hadoop/hadoop-2.7.4/tmp/dfs/name&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.datanode.data.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;file:/home/hadoop/hadoop-2.7.4/tmp/dfs/data&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<h4 id="修改-mapred-site-xml">修改 mapred-site.xml</h4>
-<p>目录下么没有这个文件,这有一个模板,我们需要先拷贝一份</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cp mapred-site.xml.template mapred-site.xml</span><br><span class="line">vi mapred-site.xml</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;mapreduce.framework.name&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;yarn&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;mapreduce.jobhistory.address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;node1:10020&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;mapreduce.jobhistory.webapp.address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;node1:19888&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<h4 id="修改-yarn-site-xml">修改 yarn-site.xml</h4>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi yarn-site.xml</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;!-- Site specific YARN configuration properties --&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;yarn.resourcemanager.hostname&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;node1&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;yarn.nodemanager.aux-services&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;mapreduce_shuffle&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<h3 id="配置集群">配置集群</h3>
-<h4 id="复制节点">复制节点</h4>
-<p>将 hadoop-2.7.4 文件夹重打包后复制到其他子节点</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/</span><br><span class="line"></span><br><span class="line">tar zcvf hadoop.tar.gz hadoop-2.7.4</span><br><span class="line">scp hadoop.tar.gz hadoop@node2:/home/hadoop/</span><br><span class="line">scp hadoop.tar.gz hadoop@node3:/home/hadoop/</span><br></pre></td></tr></table></figure>
-<p>在其他子节点 解压</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar -zxvf hadoop.tar.gz</span><br></pre></td></tr></table></figure>
-<h4 id="配置slaves文件">配置slaves文件</h4>
-<p>修改（Master主机）node1<code>/etc/hadoop/slaves</code>该文件指定哪些服务器节点是<code>datanode</code>节点。删除<code>locahost</code>，添加所有<code>datanode</code>节点的主机名</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hadoop-2.7.4/etc/hadoop/</span><br><span class="line"></span><br><span class="line">[hadoop@node1 hadoop]$ cat slaves </span><br><span class="line">node2</span><br><span class="line">node3</span><br></pre></td></tr></table></figure>
-<h2 id="集群操作">集群操作</h2>
-<h3 id="Format">Format</h3>
-<p>格式化namenode和datanode并启动，（在master上执行就可以了 不需要在slave上执行）</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hadoop-2.7.4/bin</span><br><span class="line"></span><br><span class="line">./hadoop namenode -format</span><br><span class="line">./hadoop datanode -format</span><br></pre></td></tr></table></figure>
-<h3 id="启动-hadoop">启动 hadoop</h3>
-<p>关闭防火墙</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl stop firewalld.service</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hadoop-2.7.4/sbin</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">./start-dfs.sh</span><br><span class="line">./start-yarn.sh</span><br><span class="line">./mr-jobhistory-daemon.sh start historyserver</span><br></pre></td></tr></table></figure>
-<p>或者</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./start-all.sh</span><br><span class="line"></span><br><span class="line">./mr-jobhistory-daemon.sh start historyserver</span><br></pre></td></tr></table></figure>
-<h3 id="查看进程服务">查看进程服务</h3>
-<p>查看启动进程,缺少以下任一进程都表示出错</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ jps</span><br><span class="line">2528 NameNode</span><br><span class="line">2720 SecondaryNameNode</span><br><span class="line">2872 ResourceManager</span><br><span class="line">3151 JobHistoryServer</span><br></pre></td></tr></table></figure>
-<p><strong>查看端口占用情况</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">netstat -tnlp | grep java</span><br></pre></td></tr></table></figure>
-<p>访问node1</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">http://192.168.252.121:50070</span><br><span class="line"></span><br><span class="line">http://192.168.252.121:8088</span><br></pre></td></tr></table></figure>
-<p><img src="/assets/images/hadoop1.webp" alt="图片描述" title="图片描述"></p>
-<p><img src="/assets/images/hadoop2.webp" alt="图片描述" title="图片描述"></p>
-<p><img src="/assets/images/hadoop3.webp" alt="图片描述" title="图片描述"></p>
-<h3 id="停止-hadoop">停止 hadoop</h3>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hadoop-2.7.4/sbin</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./stop-all.sh</span><br></pre></td></tr></table></figure>
-<p>或者 jps 查看进程<code>kill</code> 掉</p>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../../2017/06/16/database/Hadoop-2-7-4-%E9%9B%86%E7%BE%A4%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -2140,7 +2063,7 @@ Git 作了合并，但没有提交，它会停下来等你解决冲突。要看�
             </a>
           </li>
         
-        <li class="pagination-number">第 18 頁 共 21 頁</li>
+        <li class="pagination-number">第 18 頁 共 22 頁</li>
     </ul>
 </div>
 
@@ -2452,7 +2375,7 @@ Git 作了合并，但没有提交，它会停下来等你解决冲突。要看�
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 210 篇文章
+                找到 211 篇文章
             </p>
         </div>
     </div>

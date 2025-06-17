@@ -301,6 +301,147 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../2017/11/25/database/Hive-2-3-0-%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA%E4%B8%8E%E4%BD%BF%E7%94%A8/"
+                            aria-label=": Hive-2.3.0 快速搭建与使用"
+                        >
+                            Hive-2.3.0 快速搭建与使用
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2017-11-25T14:09:42+08:00">
+	
+		    2017 年 11 月 25 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/database/">database</a>, <a class="category-link" href="../../categories/database/hadoop/">hadoop</a>, <a class="category-link" href="../../categories/database/hadoop/Hive/">Hive</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="Hive-简介">Hive 简介</h2>
+<p>Hive 是一个基于 hadoop 的开源数据仓库工具，用于存储和处理海量结构化数据。它把海量数据存储于 hadoop 文件系统，而不是数据库，但提供了一套类数据库的数据存储和处理机制，并采用 HQL （类 SQL ）语言对这些数据进行自动化管理和处理。我们可以把 Hive 中海量结构化数据看成一个个的表，而实际上这些数据是分布式存储在 HDFS 中的。 Hive 经过对语句进行解析和转换，最终生成一系列基于 hadoop 的 map/reduce 任务，通过执行这些任务完成数据处理。</p>
+<p>Hive 诞生于 facebook 的日志分析需求，面对海量的结构化数据， Hive 以较低的成本完成了以往需要大规模数据库才能完成的任务，并且学习门槛相对较低，应用开发灵活而高效。</p>
+<p>Hive 自 2009.4.29 发布第一个官方稳定版 0.3.0 至今，不过一年的时间，正在慢慢完善，网上能找到的相关资料相当少，尤其中文资料更少，本文结合业务对 Hive 的应用做了一些探索，并把这些经验做一个总结，所谓前车之鉴，希望读者能少走一些弯路。</p>
+<h2 id="准备工作">准备工作</h2>
+<h3 id="环境">环境</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">JDK:1.8  </span><br><span class="line">Hadoop Release:2.7.4  </span><br><span class="line">centos:7.3  </span><br><span class="line"></span><br><span class="line">node1（master）  主机: 192.168.252.121  </span><br><span class="line">node2（slave1）  从机: 192.168.252.122  </span><br><span class="line">node3（slave2）  从机: 192.168.252.123  </span><br><span class="line"></span><br><span class="line">node4（mysql）   从机: 192.168.252.124  </span><br></pre></td></tr></table></figure>
+<h3 id="依赖环境">依赖环境</h3>
+<p>安装**<code>Apache Hive</code>**前提是要先安装<code>hadoop</code>集群，并且hive只需要在hadoop的namenode节点集群里安装即可（需要在有的namenode上安装)，可以不在datanode节点的机器上安装。还需要说明的是，虽然修改配置文件并不需要把hadoop运行起来，但是本文中用到了hadoop的hdfs命令，在执行这些命令时你必须确保hadoop是正在运行着的，而且启动hive的前提也需要hadoop在正常运行着，所以建议先把hadoop集群启动起来。</p>
+<p>安装**<code>MySQL</code>** 用于存储 Hive 的元数据（也可以用 Hive 自带的嵌入式数据库 Derby，但是 Hive 的生产环境一般不用 Derby），这里只需要安装 MySQL 单机版即可，如果想保证高可用的化，也可以部署 MySQL 主从模式；</p>
+<p><strong>Hadoop</strong></p>
+<p><a href="https://chankein.github.io/2017/06/16/database/Hadoop-2-7-4-%E9%9B%86%E7%BE%A4%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA/">Hadoop-2.7.4 集群快速搭建</a></p>
+<p><strong>MySQL</strong> 随意任选其一</p>
+<p><a href="https://chankein.github.io/2017/08/16/database/CentOs7-3-%E5%AE%89%E8%A3%85-MySQL-5-7-19-%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%89%88%E6%9C%AC/">CentOs7.3 安装 MySQL 5.7.19 二进制版本</a></p>
+<p><a href="https://chankein.github.io/2017/09/16/database/%E6%90%AD%E5%BB%BAMySQL5-7-19%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6-%E4%BB%A5%E5%8F%8A%E5%A4%8D%E5%88%B6%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82%E5%88%86%E6%9E%90/">搭建 MySQL 5.7.19 主从复制，以及复制实现细节分析</a></p>
+<h2 id="安装">安装</h2>
+<h3 id="下载解压">下载解压</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">su hadoop</span><br><span class="line">cd /home/hadoop/</span><br><span class="line">wget https://mirrors.tuna.tsinghua.edu.cn/apache/hive/hive-2.3.0/apache-hive-2.3.0-bin.tar.gz</span><br><span class="line">tar -zxvf apache-hive-2.3.0-bin.tar.gz</span><br><span class="line">mv apache-hive-2.3.0-bin hive-2.3.0</span><br></pre></td></tr></table></figure>
+<h3 id="环境变量">环境变量</h3>
+<p>如果是对所有的用户都生效就修改<code>vi /etc/profile</code> 文件<br>
+如果只针对当前用户生效就修改 <code>vi ~/.bahsrc</code> 文件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vi /etc/profile</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#hive</span><br><span class="line">export PATH=$&#123;HIVE_HOME&#125;/bin:$PATH</span><br><span class="line">export HIVE_HOME=/home/hadoop/hive-2.3.0/</span><br></pre></td></tr></table></figure>
+<p>使环境变量生效，运行 <code>source /etc/profile</code>使<code>/etc/profile</code>文件生效</p>
+<h3 id="Hive-配置-Hadoop-HDFS">Hive 配置 Hadoop HDFS</h3>
+<h4 id="复制-hive-site-xml">复制 hive-site.xml</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hive-2.3.0/conf</span><br><span class="line">cp hive-default.xml.template hive-site.xml</span><br></pre></td></tr></table></figure>
+<h4 id="新建-hdfs-目录">新建 hdfs 目录</h4>
+<p>使用 hadoop 新建 hdfs 目录,因为在 hive-site.xml 中有默认如下配置：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">    &lt;name&gt;hive.metastore.warehouse.dir&lt;/name&gt;</span><br><span class="line">    &lt;value&gt;/user/hive/warehouse&lt;/value&gt;</span><br><span class="line">    &lt;description&gt;location of default database for the warehouse&lt;/description&gt;</span><br><span class="line">  &lt;/property&gt;</span><br><span class="line">  &lt;property&gt;</span><br></pre></td></tr></table></figure>
+<p>进入 hadoop 安装目录 执行hadoop命令新建/user/hive/warehouse目录，并授权，用于存储文件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hadoop-2.7.4</span><br><span class="line"></span><br><span class="line">bin/hadoop fs -mkdir -p /user/hive/warehouse  </span><br><span class="line">bin/hadoop fs -mkdir -p /user/hive/tmp  </span><br><span class="line">bin/hadoop fs -mkdir -p /user/hive/log  </span><br><span class="line">bin/hadoop fs -chmod -R 777 /user/hive/warehouse  </span><br><span class="line">bin/hadoop fs -chmod -R 777 /user/hive/tmp  </span><br><span class="line">bin/hadoop fs -chmod -R 777 /user/hive/log  </span><br></pre></td></tr></table></figure>
+<p>用以下命令检查目录是否创建成功</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/hadoop fs -ls /user/hive</span><br></pre></td></tr></table></figure>
+<h4 id="修改-hive-site-xml">修改 hive-site.xml</h4>
+<p>搜索hive.exec.scratchdir,将该name对应的value修改为/user/hive/tmp</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;  </span><br><span class="line">    &lt;name&gt;hive.exec.scratchdir&lt;/name&gt;  </span><br><span class="line">    &lt;value&gt;/user/hive/tmp&lt;/value&gt;  </span><br><span class="line">&lt;/property&gt;  </span><br></pre></td></tr></table></figure>
+<p>搜索hive.querylog.location,将该name对应的value修改为/user/hive/log/hadoop</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">    &lt;name&gt;hive.querylog.location&lt;/name&gt;</span><br><span class="line">    &lt;value&gt;/user/hive/log/hadoop&lt;/value&gt;</span><br><span class="line">    &lt;description&gt;Location of Hive run time structured log file&lt;/description&gt;</span><br><span class="line">&lt;/property&gt;</span><br></pre></td></tr></table></figure>
+<p>搜索javax.jdo.option.connectionURL,将该name对应的value修改为MySQL的地址</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">    &lt;name&gt;javax.jdo.option.ConnectionURL&lt;/name&gt;</span><br><span class="line">    &lt;value&gt;jdbc:mysql://192.168.252.124:3306/hive?createDatabaseIfNotExist=true&lt;/value&gt;</span><br><span class="line">    &lt;description&gt;</span><br><span class="line">      JDBC connect string for a JDBC metastore.</span><br><span class="line">      To use SSL to encrypt/authenticate the connection, provide database-specific SSL flag in the connection URL.</span><br><span class="line">      For example, jdbc:postgresql://myhost/db?ssl=true for postgres database.</span><br><span class="line">    &lt;/description&gt;</span><br><span class="line">  &lt;/property&gt;</span><br></pre></td></tr></table></figure>
+<p>搜索javax.jdo.option.ConnectionDriverName，将该name对应的value修改为MySQL驱动类路径</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">    &lt;name&gt;javax.jdo.option.ConnectionDriverName&lt;/name&gt;</span><br><span class="line">    &lt;value&gt;com.mysql.jdbc.Driver&lt;/value&gt;</span><br><span class="line">    &lt;description&gt;Driver class name for a JDBC metastore&lt;/description&gt;</span><br><span class="line">&lt;/property&gt;</span><br></pre></td></tr></table></figure>
+<p>搜索javax.jdo.option.ConnectionUserName，将对应的value修改为MySQL数据库登录名</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">    &lt;name&gt;javax.jdo.option.ConnectionUserName&lt;/name&gt;</span><br><span class="line">    &lt;value&gt;root&lt;/value&gt;</span><br><span class="line">    &lt;description&gt;Username to use against metastore database&lt;/description&gt;</span><br><span class="line">&lt;/property&gt;</span><br></pre></td></tr></table></figure>
+<p>搜索javax.jdo.option.ConnectionPassword，将对应的value修改为MySQL数据库的登录密码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">    &lt;name&gt;javax.jdo.option.ConnectionPassword&lt;/name&gt;</span><br><span class="line">    &lt;value&gt;mima&lt;/value&gt;</span><br><span class="line">    &lt;description&gt;password to use against metastore database&lt;/description&gt;</span><br><span class="line">&lt;/property&gt;</span><br></pre></td></tr></table></figure>
+<h4 id="创建-tmp-文件">创建 tmp 文件</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir /home/hadoop/hive-2.3.0/tmp</span><br></pre></td></tr></table></figure>
+<p>并在 <code>hive-site.xml</code> 中修改</p>
+<p>把<code>&#123;system:java.io.tmpdir&#125;</code> 改成 /home/hadoop/hive-2.3.0/tmp</p>
+<p>把 <code>&#123;system:user.name&#125;</code> 改成 <code>&#123;user.name&#125;</code></p>
+<h4 id="新建-hive-env-sh">新建 <a target="_blank" rel="noopener" href="http://hive-env.sh">hive-env.sh</a></h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cp hive-env.sh.template hive-env.sh</span><br><span class="line"></span><br><span class="line">vi hive-env.sh</span><br><span class="line"></span><br><span class="line">HADOOP_HOME=/home/hadoop/hadoop-2.7.4/</span><br><span class="line">export HIVE_CONF_DIR=/home/hadoop/hive-2.3.0/conf</span><br><span class="line">export HIVE_AUX_JARS_PATH=/home/hadoop/hive-2.3.0/lib</span><br></pre></td></tr></table></figure>
+<h4 id="下载-mysql-驱动包">下载 mysql 驱动包</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hive-2.3.0/lib</span><br><span class="line"></span><br><span class="line">wget http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.38/mysql-connector-java-5.1.38.jar</span><br></pre></td></tr></table></figure>
+<h3 id="初始化-mysql">初始化 mysql</h3>
+<h4 id="MySQL数据库进行初始化">MySQL数据库进行初始化</h4>
+<p>首先确保 mysql 中已经创建 <code>hive</code> 库</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hive-2.3.0/bin</span><br><span class="line">./schematool -initSchema -dbType mysql</span><br></pre></td></tr></table></figure>
+<p>如果看到如下,表示初始化成功</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Starting metastore schema initialization to 2.3.0</span><br><span class="line">Initialization script hive-schema-2.3.0.mysql.sql</span><br><span class="line">Initialization script completed</span><br><span class="line">schemaTool completed</span><br></pre></td></tr></table></figure>
+<h4 id="查看-mysql-数据库">查看 mysql 数据库</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/mysql/bin/mysql -uroot -p</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show databases;</span><br><span class="line">+--------------------+</span><br><span class="line">| Database           |</span><br><span class="line">+--------------------+</span><br><span class="line">| information_schema |</span><br><span class="line">| hive               |</span><br><span class="line">| mysql              |</span><br><span class="line">| performance_schema |</span><br><span class="line">| sys                |</span><br><span class="line">+--------------------+</span><br><span class="line">5 rows in set (0.00 sec)</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; use hive;</span><br><span class="line">Reading table information for completion of table and column names</span><br><span class="line">You can turn off this feature to get a quicker startup with -A</span><br><span class="line"></span><br><span class="line">Database changed</span><br><span class="line">mysql&gt; show tables;</span><br><span class="line">+---------------------------+</span><br><span class="line">| Tables_in_hive            |</span><br><span class="line">+---------------------------+</span><br><span class="line">| AUX_TABLE                 |</span><br><span class="line">| BUCKETING_COLS            |</span><br><span class="line">| CDS                       |</span><br><span class="line">| COLUMNS_V2                |</span><br><span class="line">| COMPACTION_QUEUE          |</span><br><span class="line">| COMPLETED_COMPACTIONS     |</span><br><span class="line">| COMPLETED_TXN_COMPONENTS  |</span><br><span class="line">| DATABASE_PARAMS           |</span><br><span class="line">| DBS                       |</span><br><span class="line">| DB_PRIVS                  |</span><br><span class="line">| DELEGATION_TOKENS         |</span><br><span class="line">| FUNCS                     |</span><br><span class="line">| FUNC_RU                   |</span><br><span class="line">| GLOBAL_PRIVS              |</span><br><span class="line">| HIVE_LOCKS                |</span><br><span class="line">| IDXS                      |</span><br><span class="line">| INDEX_PARAMS              |</span><br><span class="line">| KEY_CONSTRAINTS           |</span><br><span class="line">| MASTER_KEYS               |</span><br><span class="line">| NEXT_COMPACTION_QUEUE_ID  |</span><br><span class="line">| NEXT_LOCK_ID              |</span><br><span class="line">| NEXT_TXN_ID               |</span><br><span class="line">| NOTIFICATION_LOG          |</span><br><span class="line">| NOTIFICATION_SEQUENCE     |</span><br><span class="line">| NUCLEUS_TABLES            |</span><br><span class="line">| PARTITIONS                |</span><br><span class="line">| PARTITION_EVENTS          |</span><br><span class="line">| PARTITION_KEYS            |</span><br><span class="line">| PARTITION_KEY_VALS        |</span><br><span class="line">| PARTITION_PARAMS          |</span><br><span class="line">| PART_COL_PRIVS            |</span><br><span class="line">| PART_COL_STATS            |</span><br><span class="line">| PART_PRIVS                |</span><br><span class="line">| ROLES                     |</span><br><span class="line">| ROLE_MAP                  |</span><br><span class="line">| SDS                       |</span><br><span class="line">| SD_PARAMS                 |</span><br><span class="line">| SEQUENCE_TABLE            |</span><br><span class="line">| SERDES                    |</span><br><span class="line">| SERDE_PARAMS              |</span><br><span class="line">| SKEWED_COL_NAMES          |</span><br><span class="line">| SKEWED_COL_VALUE_LOC_MAP  |</span><br><span class="line">| SKEWED_STRING_LIST        |</span><br><span class="line">| SKEWED_STRING_LIST_VALUES |</span><br><span class="line">| SKEWED_VALUES             |</span><br><span class="line">| SORT_COLS                 |</span><br><span class="line">| TABLE_PARAMS              |</span><br><span class="line">| TAB_COL_STATS             |</span><br><span class="line">| TBLS                      |</span><br><span class="line">| TBL_COL_PRIVS             |</span><br><span class="line">| TBL_PRIVS                 |</span><br><span class="line">| TXNS                      |</span><br><span class="line">| TXN_COMPONENTS            |</span><br><span class="line">| TYPES                     |</span><br><span class="line">| TYPE_FIELDS               |</span><br><span class="line">| VERSION                   |</span><br><span class="line">| WRITE_SET                 |</span><br><span class="line">+---------------------------+</span><br><span class="line">57 rows in set (0.00 sec)</span><br></pre></td></tr></table></figure>
+<h3 id="启动-Hive">启动 Hive</h3>
+<h4 id="简单测试">简单测试</h4>
+<p><strong>启动Hive</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hive-2.3.0/bin</span><br><span class="line"></span><br><span class="line">./hive</span><br></pre></td></tr></table></figure>
+<p><strong>创建 hive 库</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hive&gt;  create database ymq;</span><br><span class="line">OK</span><br><span class="line">Time taken: 0.742 seconds</span><br></pre></td></tr></table></figure>
+<p><strong>选择库</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hive&gt; use ymq;</span><br><span class="line">OK</span><br><span class="line">Time taken: 0.036 seconds</span><br></pre></td></tr></table></figure>
+<p><strong>创建表</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hive&gt; create table test (mykey string,myval string);</span><br><span class="line">OK</span><br><span class="line">Time taken: 0.569 seconds</span><br></pre></td></tr></table></figure>
+<p><strong>插入数据</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">hive&gt; insert into test values(&quot;1&quot;,&quot;www.ymq.io&quot;);</span><br><span class="line"></span><br><span class="line">WARNING: Hive-on-MR is deprecated in Hive 2 and may not be available in the future versions. Consider using a different execution engine (i.e. spark, tez) or using Hive 1.X releases.</span><br><span class="line">Query ID = hadoop_20170922011126_abadfa44-8ebe-4ffc-9615-4241707b3c03</span><br><span class="line">Total jobs = 3</span><br><span class="line">Launching Job 1 out of 3</span><br><span class="line">Number of reduce tasks is set to 0 since there&#x27;s no reduce operator</span><br><span class="line">Starting Job = job_1506006892375_0001, Tracking URL = http://node1:8088/proxy/application_1506006892375_0001/</span><br><span class="line">Kill Command = /home/hadoop/hadoop-2.7.4//bin/hadoop job  -kill job_1506006892375_0001</span><br><span class="line">Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 0</span><br><span class="line">2017-09-22 01:12:12,763 Stage-1 map = 0%,  reduce = 0%</span><br><span class="line">2017-09-22 01:12:20,751 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 1.24 sec</span><br><span class="line">MapReduce Total cumulative CPU time: 1 seconds 240 msec</span><br><span class="line">Ended Job = job_1506006892375_0001</span><br><span class="line">Stage-4 is selected by condition resolver.</span><br><span class="line">Stage-3 is filtered out by condition resolver.</span><br><span class="line">Stage-5 is filtered out by condition resolver.</span><br><span class="line">Moving data to directory hdfs://node1:9000/user/hive/warehouse/ymq.db/test/.hive-staging_hive_2017-09-22_01-11-26_242_8022847052615616955-1/-ext-10000</span><br><span class="line">Loading data to table ymq.test</span><br><span class="line">MapReduce Jobs Launched: </span><br><span class="line">Stage-Stage-1: Map: 1   Cumulative CPU: 1.24 sec   HDFS Read: 4056 HDFS Write: 77 SUCCESS</span><br><span class="line">Total MapReduce CPU Time Spent: 1 seconds 240 msec</span><br><span class="line">OK</span><br><span class="line">Time taken: 56.642 seconds</span><br></pre></td></tr></table></figure>
+<p>查询数据</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">hive&gt; select * from test;</span><br><span class="line">OK</span><br><span class="line">1    www.ymq.io</span><br><span class="line">Time taken: 0.253 seconds, Fetched: 1 row(s)</span><br></pre></td></tr></table></figure>
+<h4 id="页面数据">页面数据</h4>
+<p><strong>在界面上查看刚刚写入的hdfs数据</strong></p>
+<p><img src="/assets/images/hive1.webp" alt="图片描述" title="图片描述"></p>
+<p><img src="/assets/images/hive2.webp" alt="图片描述" title="图片描述"></p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2017/11/25/database/Hive-2-3-0-%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA%E4%B8%8E%E4%BD%BF%E7%94%A8/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
                             aria-label=": CentOs7.3 hadoop ssh 免密登录"
                         >
@@ -1800,192 +1941,6 @@ State: 信息表示所有更新都已同步发送到从服务器，并且主服�
         
     </article>
     
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2017/06/16/database/Hadoop-2-7-4-%E9%9B%86%E7%BE%A4%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA/"
-                            aria-label=": Hadoop-2.7.4 集群快速搭建"
-                        >
-                            Hadoop-2.7.4 集群快速搭建
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2017-06-16T18:25:42+08:00">
-	
-		    2017 年 6 月 16 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Hadoop/">Hadoop</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h2 id="Hadoop简介">Hadoop简介</h2>
-<p>2003-2004年，Google公开了部分GFS和Mapreduce思想的细节，以此为基础Doug Cutting等人用了2年业余时间实现了DFS和Mapreduce机制，一个微缩版：Nutch</p>
-<p>Hadoop 于 2005 年秋天作为 Lucene的子项目 Nutch的一部分正式引入Apache基金会。2006 年 3 月份，Map-Reduce 和 Nutch Distributed File System (NDFS) 分别被纳入称为 Hadoop 的项目中</p>
-<h3 id="Hadoop">Hadoop</h3>
-<p><strong>分布式存储系统HDFS （Hadoop Distributed File System ）</strong></p>
-<ul>
-<li>分布式存储系统</li>
-<li>提供了 高可靠性、高扩展性和高吞吐率的数据存储服务</li>
-</ul>
-<p><strong>分布式计算框架MapReduce</strong></p>
-<ul>
-<li>分布式计算框架</li>
-<li>具有 易于编程、高容错性和高扩展性等优点。</li>
-</ul>
-<h3 id="HDFS优点">HDFS优点</h3>
-<p><strong>高容错性</strong></p>
-<ul>
-<li>数据自动保存多个副本</li>
-<li>副本丢失后，自动恢复</li>
-</ul>
-<p><strong>适合批处理</strong></p>
-<ul>
-<li>移动计算而非数据</li>
-<li>数据位置暴露给计算框架</li>
-</ul>
-<p><strong>适合大数据处理</strong></p>
-<ul>
-<li>GB 、TB 、甚至PB 级数据</li>
-<li>百万规模以上的文件数量</li>
-<li>10K+ 节点</li>
-</ul>
-<p><strong>可构建在廉价机器上</strong></p>
-<ul>
-<li>通过多副本提高可靠性</li>
-<li>提供了容错和恢复 机制</li>
-</ul>
-<h3 id="HDFS缺点">HDFS缺点</h3>
-<p><strong>低延迟数据访问</strong></p>
-<ul>
-<li>比如毫秒级</li>
-<li>低延迟与高吞吐率</li>
-</ul>
-<p><strong>小文件存取</strong></p>
-<ul>
-<li>占用NameNode 大量内存</li>
-<li>寻道时间超过读取时间</li>
-</ul>
-<p><strong>并发写入、文件随机修改</strong></p>
-<ul>
-<li>一个文件只能有一个写者</li>
-<li>仅支持append</li>
-</ul>
-<h2 id="准备工作">准备工作</h2>
-<h3 id="环境">环境</h3>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">JDK:1.8  </span><br><span class="line">Hadoop Release:2.7.4  </span><br><span class="line">centos:7.3  </span><br><span class="line"></span><br><span class="line">node1（master）  主机: 192.168.252.121  </span><br><span class="line">node2（slave1）  从机: 192.168.252.122  </span><br><span class="line">node3（slave2）  从机: 192.168.252.123  </span><br></pre></td></tr></table></figure>
-<p><strong>安装 JDK</strong></p>
-<p><a href="https://chankein.github.io/2018/01/07/java/CentOs7-3-%E5%AE%89%E8%A3%85-JDK1-8/">CentOs7.3 安装 JDK1.8</a></p>
-<p><strong>SSH 免秘钥</strong></p>
-<p><a href="https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/">CentOs7.3 Hadoop 用户 ssh 免密登录</a></p>
-<h3 id="创建用户">创建用户</h3>
-<p>建议创建一个单独的用户Hadoop以从Unix文件系统隔离Hadoop文件系统</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ useradd hadoop</span><br><span class="line">$ passwd hadoop</span><br><span class="line">New password: </span><br><span class="line">Retype new password: </span><br></pre></td></tr></table></figure>
-<p>授权 root 权限,在<code>root</code>下面加一条<code>hadoop</code>的<code>hadoop ALL=(ALL) ALL</code></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ chmod 777 /etc/sudoers</span><br><span class="line">$ vi /etc/sudoers</span><br><span class="line">root    ALL=(ALL)       ALL</span><br><span class="line">hadoop  ALL=(ALL)       NOPASSWD:ALL</span><br><span class="line">$ pkexec chmod 0440 /etc/sudoers</span><br></pre></td></tr></table></figure>
-<h3 id="免秘钥登录">免秘钥登录</h3>
-<h2 id="安装">安装</h2>
-<h3 id="下载解压">下载解压</h3>
-<p>在 ndoe1 上操作</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">su hadoop</span><br><span class="line">cd /home/hadoop/</span><br><span class="line">wget https://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoop-2.7.4/hadoop-2.7.4.tar.gz</span><br><span class="line">tar -zxvf hadoop-2.7.4.tar.gz</span><br></pre></td></tr></table></figure>
-<h3 id="环境变量">环境变量</h3>
-<p>如果是对所有的用户都生效就修改<code>vi /etc/profile</code> 文件<br>
-如果只针对当前用户生效就修改 <code>vi ~/.bahsrc</code> 文件</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vi /etc/profile</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#hadoop</span><br><span class="line">export PATH=$&#123;HADOOP_HOME&#125;/bin:$PATH</span><br><span class="line">export HADOOP_HOME=/home/hadoop/hadoop-2.7.4/</span><br></pre></td></tr></table></figure>
-<p>使环境变量生效，运行 <code>source /etc/profile</code>使<code>/etc/profile</code>文件生效</p>
-<h3 id="配置Hadoop">配置Hadoop</h3>
-<p>进入hadoop 配置文件目录</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hadoop-2.7.4/etc/hadoop/</span><br></pre></td></tr></table></figure>
-<p>编辑 <code>hadoop-env.sh</code> 文件,找到 <code>JAVA_HOME</code> 改为 JDK 的安装目录</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vi hadoop-env.sh</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">export JAVA_HOME=/lib/jvm</span><br></pre></td></tr></table></figure>
-<h4 id="修改-core-site-xml">修改 core-site.xml</h4>
-<p>打开 core-site.xml文件并对其进行编辑，如下图所示。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi core-site.xml</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;fs.defaultFS&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;hdfs://node1:9000&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;file:/home/hadoop/hadoop-2.7.4/tmp&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<h4 id="修改-hdfs-site-xml">修改 hdfs-site.xml</h4>
-<p>打开hdfs-site.xml文件并对其进行编辑，如下图所示。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi hdfs-site.xml</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.namenode.secondary.http-address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;node1:50090&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.replication&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;2&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.namenode.name.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;file:/home/hadoop/hadoop-2.7.4/tmp/dfs/name&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;dfs.datanode.data.dir&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;file:/home/hadoop/hadoop-2.7.4/tmp/dfs/data&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<h4 id="修改-mapred-site-xml">修改 mapred-site.xml</h4>
-<p>目录下么没有这个文件,这有一个模板,我们需要先拷贝一份</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cp mapred-site.xml.template mapred-site.xml</span><br><span class="line">vi mapred-site.xml</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;mapreduce.framework.name&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;yarn&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;mapreduce.jobhistory.address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;node1:10020&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;mapreduce.jobhistory.webapp.address&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;node1:19888&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<h4 id="修改-yarn-site-xml">修改 yarn-site.xml</h4>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vi yarn-site.xml</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&lt;configuration&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;!-- Site specific YARN configuration properties --&gt;</span><br><span class="line">    </span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;yarn.resourcemanager.hostname&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;node1&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">    &lt;property&gt;</span><br><span class="line">        &lt;name&gt;yarn.nodemanager.aux-services&lt;/name&gt;</span><br><span class="line">        &lt;value&gt;mapreduce_shuffle&lt;/value&gt;</span><br><span class="line">    &lt;/property&gt;</span><br><span class="line">&lt;/configuration&gt;</span><br></pre></td></tr></table></figure>
-<h3 id="配置集群">配置集群</h3>
-<h4 id="复制节点">复制节点</h4>
-<p>将 hadoop-2.7.4 文件夹重打包后复制到其他子节点</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/</span><br><span class="line"></span><br><span class="line">tar zcvf hadoop.tar.gz hadoop-2.7.4</span><br><span class="line">scp hadoop.tar.gz hadoop@node2:/home/hadoop/</span><br><span class="line">scp hadoop.tar.gz hadoop@node3:/home/hadoop/</span><br></pre></td></tr></table></figure>
-<p>在其他子节点 解压</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar -zxvf hadoop.tar.gz</span><br></pre></td></tr></table></figure>
-<h4 id="配置slaves文件">配置slaves文件</h4>
-<p>修改（Master主机）node1<code>/etc/hadoop/slaves</code>该文件指定哪些服务器节点是<code>datanode</code>节点。删除<code>locahost</code>，添加所有<code>datanode</code>节点的主机名</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hadoop-2.7.4/etc/hadoop/</span><br><span class="line"></span><br><span class="line">[hadoop@node1 hadoop]$ cat slaves </span><br><span class="line">node2</span><br><span class="line">node3</span><br></pre></td></tr></table></figure>
-<h2 id="集群操作">集群操作</h2>
-<h3 id="Format">Format</h3>
-<p>格式化namenode和datanode并启动，（在master上执行就可以了 不需要在slave上执行）</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hadoop-2.7.4/bin</span><br><span class="line"></span><br><span class="line">./hadoop namenode -format</span><br><span class="line">./hadoop datanode -format</span><br></pre></td></tr></table></figure>
-<h3 id="启动-hadoop">启动 hadoop</h3>
-<p>关闭防火墙</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl stop firewalld.service</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hadoop-2.7.4/sbin</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">./start-dfs.sh</span><br><span class="line">./start-yarn.sh</span><br><span class="line">./mr-jobhistory-daemon.sh start historyserver</span><br></pre></td></tr></table></figure>
-<p>或者</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./start-all.sh</span><br><span class="line"></span><br><span class="line">./mr-jobhistory-daemon.sh start historyserver</span><br></pre></td></tr></table></figure>
-<h3 id="查看进程服务">查看进程服务</h3>
-<p>查看启动进程,缺少以下任一进程都表示出错</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ jps</span><br><span class="line">2528 NameNode</span><br><span class="line">2720 SecondaryNameNode</span><br><span class="line">2872 ResourceManager</span><br><span class="line">3151 JobHistoryServer</span><br></pre></td></tr></table></figure>
-<p><strong>查看端口占用情况</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">netstat -tnlp | grep java</span><br></pre></td></tr></table></figure>
-<p>访问node1</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">http://192.168.252.121:50070</span><br><span class="line"></span><br><span class="line">http://192.168.252.121:8088</span><br></pre></td></tr></table></figure>
-<p><img src="/assets/images/hadoop1.webp" alt="图片描述" title="图片描述"></p>
-<p><img src="/assets/images/hadoop2.webp" alt="图片描述" title="图片描述"></p>
-<p><img src="/assets/images/hadoop3.webp" alt="图片描述" title="图片描述"></p>
-<h3 id="停止-hadoop">停止 hadoop</h3>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cd /home/hadoop/hadoop-2.7.4/sbin</span><br></pre></td></tr></table></figure>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./stop-all.sh</span><br></pre></td></tr></table></figure>
-<p>或者 jps 查看进程<code>kill</code> 掉</p>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2017/06/16/database/Hadoop-2-7-4-%E9%9B%86%E7%BE%A4%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -2012,7 +1967,7 @@ State: 信息表示所有更新都已同步发送到从服务器，并且主服�
             </a>
           </li>
         
-        <li class="pagination-number">第 18 頁 共 21 頁</li>
+        <li class="pagination-number">第 18 頁 共 22 頁</li>
     </ul>
 </div>
 
@@ -2323,7 +2278,7 @@ State: 信息表示所有更新都已同步发送到从服务器，并且主服�
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 210 篇文章
+                找到 211 篇文章
             </p>
         </div>
     </div>

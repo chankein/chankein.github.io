@@ -302,6 +302,189 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../../../2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
+                            aria-label=": MySQL 使用 SSL 连接(附 Docker 例子)"
+                        >
+                            MySQL 使用 SSL 连接(附 Docker 例子)
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2017-08-17T22:55:08+08:00">
+	
+		    2017 年 8 月 17 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../categories/database/">database</a>, <a class="category-link" href="../../../../categories/database/mysql/">mysql</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="查看是否支持-SSL">查看是否支持 SSL</h2>
+<p>首先在 MySQL 上执行如下命令, 查询是否 MySQL 支持 SSL:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">mysql&gt; </span><span class="language-bash">SHOW VARIABLES LIKE <span class="string">&#x27;have_ssl&#x27;</span>;</span></span><br><span class="line">+---------------+-------+</span><br><span class="line">| Variable_name | Value |</span><br><span class="line">+---------------+-------+</span><br><span class="line">| have_ssl      | YES   |</span><br><span class="line">+---------------+-------+</span><br><span class="line">1 row in set (0.02 sec)</span><br></pre></td></tr></table></figure>
+<p>当 <code>have_ssl</code> 为 <code>YES</code> 时, 表示此时 MySQL 服务已经支持 SSL 了. 如果是 <code>DESABLE</code>, 则需要在启动 MySQL 服务时, 使能 SSL 功能.</p>
+<h2 id="使用-OpenSSL-创建-SSL-证书和私钥">使用 OpenSSL 创建 SSL 证书和私钥</h2>
+<p>首先我们需要使用 openssl 来创建服务器端的证书和私钥. 我使用的 openssl 版本为:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; /usr/local/Cellar/openssl/1.0.2j/bin/openssl version</span><br><span class="line">OpenSSL 1.0.2j  26 Sep 2016</span><br></pre></td></tr></table></figure>
+<p>新建一个 <strong>~/temp/cert</strong> 目录, 用于存放生成的证书和私钥</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mkdir ~/temp/cert</span><br><span class="line">cd ~/temp/cert</span><br></pre></td></tr></table></figure>
+<h3 id="创建-CA-私钥和-CA-证书">创建 CA 私钥和 CA 证书</h3>
+<p>然后, 我们先来生成一个 CA 私钥:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl genrsa 2048 &gt; ca-key.pem</span><br></pre></td></tr></table></figure>
+<p>当有了一个 CA 私钥, 我们接下来就可以使用这个私钥生成一个新的数字证书:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl req -sha1 -new -x509 -nodes -days 3650 -key ca-key.pem &gt; ca-cert.pem</span><br></pre></td></tr></table></figure>
+<p>执行这个命令时, 会需要填写一些问题, 随便填写就可以了. 例如:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; openssl req -sha1 -new -x509 -nodes -days 3650 -key ca-key.pem &gt; ca-cert.pem</span><br><span class="line"></span><br><span class="line">You are about to be asked to enter information that will be incorporated</span><br><span class="line">into your certificate request.</span><br><span class="line">What you are about to enter is what is called a Distinguished Name or a DN.</span><br><span class="line">There are quite a few fields but you can leave some blank</span><br><span class="line">For some fields there will be a default value,</span><br><span class="line">If you enter &#x27;.&#x27;, the field will be left blank.</span><br><span class="line">-----</span><br><span class="line">Country Name (2 letter code) [AU]:CN</span><br><span class="line">State or Province Name (full name) [Some-State]:Beijing</span><br><span class="line">Locality Name (eg, city) []:Beijing</span><br><span class="line">Organization Name (eg, company) [Internet Widgits Pty Ltd]:xys</span><br><span class="line">Organizational Unit Name (eg, section) []:xys</span><br><span class="line">Common Name (e.g. server FQDN or YOUR name) []:xys</span><br><span class="line">Email Address []:yongshun1228@gmail.com</span><br></pre></td></tr></table></figure>
+<p>执行上述命令后, 我们就有了一个 CA 私钥和一个 CA 证书.</p>
+<h3 id="创建服务器端的-RSA-私钥和数字证书">创建服务器端的 RSA 私钥和数字证书</h3>
+<p>接着, 我们需要创建服务器端的私钥和一个证书请求文件, 命令如下:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl req -sha1 -newkey rsa:2048 -days 3650 -nodes -keyout server-key.pem &gt; server-req.pem</span><br></pre></td></tr></table></figure>
+<p>上面这个命令会生成一个新的私钥(server-key.pem), 同时会使用这个新私钥来生成一个证书请求文件(server-req.pem).<br>
+上面这个命令同样需要回答几个问题, 随便填写即可. 不过需要注意的是, <code>A challenge password</code> 这一项需要为空.<br>
+即:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; openssl req -sha1 -newkey rsa:2048 -days 3650 -nodes -keyout server-key.pem &gt; server-req.pem</span><br><span class="line"></span><br><span class="line">Generating a 2048 bit RSA private key</span><br><span class="line">.................+++</span><br><span class="line">..+++</span><br><span class="line">writing new private key to &#x27;server-key.pem&#x27;</span><br><span class="line">-----</span><br><span class="line">You are about to be asked to enter information that will be incorporated</span><br><span class="line">into your certificate request.</span><br><span class="line">What you are about to enter is what is called a Distinguished Name or a DN.</span><br><span class="line">There are quite a few fields but you can leave some blank</span><br><span class="line">For some fields there will be a default value,</span><br><span class="line">If you enter &#x27;.&#x27;, the field will be left blank.</span><br><span class="line">-----</span><br><span class="line">Country Name (2 letter code) [AU]:CN</span><br><span class="line">State or Province Name (full name) [Some-State]:Beijing</span><br><span class="line">Locality Name (eg, city) []:Beijing</span><br><span class="line">Organization Name (eg, company) [Internet Widgits Pty Ltd]:xys</span><br><span class="line">Organizational Unit Name (eg, section) []:xys</span><br><span class="line">Common Name (e.g. server FQDN or YOUR name) []:xys</span><br><span class="line">Email Address []:yongshun1228@gmail.com</span><br><span class="line"></span><br><span class="line">Please enter the following &#x27;extra&#x27; attributes</span><br><span class="line">to be sent with your certificate request</span><br><span class="line">A challenge password []:</span><br><span class="line">An optional company name []:</span><br></pre></td></tr></table></figure>
+<p>下一步, 我们需要将生成的私钥转换为 RSA 私钥文件格式:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl rsa -in server-key.pem -out server-key.pem</span><br></pre></td></tr></table></figure>
+<p>最后一步, 我们需要使用原先生成的 CA 证书来生成一个服务器端的数字证书:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl x509 -sha1 -req -in server-req.pem -days 3650 -CA ca-cert.pem -CAkey ca-key.pem -set_serial 01 &gt; server-cert.pem</span><br></pre></td></tr></table></figure>
+<p>上面的命令会创建以服务器端的数字证书文件.</p>
+<h3 id="创建客户端的-RSA-私钥和数字证书">创建客户端的 RSA 私钥和数字证书</h3>
+<p>和服务器端所执行的命令类似, 我们也需要为客户端生成一个私钥和证书请求文件, 命令如下:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl req -sha1 -newkey rsa:2048 -days 3650 -nodes -keyout client-key.pem &gt; client-req.pem</span><br></pre></td></tr></table></figure>
+<p>同样地, 我们需要将生成的私钥转换为 RSA 私钥文件格式:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl rsa -in client-key.pem -out client-key.pem</span><br></pre></td></tr></table></figure>
+<p>最后, 我们也需要为客户端创建一个数字证书:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">openssl x509 -sha1 -req -in client-req.pem -days 3650 -CA ca-cert.pem -CAkey ca-key.pem -set_serial 01 &gt; client-cert.pem</span><br></pre></td></tr></table></figure>
+<h2 id="使用工具创建证书与私钥">使用工具创建证书与私钥</h2>
+<p>前面我们介绍了如何使用 OpenSSL 来创建 SSL 连接的私钥和证书文件, 现在我们来看一个更简单的方法.<br>
+在 MySQL 5.7 中, 提供了一个名为 <code>mysql_ssl_rsa_setup</code> 的工具, 通过它, 我们可以很方便地创建 SSL 连接所需要的各种文件:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir ~/temp/cert</span><br><span class="line">cd ~/temp/cert</span><br><span class="line">mysql_ssl_rsa_setup --datadir ./</span><br></pre></td></tr></table></figure>
+<p>上面的命令中, <code>--datadir</code> 表示生成的文件的目录.</p>
+<p>当执行了上述命令后, 也会生成八个文件:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">ca-key.pem</span><br><span class="line">ca.pem</span><br><span class="line">client-cert.pem</span><br><span class="line">client-key.pem</span><br><span class="line">private_key.pem</span><br><span class="line">public_key.pem</span><br><span class="line">server-cert.pem</span><br><span class="line">server-key.pem</span><br></pre></td></tr></table></figure>
+<p>这些文件和我们使用 OpenSSL 所创建的那八个文件的作用是一样的, 这里就不再详述了.</p>
+<h2 id="SSL-配置">SSL 配置</h2>
+<p>在前面的步骤中, 我们已经生成了8个文件, 分别是:</p>
+<ul>
+<li>
+<p>ca-cert.pem: CA 证书, 用于生成服务器端/客户端的数字证书.</p>
+</li>
+<li>
+<p>ca-key.pem: CA 私钥, 用于生成服务器端/客户端的数字证书.</p>
+</li>
+<li>
+<p>server-key.pem: 服务器端的 RSA 私钥</p>
+</li>
+<li>
+<p>server-req.pem: 服务器端的证书请求文件, 用于生成服务器端的数字证书.</p>
+</li>
+<li>
+<p>server-cert.pem: 服务器端的数字证书.</p>
+</li>
+<li>
+<p>client-key.pem: 客户端的 RSA 私钥</p>
+</li>
+<li>
+<p>client-req.pem: 客户端的证书请求文件, 用于生成客户端的数字证书.</p>
+</li>
+<li>
+<p>client-cert.pem: 客户端的数字证书.</p>
+</li>
+</ul>
+<p>接下来我们就需要分别配置服务器端和客户端.</p>
+<h3 id="服务器端配置">服务器端配置</h3>
+<p>服务器端需要用到三个文件, 分别是: <code>CA 证书</code>, <code>服务器端的 RSA 私钥</code>, <code>服务器端的数字证书</code>, 我们需要在 <code>[mysqld]</code> 配置域下添加如下内容:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[mysqld]</span><br><span class="line">ssl-ca=/etc/mysql/ca-cert.pem</span><br><span class="line">ssl-cert=/etc/mysql/server-cert.pem</span><br><span class="line">ssl-key=/etc/mysql/server-key.pem</span><br></pre></td></tr></table></figure>
+<p>接着我们还可以更改 <code>bind-address</code>, 使 MySQL 服务可以接收来自所有 ip 地址的客户端, 即:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bind-address = *</span><br></pre></td></tr></table></figure>
+<p>当配置好后, 我们需要重启 MySQL 服务, 使能配置.</p>
+<p>最后一步, 我们添加一个需要使用 SSL 才可以登录的帐号, 来验证一下我们所配置的 SSL 是否生效:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">GRANT ALL PRIVILEGES ON *.* TO &#x27;ssl_test&#x27;@&#x27;%&#x27; IDENTIFIED BY &#x27;ssl_test&#x27; REQUIRE SSL;</span><br><span class="line">FLUSH PRIVILEGES;</span><br></pre></td></tr></table></figure>
+<p>当配置好后, 使用 root 登录 MySQL, 执行 <code>show variables like '%ssl%'</code> 语句会有如下输出:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show variables like &#x27;%ssl%&#x27;;</span><br><span class="line">+---------------+-----------------+</span><br><span class="line">| Variable_name | Value           |</span><br><span class="line">+---------------+-----------------+</span><br><span class="line">| have_openssl  | YES             |</span><br><span class="line">| have_ssl      | YES             |</span><br><span class="line">| ssl_ca        | ca.pem          |</span><br><span class="line">| ssl_capath    |                 |</span><br><span class="line">| ssl_cert      | server-cert.pem |</span><br><span class="line">| ssl_cipher    |                 |</span><br><span class="line">| ssl_crl       |                 |</span><br><span class="line">| ssl_crlpath   |                 |</span><br><span class="line">| ssl_key       | server-key.pem  |</span><br><span class="line">+---------------+-----------------+</span><br><span class="line">9 rows in set (0.01 sec)</span><br></pre></td></tr></table></figure>
+<h3 id="客户端配置">客户端配置</h3>
+<p>客户端配置相对简单一些. 首先我们需要拷贝 <code>ca-cert.pem</code>, <code>client-cert.pem</code> 和 <code>client-key.pem</code> 这三个文件到客户端主机中, 然后我们可以执行如下命令来使用 SSL 连接 MySQL 服务:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql --ssl-ca=/path/to/ca-cert.pem --ssl-cert=/path/to/client-cert.pem --ssl-key=/path/to/client-key.pem -h host_name -u ssl_test -p</span><br></pre></td></tr></table></figure>
+<p>除了上述的使用命令行方式配置 SSL 外, 我们也可以使用配置文件的方式. 即在 <code>~/.my.cnf</code> 文件中添加如下内容即可:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[client]</span><br><span class="line">ssl-ca=/path/to/ca-cert.pem</span><br><span class="line">ssl-cert=/path/to/client-cert.pem</span><br><span class="line">ssl-key=/path/to/client-key.pem</span><br></pre></td></tr></table></figure>
+<p>当连接成功后, 我们执行如下指令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; \s</span><br><span class="line">--------------</span><br><span class="line">mysql  Ver 14.14 Distrib 5.7.17, for Linux (x86_64) using  EditLine wrapper</span><br><span class="line"></span><br><span class="line">Connection id:        14</span><br><span class="line">Current database:</span><br><span class="line">Current user:        ssl_test@172.17.0.4</span><br><span class="line">SSL:            Cipher in use is DHE-RSA-AES256-SHA</span><br><span class="line">Current pager:        stdout</span><br><span class="line">Using outfile:        &#x27;&#x27;</span><br><span class="line">Using delimiter:    ;</span><br><span class="line">Server version:        5.7.17 MySQL Community Server (GPL)</span><br><span class="line">Protocol version:    10</span><br><span class="line">Connection:        test_db via TCP/IP</span><br><span class="line">Server characterset:    latin1</span><br><span class="line">Db     characterset:    latin1</span><br><span class="line">Client characterset:    latin1</span><br><span class="line">Conn.  characterset:    latin1</span><br><span class="line">TCP port:        3306</span><br><span class="line">Uptime:            1 hour 2 min 9 sec</span><br><span class="line"></span><br><span class="line">Threads: 1  Questions: 23  Slow queries: 0  Opens: 126  Flush tables: 3  Open tables: 0  Queries per second avg: 0.006</span><br><span class="line">--------------</span><br></pre></td></tr></table></figure>
+<p>如果输出中有 <code>SSL: Cipher in use is DHE-RSA-AES256-SHA</code> 之类的信息, 则表示已经使用 SSL 来连接了.</p>
+<h2 id="在-Docker-中使能-MySQL-SSL-连接">在 Docker 中使能 MySQL SSL 连接</h2>
+<p>上面我们简单介绍了一下如果使能 MySQL SSL 连接, 那么现在我们使用 Docker 来具体的实战一把吧!</p>
+<p>首先拉取最新的 MySQL 镜像:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker pull mysql</span><br></pre></td></tr></table></figure>
+<p>然后需要准备一下挂载到 Docker 容器的目录结构:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; cd ~/temp</span><br><span class="line">&gt;&gt;&gt; tree</span><br><span class="line">.</span><br><span class="line">├── cert</span><br><span class="line">│   ├── ca-key.pem</span><br><span class="line">│   ├── ca.pem</span><br><span class="line">│   ├── client-cert.pem</span><br><span class="line">│   ├── client-key.pem</span><br><span class="line">│   ├── private_key.pem</span><br><span class="line">│   ├── public_key.pem</span><br><span class="line">│   ├── server-cert.pem</span><br><span class="line">│   └── server-key.pem</span><br><span class="line">├── config</span><br><span class="line">│   └── my.cnf</span><br><span class="line">└── db</span><br><span class="line"></span><br><span class="line">3 directories, 9 files</span><br></pre></td></tr></table></figure>
+<p>在 temp 目录下有三个子目录:</p>
+<ul>
+<li>
+<p><code>cert</code> 目录用于存放我们先前生成的证书和私钥信息;</p>
+</li>
+<li>
+<p><code>config</code> 目录用于存放 MySQL 服务的配置文件</p>
+</li>
+<li>
+<p><code>db</code> 目录是用于存放 MySQL 的数据.</p>
+</li>
+</ul>
+<p>下一步我们需要使用如下命令启动 MySQL 容器:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --rm --name test_db -p 10000:3306 -e MYSQL_ROOT_PASSWORD=root -v /Users/xiongyongshun/temp/db:/var/lib/mysql -v /Users/xiongyongshun/temp/config:/etc/mysql/conf.d -v /Users/xiongyongshun/temp/cert:/etc/mysql/cert mysql:latest</span><br></pre></td></tr></table></figure>
+<p>我们在上面的命令中, 我们分别挂载了 <code>cert</code>, <code>config</code>, <code>db</code> 这三个宿主机上的目录到 MySQL 容器中.</p>
+<p>启动了 MySQL 服务后, 可以先使用 root 帐号登录 MySQL, 来检查 MySQL 服务此时是否已经开启了 SSL 功能:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it --link test_db:test_db --rm  mysql sh -c &#x27;exec mysql -u root -p -h test_db&#x27;</span><br></pre></td></tr></table></figure>
+<p>登录成功后, 我们在 MySQL 中执行如下指令:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show variables like &#x27;%ssl%&#x27;;</span><br><span class="line">+---------------+---------------------------------+</span><br><span class="line">| Variable_name | Value                           |</span><br><span class="line">+---------------+---------------------------------+</span><br><span class="line">| have_openssl  | YES                             |</span><br><span class="line">| have_ssl      | YES                             |</span><br><span class="line">| ssl_ca        | /etc/mysql/cert/ca-cert.pem     |</span><br><span class="line">| ssl_capath    |                                 |</span><br><span class="line">| ssl_cert      | /etc/mysql/cert/server-cert.pem |</span><br><span class="line">| ssl_cipher    |                                 |</span><br><span class="line">| ssl_crl       |                                 |</span><br><span class="line">| ssl_crlpath   |                                 |</span><br><span class="line">| ssl_key       | /etc/mysql/cert/server-key.pem  |</span><br><span class="line">+---------------+---------------------------------+</span><br><span class="line">9 rows in set (0.01 sec)</span><br></pre></td></tr></table></figure>
+<p>有上面的输出后, 表明此时 MySQL 服务已经使用 SSL 功能了.</p>
+<p>接着下一步, 我们按照前面所提到的, 创建一个仅仅可以使用 SSL 登录的帐号, 来检验我们的配置是否有效:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">GRANT ALL PRIVILEGES ON *.* TO &#x27;ssl_test&#x27;@&#x27;%&#x27; IDENTIFIED BY &#x27;ssl_test&#x27; REQUIRE SSL;</span><br><span class="line">FLUSH PRIVILEGES;</span><br></pre></td></tr></table></figure>
+<p>上面的命令创建了一个帐号名为 <code>ssl_test</code>, 密码为 <code>ssl_test</code>, 并且不限制登录主机 ip 的帐号.</p>
+<p>这些都配置成功后, 我们再启动一个 MySQL 客户端容器:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it --link test_db:test_db --rm -v /Users/xiongyongshun/temp/cert:/etc/mysql/cert mysql sh -c &#x27;exec mysql --ssl-ca=/etc/mysql/cert/ca-cert.pem --ssl-cert=/etc/mysql/cert/client-cert.pem --ssl-key=/etc/mysql/cert/client-key.pem -h test_db -u ssl_test -p&#x27;</span><br></pre></td></tr></table></figure>
+<p>从上面的这个命令中我们可以看到, 启动 MySQL 客户端容器时, 我们挂载了宿主机的 <code>cert</code> 目录到容器内的 <code>/etc/mysql/cert</code> 目录, 这样在容器中就可以访问到 SSL 私钥和证书文件了. 接着我们在 MySQL 客户端命令行中, 使用 <code>--ssl-ca</code>, <code>--ssl-cert</code>, <code>--ssl-key</code> 这三个参数来指定 SSL 连接所需要的 CA 证书, RSA 私钥和客户端证书.</p>
+<p>登录成功后, 我们执行 <code>s</code> 命令:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; \s</span><br><span class="line">--------------</span><br><span class="line">mysql  Ver 14.14 Distrib 5.7.17, for Linux (x86_64) using  EditLine wrapper</span><br><span class="line"></span><br><span class="line">Connection id:        5</span><br><span class="line">Current database:</span><br><span class="line">Current user:        ssl_test@172.17.0.5</span><br><span class="line">SSL:            Cipher in use is DHE-RSA-AES256-SHA</span><br><span class="line">Current pager:        stdout</span><br><span class="line">Using outfile:        &#x27;&#x27;</span><br><span class="line">Using delimiter:    ;</span><br><span class="line">Server version:        5.7.17 MySQL Community Server (GPL)</span><br><span class="line">Protocol version:    10</span><br><span class="line">Connection:        test_db via TCP/IP</span><br><span class="line">Server characterset:    latin1</span><br><span class="line">Db     characterset:    latin1</span><br><span class="line">Client characterset:    latin1</span><br><span class="line">Conn.  characterset:    latin1</span><br><span class="line">TCP port:        3306</span><br><span class="line">Uptime:            6 min 8 sec</span><br><span class="line"></span><br><span class="line">Threads: 2  Questions: 10  Slow queries: 0  Opens: 113  Flush tables: 1  Open tables: 106  Queries per second avg: 0.027</span><br><span class="line">--------------</span><br></pre></td></tr></table></figure>
+<p>输出中有 <code>SSL: Cipher in use is DHE-RSA-AES256-SHA</code> 信息则说明我们确实是使用了 SSL 连接的 MySQL 服务器.</p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../../2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../../../2017/08/16/database/CentOs7-3-%E5%AE%89%E8%A3%85-MySQL-5-7-19-%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%89%88%E6%9C%AC/"
                             aria-label=": CentOs7.3 安装 MySQL 5.7.19 二进制版本"
                         >
@@ -1669,7 +1852,7 @@ Git 作了合并，但没有提交，它会停下来等你解决冲突。要看�
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 210 篇文章
+                找到 211 篇文章
             </p>
         </div>
     </div>
