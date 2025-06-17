@@ -1,0 +1,1034 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>7.Docker 数据管理(Docker详细教程) - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"# Docker 数据管理\n\n这一章介绍如何在 Docker 内部以及容器之间管理数据，在容器中管理数据主要有两种方式：\n\n\n数据卷（Volumes）\n\n\n挂载主机目录 (Bind mounts)\n\n\n# 数据卷\n数据卷 是一个可供一个或多个容器使用的特殊目录，它绕过 UFS，可以提供很多有用的特性：\n\n\n数据卷 可以在容器之间共享和重用\n\n\n对 数据卷 的修改会立马生效\n\n\n对 数据卷 的更新，不会影响镜像\n\n\n数据卷 默认会一直存在，即使容器被删除\n\n\n\n注意：数据卷 的使用，类似于 Linux 下对目录或文件进行 mount，镜像中的被指定为挂载点的目录中的文件会复制到数据卷中（仅数据卷为空时会复制）。\n\n# 创建一个数据卷\n1$ docker volume create my-vol\n查看所有的 数据卷\n1234$ docker volume lsDRIVER              VOLUME NAMElocal               my-vol\n在主机里使用以下命令可以查看指定 数据卷 的信息\n1234567891011$ docker volume inspect my-vol[    &#123;        &quot;Driver&quot;: &quot;local&quot;,        &quot;Labels&quot;: &#123;&#125;,        &quot;Mountpoint&quot;: &quot;/var/lib/docker/volumes/my-vol/_data&quot;,        &quot;Name&quot;: &quot;my-vol&quot;,        &quot;Options&quot;: &#123;&#125;,        &quot;Scope&quot;: &quot;local&quot;    &#125;]\n# 启动一个挂载数据卷的容器\n在用 docker run 命令的时候，使用 --mount 标记来将 数据卷 挂载到容器里。在一次 docker run 中可以挂载多个 数据卷。\n下面创建一个名为 web 的容器，并加载一个 数据卷 到容器的 /usr/share/nginx/html 目录。\n12345$ docker run -d -P \\    --name web \\    # -v my-vol:/usr/share/nginx/html \\    --mount source=my-vol,target=/usr/share/nginx/html \\    nginx:alpine\n# 查看数据卷的具体信息\n在主机里使用以下命令可以查看 web 容器的信息\n数据卷 信息在 “Mounts” Key 下面\n123456789101112&quot;Mounts&quot;: [    &#123;        &quot;Type&quot;: &quot;volume&quot;,        &quot;Name&quot;: &quot;my-vol&quot;,        &quot;Source&quot;: &quot;/var/lib/docker/volumes/my-vol/_data&quot;,        &quot;Destination&quot;: &quot;/usr/share/nginx/html&quot;,        &quot;Driver&quot;: &quot;local&quot;,        &quot;Mode&quot;: &quot;&quot;,        &quot;RW&quot;: true,        &quot;Propagation&quot;: &quot;&quot;    &#125;],\n# 删除数据卷\n1$ docker volume rm my-vol\n数据卷 是被设计用来持久化数据的，它的生命周期独立于容器，Docker 不会在容器被删除后自动删除 数据卷，并且也不存在垃圾回收这样的机制来处理没有任何容器引用的 数据卷。如果需要在删除容器的同时移除数据卷。可以在删除容器的时候使用 docker rm -v 这个命令。\n无主的数据卷可能会占据很多空间，要清理请使用以下命令\n# 挂载主机目录\n# 挂载一个主机目录作为数据卷\n使用 --mount 标记可以指定挂载一个本地主机的目录到容器中去。\n12345$ docker run -d -P \\    --name web \\    # -v /src/webapp:/usr/share/nginx/html \\    --mount type=bind,source=/src/webapp,target=/usr/share/nginx/html \\    nginx:alpine\n上面的命令加载主机的 /src/webapp 目录到容器的 /usr/share/nginx/html目录。这个功能在进行测试的时候十分方便，比如用户可以放置一些程序到本地目录中，来查看容器是否正常工作。本地目录的路径必须是绝对路径，以前使用 -v 参数时如果本地目录不存在 Docker 会自动为你创建一个文件夹，现在使用 --mount 参数时如果本地目录不存在，Docker 会报错。\nDocker 挂载主机目录的默认权限是 读写，用户也可以通过增加 readonly 指定为 只读。\n12345$ docker run -d -P \\    --name web \\    # -v /src/webapp:/usr/share/nginx/html:ro \\    --mount type=bind,source=/src/webapp,target=/usr/share/nginx/html,readonly \\    nginx:alpine\n加了 readonly 之后，就挂载为 只读 了。如果你在容器内 /usr/share/nginx/html 目录新建文件，会显示如下错误\n12/usr/share/nginx/html # touch new.txttouch: new.txt: Read-only file system\n# 查看数据卷的具体信息\n在主机里使用以下命令可以查看 web 容器的信息\n挂载主机目录 的配置信息在 “Mounts” Key 下面\n12345678910&quot;Mounts&quot;: [    &#123;        &quot;Type&quot;: &quot;bind&quot;,        &quot;Source&quot;: &quot;/src/webapp&quot;,        &quot;Destination&quot;: &quot;/usr/share/nginx/html&quot;,        &quot;Mode&quot;: &quot;&quot;,        &quot;RW&quot;: true,        &quot;Propagation&quot;: &quot;rprivate&quot;    &#125;],\n# 挂载一个本地主机文件作为数据卷\n--mount 标记也可以从主机挂载单个文件到容器中\n123456789$ docker run --rm -it \\   # -v $HOME/.bash_history:/root/.bash_history \\   --mount type=bind,source=$HOME/.bash_history,target=/root/.bash_history \\   ubuntu:18.04 \\   bashroot@2affd44b4667:/# history1  ls2  diskutil list\n这样就可以记录在容器输入过的命令了。\n","dateCreated":"2018-04-08T16:02:39+08:00","dateModified":"2025-06-16T10:22:24+08:00","datePublished":"2018-04-08T16:02:39+08:00","description":"","headline":"7.Docker 数据管理(Docker详细教程)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/","keywords":"Docker"}</script>
+    <meta name="description" content="# Docker 数据管理  这一章介绍如何在 Docker 内部以及容器之间管理数据，在容器中管理数据主要有两种方式：   数据卷（Volumes）   挂载主机目录 (Bind mounts)   # 数据卷 数据卷 是一个可供一个或多个容器使用的特殊目录，它绕过 UFS，可以提供很多有用的特性：   数据卷 可以在容器之间共享和重用   对 数据卷 的修改会立马生效   对 数据卷 的更新，">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="7.Docker 数据管理(Docker详细教程)">
+<meta property="og:url" content="https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="# Docker 数据管理  这一章介绍如何在 Docker 内部以及容器之间管理数据，在容器中管理数据主要有两种方式：   数据卷（Volumes）   挂载主机目录 (Bind mounts)   # 数据卷 数据卷 是一个可供一个或多个容器使用的特殊目录，它绕过 UFS，可以提供很多有用的特性：   数据卷 可以在容器之间共享和重用   对 数据卷 的修改会立马生效   对 数据卷 的更新，">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://vuepress.mirror.docker-practice.com/assets/img/types-of-mounts.cd09b2d7.png">
+<meta property="article:published_time" content="2018-04-08T08:02:39.000Z">
+<meta property="article:modified_time" content="2025-06-16T02:22:24.730Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="Docker">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://vuepress.mirror.docker-practice.com/assets/img/types-of-mounts.cd09b2d7.png">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            7.Docker 数据管理(Docker详细教程)
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2018-04-08T16:02:39+08:00">
+	
+		    2018 年 4 月 8 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/devops/">devops</a>, <a class="category-link" href="../../../../../categories/devops/Docker/">Docker</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="Docker-数据管理"><a href="#docker-%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86">#</a> Docker 数据管理</h2>
+<p><img src="https://vuepress.mirror.docker-practice.com/assets/img/types-of-mounts.cd09b2d7.png" alt=""></p>
+<p>这一章介绍如何在 Docker 内部以及容器之间管理数据，在容器中管理数据主要有两种方式：</p>
+<ul>
+<li>
+<p>数据卷（Volumes）</p>
+</li>
+<li>
+<p>挂载主机目录 (Bind mounts)</p>
+</li>
+</ul>
+<h2 id="数据卷"><a href="#%E6%95%B0%E6%8D%AE%E5%8D%B7">#</a> 数据卷</h2>
+<p><code>数据卷</code> 是一个可供一个或多个容器使用的特殊目录，它绕过 UFS，可以提供很多有用的特性：</p>
+<ul>
+<li>
+<p><code>数据卷</code> 可以在容器之间共享和重用</p>
+</li>
+<li>
+<p>对 <code>数据卷</code> 的修改会立马生效</p>
+</li>
+<li>
+<p>对 <code>数据卷</code> 的更新，不会影响镜像</p>
+</li>
+<li>
+<p><code>数据卷</code> 默认会一直存在，即使容器被删除</p>
+</li>
+</ul>
+<blockquote>
+<p>注意：<code>数据卷</code> 的使用，类似于 Linux 下对目录或文件进行 mount，镜像中的被指定为挂载点的目录中的文件会复制到数据卷中（仅数据卷为空时会复制）。</p>
+</blockquote>
+<h2 id="创建一个数据卷"><a href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E6%95%B0%E6%8D%AE%E5%8D%B7">#</a> 创建一个数据卷</h2>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker volume create my-vol</span><br></pre></td></tr></table></figure>
+<p>查看所有的 <code>数据卷</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ docker volume <span class="built_in">ls</span></span><br><span class="line"></span><br><span class="line">DRIVER              VOLUME NAME</span><br><span class="line"><span class="built_in">local</span>               my-vol</span><br></pre></td></tr></table></figure>
+<p>在主机里使用以下命令可以查看指定 <code>数据卷</code> 的信息</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ docker volume inspect my-vol</span><br><span class="line">[</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;Driver&quot;</span>: <span class="string">&quot;local&quot;</span>,</span><br><span class="line">        <span class="string">&quot;Labels&quot;</span>: &#123;&#125;,</span><br><span class="line">        <span class="string">&quot;Mountpoint&quot;</span>: <span class="string">&quot;/var/lib/docker/volumes/my-vol/_data&quot;</span>,</span><br><span class="line">        <span class="string">&quot;Name&quot;</span>: <span class="string">&quot;my-vol&quot;</span>,</span><br><span class="line">        <span class="string">&quot;Options&quot;</span>: &#123;&#125;,</span><br><span class="line">        <span class="string">&quot;Scope&quot;</span>: <span class="string">&quot;local&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<h2 id="启动一个挂载数据卷的容器"><a href="#%E5%90%AF%E5%8A%A8%E4%B8%80%E4%B8%AA%E6%8C%82%E8%BD%BD%E6%95%B0%E6%8D%AE%E5%8D%B7%E7%9A%84%E5%AE%B9%E5%99%A8">#</a> 启动一个挂载数据卷的容器</h2>
+<p>在用 <code>docker run</code> 命令的时候，使用 <code>--mount</code> 标记来将 <code>数据卷</code> 挂载到容器里。在一次 <code>docker run</code> 中可以挂载多个 <code>数据卷</code>。</p>
+<p>下面创建一个名为 <code>web</code> 的容器，并加载一个 <code>数据卷</code> 到容器的 <code>/usr/share/nginx/html</code> 目录。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ docker run -d -P \</span><br><span class="line">    --name web \</span><br><span class="line">    <span class="comment"># -v my-vol:/usr/share/nginx/html \</span></span><br><span class="line">    --mount <span class="built_in">source</span>=my-vol,target=/usr/share/nginx/html \</span><br><span class="line">    nginx:alpine</span><br></pre></td></tr></table></figure>
+<h2 id="查看数据卷的具体信息"><a href="#%E6%9F%A5%E7%9C%8B%E6%95%B0%E6%8D%AE%E5%8D%B7%E7%9A%84%E5%85%B7%E4%BD%93%E4%BF%A1%E6%81%AF">#</a> 查看数据卷的具体信息</h2>
+<p>在主机里使用以下命令可以查看 <code>web</code> 容器的信息</p>
+<p><code>数据卷</code> 信息在 “Mounts” Key 下面</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">&quot;Mounts&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;Type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;volume&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;Name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;my-vol&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;Source&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/var/lib/docker/volumes/my-vol/_data&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;Destination&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/usr/share/nginx/html&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;Driver&quot;</span><span class="punctuation">:</span> <span class="string">&quot;local&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;Mode&quot;</span><span class="punctuation">:</span> <span class="string">&quot;&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;RW&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">true</span></span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;Propagation&quot;</span><span class="punctuation">:</span> <span class="string">&quot;&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">]</span><span class="punctuation">,</span></span><br></pre></td></tr></table></figure>
+<h2 id="删除数据卷"><a href="#%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE%E5%8D%B7">#</a> 删除数据卷</h2>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker volume <span class="built_in">rm</span> my-vol</span><br></pre></td></tr></table></figure>
+<p><code>数据卷</code> 是被设计用来持久化数据的，它的生命周期独立于容器，Docker 不会在容器被删除后自动删除 <code>数据卷</code>，并且也不存在垃圾回收这样的机制来处理没有任何容器引用的 <code>数据卷</code>。如果需要在删除容器的同时移除数据卷。可以在删除容器的时候使用 <code>docker rm -v</code> 这个命令。</p>
+<p>无主的数据卷可能会占据很多空间，要清理请使用以下命令</p>
+<h2 id="挂载主机目录"><a href="#%E6%8C%82%E8%BD%BD%E4%B8%BB%E6%9C%BA%E7%9B%AE%E5%BD%95">#</a> 挂载主机目录</h2>
+<h2 id="挂载一个主机目录作为数据卷"><a href="#%E6%8C%82%E8%BD%BD%E4%B8%80%E4%B8%AA%E4%B8%BB%E6%9C%BA%E7%9B%AE%E5%BD%95%E4%BD%9C%E4%B8%BA%E6%95%B0%E6%8D%AE%E5%8D%B7">#</a> 挂载一个主机目录作为数据卷</h2>
+<p>使用 <code>--mount</code> 标记可以指定挂载一个本地主机的目录到容器中去。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ docker run -d -P \</span><br><span class="line">    --name web \</span><br><span class="line">    <span class="comment"># -v /src/webapp:/usr/share/nginx/html \</span></span><br><span class="line">    --mount <span class="built_in">type</span>=<span class="built_in">bind</span>,<span class="built_in">source</span>=/src/webapp,target=/usr/share/nginx/html \</span><br><span class="line">    nginx:alpine</span><br></pre></td></tr></table></figure>
+<p>上面的命令加载主机的 <code>/src/webapp</code> 目录到容器的 <code>/usr/share/nginx/html</code>目录。这个功能在进行测试的时候十分方便，比如用户可以放置一些程序到本地目录中，来查看容器是否正常工作。本地目录的路径必须是绝对路径，以前使用 <code>-v</code> 参数时如果本地目录不存在 Docker 会自动为你创建一个文件夹，现在使用 <code>--mount</code> 参数时如果本地目录不存在，Docker 会报错。</p>
+<p>Docker 挂载主机目录的默认权限是 <code>读写</code>，用户也可以通过增加 <code>readonly</code> 指定为 <code>只读</code>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ docker run -d -P \</span><br><span class="line">    --name web \</span><br><span class="line">    <span class="comment"># -v /src/webapp:/usr/share/nginx/html:ro \</span></span><br><span class="line">    --mount <span class="built_in">type</span>=<span class="built_in">bind</span>,<span class="built_in">source</span>=/src/webapp,target=/usr/share/nginx/html,<span class="built_in">readonly</span> \</span><br><span class="line">    nginx:alpine</span><br></pre></td></tr></table></figure>
+<p>加了 <code>readonly</code> 之后，就挂载为 <code>只读</code> 了。如果你在容器内 <code>/usr/share/nginx/html</code> 目录新建文件，会显示如下错误</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/usr/share/nginx/html <span class="comment"># touch new.txt</span></span><br><span class="line"><span class="built_in">touch</span>: new.txt: Read-only file system</span><br></pre></td></tr></table></figure>
+<h2 id="查看数据卷的具体信息-2"><a href="#%E6%9F%A5%E7%9C%8B%E6%95%B0%E6%8D%AE%E5%8D%B7%E7%9A%84%E5%85%B7%E4%BD%93%E4%BF%A1%E6%81%AF">#</a> 查看数据卷的具体信息</h2>
+<p>在主机里使用以下命令可以查看 <code>web</code> 容器的信息</p>
+<p><code>挂载主机目录</code> 的配置信息在 “Mounts” Key 下面</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">&quot;Mounts&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;Type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;bind&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;Source&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/src/webapp&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;Destination&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/usr/share/nginx/html&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;Mode&quot;</span><span class="punctuation">:</span> <span class="string">&quot;&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;RW&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">true</span></span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;Propagation&quot;</span><span class="punctuation">:</span> <span class="string">&quot;rprivate&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">]</span><span class="punctuation">,</span></span><br></pre></td></tr></table></figure>
+<h2 id="挂载一个本地主机文件作为数据卷"><a href="#%E6%8C%82%E8%BD%BD%E4%B8%80%E4%B8%AA%E6%9C%AC%E5%9C%B0%E4%B8%BB%E6%9C%BA%E6%96%87%E4%BB%B6%E4%BD%9C%E4%B8%BA%E6%95%B0%E6%8D%AE%E5%8D%B7">#</a> 挂载一个本地主机文件作为数据卷</h2>
+<p><code>--mount</code> 标记也可以从主机挂载单个文件到容器中</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ docker run --<span class="built_in">rm</span> -it \</span><br><span class="line">   <span class="comment"># -v $HOME/.bash_history:/root/.bash_history \</span></span><br><span class="line">   --mount <span class="built_in">type</span>=<span class="built_in">bind</span>,<span class="built_in">source</span>=<span class="variable">$HOME</span>/.bash_history,target=/root/.bash_history \</span><br><span class="line">   ubuntu:18.04 \</span><br><span class="line">   bash</span><br><span class="line"></span><br><span class="line">root@2affd44b4667:/# <span class="built_in">history</span></span><br><span class="line">1  <span class="built_in">ls</span></span><br><span class="line">2  diskutil list</span><br></pre></td></tr></table></figure>
+<p>这样就可以记录在容器输入过的命令了。</p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/Docker/" rel="tag">Docker</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    data-tooltip="8.Docker 使用网络(Docker详细教程)"
+                    aria-label="上一篇: 8.Docker 使用网络(Docker详细教程)"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    data-tooltip="6.Docker 仓库(Docker详细教程)"
+                    aria-label="下一篇: 6.Docker 仓库(Docker详细教程)"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    data-tooltip="8.Docker 使用网络(Docker详细教程)"
+                    aria-label="上一篇: 8.Docker 使用网络(Docker详细教程)"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    data-tooltip="6.Docker 仓库(Docker详细教程)"
+                    aria-label="下一篇: 6.Docker 仓库(Docker详细教程)"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 198 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

@@ -302,524 +302,6 @@
                     
                         <a
                             class="link-unstyled"
-                            href="../../../../../2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/"
-                            aria-label=": JAVA-异常处理"
-                        >
-                            JAVA-异常处理
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2025-05-23T17:31:10+08:00">
-	
-		    2025 年 5 月 23 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Java/">Java</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <p>在计算机程序运行的过程中，总是会出现各种各样的错误。</p>
-<p>有一些错误是用户造成的，比如，希望用户输入一个<code>int</code>类型的年龄，但是用户的输入是<code>abc</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 假设用户输入了abc：</span></span><br><span class="line"><span class="type">String</span> <span class="variable">s</span> <span class="operator">=</span> <span class="string">&quot;abc&quot;</span>;</span><br><span class="line"><span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> Integer.parseInt(s); <span class="comment">// NumberFormatException!</span></span><br></pre></td></tr></table></figure>
-<p>程序想要读写某个文件的内容，但是用户已经把它删除了：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 用户删除了该文件：</span></span><br><span class="line"><span class="type">String</span> <span class="variable">t</span> <span class="operator">=</span> readFile(<span class="string">&quot;C:\\abc.txt&quot;</span>); <span class="comment">// FileNotFoundException!</span></span><br></pre></td></tr></table></figure>
-<p>还有一些错误是随机出现，并且永远不可能避免的。比如：</p>
-<ul>
-<li>网络突然断了，连接不到远程服务器；</li>
-<li>内存耗尽，程序崩溃了；</li>
-<li>用户点“打印”，但根本没有打印机；</li>
-<li>……</li>
-</ul>
-<p>所以，一个健壮的程序必须处理各种各样的错误。</p>
-<p>所谓错误，就是程序调用某个函数的时候，如果失败了，就表示出错。</p>
-<p>调用方如何获知调用失败的信息？有两种方法：</p>
-<p>方法一：约定返回错误码。</p>
-<p>例如，处理一个文件，如果返回<code>0</code>，表示成功，返回其他整数，表示约定的错误码：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="variable">code</span> <span class="operator">=</span> processFile(<span class="string">&quot;C:\\test.txt&quot;</span>);</span><br><span class="line"><span class="keyword">if</span> (code == <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// ok:</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// error:</span></span><br><span class="line">    <span class="keyword">switch</span> (code) &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">1</span>:</span><br><span class="line">        <span class="comment">// file not found:</span></span><br><span class="line">    <span class="keyword">case</span> <span class="number">2</span>:</span><br><span class="line">        <span class="comment">// no read permission:</span></span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">        <span class="comment">// unknown error:</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>因为使用<code>int</code>类型的错误码，想要处理就非常麻烦。这种方式常见于底层C函数。</p>
-<p>方法二：在语言层面上提供一个异常处理机制。</p>
-<p>Java内置了一套异常处理机制，总是使用异常来表示错误。</p>
-<p>异常是一种<code>class</code>，因此它本身带有类型信息。异常可以在任何地方抛出，但只需要在上层捕获，这样就和方法调用分离了：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">s</span> <span class="operator">=</span> processFile(“C:\\test.txt”);</span><br><span class="line">    <span class="comment">// ok:</span></span><br><span class="line">&#125; <span class="keyword">catch</span> (FileNotFoundException e) &#123;</span><br><span class="line">    <span class="comment">// file not found:</span></span><br><span class="line">&#125; <span class="keyword">catch</span> (SecurityException e) &#123;</span><br><span class="line">    <span class="comment">// no read permission:</span></span><br><span class="line">&#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">    <span class="comment">// io error:</span></span><br><span class="line">&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    <span class="comment">// other error:</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>因为Java的异常是<code>class</code>，它的继承关系如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">                     ┌───────────┐</span><br><span class="line">                     │  Object   │</span><br><span class="line">                     └───────────┘</span><br><span class="line">                           ▲</span><br><span class="line">                           │</span><br><span class="line">                     ┌───────────┐</span><br><span class="line">                     │ Throwable │</span><br><span class="line">                     └───────────┘</span><br><span class="line">                           ▲</span><br><span class="line">                 ┌─────────┴─────────┐</span><br><span class="line">                 │                   │</span><br><span class="line">           ┌───────────┐       ┌───────────┐</span><br><span class="line">           │   Error   │       │ Exception │</span><br><span class="line">           └───────────┘       └───────────┘</span><br><span class="line">                 ▲                   ▲</span><br><span class="line">         ┌───────┘              ┌────┴──────────┐</span><br><span class="line">         │                      │               │</span><br><span class="line">┌─────────────────┐    ┌─────────────────┐┌───────────┐</span><br><span class="line">│OutOfMemoryError │... │RuntimeException ││IOException│...</span><br><span class="line">└─────────────────┘    └─────────────────┘└───────────┘</span><br><span class="line">                                ▲</span><br><span class="line">                    ┌───────────┴─────────────┐</span><br><span class="line">                    │                         │</span><br><span class="line">         ┌─────────────────────┐ ┌─────────────────────────┐</span><br><span class="line">         │NullPointerException │ │IllegalArgumentException │...</span><br><span class="line">         └─────────────────────┘ └─────────────────────────┘</span><br></pre></td></tr></table></figure>
-<p>从继承关系可知：<code>Throwable</code>是异常体系的根，它继承自<code>Object</code>。<code>Throwable</code>有两个体系：<code>Error</code>和<code>Exception</code>，<code>Error</code>表示严重的错误，程序对此一般无能为力，例如：</p>
-<ul>
-<li><code>OutOfMemoryError</code>：内存耗尽</li>
-<li><code>NoClassDefFoundError</code>：无法加载某个Class</li>
-<li><code>StackOverflowError</code>：栈溢出</li>
-</ul>
-<p>而<code>Exception</code>则是运行时的错误，它可以被捕获并处理。</p>
-<p>某些异常是应用程序逻辑处理的一部分，应该捕获并处理。例如：</p>
-<ul>
-<li><code>NumberFormatException</code>：数值类型的格式错误</li>
-<li><code>FileNotFoundException</code>：未找到文件</li>
-<li><code>SocketException</code>：读取网络失败</li>
-</ul>
-<p>还有一些异常是程序逻辑编写不对造成的，应该修复程序本身。例如：</p>
-<ul>
-<li><code>NullPointerException</code>：对某个<code>null</code>的对象调用方法或字段</li>
-<li><code>IndexOutOfBoundsException</code>：数组索引越界</li>
-</ul>
-<p><code>Exception</code>又分为两大类：</p>
-<ol>
-<li><code>RuntimeException</code>以及它的子类；</li>
-<li>非<code>RuntimeException</code>（包括<code>IOException</code>、<code>ReflectiveOperationException</code>等等）</li>
-</ol>
-<p>Java规定：</p>
-<ul>
-<li>必须捕获的异常，包括<code>Exception</code>及其子类，但不包括<code>RuntimeException</code>及其子类，这种类型的异常称为Checked Exception。</li>
-<li>不需要捕获的异常，包括<code>Error</code>及其子类，<code>RuntimeException</code>及其子类。</li>
-</ul>
-<p>注意</p>
-<p>编译器对RuntimeException及其子类不做强制捕获要求，不是指应用程序本身不应该捕获并处理RuntimeException。是否需要捕获，具体问题具体分析。</p>
-<h3 id="捕获异常">捕获异常</h3>
-<p>捕获异常使用<code>try...catch</code>语句，把可能发生异常的代码放到<code>try &#123;...&#125;</code>中，然后使用<code>catch</code>捕获对应的<code>Exception</code>及其子类：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// try...catch</span></span><br><span class="line"><span class="keyword">import</span> java.io.UnsupportedEncodingException;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">byte</span>[] bs = toGBK(<span class="string">&quot;中文&quot;</span>);</span><br><span class="line">        System.out.println(Arrays.toString(bs));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 用指定编码转换String为byte[]:</span></span><br><span class="line">            <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">            <span class="comment">// 如果系统不支持GBK编码，会捕获到UnsupportedEncodingException:</span></span><br><span class="line">            System.out.println(e); <span class="comment">// 打印异常信息</span></span><br><span class="line">            <span class="keyword">return</span> s.getBytes(); <span class="comment">// 尝试使用默认编码</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果我们不捕获<code>UnsupportedEncodingException</code>，会出现编译失败的问题：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// try...catch</span></span><br><span class="line"><span class="keyword">import</span> java.io.UnsupportedEncodingException;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">byte</span>[] bs = toGBK(<span class="string">&quot;中文&quot;</span>);</span><br><span class="line">        System.out.println(Arrays.toString(bs));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) &#123;</span><br><span class="line">        <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>编译器会报错，错误信息类似：unreported exception UnsupportedEncodingException; must be caught or declared to be thrown，并且准确地指出需要捕获的语句是<code>return s.getBytes(&quot;GBK&quot;);</code>。意思是说，像<code>UnsupportedEncodingException</code>这样的Checked Exception，必须被捕获。</p>
-<p>这是因为<code>String.getBytes(String)</code>方法定义是：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">byte</span>[] getBytes(String charsetName) <span class="keyword">throws</span> UnsupportedEncodingException &#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在方法定义的时候，使用<code>throws Xxx</code>表示该方法可能抛出的异常类型。调用方在调用的时候，必须强制捕获这些异常，否则编译器会报错。</p>
-<p>在<code>toGBK()</code>方法中，因为调用了<code>String.getBytes(String)</code>方法，就必须捕获<code>UnsupportedEncodingException</code>。我们也可以不捕获它，而是在方法定义处用throws表示<code>toGBK()</code>方法可能会抛出<code>UnsupportedEncodingException</code>，就可以让<code>toGBK()</code>方法通过编译器检查：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// try...catch</span></span><br><span class="line"><span class="keyword">import</span> java.io.UnsupportedEncodingException;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">byte</span>[] bs = toGBK(<span class="string">&quot;中文&quot;</span>);</span><br><span class="line">        System.out.println(Arrays.toString(bs));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) <span class="keyword">throws</span> UnsupportedEncodingException &#123;</span><br><span class="line">        <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>上述代码仍然会得到编译错误，但这一次，编译器提示的不是调用<code>return s.getBytes(&quot;GBK&quot;);</code>的问题，而是<code>byte[] bs = toGBK(&quot;中文&quot;);</code>。因为在<code>main()</code>方法中，调用<code>toGBK()</code>，没有捕获它声明的可能抛出的<code>UnsupportedEncodingException</code>。</p>
-<p>修复方法是在<code>main()</code>方法中捕获异常并处理：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// try...catch</span></span><br><span class="line"><span class="keyword">import</span> java.io.UnsupportedEncodingException;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="type">byte</span>[] bs = toGBK(<span class="string">&quot;中文&quot;</span>);</span><br><span class="line">            System.out.println(Arrays.toString(bs));</span><br><span class="line">        &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">            System.out.println(e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) <span class="keyword">throws</span> UnsupportedEncodingException &#123;</span><br><span class="line">        <span class="comment">// 用指定编码转换String为byte[]:</span></span><br><span class="line">        <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>可见，只要是方法声明的Checked Exception，不在调用层捕获，也必须在更高的调用层捕获。所有未捕获的异常，最终也必须在<code>main()</code>方法中捕获，不会出现漏写<code>try</code>的情况。这是由编译器保证的。<code>main()</code>方法也是最后捕获<code>Exception</code>的机会。</p>
-<p>如果是测试代码，上面的写法就略显麻烦。如果不想写任何<code>try</code>代码，可以直接把<code>main()</code>方法定义为<code>throws Exception</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// try...catch</span></span><br><span class="line"><span class="keyword">import</span> java.io.UnsupportedEncodingException;</span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">byte</span>[] bs = toGBK(<span class="string">&quot;中文&quot;</span>);</span><br><span class="line">        System.out.println(Arrays.toString(bs));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) <span class="keyword">throws</span> UnsupportedEncodingException &#123;</span><br><span class="line">        <span class="comment">// 用指定编码转换String为byte[]:</span></span><br><span class="line">        <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>因为<code>main()</code>方法声明了可能抛出<code>Exception</code>，也就声明了可能抛出所有的<code>Exception</code>，因此在内部就无需捕获了。代价就是一旦发生异常，程序会立刻退出。</p>
-<p>还有一些童鞋喜欢在<code>toGBK()</code>内部“消化”异常：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">        <span class="comment">// 什么也不干</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br></pre></td></tr></table></figure>
-<p>这种捕获后不处理的方式是非常不好的，即使真的什么也做不了，也要先把异常记录下来：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="type">byte</span>[] toGBK(String s) &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> s.getBytes(<span class="string">&quot;GBK&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">        <span class="comment">// 先记下来再说:</span></span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">null</span>;</span><br></pre></td></tr></table></figure>
-<p>所有异常都可以调用<code>printStackTrace()</code>方法打印异常栈，这是一个简单有用的快速打印异常的方法。</p>
-<h3 id="小结">小结</h3>
-<p>Java使用异常来表示错误，并通过<code>try ... catch</code>捕获异常；</p>
-<p>Java的异常是<code>class</code>，并且从<code>Throwable</code>继承；</p>
-<p><code>Error</code>是无需捕获的严重错误，<code>Exception</code>是应该捕获的可处理的错误；</p>
-<p><code>RuntimeException</code>无需强制捕获，非<code>RuntimeException</code>（Checked Exception）需强制捕获，或者用<code>throws</code>声明；</p>
-<p>不推荐捕获了异常但不进行任何处理。</p>
-<p>在Java中，凡是可能抛出异常的语句，都可以用<code>try ... catch</code>捕获。把可能发生异常的语句放在<code>try &#123; ... &#125;</code>中，然后使用<code>catch</code>捕获对应的<code>Exception</code>及其子类。</p>
-<h3 id="多catch语句">多catch语句</h3>
-<p>可以使用多个<code>catch</code>语句，每个<code>catch</code>分别捕获对应的<code>Exception</code>及其子类。JVM在捕获到异常后，会从上到下匹配<code>catch</code>语句，匹配到某个<code>catch</code>后，执行<code>catch</code>代码块，然后<em>不再</em>继续匹配。</p>
-<p>简单地说就是：多个<code>catch</code>语句只有一个能被执行。例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        System.out.println(e);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (NumberFormatException e) &#123;</span><br><span class="line">        System.out.println(e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>存在多个<code>catch</code>的时候，<code>catch</code>的顺序非常重要：子类必须写在前面。例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;IO error&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123; <span class="comment">// 永远捕获不到</span></span><br><span class="line">        System.out.println(<span class="string">&quot;Bad encoding&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>对于上面的代码，<code>UnsupportedEncodingException</code>异常是永远捕获不到的，因为它是<code>IOException</code>的子类。当抛出<code>UnsupportedEncodingException</code>异常时，会被<code>catch (IOException e) &#123; ... &#125;</code>捕获并执行。</p>
-<p>因此，正确的写法是把子类放到前面：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Bad encoding&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;IO error&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="finally语句">finally语句</h3>
-<p>无论是否有异常发生，如果我们都希望执行一些语句，例如清理工作，怎么写？</p>
-<p>可以把执行语句写若干遍：正常执行的放到<code>try</code>中，每个<code>catch</code>再写一遍。例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">        System.out.println(<span class="string">&quot;END&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Bad encoding&quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;END&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;IO error&quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;END&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>上述代码无论是否发生异常，都会执行<code>System.out.println(&quot;END&quot;);</code>这条语句。</p>
-<p>那么如何消除这些重复的代码？Java的<code>try ... catch</code>机制还提供了<code>finally</code>语句，<code>finally</code>语句块保证有无错误都会执行。上述代码可以改写如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Bad encoding&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;IO error&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;END&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注意<code>finally</code>有几个特点：</p>
-<ol>
-<li><code>finally</code>语句不是必须的，可写可不写；</li>
-<li><code>finally</code>总是最后执行。</li>
-</ol>
-<p>如果没有发生异常，就正常执行<code>try &#123; ... &#125;</code>语句块，然后执行<code>finally</code>。如果发生了异常，就中断执行<code>try &#123; ... &#125;</code>语句块，然后跳转执行匹配的<code>catch</code>语句块，最后执行<code>finally</code>。</p>
-<p>可见，<code>finally</code>是用来保证一些代码必须执行的。</p>
-<p>某些情况下，可以没有<code>catch</code>，只使用<code>try ... finally</code>结构。例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">process</span><span class="params">(String file)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;END&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>因为方法声明了可能抛出的异常，所以可以不写<code>catch</code>。</p>
-<h3 id="捕获多种异常">捕获多种异常</h3>
-<p>如果某些异常的处理逻辑相同，但是异常本身不存在继承关系，那么就得编写多条<code>catch</code>子句：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Bad input&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (NumberFormatException e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Bad input&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Unknown error&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>因为处理<code>IOException</code>和<code>NumberFormatException</code>的代码是相同的，所以我们可以把它两用<code>|</code>合并到一起：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process1();</span><br><span class="line">        process2();</span><br><span class="line">        process3();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException | NumberFormatException e) &#123;</span><br><span class="line">        <span class="comment">// IOException或NumberFormatException</span></span><br><span class="line">        System.out.println(<span class="string">&quot;Bad input&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Unknown error&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="练习">练习</h3>
-<p>用<code>try ... catch</code>捕获异常并处理。</p>
-<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/catch-exception/exception-catch.zip">下载练习</a></p>
-<h3 id="小结-2">小结</h3>
-<p>捕获异常时，多个<code>catch</code>语句的匹配顺序非常重要，子类必须放在前面；</p>
-<p><code>finally</code>语句保证了有无异常都会执行，它是可选的；</p>
-<p>一个<code>catch</code>语句也可以匹配多个非继承关系的异常。</p>
-<h3 id="异常的传播">异常的传播</h3>
-<p>当某个方法抛出了异常时，如果当前方法没有捕获异常，异常就会被抛到上层调用方法，直到遇到某个<code>try ... catch</code>被捕获为止：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// exception</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            process1();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process1</span><span class="params">()</span> &#123;</span><br><span class="line">        process2();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process2</span><span class="params">()</span> &#123;</span><br><span class="line">        Integer.parseInt(<span class="literal">null</span>); <span class="comment">// 会抛出NumberFormatException</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>通过<code>printStackTrace()</code>可以打印出方法的调用栈，类似：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">java.lang.NumberFormatException: <span class="literal">null</span></span><br><span class="line">    at java.base/java.lang.Integer.parseInt(Integer.java:<span class="number">614</span>)</span><br><span class="line">    at java.base/java.lang.Integer.parseInt(Integer.java:<span class="number">770</span>)</span><br><span class="line">    at Main.process2(Main.java:<span class="number">16</span>)</span><br><span class="line">    at Main.process1(Main.java:<span class="number">12</span>)</span><br><span class="line">    at Main.main(Main.java:<span class="number">5</span>)</span><br></pre></td></tr></table></figure>
-<p><code>printStackTrace()</code>对于调试错误非常有用，上述信息表示：<code>NumberFormatException</code>是在<code>java.lang.Integer.parseInt</code>方法中被抛出的，从下往上看，调用层次依次是：</p>
-<ol>
-<li><code>main()</code>调用<code>process1()</code>；</li>
-<li><code>process1()</code>调用<code>process2()</code>；</li>
-<li><code>process2()</code>调用<code>Integer.parseInt(String)</code>；</li>
-<li><code>Integer.parseInt(String)</code>调用<code>Integer.parseInt(String, int)</code>。</li>
-</ol>
-<p>查看<code>Integer.java</code>源码可知，抛出异常的方法代码如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="type">int</span> <span class="title function_">parseInt</span><span class="params">(String s, <span class="type">int</span> radix)</span> <span class="keyword">throws</span> NumberFormatException &#123;</span><br><span class="line">    <span class="keyword">if</span> (s == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NumberFormatException</span>(<span class="string">&quot;null&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>并且，每层调用均给出了源代码的行号，可直接定位。</p>
-<h3 id="抛出异常">抛出异常</h3>
-<p>当发生错误时，例如，用户输入了非法的字符，我们就可以抛出异常。</p>
-<p>如何抛出异常？参考<code>Integer.parseInt()</code>方法，抛出异常分两步：</p>
-<ol>
-<li>创建某个<code>Exception</code>的实例；</li>
-<li>用<code>throw</code>语句抛出。</li>
-</ol>
-<p>下面是一个例子：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">process2</span><span class="params">(String s)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (s==<span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="type">NullPointerException</span> <span class="variable">e</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">        <span class="keyword">throw</span> e;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>实际上，绝大部分抛出异常的代码都会合并写成一行：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">process2</span><span class="params">(String s)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (s==<span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果一个方法捕获了某个异常后，又在<code>catch</code>子句中抛出新的异常，就相当于把抛出的异常类型“转换”了：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">process1</span><span class="params">(String s)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        process2();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (NullPointerException e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">void</span> <span class="title function_">process2</span><span class="params">(String s)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (s==<span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>当<code>process2()</code>抛出<code>NullPointerException</code>后，被<code>process1()</code>捕获，然后抛出<code>IllegalArgumentException()</code>。</p>
-<p>如果在<code>main()</code>中捕获<code>IllegalArgumentException</code>，我们看看打印的异常栈：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// exception</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            process1();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process1</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            process2();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (NullPointerException e) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process2</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>打印出的异常栈类似：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">java.lang.IllegalArgumentException</span><br><span class="line">    at Main.process1(Main.java:15)</span><br><span class="line">    at Main.main(Main.java:5)</span><br></pre></td></tr></table></figure>
-<p>这说明新的异常丢失了原始异常信息，我们已经看不到原始异常<code>NullPointerException</code>的信息了。</p>
-<p>为了能追踪到完整的异常栈，在构造异常的时候，把原始的<code>Exception</code>实例传进去，新的<code>Exception</code>就可以持有原始<code>Exception</code>信息。对上述代码改进如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// exception</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            process1();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process1</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            process2();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (NullPointerException e) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process2</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>运行上述代码，打印出的异常栈类似：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">java.lang.IllegalArgumentException: java.lang.NullPointerException</span><br><span class="line">    at Main.process1(Main.java:15)</span><br><span class="line">    at Main.main(Main.java:5)</span><br><span class="line">Caused by: java.lang.NullPointerException</span><br><span class="line">    at Main.process2(Main.java:20)</span><br><span class="line">    at Main.process1(Main.java:13)</span><br></pre></td></tr></table></figure>
-<p>注意到<code>Caused by: Xxx</code>，说明捕获的<code>IllegalArgumentException</code>并不是造成问题的根源，根源在于<code>NullPointerException</code>，是在<code>Main.process2()</code>方法抛出的。</p>
-<p>在代码中获取原始异常可以使用<code>Throwable.getCause()</code>方法。如果返回<code>null</code>，说明已经是“根异常”了。</p>
-<p>有了完整的异常栈的信息，我们才能快速定位并修复代码的问题。</p>
-<p>最佳实践</p>
-<p>捕获到异常并再次抛出时，一定要留住原始异常，否则很难定位第一案发现场！</p>
-<p>如果我们在<code>try</code>或者<code>catch</code>语句块中抛出异常，<code>finally</code>语句是否会执行？例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// exception</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Integer.parseInt(<span class="string">&quot;abc&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;catched&quot;</span>);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;finally&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>上述代码执行结果如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">catched</span><br><span class="line">finally</span><br><span class="line">Exception in thread &quot;main&quot; java.lang.RuntimeException: java.lang.NumberFormatException: For input string: &quot;abc&quot;</span><br><span class="line">    at Main.main(Main.java:8)</span><br><span class="line">Caused by: java.lang.NumberFormatException: For input string: &quot;abc&quot;</span><br><span class="line">    at ...</span><br></pre></td></tr></table></figure>
-<p>第一行打印了<code>catched</code>，说明进入了<code>catch</code>语句块。第二行打印了<code>finally</code>，说明执行了<code>finally</code>语句块。</p>
-<p>因此，在<code>catch</code>中抛出异常，不会影响<code>finally</code>的执行。JVM会先执行<code>finally</code>，然后抛出异常。</p>
-<h3 id="异常屏蔽">异常屏蔽</h3>
-<p>如果在执行<code>finally</code>语句时抛出异常，那么，<code>catch</code>语句的异常还能否继续抛出？例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// exception</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Integer.parseInt(<span class="string">&quot;abc&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;catched&quot;</span>);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;finally&quot;</span>);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行上述代码，发现异常信息如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">catched</span><br><span class="line">finally</span><br><span class="line">Exception in thread &quot;main&quot; java.lang.IllegalArgumentException</span><br><span class="line">    at Main.main(Main.java:11)</span><br></pre></td></tr></table></figure>
-<p>这说明<code>finally</code>抛出异常后，原来在<code>catch</code>中准备抛出的异常就“消失”了，因为只能抛出一个异常。没有被抛出的异常称为“被屏蔽”的异常（Suppressed Exception）。</p>
-<p>在极少数的情况下，我们需要获知所有的异常。如何保存所有的异常信息？方法是先用<code>origin</code>变量保存原始异常，然后调用<code>Throwable.addSuppressed()</code>，把原始异常添加进来，最后在<code>finally</code>抛出：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// exception</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">Exception</span> <span class="variable">origin</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            System.out.println(Integer.parseInt(<span class="string">&quot;abc&quot;</span>));</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            origin = e;</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="type">Exception</span> <span class="variable">e</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>();</span><br><span class="line">            <span class="keyword">if</span> (origin != <span class="literal">null</span>) &#123;</span><br><span class="line">                e.addSuppressed(origin);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>当<code>catch</code>和<code>finally</code>都抛出了异常时，虽然<code>catch</code>的异常被屏蔽了，但是，<code>finally</code>抛出的异常仍然包含了它：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Exception in thread &quot;main&quot; java.lang.IllegalArgumentException</span><br><span class="line">    at Main.main(Main.java:11)</span><br><span class="line">Suppressed: java.lang.NumberFormatException: For input string: &quot;abc&quot;</span><br><span class="line">    at java.base/java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)</span><br><span class="line">    at java.base/java.lang.Integer.parseInt(Integer.java:652)</span><br><span class="line">    at java.base/java.lang.Integer.parseInt(Integer.java:770)</span><br><span class="line">    at Main.main(Main.java:6)</span><br></pre></td></tr></table></figure>
-<p>通过<code>Throwable.getSuppressed()</code>可以获取所有的<code>Suppressed Exception</code>。</p>
-<p>绝大多数情况下，在<code>finally</code>中不要抛出异常。因此，我们通常不需要关心<code>Suppressed Exception</code>。</p>
-<h3 id="提问时贴出异常">提问时贴出异常</h3>
-<p>异常打印的详细的栈信息是找出问题的关键，许多初学者在提问时只贴代码，不贴异常，相当于只报案不给线索，福尔摩斯也无能为力。</p>
-<p>还有的童鞋只贴部分异常信息，最关键的<code>Caused by: xxx</code>给省略了，这都属于不正确的提问方式，得改。</p>
-<h3 id="练习-2">练习</h3>
-<p>如果传入的参数为负，则抛出<code>IllegalArgumentException</code>。</p>
-<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/throw-exception/exception-throw.zip">下载练习</a></p>
-<h3 id="小结-3">小结</h3>
-<p>调用<code>printStackTrace()</code>可以打印异常的传播栈，对于调试非常有用；</p>
-<p>捕获异常并再次抛出新的异常时，应该持有原始异常信息；</p>
-<p>通常不要在<code>finally</code>中抛出异常。如果在<code>finally</code>中抛出异常，应该原始异常加入到原有异常中。调用方可通过<code>Throwable.getSuppressed()</code>获取所有添加的<code>Suppressed Exception</code>。</p>
-<h2 id="自定义异常">自定义异常</h2>
-<p>Java标准库定义的常用异常包括：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">Exception</span><br><span class="line">├─ RuntimeException</span><br><span class="line">│  ├─ NullPointerException</span><br><span class="line">│  ├─ IndexOutOfBoundsException</span><br><span class="line">│  ├─ SecurityException</span><br><span class="line">│  └─ IllegalArgumentException</span><br><span class="line">│     └─ NumberFormatException</span><br><span class="line">├─ IOException</span><br><span class="line">│  ├─ UnsupportedCharsetException</span><br><span class="line">│  ├─ FileNotFoundException</span><br><span class="line">│  └─ SocketException</span><br><span class="line">├─ ParseException</span><br><span class="line">├─ GeneralSecurityException</span><br><span class="line">├─ SQLException</span><br><span class="line">└─ TimeoutException</span><br></pre></td></tr></table></figure>
-<p>当我们在代码中需要抛出异常时，尽量使用JDK已定义的异常类型。例如，参数检查不合法，应该抛出<code>IllegalArgumentException</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">process1</span><span class="params">(<span class="type">int</span> age)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (age &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在一个大型项目中，可以自定义新的异常类型，但是，保持一个合理的异常继承体系是非常重要的。</p>
-<p>一个常见的做法是自定义一个<code>BaseException</code>作为“根异常”，然后，派生出各种业务类型的异常。</p>
-<p><code>BaseException</code>需要从一个适合的<code>Exception</code>派生，通常建议从<code>RuntimeException</code>派生：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BaseException</span> <span class="keyword">extends</span> <span class="title class_">RuntimeException</span> &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>其他业务类型的异常就可以从<code>BaseException</code>派生：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserNotFoundException</span> <span class="keyword">extends</span> <span class="title class_">BaseException</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LoginFailedException</span> <span class="keyword">extends</span> <span class="title class_">BaseException</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-<p>自定义的<code>BaseException</code>应该提供多个构造方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BaseException</span> <span class="keyword">extends</span> <span class="title class_">RuntimeException</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BaseException</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BaseException</span><span class="params">(String message, Throwable cause)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>(message, cause);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BaseException</span><span class="params">(String message)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>(message);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">BaseException</span><span class="params">(Throwable cause)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>(cause);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>上述构造方法实际上都是原样照抄<code>RuntimeException</code>。这样，抛出异常的时候，就可以选择合适的构造方法。通过IDE可以根据父类快速生成子类的构造方法。</p>
-<h3 id="练习-3">练习</h3>
-<p>请从<code>BaseException</code>派生自定义异常。</p>
-<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/custom-exception/exception-custom.zip">下载练习</a></p>
-<h3 id="小结-4">小结</h3>
-<p>抛出异常时，尽量复用JDK已定义的异常类型；</p>
-<p>自定义异常体系时，推荐从<code>RuntimeException</code>派生“根异常”，再派生出业务异常；</p>
-<p>自定义异常时，应该提供多种构造方法。</p>
-<hr>
-<hr>
-<p>在所有的<code>RuntimeException</code>异常中，Java程序员最熟悉的恐怕就是<code>NullPointerException</code>了。</p>
-<p><code>NullPointerException</code>即空指针异常，俗称NPE。如果一个对象为<code>null</code>，调用其方法或访问其字段就会产生<code>NullPointerException</code>，这个异常通常是由JVM抛出的，例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// NullPointerException</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">s</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">        System.out.println(s.toLowerCase());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>指针这个概念实际上源自C语言，Java语言中并无指针。我们定义的变量实际上是引用，Null Pointer更确切地说是Null Reference，不过两者区别不大。</p>
-<h3 id="处理NullPointerException">处理NullPointerException</h3>
-<p>如果遇到<code>NullPointerException</code>，我们应该如何处理？首先，必须明确，<code>NullPointerException</code>是一种代码逻辑错误，遇到<code>NullPointerException</code>，遵循原则是早暴露，早修复，严禁使用<code>catch</code>来隐藏这种编码错误：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 错误示例: 捕获NullPointerException</span></span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    transferMoney(from, to, amount);</span><br><span class="line">&#125; <span class="keyword">catch</span> (NullPointerException e) &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>好的编码习惯可以极大地降低<code>NullPointerException</code>的产生，例如：</p>
-<p>成员变量在定义时初始化：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">String</span> <span class="variable">name</span> <span class="operator">=</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>使用空字符串<code>&quot;&quot;</code>而不是默认的<code>null</code>可避免很多<code>NullPointerException</code>，编写业务逻辑时，用空字符串<code>&quot;&quot;</code>表示未填写比<code>null</code>安全得多。</p>
-<p>返回空字符串<code>&quot;&quot;</code>、空数组而不是<code>null</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> String[] readLinesFromFile(String file) &#123;</span><br><span class="line">    <span class="keyword">if</span> (getFileSize(file) == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// 返回空数组而不是null:</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">String</span>[<span class="number">0</span>];</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这样可以使得调用方无需检查结果是否为<code>null</code>。</p>
-<p>如果调用方一定要根据<code>null</code>判断，比如返回<code>null</code>表示文件不存在，那么考虑返回<code>Optional&lt;T&gt;</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> Optional&lt;String&gt; <span class="title function_">readFromFile</span><span class="params">(String file)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!fileExist(file)) &#123;</span><br><span class="line">        <span class="keyword">return</span> Optional.empty();</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这样调用方必须通过<code>Optional.isPresent()</code>判断是否有结果。</p>
-<h3 id="定位NullPointerException">定位NullPointerException</h3>
-<p>如果产生了<code>NullPointerException</code>，例如，调用<code>a.b.c.x()</code>时产生了<code>NullPointerException</code>，原因可能是：</p>
-<ul>
-<li><code>a</code>是<code>null</code>；</li>
-<li><code>a.b</code>是<code>null</code>；</li>
-<li><code>a.b.c</code>是<code>null</code>；</li>
-</ul>
-<p>确定到底是哪个对象是<code>null</code>以前只能打印这样的日志：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">System.out.println(a);</span><br><span class="line">System.out.println(a.b);</span><br><span class="line">System.out.println(a.b.c);</span><br></pre></td></tr></table></figure>
-<p>从Java 14开始，如果产生了<code>NullPointerException</code>，JVM可以给出详细的信息告诉我们<code>null</code>对象到底是谁。我们来看例子：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Person</span> <span class="variable">p</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Person</span>();</span><br><span class="line">        System.out.println(p.address.city.toLowerCase());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">    String[] name = <span class="keyword">new</span> <span class="title class_">String</span>[<span class="number">2</span>];</span><br><span class="line">    <span class="type">Address</span> <span class="variable">address</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Address</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Address</span> &#123;</span><br><span class="line">    String city;</span><br><span class="line">    String street;</span><br><span class="line">    String zipcode;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>可以在<code>NullPointerException</code>的详细信息中看到类似<code>... because &quot;&lt;local1&gt;.address.city&quot; is null</code>，意思是<code>city</code>字段为<code>null</code>，这样我们就能快速定位问题所在。</p>
-<p>这种增强的<code>NullPointerException</code>详细信息是Java 14新增的功能，但默认是关闭的，我们可以给JVM添加一个<code>-XX:+ShowCodeDetailsInExceptionMessages</code>参数启用它：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -XX:+ShowCodeDetailsInExceptionMessages Main.java</span><br></pre></td></tr></table></figure>
-<h3 id="小结-5">小结</h3>
-<p><code>NullPointerException</code>是Java代码常见的逻辑错误，应当早暴露，早修复；</p>
-<p>可以启用Java 14的增强异常信息来查看<code>NullPointerException</code>的详细错误信息。</p>
-<h2 id="使用断言">使用断言</h2>
-<p>断言（Assertion）是一种调试程序的方式。在Java中，使用<code>assert</code>关键字来实现断言。</p>
-<p>我们先看一个例子：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="type">double</span> <span class="variable">x</span> <span class="operator">=</span> Math.abs(-<span class="number">123.45</span>);</span><br><span class="line">    <span class="keyword">assert</span> x &gt;= <span class="number">0</span>;</span><br><span class="line">    System.out.println(x);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>语句<code>assert x &gt;= 0;</code>即为断言，断言条件<code>x &gt;= 0</code>预期为<code>true</code>。如果计算结果为<code>false</code>，则断言失败，抛出<code>AssertionError</code>。</p>
-<p>使用<code>assert</code>语句时，还可以添加一个可选的断言消息：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">assert</span> x &gt;= <span class="number">0</span> : <span class="string">&quot;x must &gt;= 0&quot;</span>;</span><br></pre></td></tr></table></figure>
-<p>这样，断言失败的时候，<code>AssertionError</code>会带上消息<code>x must &gt;= 0</code>，更加便于调试。</p>
-<p>Java断言的特点是：断言失败时会抛出<code>AssertionError</code>，导致程序结束退出。因此，断言不能用于可恢复的程序错误，只应该用于开发和测试阶段。</p>
-<p>对于可恢复的程序错误，不应该使用断言。例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">sort</span><span class="params">(<span class="type">int</span>[] arr)</span> &#123;</span><br><span class="line">    <span class="keyword">assert</span> arr != <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>应该抛出异常并在上层捕获：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">sort</span><span class="params">(<span class="type">int</span>[] arr)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (arr == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;array cannot be null&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>当我们在程序中使用<code>assert</code>时，例如，一个简单的断言：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// assert</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">x</span> <span class="operator">=</span> -<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">assert</span> x &gt; <span class="number">0</span>;</span><br><span class="line">        System.out.println(x);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>断言<code>x</code>必须大于<code>0</code>，实际上<code>x</code>为<code>-1</code>，断言肯定失败。执行上述代码，发现程序并未抛出<code>AssertionError</code>，而是正常打印了<code>x</code>的值。</p>
-<p>这是怎么回事？为什么<code>assert</code>语句不起作用？</p>
-<p>这是因为JVM默认关闭断言指令，即遇到<code>assert</code>语句就自动忽略了，不执行。</p>
-<p>要执行<code>assert</code>语句，必须给Java虚拟机传递<code>-enableassertions</code>（可简写为<code>-ea</code>）参数启用断言。所以，上述程序必须在命令行下运行才有效果：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ java -ea Main.java</span><br><span class="line">Exception in thread &quot;main&quot; java.lang.AssertionError</span><br><span class="line">	at Main.main(Main.java:5)</span><br></pre></td></tr></table></figure>
-<p>还可以有选择地对特定地类启用断言，命令行参数是：<code>-ea:com.itranswarp.sample.Main</code>，表示只对<code>com.itranswarp.sample.Main</code>这个类启用断言。</p>
-<p>或者对特定地包启用断言，命令行参数是：<code>-ea:com.itranswarp.sample...</code>（注意结尾有3个<code>.</code>），表示对<code>com.itranswarp.sample</code>这个包启动断言。</p>
-<p>实际开发中，很少使用断言。更好的方法是编写单元测试，后续我们会讲解<code>JUnit</code>的使用。</p>
-<h3 id="小结-6">小结</h3>
-<p>断言是一种调试方式，断言失败会抛出<code>AssertionError</code>，只能在开发和测试阶段启用断言；</p>
-<p>对可恢复的错误不能使用断言，而应该抛出异常；</p>
-<p>断言很少被使用，更好的方法是编写单元测试。</p>
-<hr>
-<hr>
-<h2 id="使用JDK-Logging">使用JDK Logging</h2>
-<p>在编写程序的过程中，发现程序运行结果与预期不符，怎么办？当然是用<code>System.out.println()</code>打印出执行过程中的某些变量，观察每一步的结果与代码逻辑是否符合，然后有针对性地修改代码。</p>
-<p>代码改好了怎么办？当然是删除没有用的<code>System.out.println()</code>语句了。</p>
-<p>如果改代码又改出问题怎么办？再加上<code>System.out.println()</code>。</p>
-<p>反复这么搞几次，很快大家就发现使用<code>System.out.println()</code>非常麻烦。</p>
-<p>怎么办？</p>
-<p>解决方法是使用日志。</p>
-<p>那什么是日志？日志就是Logging，它的目的是为了取代<code>System.out.println()</code>。</p>
-<p>输出日志，而不是用<code>System.out.println()</code>，有以下几个好处：</p>
-<ol>
-<li>可以设置输出样式，避免自己每次都写<code>&quot;ERROR: &quot; + var</code>；</li>
-<li>可以设置输出级别，禁止某些级别输出。例如，只输出错误日志；</li>
-<li>可以被重定向到文件，这样可以在程序运行结束后查看日志；</li>
-<li>可以按包名控制日志级别，只输出某些包打的日志；</li>
-<li>可以……</li>
-</ol>
-<p>总之就是好处很多啦。</p>
-<p>那如何使用日志？</p>
-<p>因为Java标准库内置了日志包<code>java.util.logging</code>，我们可以直接用。先看一个简单的例子：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// logging</span></span><br><span class="line"><span class="keyword">import</span> java.util.logging.Level;</span><br><span class="line"><span class="keyword">import</span> java.util.logging.Logger;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Hello</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Logger</span> <span class="variable">logger</span> <span class="operator">=</span> Logger.getGlobal();</span><br><span class="line">        logger.info(<span class="string">&quot;start process...&quot;</span>);</span><br><span class="line">        logger.warning(<span class="string">&quot;memory is running out...&quot;</span>);</span><br><span class="line">        logger.fine(<span class="string">&quot;ignored.&quot;</span>);</span><br><span class="line">        logger.severe(<span class="string">&quot;process will be terminated...&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>运行上述代码，得到类似如下的输出：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Mar 02, 2019 6:32:13 PM Hello main</span><br><span class="line">INFO: start process...</span><br><span class="line">Mar 02, 2019 6:32:13 PM Hello main</span><br><span class="line">WARNING: memory is running out...</span><br><span class="line">Mar 02, 2019 6:32:13 PM Hello main</span><br><span class="line">SEVERE: process will be terminated...</span><br></pre></td></tr></table></figure>
-<p>对比可见，使用日志最大的好处是，它自动打印了时间、调用类、调用方法等很多有用的信息。</p>
-<p>再仔细观察发现，4条日志，只打印了3条，<code>logger.fine()</code>没有打印。这是因为，日志的输出可以设定级别。JDK的Logging定义了7个日志级别，从严重到普通：</p>
-<ul>
-<li>SEVERE</li>
-<li>WARNING</li>
-<li>INFO</li>
-<li>CONFIG</li>
-<li>FINE</li>
-<li>FINER</li>
-<li>FINEST</li>
-</ul>
-<p>因为默认级别是INFO，因此，INFO级别以下的日志，不会被打印出来。使用日志级别的好处在于，调整级别，就可以屏蔽掉很多调试相关的日志输出。</p>
-<p>使用Java标准库内置的Logging有以下局限：</p>
-<p>Logging系统在JVM启动时读取配置文件并完成初始化，一旦开始运行<code>main()</code>方法，就无法修改配置；</p>
-<p>配置不太方便，需要在JVM启动时传递参数<code>-Djava.util.logging.config.file=&lt;config-file-name&gt;</code>。</p>
-<p>因此，Java标准库内置的Logging使用并不是非常广泛。更方便的日志系统我们稍后介绍。</p>
-<h3 id="练习-4">练习</h3>
-<p>使用<code>logger.severe()</code>打印异常：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.UnsupportedEncodingException;</span><br><span class="line"><span class="keyword">import</span> java.util.logging.Logger;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Logger</span> <span class="variable">logger</span> <span class="operator">=</span> Logger.getLogger(Main.class.getName());</span><br><span class="line">        logger.info(<span class="string">&quot;Start process...&quot;</span>);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="string">&quot;&quot;</span>.getBytes(<span class="string">&quot;invalidCharsetName&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</span><br><span class="line">            <span class="comment">// <span class="doctag">TODO:</span> 使用logger.severe()打印异常</span></span><br><span class="line">        &#125;</span><br><span class="line">        logger.info(<span class="string">&quot;Process end.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/jdk-logging/logging-jdk.zip">下载练习</a></p>
-<h3 id="小结-7">小结</h3>
-<p>日志是为了替代<code>System.out.println()</code>，可以定义格式，重定向到文件等；</p>
-<p>日志可以存档，便于追踪问题；</p>
-<p>日志记录可以按级别分类，便于打开或关闭某些级别；</p>
-<p>可以根据配置文件调整日志，无需修改代码；</p>
-<p>Java标准库提供了<code>java.util.logging</code>来实现日志功能。</p>
-<hr>
-<hr>
-<p>和Java标准库提供的日志不同，Commons Logging是一个第三方日志库，它是由Apache创建的日志模块。</p>
-<p>Commons Logging的特色是，它可以挂接不同的日志系统，并通过配置文件指定挂接的日志系统。默认情况下，Commons Loggin自动搜索并使用Log4j（Log4j是另一个流行的日志系统），如果没有找到Log4j，再使用JDK Logging。</p>
-<p>使用Commons Logging只需要和两个类打交道，并且只有两步：</p>
-<p>第一步，通过<code>LogFactory</code>获取<code>Log</code>类的实例； 第二步，使用<code>Log</code>实例的方法打日志。</p>
-<p>示例代码如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.apache.commons.logging.Log;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.logging.LogFactory;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Log</span> <span class="variable">log</span> <span class="operator">=</span> LogFactory.getLog(Main.class);</span><br><span class="line">        log.info(<span class="string">&quot;start...&quot;</span>);</span><br><span class="line">        log.warn(<span class="string">&quot;end.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>运行上述代码，肯定会得到编译错误，类似<code>error: package org.apache.commons.logging does not exist</code>（找不到<code>org.apache.commons.logging</code>这个包）。因为Commons Logging是一个第三方提供的库，所以，必须先把它<a target="_blank" rel="noopener" href="https://commons.apache.org/proper/commons-logging/download_logging.cgi">下载</a>下来。下载后，解压，找到<code>commons-logging-1.2.jar</code>这个文件，再把Java源码<code>Main.java</code>放到一个目录下，例如<code>work</code>目录：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">work</span><br><span class="line">├─ commons-logging-1.2.jar</span><br><span class="line">└─ Main.java</span><br></pre></td></tr></table></figure>
-<p>然后用<code>javac</code>编译<code>Main.java</code>，编译的时候要指定<code>classpath</code>，不然编译器找不到我们引用的<code>org.apache.commons.logging</code>包。编译命令如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">javac -cp commons-logging-1.2.jar Main.java</span><br></pre></td></tr></table></figure>
-<p>如果编译成功，那么当前目录下就会多出一个<code>Main.class</code>文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">work</span><br><span class="line">├─ commons-logging-1.2.jar</span><br><span class="line">├─ Main.java</span><br><span class="line">└─ Main.class</span><br></pre></td></tr></table></figure>
-<p>现在可以执行这个<code>Main.class</code>，使用<code>java</code>命令，也必须指定<code>classpath</code>，命令如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -cp .;commons-logging-1.2.jar Main</span><br></pre></td></tr></table></figure>
-<p>注意到传入的<code>classpath</code>有两部分：一个是<code>.</code>，一个是<code>commons-logging-1.2.jar</code>，用<code>;</code>分割。<code>.</code>表示当前目录，如果没有这个<code>.</code>，JVM不会在当前目录搜索<code>Main.class</code>，就会报错。</p>
-<p>如果在Linux或macOS下运行，注意<code>classpath</code>的分隔符不是<code>;</code>，而是<code>:</code>：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -cp .:commons-logging-1.2.jar Main</span><br></pre></td></tr></table></figure>
-<p>运行结果如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Mar 02, 2019 7:15:31 PM Main main</span><br><span class="line">INFO: start...</span><br><span class="line">Mar 02, 2019 7:15:31 PM Main main</span><br><span class="line">WARNING: end.</span><br></pre></td></tr></table></figure>
-<p>Commons Logging定义了6个日志级别：</p>
-<ul>
-<li>FATAL</li>
-<li>ERROR</li>
-<li>WARNING</li>
-<li>INFO</li>
-<li>DEBUG</li>
-<li>TRACE</li>
-</ul>
-<p>默认级别是<code>INFO</code>。</p>
-<p>使用Commons Logging时，如果在静态方法中引用<code>Log</code>，通常直接定义一个静态类型变量：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在静态方法中引用Log:</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">Log</span> <span class="variable">log</span> <span class="operator">=</span> LogFactory.getLog(Main.class);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">foo</span><span class="params">()</span> &#123;</span><br><span class="line">        log.info(<span class="string">&quot;foo&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在实例方法中引用<code>Log</code>，通常定义一个实例变量：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在实例方法中引用Log:</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> <span class="type">Log</span> <span class="variable">log</span> <span class="operator">=</span> LogFactory.getLog(getClass());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">foo</span><span class="params">()</span> &#123;</span><br><span class="line">        log.info(<span class="string">&quot;foo&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注意到实例变量log的获取方式是<code>LogFactory.getLog(getClass())</code>，虽然也可以用<code>LogFactory.getLog(Person.class)</code>，但是前一种方式有个非常大的好处，就是子类可以直接使用该<code>log</code>实例。例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在子类中使用父类实例化的log:</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Student</span> <span class="keyword">extends</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">bar</span><span class="params">()</span> &#123;</span><br><span class="line">        log.info(<span class="string">&quot;bar&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>由于Java类的动态特性，子类获取的<code>log</code>字段实际上相当于<code>LogFactory.getLog(Student.class)</code>，但却是从父类继承而来，并且无需改动代码。</p>
-<p>此外，Commons Logging的日志方法，例如<code>info()</code>，除了标准的<code>info(String)</code>外，还提供了一个非常有用的重载方法：<code>info(String, Throwable)</code>，这使得记录异常更加简单：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    ...</span><br><span class="line">&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    log.error(<span class="string">&quot;got exception!&quot;</span>, e);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="练习-5">练习</h3>
-<p>使用<code>log.error(String, Throwable)</code>打印异常。</p>
-<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/commons-logging/logging-commons.zip">下载练习</a></p>
-<h3 id="小结-8">小结</h3>
-<p>Commons Logging是使用最广泛的日志模块；</p>
-<p>Commons Logging的API非常简单；</p>
-<p>Commons Logging可以自动检测并使用其他日志模块。</p>
-<p>前面介绍了Commons Logging，可以作为“日志接口”来使用。而真正的“日志实现”可以使用Log4j。</p>
-<p>Log4j是一种非常流行的日志框架，最新版本是2.x。</p>
-<p>Log4j是一个组件化设计的日志系统，它的架构大致如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">log.info(&quot;User signed in.&quot;);</span><br><span class="line"> │</span><br><span class="line"> │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐</span><br><span class="line"> ├──▶│ Appender │───▶│  Filter  │───▶│  Layout  │───▶│ Console  │</span><br><span class="line"> │   └──────────┘    └──────────┘    └──────────┘    └──────────┘</span><br><span class="line"> │</span><br><span class="line"> │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐</span><br><span class="line"> ├──▶│ Appender │───▶│  Filter  │───▶│  Layout  │───▶│   File   │</span><br><span class="line"> │   └──────────┘    └──────────┘    └──────────┘    └──────────┘</span><br><span class="line"> │</span><br><span class="line"> │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐</span><br><span class="line"> └──▶│ Appender │───▶│  Filter  │───▶│  Layout  │───▶│  Socket  │</span><br><span class="line">     └──────────┘    └──────────┘    └──────────┘    └──────────┘</span><br></pre></td></tr></table></figure>
-<p>当我们使用Log4j输出一条日志时，Log4j自动通过不同的Appender把同一条日志输出到不同的目的地。例如：</p>
-<ul>
-<li>console：输出到屏幕；</li>
-<li>file：输出到文件；</li>
-<li>socket：通过网络输出到远程计算机；</li>
-<li>jdbc：输出到数据库</li>
-</ul>
-<p>在输出日志的过程中，通过Filter来过滤哪些log需要被输出，哪些log不需要被输出。例如，仅输出<code>ERROR</code>级别的日志。</p>
-<p>最后，通过Layout来格式化日志信息，例如，自动添加日期、时间、方法名称等信息。</p>
-<p>上述结构虽然复杂，但我们在实际使用的时候，并不需要关心Log4j的API，而是通过配置文件来配置它。</p>
-<p>以XML配置为例，使用Log4j的时候，我们把一个<code>log4j2.xml</code>的文件放到<code>classpath</code>下就可以让Log4j读取配置文件并按照我们的配置来输出日志。下面是一个配置文件的例子：</p>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=<span class="string">&quot;1.0&quot;</span> encoding=<span class="string">&quot;UTF-8&quot;</span>?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">Configuration</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">Properties</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 定义日志格式 --&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">Property</span> <span class="attr">name</span>=<span class="string">&quot;log.pattern&quot;</span>&gt;</span>%d&#123;MM-dd HH:mm:ss.SSS&#125; [%t] %-5level %logger&#123;36&#125;%n%msg%n%n<span class="tag">&lt;/<span class="name">Property</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 定义文件名变量 --&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">Property</span> <span class="attr">name</span>=<span class="string">&quot;file.err.filename&quot;</span>&gt;</span>log/err.log<span class="tag">&lt;/<span class="name">Property</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">Property</span> <span class="attr">name</span>=<span class="string">&quot;file.err.pattern&quot;</span>&gt;</span>log/err.%i.log.gz<span class="tag">&lt;/<span class="name">Property</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">Properties</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- 定义Appender，即目的地 --&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">Appenders</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 定义输出到屏幕 --&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">Console</span> <span class="attr">name</span>=<span class="string">&quot;console&quot;</span> <span class="attr">target</span>=<span class="string">&quot;SYSTEM_OUT&quot;</span>&gt;</span></span><br><span class="line">            <span class="comment">&lt;!-- 日志格式引用上面定义的log.pattern --&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">PatternLayout</span> <span class="attr">pattern</span>=<span class="string">&quot;$&#123;log.pattern&#125;&quot;</span> /&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">Console</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 定义输出到文件,文件名引用上面定义的file.err.filename --&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">RollingFile</span> <span class="attr">name</span>=<span class="string">&quot;err&quot;</span> <span class="attr">bufferedIO</span>=<span class="string">&quot;true&quot;</span> <span class="attr">fileName</span>=<span class="string">&quot;$&#123;file.err.filename&#125;&quot;</span> <span class="attr">filePattern</span>=<span class="string">&quot;$&#123;file.err.pattern&#125;&quot;</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">PatternLayout</span> <span class="attr">pattern</span>=<span class="string">&quot;$&#123;log.pattern&#125;&quot;</span> /&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">Policies</span>&gt;</span></span><br><span class="line">                <span class="comment">&lt;!-- 根据文件大小自动切割日志 --&gt;</span></span><br><span class="line">				<span class="tag">&lt;<span class="name">SizeBasedTriggeringPolicy</span> <span class="attr">size</span>=<span class="string">&quot;1 MB&quot;</span> /&gt;</span></span><br><span class="line">			<span class="tag">&lt;/<span class="name">Policies</span>&gt;</span></span><br><span class="line">            <span class="comment">&lt;!-- 保留最近10份 --&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">DefaultRolloverStrategy</span> <span class="attr">max</span>=<span class="string">&quot;10&quot;</span> /&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">RollingFile</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">Appenders</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">Loggers</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">Root</span> <span class="attr">level</span>=<span class="string">&quot;info&quot;</span>&gt;</span></span><br><span class="line">            <span class="comment">&lt;!-- 对info级别的日志，输出到console --&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">AppenderRef</span> <span class="attr">ref</span>=<span class="string">&quot;console&quot;</span> <span class="attr">level</span>=<span class="string">&quot;info&quot;</span> /&gt;</span></span><br><span class="line">            <span class="comment">&lt;!-- 对error级别的日志，输出到err，即上面定义的RollingFile --&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">AppenderRef</span> <span class="attr">ref</span>=<span class="string">&quot;err&quot;</span> <span class="attr">level</span>=<span class="string">&quot;error&quot;</span> /&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">Root</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">Loggers</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Configuration</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>虽然配置Log4j比较繁琐，但一旦配置完成，使用起来就非常方便。对上面的配置文件，凡是<code>INFO</code>级别的日志，会自动输出到屏幕，而<code>ERROR</code>级别的日志，不但会输出到屏幕，还会同时输出到文件。并且，一旦日志文件达到指定大小（1MB），Log4j就会自动切割新的日志文件，并最多保留10份。</p>
-<p>有了配置文件还不够，因为Log4j也是一个第三方库，我们需要从<a target="_blank" rel="noopener" href="https://logging.apache.org/log4j/2.x/download.html">这里</a>下载Log4j，解压后，把以下3个jar包放到<code>classpath</code>中：</p>
-<ul>
-<li>log4j-api-2.x.jar</li>
-<li>log4j-core-2.x.jar</li>
-<li>log4j-jcl-2.x.jar</li>
-</ul>
-<p>因为Commons Logging会自动发现并使用Log4j，所以，把上一节下载的<code>commons-logging-1.2.jar</code>也放到<code>classpath</code>中。</p>
-<p>要打印日志，只需要按Commons Logging的写法写，不需要改动任何代码，就可以得到Log4j的日志输出，类似：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">03-03 12:09:45.880 [main] INFO  com.itranswarp.learnjava.Main</span><br><span class="line">Start process...</span><br></pre></td></tr></table></figure>
-<h3 id="最佳实践">最佳实践</h3>
-<p>在开发阶段，始终使用Commons Logging接口来写入日志，并且开发阶段无需引入Log4j。如果需要把日志写入文件，只需要把正确的配置文件和Log4j相关的jar包放入<code>classpath</code>，就可以自动把日志切换成使用Log4j写入，无需修改任何代码。</p>
-<h3 id="练习-6">练习</h3>
-<p>根据配置文件，观察Log4j写入的日志文件。</p>
-<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/log4j/logging-log4j.zip">下载练习</a></p>
-<h3 id="小结-9">小结</h3>
-<p>通过Commons Logging实现日志，不需要修改代码即可使用Log4j；</p>
-<p>使用Log4j只需要把log4j2.xml和相关jar放入classpath；</p>
-<p>如果要更换Log4j，只需要移除log4j2.xml和相关jar；</p>
-<p>只有扩展Log4j时，才需要引用Log4j的接口（例如，将日志加密写入数据库的功能，需要自己开发）。</p>
-<p>前面介绍了Commons Logging和Log4j这一对好基友，它们一个负责充当日志API，一个负责实现日志底层，搭配使用非常便于开发。</p>
-<p>有的童鞋可能还听说过SLF4J和Logback。这两个东东看上去也像日志，它们又是啥？</p>
-<p>其实SLF4J类似于Commons Logging，也是一个日志接口，而Logback类似于Log4j，是一个日志的实现。</p>
-<p>为什么有了Commons Logging和Log4j，又会蹦出来SLF4J和Logback？这是因为Java有着非常悠久的开源历史，不但OpenJDK本身是开源的，而且我们用到的第三方库，几乎全部都是开源的。开源生态丰富的一个特定就是，同一个功能，可以找到若干种互相竞争的开源库。</p>
-<p>因为对Commons Logging的接口不满意，有人就搞了SLF4J。因为对Log4j的性能不满意，有人就搞了Logback。</p>
-<p>我们先来看看SLF4J对Commons Logging的接口有何改进。在Commons Logging中，我们要打印日志，有时候得这么写：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="variable">score</span> <span class="operator">=</span> <span class="number">99</span>;</span><br><span class="line">p.setScore(score);</span><br><span class="line">log.info(<span class="string">&quot;Set score &quot;</span> + score + <span class="string">&quot; for Person &quot;</span> + p.getName() + <span class="string">&quot; ok.&quot;</span>);</span><br></pre></td></tr></table></figure>
-<p>拼字符串是一个非常麻烦的事情，所以SLF4J的日志接口改进成这样了：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="variable">score</span> <span class="operator">=</span> <span class="number">99</span>;</span><br><span class="line">p.setScore(score);</span><br><span class="line">logger.info(<span class="string">&quot;Set score &#123;&#125; for Person &#123;&#125; ok.&quot;</span>, score, p.getName());</span><br></pre></td></tr></table></figure>
-<p>我们靠猜也能猜出来，SLF4J的日志接口传入的是一个带占位符的字符串，用后面的变量自动替换占位符，所以看起来更加自然。</p>
-<p>如何使用SLF4J？它的接口实际上和Commons Logging几乎一模一样：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> org.slf4j.Logger;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.LoggerFactory;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">final</span> <span class="type">Logger</span> <span class="variable">logger</span> <span class="operator">=</span> LoggerFactory.getLogger(getClass());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>对比一下Commons Logging和SLF4J的接口：</p>
-<table>
-<thead>
-<tr>
-<th>Commons Logging</th>
-<th>SLF4J</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>org.apache.commons.logging.Log</td>
-<td>org.slf4j.Logger</td>
-</tr>
-<tr>
-<td>org.apache.commons.logging.LogFactory</td>
-<td>org.slf4j.LoggerFactory</td>
-</tr>
-</tbody>
-</table>
-<p>不同之处就是<code>Log</code>变成了<code>Logger</code>，<code>LogFactory</code>变成了<code>LoggerFactory</code>。</p>
-<p>使用SLF4J和Logback和前面讲到的使用Commons Logging加Log4j是类似的，先分别下载<a target="_blank" rel="noopener" href="https://www.slf4j.org/download.html">SLF4J</a>和<a target="_blank" rel="noopener" href="https://logback.qos.ch/download.html">Logback</a>，然后把以下jar包放到classpath下：</p>
-<ul>
-<li>slf4j-api-1.7.x.jar</li>
-<li>logback-classic-1.2.x.jar</li>
-<li>logback-core-1.2.x.jar</li>
-</ul>
-<p>然后使用SLF4J的<code>Logger</code>和<code>LoggerFactory</code>即可。</p>
-<p>和Log4j类似，我们仍然需要一个Logback的配置文件，把<code>logback.xml</code>放到classpath下，配置如下：</p>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=<span class="string">&quot;1.0&quot;</span> encoding=<span class="string">&quot;UTF-8&quot;</span>?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">appender</span> <span class="attr">name</span>=<span class="string">&quot;CONSOLE&quot;</span> <span class="attr">class</span>=<span class="string">&quot;ch.qos.logback.core.ConsoleAppender&quot;</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">encoder</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">pattern</span>&gt;</span>%d&#123;HH:mm:ss.SSS&#125; [%thread] %-5level %logger&#123;36&#125; - %msg%n<span class="tag">&lt;/<span class="name">pattern</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">encoder</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">appender</span>&gt;</span></span><br><span class="line"></span><br><span class="line">	<span class="tag">&lt;<span class="name">appender</span> <span class="attr">name</span>=<span class="string">&quot;FILE&quot;</span> <span class="attr">class</span>=<span class="string">&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">encoder</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">pattern</span>&gt;</span>%d&#123;HH:mm:ss.SSS&#125; [%thread] %-5level %logger&#123;36&#125; - %msg%n<span class="tag">&lt;/<span class="name">pattern</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">charset</span>&gt;</span>utf-8<span class="tag">&lt;/<span class="name">charset</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">encoder</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">file</span>&gt;</span>log/output.log<span class="tag">&lt;/<span class="name">file</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">rollingPolicy</span> <span class="attr">class</span>=<span class="string">&quot;ch.qos.logback.core.rolling.FixedWindowRollingPolicy&quot;</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">fileNamePattern</span>&gt;</span>log/output.log.%i<span class="tag">&lt;/<span class="name">fileNamePattern</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">rollingPolicy</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">triggeringPolicy</span> <span class="attr">class</span>=<span class="string">&quot;ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy&quot;</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">MaxFileSize</span>&gt;</span>1MB<span class="tag">&lt;/<span class="name">MaxFileSize</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">triggeringPolicy</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">appender</span>&gt;</span></span><br><span class="line"></span><br><span class="line">	<span class="tag">&lt;<span class="name">root</span> <span class="attr">level</span>=<span class="string">&quot;INFO&quot;</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;CONSOLE&quot;</span> /&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">&quot;FILE&quot;</span> /&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">root</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>运行即可获得类似如下的输出：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">13:15:25.328 [main] INFO  com.itranswarp.learnjava.Main - Start process...</span><br></pre></td></tr></table></figure>
-<p>从目前的趋势来看，越来越多的开源项目从Commons Logging加Log4j转向了SLF4J加Logback。</p>
-<h3 id="练习-7">练习</h3>
-<p>根据配置文件，观察Logback写入的日志文件。</p>
-<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/exception/slf4j-logback/logging-slf4j.zip">下载练习</a></p>
-<h3 id="小结-10">小结</h3>
-<p>SLF4J和Logback可以取代Commons Logging和Log4j；</p>
-<p>始终使用SLF4J的接口写入日志，使用Logback只需要配置，不需要修改代码。</p>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../../../../2025/05/23/java/JAVA-%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
                             href="../../../../../2025/05/23/java/JAVA%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B(%E6%A0%B8%E5%BF%83%E7%B1%BB)/"
                             aria-label=": JAVA面向对象编程(核心类)"
                         >
@@ -4050,654 +3532,6 @@
                     
                         <a
                             class="link-unstyled"
-                            href="../../../../../2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-hands-on/"
-                            aria-label=": ansible教程-hands-on"
-                        >
-                            ansible教程-hands-on
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2025-05-22T18:27:00+08:00">
-	
-		    2025 年 5 月 22 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../../../../categories/devops/">devops</a>, <a class="category-link" href="../../../../../categories/devops/ansible/">ansible</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h1>Ansible 学习笔记</h1>
-<h2 id="简介">简介</h2>
-<ul>
-<li>基于Python开发的自动化运维工具</li>
-<li>集合了众多运维工具(puppet、cfengine、chef、func、fabric)的优点</li>
-<li>基于模块工作，本身没有批量部署能力，批量部署由运行的模块实现</li>
-<li>提供自动化运维框架</li>
-</ul>
-<h2 id="作用">作用</h2>
-<ul>
-<li>批量系统配置</li>
-<li>批量程序部署</li>
-<li>批量运行命令</li>
-</ul>
-<h2 id="框架组成">框架组成</h2>
-<ul>
-<li><strong>Connection Plugins</strong>：负责和被监控端实现通信</li>
-<li><strong>Host Inventory</strong>：定义监控主机的配置文件</li>
-<li><strong>模块</strong>：
-<ul>
-<li>核心模块</li>
-<li>command模块</li>
-<li>自定义模块</li>
-</ul>
-</li>
-<li><strong>插件</strong>：完成记录日志邮件等功能</li>
-<li><strong>Playbook</strong>：剧本，非必需，可让节点一次性运行多个任务</li>
-</ul>
-<h2 id="架构图">架构图</h2>
-<p><img src="/assets/images/ansible1.png" alt="Ansible架构图"></p>
-<h2 id="架构字段解释">架构字段解释</h2>
-<ul>
-<li><strong>Ansible</strong>：核心程序</li>
-<li><strong>Host Inventory</strong>：主机清单(可定义主机组和主机)</li>
-<li><strong>模块</strong>：实际执行任务的组件</li>
-<li><strong>Playbook</strong>：Yaml定义的剧本文件(类似shell脚本)</li>
-<li><strong>Connect Plugin</strong>：连接插件</li>
-</ul>
-<h2 id="工作原理">工作原理</h2>
-<ol>
-<li>控制端通过inventory定义主机组</li>
-<li>通过编写playbook或AD-HOC命令</li>
-<li>使用SSH将模块推送到被控端</li>
-<li>被控端执行任务(要求被控端有Python2环境)</li>
-<li>任务完成后返回结果</li>
-</ol>
-<h2 id="命令执行过程">命令执行过程</h2>
-<ol>
-<li>加载配置文件(/etc/ansible/ansible.cfg)</li>
-<li>查找主机配置文件</li>
-<li>加载对应模块文件</li>
-<li>生成临时Python脚本并传输到远程主机</li>
-<li>存储在远程主机的<code>~/.ansible/tmp/</code>目录</li>
-<li>添加执行权限</li>
-<li>执行并返回结果</li>
-<li>删除临时文件</li>
-</ol>
-<h2 id="执行流程理解图">执行流程理解图</h2>
-<p><img src="/assets/images/ansible2.png" alt="执行流程"></p>
-<h2 id="特性">特性</h2>
-<ul>
-<li><strong>No Agents</strong>：无需在被控端安装客户端</li>
-<li><strong>No Server</strong>：无服务端架构</li>
-<li><strong>Modules in Any Languages</strong>：支持任意语言开发模块</li>
-<li><strong>YAML</strong>：使用YAML语言编写playbook</li>
-<li><strong>SSH by Default</strong>：默认基于SSH工作</li>
-<li><strong>Multi-tier Solution</strong>：支持多级指挥</li>
-</ul>
-<h2 id="配置文件">配置文件</h2>
-<p>配置文件优先级(从高到低)：</p>
-<ol>
-<li>项目目录下的<code>ansible.cfg</code></li>
-<li>用户家目录下的<code>.ansible.cfg</code></li>
-<li>默认的<code>/etc/ansible/ansible.cfg</code></li>
-</ol>
-<h3 id="主要配置项">主要配置项</h3>
-<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#inventory = /etc/ansible/hosts      # 主机列表</span></span><br><span class="line"><span class="comment">#library = /usr/share/my_modules/     # 模块库目录</span></span><br><span class="line"><span class="comment">#remote_tmp = ~/.ansible/tmp          # 远程临时目录</span></span><br><span class="line"><span class="comment">#local_tmp = ~/.ansible/tmp           # 本地临时目录</span></span><br><span class="line"><span class="comment">#forks = 5                            # 并发数</span></span><br><span class="line"><span class="comment">#sudo_user = root                     # 默认sudo用户</span></span><br><span class="line"><span class="comment">#ask_sudo_pass = True                 # 是否询问sudo密码</span></span><br><span class="line"><span class="comment">#ask_pass = True                      # 是否询问SSH密码</span></span><br><span class="line"><span class="comment">#remote_port = 22                     # 远程端口</span></span><br><span class="line"><span class="attr">host_key_checking</span> = <span class="literal">False</span>             <span class="comment"># 跳过主机指纹检查</span></span><br><span class="line"><span class="attr">log_path</span> = /var/log/ansible.log       <span class="comment"># 日志路径</span></span><br></pre></td></tr></table></figure>
-<h2 id="优点">优点</h2>
-<ul>
-<li>轻量级，客户端无需安装agent</li>
-<li>批量任务可写成脚本且无需分发</li>
-<li>基于Python，维护简单</li>
-<li>支持sudo</li>
-</ul>
-<h2 id="环境搭建">环境搭建</h2>
-<h3 id="主机规划">主机规划</h3>
-<table>
-<thead>
-<tr>
-<th>主机</th>
-<th>IP</th>
-<th>角色</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>h1</td>
-<td>192.168.50.60</td>
-<td>master</td>
-</tr>
-<tr>
-<td>h2</td>
-<td>192.168.50.61</td>
-<td>host1</td>
-</tr>
-<tr>
-<td>h3</td>
-<td>192.168.50.62</td>
-<td>host2</td>
-</tr>
-<tr>
-<td>h4</td>
-<td>192.168.50.63</td>
-<td>host3</td>
-</tr>
-</tbody>
-</table>
-<h3 id="SSH免密登录配置">SSH免密登录配置</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ssh-keygen -t dsa -f ~/.ssh/id_dsa -P <span class="string">&quot;&quot;</span></span><br><span class="line">ssh-copy-id -i ~/.ssh/id_dsa.pub root@192.168.50.61</span><br></pre></td></tr></table></figure>
-<h3 id="安装">安装</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install -y ansible</span><br></pre></td></tr></table></figure>
-<h3 id="主机清单配置">主机清单配置</h3>
-<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[hosts]</span></span><br><span class="line">192.168.50.61</span><br><span class="line">192.168.50.62</span><br><span class="line">192.168.50.63</span><br><span class="line"></span><br><span class="line"><span class="section">[local]</span></span><br><span class="line">127.0.0.1</span><br></pre></td></tr></table></figure>
-<h3 id="测试">测试</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ansible webservers -m <span class="built_in">command</span> -a <span class="string">&#x27;uptime&#x27;</span></span><br><span class="line">ansible all -m ping</span><br></pre></td></tr></table></figure>
-<h2 id="常用模块">常用模块</h2>
-<h3 id="setup模块">setup模块</h3>
-<p>查看远程主机基本信息</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible webservers -m setup</span><br></pre></td></tr></table></figure>
-<h3 id="fetch模块">fetch模块</h3>
-<p>从主机获取文件</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible 192.168.50.61 -m fetch -a <span class="string">&#x27;src=/root/t2 dest=/root&#x27;</span></span><br></pre></td></tr></table></figure>
-<h3 id="file模块">file模块</h3>
-<p>设置文件属性</p>
-<p><strong>选项</strong>:</p>
-<ul>
-<li><code>force</code>: 强制创建软链接(yes|no)</li>
-<li><code>group</code>: 文件属组</li>
-<li><code>mode</code>: 文件权限</li>
-<li><code>owner</code>: 文件属主</li>
-<li><code>path</code>: 文件路径(必选)</li>
-<li><code>recurse</code>: 递归设置属性(仅目录)</li>
-<li><code>src</code>: 源文件路径(仅state=link时)</li>
-<li><code>dest</code>: 链接目标路径(仅state=link时)</li>
-<li><code>state</code>:
-<ul>
-<li><code>directory</code>: 创建目录</li>
-<li><code>file</code>: 不创建文件</li>
-<li><code>link</code>: 创建软链接</li>
-<li><code>hard</code>: 创建硬链接</li>
-<li><code>touch</code>: 创建空文件或更新修改时间</li>
-<li><code>absent</code>: 删除文件/目录</li>
-</ul>
-</li>
-</ul>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建符号链接</span></span><br><span class="line">ansible hosts -m file -a <span class="string">&quot;src=/etc/resolv.conf dest=/root/resolv.conf state=link&quot;</span></span><br></pre></td></tr></table></figure>
-<h3 id="copy模块">copy模块</h3>
-<p>复制文件到远程主机</p>
-<p><strong>选项</strong>:</p>
-<ul>
-<li><code>backup</code>: 覆盖前备份(yes|no)</li>
-<li><code>content</code>: 直接设置文件内容(替代src)</li>
-<li><code>dest</code>: 目标绝对路径(必选)</li>
-<li><code>directory_mode</code>: 递归设置目录权限</li>
-<li><code>force</code>: 强制覆盖(yes|no)</li>
-<li><code>src</code>: 本地源文件路径</li>
-</ul>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible hosts -m copy -a <span class="string">&quot;src=/etc/ansible/ansible.cfg dest=/tmp/ansible.cfg owner=root group=root mode=0755&quot;</span></span><br></pre></td></tr></table></figure>
-<h3 id="command模块">command模块</h3>
-<p>在远程主机执行命令</p>
-<p><strong>选项</strong>:</p>
-<ul>
-<li><code>creates</code>: 文件存在时不执行</li>
-<li><code>free_form</code>: Linux命令</li>
-<li><code>chdir</code>: 执行前切换目录</li>
-<li><code>removes</code>: 文件不存在时不执行</li>
-<li><code>executable</code>: 指定shell路径</li>
-</ul>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ansible webservers -m <span class="built_in">command</span> -a <span class="string">&quot;ls -al /tmp&quot;</span></span><br><span class="line">ansible webservers -m <span class="built_in">command</span> -a <span class="string">&#x27;useradd abc&#x27;</span></span><br></pre></td></tr></table></figure>
-<h3 id="shell模块">shell模块</h3>
-<p>支持管道操作的命令执行</p>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 执行远程脚本</span></span><br><span class="line">ansible hosts -m shell -a <span class="string">&quot;/root/test.sh&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 批量添加用户密码</span></span><br><span class="line">ansible hosts -m shell -a <span class="string">&#x27;useradd abc &amp;&amp; echo 123 |passwd --stdin abc&#x27;</span></span><br></pre></td></tr></table></figure>
-<h3 id="cron模块">cron模块</h3>
-<p>管理计划任务</p>
-<p><strong>选项</strong>:</p>
-<ul>
-<li><code>minute/hour/day/month/weekday</code>: 时间设置</li>
-<li><code>job</code>: 任务命令</li>
-<li><code>name</code>: 任务名称</li>
-<li><code>user</code>: 执行用户</li>
-<li><code>state</code>: present(添加)|absent(删除)</li>
-</ul>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建任务</span></span><br><span class="line">ansible all -m cron -a <span class="string">&quot;minute=&#x27;*/5&#x27; job=&#x27;/usr/sbin/ntpdate 192.168.50.60 &amp;&gt;/dev/null&#x27; name=&#x27;sync time&#x27;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除任务</span></span><br><span class="line">ansible all -m cron -a <span class="string">&quot;name=&#x27;sync time&#x27; state=absent&quot;</span></span><br></pre></td></tr></table></figure>
-<h3 id="hostname模块">hostname模块</h3>
-<p>管理主机名</p>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 修改主机名</span></span><br><span class="line">ansible 192.168.50.63 -m hostname -a <span class="string">&quot;name=t4&quot;</span></span><br></pre></td></tr></table></figure>
-<h3 id="yum模块">yum模块</h3>
-<p>软件包管理</p>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 安装tree</span></span><br><span class="line">ansible all -m yum -a <span class="string">&quot;name=tree&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 卸载</span></span><br><span class="line">ansible all -m yum -a <span class="string">&#x27;name=tree state=absent&#x27;</span></span><br></pre></td></tr></table></figure>
-<h3 id="service模块">service模块</h3>
-<p>服务管理</p>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 启动ntpdate服务</span></span><br><span class="line">ansible all -m service -a <span class="string">&quot;name=ntpdate state=started enabled=true&quot;</span></span><br></pre></td></tr></table></figure>
-<h3 id="group模块">group模块</h3>
-<p>用户组管理</p>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 添加系统组</span></span><br><span class="line">ansible all -m group -a <span class="string">&quot;name=gansible system=true&quot;</span></span><br></pre></td></tr></table></figure>
-<h3 id="user模块">user模块</h3>
-<p>用户管理</p>
-<p><strong>选项</strong>:</p>
-<ul>
-<li><code>name</code>: 用户名</li>
-<li><code>state</code>: present(新增)|absent(删除)</li>
-<li><code>force</code>: 删除时是否删除家目录</li>
-<li><code>system</code>: 是否系统用户</li>
-<li><code>uid</code>: 指定UID</li>
-<li><code>shell</code>: 指定shell</li>
-<li><code>home</code>: 指定家目录</li>
-</ul>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 添加系统用户</span></span><br><span class="line">ansible all -m user -a <span class="string">&quot;name=ccc system=true&quot;</span></span><br></pre></td></tr></table></figure>
-<h2 id="YAML语法">YAML语法</h2>
-<ul>
-<li>数据序列化格式</li>
-<li>基本结构:<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">key:</span> <span class="string">value</span></span><br><span class="line"><span class="bullet">-</span> <span class="string">item1</span></span><br><span class="line"><span class="bullet">-</span> <span class="string">item2</span></span><br><span class="line"><span class="bullet">-</span> <span class="string">item3</span></span><br></pre></td></tr></table></figure>
-例如: <code>&#123;name: jerry, age: 21&#125;</code></li>
-</ul>
-<h2 id="Playbook">Playbook</h2>
-<h3 id="核心元素">核心元素</h3>
-<ul>
-<li>Tasks: 任务列表</li>
-<li>Variables: 变量</li>
-<li>Templates: 模板文件</li>
-<li>Handlers: 条件触发任务</li>
-<li>Roles: 角色</li>
-</ul>
-<h3 id="基础组件">基础组件</h3>
-<ul>
-<li><code>Hosts</code>: 目标主机</li>
-<li><code>remote_user</code>: 执行用户</li>
-<li><code>sudo_user</code>: sudo用户</li>
-<li><code>tasks</code>: 任务列表</li>
-</ul>
-<h3 id="运行Playbook">运行Playbook</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 语法检查</span></span><br><span class="line">ansible-playbook --syntax-check playbook.yaml</span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试运行</span></span><br><span class="line">ansible-playbook -C playbook.yaml</span><br><span class="line"></span><br><span class="line"><span class="comment"># 实际运行</span></span><br><span class="line">ansible-playbook playbook.yaml</span><br></pre></td></tr></table></figure>
-<h3 id="示例">示例</h3>
-<h4 id="1-添加用户和组">1. 添加用户和组</h4>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">-</span> <span class="attr">hosts:</span> <span class="string">all</span></span><br><span class="line">  <span class="attr">remote_user:</span> <span class="string">root</span></span><br><span class="line">  <span class="attr">tasks:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">add</span> <span class="string">a</span> <span class="string">group</span></span><br><span class="line">      <span class="attr">group:</span> <span class="string">name=test</span> <span class="string">system=test</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">add</span> <span class="string">a</span> <span class="string">user</span></span><br><span class="line">      <span class="attr">user:</span> <span class="string">name=test</span> <span class="string">group=test</span> <span class="string">system=true</span></span><br></pre></td></tr></table></figure>
-<h4 id="2-配置HTTP服务">2. 配置HTTP服务</h4>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">-</span> <span class="attr">hosts:</span> <span class="string">hosts</span></span><br><span class="line">  <span class="attr">remote_user:</span> <span class="string">root</span></span><br><span class="line">  <span class="attr">tasks:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">install</span> <span class="string">http</span></span><br><span class="line">      <span class="attr">yum:</span> <span class="string">name=httpd</span> <span class="string">state=latest</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">install</span> <span class="string">conf</span></span><br><span class="line">      <span class="attr">copy:</span> <span class="string">src=/root/httpd.conf</span> <span class="string">dest=/etc/httpd/conf/httpd.conf.bak</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">start</span></span><br><span class="line">      <span class="attr">service:</span> <span class="string">name=httpd</span> <span class="string">state=reloaded</span> <span class="string">enabled=true</span></span><br></pre></td></tr></table></figure>
-<h2 id="更多模块">更多模块</h2>
-<ul>
-<li><code>synchronize</code>: 使用rsync同步文件</li>
-<li><code>raw</code>: 直接执行命令(类似shell)</li>
-</ul>
-<h2 id="模块帮助">模块帮助</h2>
-<pre><code class="language-bash"># 列出所有模块
-ansible-doc -l
-
-# 查看模块帮助
-ansible-doc -s MOD_NAME
-</code></pre>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../../../../2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-hands-on/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../../../../2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E6%A6%82%E5%BF%B5/"
-                            aria-label=": ansible教程-概念"
-                        >
-                            ansible教程-概念
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2025-05-22T18:20:08+08:00">
-	
-		    2025 年 5 月 22 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../../../../categories/devops/">devops</a>, <a class="category-link" href="../../../../../categories/devops/ansible/">ansible</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h2 id="Ansible-概念">Ansible 概念</h2>
-<p>这些概念适用于 Ansible 的所有用途。在使用 Ansible 或阅读文档之前，您应该了解它们。</p>
-<ul>
-<li>
-<p>[控制节点]</p>
-</li>
-<li>
-<p>[被管理节点]</p>
-</li>
-<li>
-<p>[清单]</p>
-</li>
-<li>
-<p>[剧本]</p>
-<ul>
-<li>
-<p>[剧集]</p>
-<ul>
-<li>
-<p>[角色]</p>
-</li>
-<li>
-<p>[任务]</p>
-</li>
-<li>
-<p>[处理器]</p>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<p>[模块]</p>
-</li>
-<li>
-<p>[插件]</p>
-</li>
-<li>
-<p>[集合]</p>
-</li>
-</ul>
-<h2 id="控制节点">[控制节点]</h2>
-<p>运行 Ansible CLI 工具（<code>ansible-playbook</code>、<code>ansible</code>、<code>ansible-vault</code> 等）的机器。您可以使用任何满足软件要求的计算机作为控制节点——笔记本电脑、共享桌面和服务器都可以运行 Ansible。您也可以在称为<a target="_blank" rel="noopener" href="https://docs.ansible.org.cn/ansible/latest/getting_started_ee/index.html#getting-started-ee-index">执行环境</a>的容器中运行 Ansible。</p>
-<p>可以使用多个控制节点，但 Ansible 本身并不协调它们之间的工作，有关此类功能，请参见<code>AAP</code>。</p>
-<h2 id="被管理节点">[被管理节点]</h2>
-<p>也称为“主机”，这些是您旨在用 Ansible 管理的目标设备（服务器、网络设备或任何计算机）。</p>
-<p>除非您使用<code>ansible-pull</code>，否则通常不会在被管理节点上安装 Ansible，但这很少见，也不是推荐的设置。</p>
-<h2 id="清单">[清单]</h2>
-<p>由一个或多个“清单源”提供的被管理节点列表。您的清单可以指定每个节点的特定信息，例如 IP 地址。它还用于分配组，这既允许在剧集中选择节点，也允许批量分配变量。</p>
-<p>要了解有关清单的更多信息，请参阅<a target="_blank" rel="noopener" href="https://docs.ansible.org.cn/ansible/latest/inventory_guide/intro_inventory.html#intro-inventory">使用清单</a>部分。有时，清单源文件也称为“主机文件”。</p>
-<h2 id="剧本">[剧本]</h2>
-<p>它们包含剧集（这是 Ansible 执行的基本单元）。这既是“执行概念”，也是我们用来描述<code>ansible-playbook</code>操作的文件的方式。</p>
-<p>剧本是用 YAML 编写的，易于阅读、编写、共享和理解。要了解有关剧本的更多信息，请参阅<a target="_blank" rel="noopener" href="https://docs.ansible.org.cn/ansible/latest/playbook_guide/playbooks_intro.html#about-playbooks">Ansible 剧本</a>。</p>
-<h3 id="剧集">[剧集]</h3>
-<p>Ansible 执行的主要上下文，此剧本对象将被管理节点（主机）映射到任务。剧集包含变量、角色和已排序的任务列表，并且可以重复运行。它基本上由对映射的主机和任务的隐式循环组成，并定义如何迭代它们。</p>
-<h4 id="角色">[角色]</h4>
-<p>可在剧集内部使用的可重用 Ansible 内容（任务、处理器、变量、插件、模板和文件）的有限分发。</p>
-<p>要使用任何角色资源，必须将角色本身导入剧集。</p>
-<h4 id="任务">[任务]</h4>
-<p>应用于被管理主机的“操作”的定义。您可以使用<code>ansible</code>或<code>ansible-console</code>（两者都会创建一个虚拟剧集）一次执行单个任务。</p>
-<h4 id="处理器">[处理器]</h4>
-<p>任务的一种特殊形式，仅在之前的任务发出通知并且导致“已更改”状态时才执行。</p>
-<h2 id="模块">[模块]</h2>
-<p>Ansible 复制到并在每个被管理节点上执行（如有需要）的代码或二进制文件，以完成每个任务中定义的操作。</p>
-<p>每个模块都有其特定的用途，从管理特定类型数据库上的用户到管理特定类型网络设备上的 VLAN 接口。</p>
-<p>您可以使用任务调用单个模块，也可以在剧本中调用多个不同的模块。Ansible 模块分组在集合中。要了解 Ansible 包含多少集合，请参阅<a target="_blank" rel="noopener" href="https://docs.ansible.org.cn/ansible/latest/collections/index.html#list-of-collections">集合索引</a>。</p>
-<h2 id="插件">[插件]</h2>
-<p>扩展 Ansible 核心功能的代码片段。插件可以控制您如何连接到被管理节点（连接插件）、操作数据（过滤器插件），甚至控制在控制台中显示的内容（回调插件）。</p>
-<p>有关详细信息，请参阅<a target="_blank" rel="noopener" href="https://docs.ansible.org.cn/ansible/latest/plugins/plugins.html#working-with-plugins">使用插件</a>。</p>
-<h2 id="集合">[集合]</h2>
-<p>Ansible 内容的分发格式，可以包含剧本、角色、模块和插件。您可以通过<a target="_blank" rel="noopener" href="https://galaxy.ansible.com/">Ansible Galaxy</a>安装和使用集合。</p>
-<p>要了解有关集合的更多信息，请参阅<a target="_blank" rel="noopener" href="https://docs.ansible.org.cn/ansible/latest/collections_guide/index.html#collections">使用 Ansible 集合</a>。</p>
-<p>集合资源可以彼此独立且离散地使用。</p>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../../../../2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E6%A6%82%E5%BF%B5/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../../../../2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/"
-                            aria-label=": ansible教程-入门篇"
-                        >
-                            ansible教程-入门篇
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2025-05-22T17:52:27+08:00">
-	
-		    2025 年 5 月 22 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../../../../categories/devops/">devops</a>, <a class="category-link" href="../../../../../categories/devops/ansible/">ansible</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h2 id="Ansible-简介">Ansible 简介</h2>
-<p>Ansible 提供开源自动化，可降低复杂性并在任何地方运行。使用 Ansible 可以自动执行几乎任何任务。以下是 Ansible 的一些常见用例</p>
-<ul>
-<li>
-<p>消除重复并简化工作流程</p>
-</li>
-<li>
-<p>管理和维护系统配置</p>
-</li>
-<li>
-<p>持续部署复杂的软件</p>
-</li>
-<li>
-<p>执行零停机滚动更新</p>
-</li>
-</ul>
-<p>Ansible 使用简单的、人类可读的脚本（称为剧本）来自动化您的任务。您在剧本中声明本地或远程系统的期望状态。Ansible 确保系统保持在该状态。</p>
-<p>作为自动化技术，Ansible 围绕以下原则设计</p>
-<p>无代理架构</p>
-<p>通过避免在 IT 基础设施上安装额外软件来降低维护开销。</p>
-<p>简单性</p>
-<p>自动化剧本使用简单的 YAML 语法，代码就像文档一样易于阅读。Ansible 也是分散式的，使用 SSH 和现有的操作系统凭据来访问远程机器。</p>
-<p>可扩展性和灵活性</p>
-<p>通过模块化设计轻松快速地扩展您自动化的系统，该设计支持各种操作系统、云平台和网络设备。</p>
-<p>幂等性和可预测性</p>
-<p>当系统处于您的剧本描述的状态时，即使多次运行剧本，Ansible 也不会更改任何内容。</p>
-<h2 id="使用-Ansible-开始自动化">使用 Ansible 开始自动化</h2>
-<p>通过创建自动化项目、构建清单和创建“Hello World”剧本开始使用 Ansible。</p>
-<ol>
-<li>
-<p>安装 Ansible。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install ansible</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>在您的文件系统上创建一个项目文件夹。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir ansible_quickstart &amp;&amp; cd ansible_quickstart</span><br></pre></td></tr></table></figure>
-<p>使用单一目录结构可以更轻松地添加到源代码管理，以及重用和共享自动化内容。</p>
-</li>
-</ol>
-<h2 id="构建清单">构建清单</h2>
-<p>清单将受管节点组织在集中式文件中，这些文件为 Ansible 提供系统信息和网络位置。使用清单文件，Ansible 可以使用单个命令管理大量主机。</p>
-<p>要完成以下步骤，您需要至少一个主机系统的 IP 地址或完全限定域名 (FQDN)。出于演示目的，主机可以在容器或虚拟机中本地运行。您还必须确保您的公共 SSH 密钥已添加到每个主机上的 <code>authorized_keys</code> 文件中。</p>
-<p>继续 Ansible 入门并按如下步骤构建清单</p>
-<ol>
-<li>
-<p>在您在 上一步中创建的 <code>ansible_quickstart</code> 目录中创建一个名为 <code>inventory.ini</code> 的文件。</p>
-</li>
-<li>
-<p>向 <code>inventory.ini</code> 文件添加一个新的 <code>[myhosts]</code> 组，并指定每个主机系统的 IP 地址或完全限定域名 (FQDN)。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[myhosts]</span><br><span class="line">192.0.2.50</span><br><span class="line">192.0.2.51</span><br><span class="line">192.0.2.52</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>验证您的清单。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible-inventory -i inventory.ini --list</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>Ping 清单中的 <code>myhosts</code> 组。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible myhosts -m ping -i inventory.ini</span><br></pre></td></tr></table></figure>
-<p>注意</p>
-<p>如果控制节点和受管节点上的用户名不同，请使用 <code>ansible</code> 命令传递 <code>-u</code> 选项。</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">192.0.2.50 | SUCCESS =&gt; &#123;</span><br><span class="line">    &quot;ansible_facts&quot;: &#123;</span><br><span class="line">        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python3&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;changed&quot;: false,</span><br><span class="line">    &quot;ping&quot;: &quot;pong&quot;</span><br><span class="line">&#125;</span><br><span class="line">192.0.2.51 | SUCCESS =&gt; &#123;</span><br><span class="line">    &quot;ansible_facts&quot;: &#123;</span><br><span class="line">        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python3&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;changed&quot;: false,</span><br><span class="line">    &quot;ping&quot;: &quot;pong&quot;</span><br><span class="line">&#125;</span><br><span class="line">192.0.2.52 | SUCCESS =&gt; &#123;</span><br><span class="line">    &quot;ansible_facts&quot;: &#123;</span><br><span class="line">        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python3&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;changed&quot;: false,</span><br><span class="line">    &quot;ping&quot;: &quot;pong&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<h2 id="INI-或-YAML-格式的清单">INI 或 YAML 格式的清单</h2>
-<p>您可以使用 <code>INI</code> 文件或 <code>YAML</code> 创建清单。在大多数情况下，例如上一步中的示例，对于少量受管节点，<code>INI</code> 文件简单易读。</p>
-<p>随着受管节点数量的增加，使用 <code>YAML</code> 格式创建清单变得更合理。例如，以下是 <code>inventory.ini</code> 的等效项，它声明受管节点的唯一名称并使用 <code>ansible_host</code> 字段</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">myhosts:</span></span><br><span class="line">  <span class="attr">hosts:</span></span><br><span class="line">    <span class="attr">my_host_01:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.50</span></span><br><span class="line">    <span class="attr">my_host_02:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.51</span></span><br><span class="line">    <span class="attr">my_host_03:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.52</span></span><br></pre></td></tr></table></figure>
-<h2 id="构建清单的技巧">构建清单的技巧</h2>
-<ul>
-<li>
-<p>确保组名有意义且唯一。组名也区分大小写。</p>
-</li>
-<li>
-<p>避免在组名中使用空格、连字符和前导数字（使用 <code>floor_19</code>，而不是 <code>19th_floor</code>）。</p>
-</li>
-<li>
-<p>根据主机的**什么**、**哪里**和**何时**逻辑地将主机分组到您的清单中。</p>
-<p>什么</p>
-<p>根据拓扑结构对主机分组，例如：db、web、leaf、spine。</p>
-<p>哪里</p>
-<p>按地理位置对主机分组，例如：数据中心、区域、楼层、建筑物。</p>
-<p>何时</p>
-<p>按阶段对主机分组，例如：开发、测试、过渡、生产。</p>
-</li>
-</ul>
-<h3 id="使用元组">使用元组</h3>
-<p>使用以下语法创建一个元组来组织清单中的多个组</p>
-<p>以下清单说明了数据中心的结构基础。此示例清单包含一个 <code>network</code> 元组，其中包括所有网络设备，以及一个 <code>datacenter</code> 元组，其中包括 <code>network</code> 组和所有 Web 服务器。</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">leafs:</span></span><br><span class="line">  <span class="attr">hosts:</span></span><br><span class="line">    <span class="attr">leaf01:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.100</span></span><br><span class="line">    <span class="attr">leaf02:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.110</span></span><br><span class="line"></span><br><span class="line"><span class="attr">spines:</span></span><br><span class="line">  <span class="attr">hosts:</span></span><br><span class="line">    <span class="attr">spine01:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.120</span></span><br><span class="line">    <span class="attr">spine02:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.130</span></span><br><span class="line"></span><br><span class="line"><span class="attr">network:</span></span><br><span class="line">  <span class="attr">children:</span></span><br><span class="line">    <span class="attr">leafs:</span></span><br><span class="line">    <span class="attr">spines:</span></span><br><span class="line"></span><br><span class="line"><span class="attr">webservers:</span></span><br><span class="line">  <span class="attr">hosts:</span></span><br><span class="line">    <span class="attr">webserver01:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.140</span></span><br><span class="line">    <span class="attr">webserver02:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.150</span></span><br><span class="line"></span><br><span class="line"><span class="attr">datacenter:</span></span><br><span class="line">  <span class="attr">children:</span></span><br><span class="line">    <span class="attr">network:</span></span><br><span class="line">    <span class="attr">webservers:</span></span><br></pre></td></tr></table></figure>
-<h3 id="创建变量">创建变量</h3>
-<p>变量设置受管节点的值，例如 IP 地址、FQDN、操作系统和 SSH 用户，因此您无需在运行 Ansible 命令时传递它们。</p>
-<p>变量可以应用于特定主机。</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">webservers:</span></span><br><span class="line">  <span class="attr">hosts:</span></span><br><span class="line">    <span class="attr">webserver01:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.140</span></span><br><span class="line">      <span class="attr">http_port:</span> <span class="number">80</span></span><br><span class="line">    <span class="attr">webserver02:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.150</span></span><br><span class="line">      <span class="attr">http_port:</span> <span class="number">443</span></span><br></pre></td></tr></table></figure>
-<p>变量也可以应用于组中的所有主机。</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">webservers:</span></span><br><span class="line">  <span class="attr">hosts:</span></span><br><span class="line">    <span class="attr">webserver01:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.140</span></span><br><span class="line">      <span class="attr">http_port:</span> <span class="number">80</span></span><br><span class="line">    <span class="attr">webserver02:</span></span><br><span class="line">      <span class="attr">ansible_host:</span> <span class="number">192.0</span><span class="number">.2</span><span class="number">.150</span></span><br><span class="line">      <span class="attr">http_port:</span> <span class="number">443</span></span><br><span class="line">  <span class="attr">vars:</span></span><br><span class="line">    <span class="attr">ansible_user:</span> <span class="string">my_server_user</span></span><br></pre></td></tr></table></figure>
-<hr>
-<h2 id="创建剧本">创建剧本</h2>
-<p>剧本是 Ansible 用于部署和配置受管节点的自动化蓝图，采用 <code>YAML</code> 格式。</p>
-<p>剧本</p>
-<p>一系列定义 Ansible 执行操作顺序的剧目，自上而下，以实现总体目标。</p>
-<p>剧目</p>
-<p>一个有序的任务列表，映射到清单中的受管节点。</p>
-<p>任务</p>
-<p>对单个模块的引用，定义 Ansible 执行的操作。</p>
-<p>模块</p>
-<p>Ansible 在受管节点上运行的代码或二进制单元。Ansible 模块按集合分组，每个模块都有一个<a target="_blank" rel="noopener" href="https://docs.ansible.org.cn/ansible/latest/reference_appendices/glossary.html#term-Fully-Qualified-Collection-Name-FQCN">完全限定的集合名称 (FQCN)</a>。</p>
-<p>完成以下步骤以创建用于 ping 主机并打印“Hello world”消息的剧本</p>
-<ol>
-<li>
-<p>在您之前创建的 <code>ansible_quickstart</code> 目录中创建一个名为 <code>playbook.yaml</code> 的文件，内容如下：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">My</span> <span class="string">first</span> <span class="string">play</span></span><br><span class="line">  <span class="attr">hosts:</span> <span class="string">myhosts</span></span><br><span class="line">  <span class="attr">tasks:</span></span><br><span class="line">   <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Ping</span> <span class="string">my</span> <span class="string">hosts</span></span><br><span class="line">     <span class="attr">ansible.builtin.ping:</span></span><br><span class="line"></span><br><span class="line">   <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Print</span> <span class="string">message</span></span><br><span class="line">     <span class="attr">ansible.builtin.debug:</span></span><br><span class="line">       <span class="attr">msg:</span> <span class="string">Hello</span> <span class="string">world</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>运行您的剧本。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible-playbook -i inventory.ini playbook.yaml</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<p>Ansible 返回以下输出</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">PLAY [My first play] ****************************************************************************</span><br><span class="line"></span><br><span class="line">TASK [Gathering Facts] **************************************************************************</span><br><span class="line">ok: [192.0.2.50]</span><br><span class="line">ok: [192.0.2.51]</span><br><span class="line">ok: [192.0.2.52]</span><br><span class="line"></span><br><span class="line">TASK [Ping my hosts] ****************************************************************************</span><br><span class="line">ok: [192.0.2.50]</span><br><span class="line">ok: [192.0.2.51]</span><br><span class="line">ok: [192.0.2.52]</span><br><span class="line"></span><br><span class="line">TASK [Print message] ****************************************************************************</span><br><span class="line">ok: [192.0.2.50] =&gt; &#123;</span><br><span class="line">    &quot;msg&quot;: &quot;Hello world&quot;</span><br><span class="line">&#125;</span><br><span class="line">ok: [192.0.2.51] =&gt; &#123;</span><br><span class="line">    &quot;msg&quot;: &quot;Hello world&quot;</span><br><span class="line">&#125;</span><br><span class="line">ok: [192.0.2.52] =&gt; &#123;</span><br><span class="line">    &quot;msg&quot;: &quot;Hello world&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">PLAY RECAP **************************************************************************************</span><br><span class="line">192.0.2.50: ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0</span><br><span class="line">192.0.2.51: ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0</span><br><span class="line">192.0.2.52: ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0</span><br></pre></td></tr></table></figure>
-<p>在此输出中，您可以看到</p>
-<ul>
-<li>
-<p>您为剧目和每个任务指定的名称。您应始终使用易于验证和排查剧本问题的描述性名称。</p>
-</li>
-<li>
-<p>“收集事实”任务隐式运行。默认情况下，Ansible 会收集有关您的清单的信息，以便在剧本中使用。</p>
-</li>
-<li>
-<p>每个任务的状态。每个任务的状态为 <code>ok</code>，表示它已成功运行。</p>
-</li>
-<li>
-<p>剧目摘要，总结了每个主机上所有任务的结果。在此示例中，共有三个任务，因此 <code>ok=3</code> 表示每个任务都已成功运行。</p>
-</li>
-</ul>
-<p>恭喜，您已开始使用 Ansible！</p>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../../../../2025/05/22/ansible/ansible%E6%95%99%E7%A8%8B-%E5%85%A5%E9%97%A8%E7%AF%87/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
                             href="../../../../../2025/05/21/cheat-sheet/pandas-cheat-sheet/"
                             aria-label=": pandas cheat sheet"
                         >
@@ -4714,7 +3548,7 @@ ansible-doc -s MOD_NAME
     
         <span>分類 </span>
         
-    <a class="category-link" href="../../../../../categories/data/">data</a>, <a class="category-link" href="../../../../../categories/data/python/">python</a>, <a class="category-link" href="../../../../../categories/data/python/pandas/">pandas</a>
+    <a class="category-link" href="../../../../../categories/%E6%95%B0%E6%8D%AE/">数据</a>, <a class="category-link" href="../../../../../categories/%E6%95%B0%E6%8D%AE/python/">python</a>, <a class="category-link" href="../../../../../categories/%E6%95%B0%E6%8D%AE/python/pandas/">pandas</a>
 
 
     
@@ -4755,6 +3589,277 @@ ansible-doc -s MOD_NAME
         
     </article>
     
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../../../../2025/05/21/cheat-sheet/spring-framework-cheat-sheet/"
+                            aria-label=": spring-framework cheat sheet"
+                        >
+                            spring-framework cheat sheet
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2025-05-21T00:02:55+08:00">
+	
+		    2025 年 5 月 21 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Java/">Java</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Java/spring-framework-4/">spring-framework-4</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h3 id="java">java:</h3>
+
+
+	<div class="row">
+    <embed src="/assets/pdf/spring-framework-4-cheat-sheet.pdf" width="100%" height="550" type="application/pdf">
+	</div>
+
+
+
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../../../2025/05/21/cheat-sheet/spring-framework-cheat-sheet/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../../../../2025/05/21/cheat-sheet/java-fundamentals-cheat-sheet/"
+                            aria-label=": java fundamentals cheat sheet"
+                        >
+                            java fundamentals cheat sheet
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2025-05-21T00:01:18+08:00">
+	
+		    2025 年 5 月 21 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Java/">Java</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h3 id="java">java:</h3>
+
+
+	<div class="row">
+    <embed src="/assets/pdf/java-fundamentals-cheat-sheet.pdf" width="100%" height="550" type="application/pdf">
+	</div>
+
+
+
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../../../2025/05/21/cheat-sheet/java-fundamentals-cheat-sheet/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../../../../2025/05/20/cheat-sheet/postgresql-cheat-sheet/"
+                            aria-label=": postgresql cheat sheet"
+                        >
+                            postgresql cheat sheet
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2025-05-20T23:49:43+08:00">
+	
+		    2025 年 5 月 20 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/database/">database</a>, <a class="category-link" href="../../../../../categories/database/postgresql/">postgresql</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h3 id="postgresql">postgresql:</h3>
+
+
+	<div class="row">
+    <embed src="/assets/pdf/postgresql-cheat-sheet.pdf" width="100%" height="550" type="application/pdf">
+	</div>
+
+
+
+
+
+	<div class="row">
+    <embed src="/assets/pdf/postgresql-cheat-sheet2.pdf" width="100%" height="550" type="application/pdf">
+	</div>
+
+
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../../../2025/05/20/cheat-sheet/postgresql-cheat-sheet/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../../../../2025/05/20/cheat-sheet/django-cheat-sheet/"
+                            aria-label=": django cheat sheet"
+                        >
+                            django cheat sheet
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2025-05-20T23:48:46+08:00">
+	
+		    2025 年 5 月 20 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E6%9C%8D%E5%8A%A1%E7%AB%AF/">服务端</a>, <a class="category-link" href="../../../../../categories/%E6%9C%8D%E5%8A%A1%E7%AB%AF/python/">python</a>, <a class="category-link" href="../../../../../categories/%E6%9C%8D%E5%8A%A1%E7%AB%AF/python/django/">django</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h3 id="django">django:</h3>
+
+
+	<div class="row">
+    <embed src="/assets/pdf/django-cheat-sheet.pdf" width="100%" height="550" type="application/pdf">
+	</div>
+
+
+
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../../../2025/05/20/cheat-sheet/django-cheat-sheet/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -4781,7 +3886,7 @@ ansible-doc -s MOD_NAME
             </a>
           </li>
         
-        <li class="pagination-number">第 5 頁 共 7 頁</li>
+        <li class="pagination-number">第 5 頁 共 6 頁</li>
     </ul>
 </div>
 
@@ -5093,7 +4198,7 @@ ansible-doc -s MOD_NAME
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 137 篇文章
+                找到 198 篇文章
             </p>
         </div>
     </div>

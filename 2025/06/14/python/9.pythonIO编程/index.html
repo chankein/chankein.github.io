@@ -1,0 +1,1180 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>9.pythonIO编程 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"IO在计算机中指Input/Output，也就是输入和输出。由于程序和运行时数据是在内存中驻留，由CPU这个超快的计算核心来执行，涉及到数据交换的地方，通常是磁盘、网络等，就需要IO接口。\n比如你打开浏览器，访问新浪首页，浏览器这个程序就需要通过网络IO获取新浪的网页。浏览器首先会发送数据给新浪服务器，告诉它我想要首页的HTML，这个动作是往外发数据，叫Output，随后新浪服务器把网页发过来，这个动作是从外面接收数据，叫Input。所以，通常，程序完成IO操作会有Input和Output两个数据流。当然也有只用一个的情况，比如，从磁盘读取文件到内存，就只有Input操作，反过来，把数据写到磁盘文件里，就只是一个Output操作。\nIO编程中，Stream（流）是一个很重要的概念，可以把流想象成一个水管，数据就是水管里的水，但是只能单向流动。Input Stream就是数据从外面（磁盘、网络）流进内存，Output Stream就是数据从内存流到外面去。对于浏览网页来说，浏览器和新浪服务器之间至少需要建立两根水管，才可以既能发数据，又能收数据。\n由于CPU和内存的速度远远高于外设的速度，所以，在IO编程中，就存在速度严重不匹配的问题。举个例子来说，比如要把100M的数据写入磁盘，CPU输出100M的数据只需要0.01秒，可是磁盘要接收这100M数据可能需要10秒，怎么办呢？有两种办法：\n第一种是CPU等着，也就是程序暂停执行后续代码，等100M的数据在10秒后写入磁盘，再接着往下执行，这种模式称为同步IO；\n另一种方法是CPU不等待，只是告诉磁盘，“您老慢慢写，不着急，我接着干别的事去了”，于是，后续代码可以立刻接着执行，这种模式称为异步IO。\n同步和异步的区别就在于是否等待IO执行的结果。好比你去麦当劳点餐，你说“来个汉堡”，服务员告诉你，对不起，汉堡要现做，需要等5分钟，于是你站在收银台前面等了5分钟，拿到汉堡再去逛商场，这是同步IO。\n你说“来个汉堡”，服务员告诉你，汉堡需要等5分钟，你可以先去逛商场，等做好了，我们再通知你，这样你可以立刻去干别的事情（逛商场），这是异步IO。\n很明显，使用异步IO来编写程序性能会远远高于同步IO，但是异步IO的缺点是编程模型复杂。想想看，你得知道什么时候通知你“汉堡做好了”，而通知你的方法也各不相同。如果是服务员跑过来找到你，这是回调模式，如果服务员发短信通知你，你就得不停地检查手机，这是轮询模式。总之，异步IO的复杂度远远高于同步IO。\n操作IO的能力都是由操作系统提供的，每一种编程语言都会把操作系统提供的低级C接口封装起来方便使用，Python也不例外。我们后面会详细讨论Python的IO编程接口。\n注意，本章的IO编程都是同步模式，异步IO由于复杂度太高，后续涉及到服务器端程序开发时我们再讨论。\n读写文件是最常见的IO操作。Python内置了读写文件的函数，用法和C是兼容的。\n读写文件前，我们先必须了解一下，在磁盘上读写文件的功能都是由操作系统提供的，现代操作系统不允许普通的程序直接操作磁盘，所以，读写文件就是请求操作系统打开一个文件对象（通常称为文件描述符），然后，通过操作系统提供的接口从这个文件对象中读取数据（读文件），或者把数据写入这个文件对象（写文件）。\n读文件\n要以读文件的模式打开一个文件对象，使用Python内置的open()函数，传入文件名和标示符：\n1&gt;&gt;&gt; f = open(&#x27;/Users/michael/test.txt&#x27;, &#x27;r&#x27;)\n标示符'r'表示读，这样，我们就成功地打开了一个文件。\n如果文件不存在，open()函数就会抛出一个IOError的错误，并且给出错误码和详细的信息告诉你文件不存在：\n1234&gt;&gt;&gt; f=open(&#x27;/Users/michael/notfound.txt&#x27;, &#x27;r&#x27;)Traceback (most recent call last):  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;FileNotFoundError: [Errno 2] No such file or directory: &#x27;/Users/michael/notfound.txt&#x27;\n如果文件打开成功，接下来，调用read()方法可以一次读取文件的全部内容，Python把内容读到内存，用一个str对象表示：\n12&gt;&gt;&gt; f.read()&#x27;Hello, world!&#x27;\n最后一步是调用close()方法关闭文件。文件使用完毕后必须关闭，因为文件对象会占用操作系统的资源，并且操作系统同一时间能打开的文件数量也是有限的：\n1&gt;&gt;&gt; f.close()\n由于文件读写时都有可能产生IOError，一旦出错，后面的f.close()就不会调用。所以，为了保证无论是否出错都能正确地关闭文件，我们可以使用try ... finally来实现：\n123456try:    f = open(&#x27;/path/to/file&#x27;, &#x27;r&#x27;)    print(f.read())finally:    if f:        f.close()\n但是每次都这么写实在太繁琐，所以，Python引入了with语句来自动帮我们调用close()方法：\n12with open(&#x27;/path/to/file&#x27;, &#x27;r&#x27;) as f:    print(f.read())\n这和前面的try ... finally是一样的，但是代码更佳简洁，并且不必调用f.close()方法。\n调用read()会一次性读取文件的全部内容，如果文件有10G，内存就爆了，所以，要保险起见，可以反复调用read(size)方法，每次最多读取size个字节的内容。另外，调用readline()可以每次读取一行内容，调用readlines()一次读取所有内容并按行返回list。因此，要根据需要决定怎么调用。\n如果文件很小，read()一次性读取最方便；如果不能确定文件大小，反复调用read(size)比较保险；如果是配置文件，调用readlines()最方便：\n12for line in f.readlines():    print(line.strip()) # 把末尾的&#x27;\\n&#x27;删掉\nfile-like Object\n像open()函数返回的这种有个read()方法的对象，在Python中统称为file-like Object。除了file外，还可以是内存的字节流，网络流，自定义流等等。file-like Object不要求从特定类继承，只要写个read()方法就行。\nStringIO就是在内存中创建的file-like Object，常用作临时缓冲。\n二进制文件\n前面讲的默认都是读取文本文件，并且是UTF-8编码的文本文件。要读取二进制文件，比如图片、视频等等，用'rb'模式打开文件即可：\n123&gt;&gt;&gt; f = open(&#x27;/Users/michael/test.jpg&#x27;, &#x27;rb&#x27;)&gt;&gt;&gt; f.read()b&#x27;\\xff\\xd8\\xff\\xe1\\x00\\x18Exif\\x00\\x00...&#x27; # 十六进制表示的字节\n字符编码\n要读取非UTF-8编码的文本文件，需要给open()函数传入encoding参数，例如，读取GBK编码的文件：\n123&gt;&gt;&gt; f = open(&#x27;/Users/michael/gbk.txt&#x27;, &#x27;r&#x27;, encoding=&#x27;gbk&#x27;)&gt;&gt;&gt; f.read()&#x27;测试&#x27;\n遇到有些编码不规范的文件，你可能会遇到UnicodeDecodeError，因为在文本文件中可能夹杂了一些非法编码的字符。遇到这种情况，open()函数还接收一个errors参数，表示如果遇到编码错误后如何处理。最简单的方式是直接忽略：\n1&gt;&gt;&gt; f = open(&#x27;/Users/michael/gbk.txt&#x27;, &#x27;r&#x27;, encoding=&#x27;gbk&#x27;, errors=&#x27;ignore&#x27;)\n写文件\n写文件和读文件是一样的，唯一区别是调用open()函数时，传入标识符'w'或者'wb'表示写文本文件或写二进制文件：\n123&gt;&gt;&gt; f = open(&#x27;/Users/michael/test.txt&#x27;, &#x27;w&#x27;)&gt;&gt;&gt; f.write(&#x27;Hello, world!&#x27;)&gt;&gt;&gt; f.close()\n你可以反复调用write()来写入文件，但是务必要调用f.close()来关闭文件。当我们写文件时，操作系统往往不会立刻把数据写入磁盘，而是放到内存缓存起来，空闲的时候再慢慢写入。只有调用close()方法时，操作系统才保证把没有写入的数据全部写入磁盘。忘记调用close()的后果是数据可能只写了一部分到磁盘，剩下的丢失了。所以，还是用with语句来得保险：\n12with open(&#x27;/Users/michael/test.txt&#x27;, &#x27;w&#x27;) as f:    f.write(&#x27;Hello, world!&#x27;)\n要写入特定编码的文本文件，请给open()函数传入encoding参数，将字符串自动转换成指定编码。\n细心的童鞋会发现，以'w'模式写入文件时，如果文件已存在，会直接覆盖（相当于删掉后新写入一个文件）。如果我们希望追加到文件末尾怎么办？可以传入'a'以追加（append）模式写入。\n所有模式的定义及含义可以参考Python的官方文档。\n练习\n请将本地一个文本文件读为一个str并打印出来：\n1234567fpath = &#x27;/etc/timezone&#x27;with open(fpath, &#x27;r&#x27;) as f:    s = f.read()    print(s)# 运行代码观察结果\n小结\n在Python中，文件读写是通过open()函数打开的文件对象完成的。使用with语句操作文件IO是个好习惯。\n参考源码\nwith_file.py\nStringIO和BytesIO\nStringIO\n很多时候，数据读写不一定是文件，也可以在内存中读写。\nStringIO顾名思义就是在内存中读写str。\n要把str写入StringIO，我们需要先创建一个StringIO，然后，像文件一样写入即可：\n12345678910&gt;&gt;&gt; from io import StringIO&gt;&gt;&gt; f = StringIO()&gt;&gt;&gt; f.write(&#x27;hello&#x27;)5&gt;&gt;&gt; f.write(&#x27; &#x27;)1&gt;&gt;&gt; f.write(&#x27;world!&#x27;)6&gt;&gt;&gt; print(f.getvalue())hello world!\ngetvalue()方法用于获得写入后的str。\n要读取StringIO，可以用一个str初始化StringIO，然后，像读文件一样读取：\n1234567891011&gt;&gt;&gt; from io import StringIO&gt;&gt;&gt; f = StringIO(&#x27;Hello!\\nHi!\\nGoodbye!&#x27;)&gt;&gt;&gt; while True:...     s = f.readline()...     if s == &#x27;&#x27;:...         break...     print(s.strip())...Hello!Hi!Goodbye!\nBytesIO\nStringIO操作的只能是str，如果要操作二进制数据，就需要使用BytesIO。\nBytesIO实现了在内存中读写bytes，我们创建一个``BytesIO，然后写入一些bytes：\n123456&gt;&gt;&gt; from io import BytesIO&gt;&gt;&gt; f = BytesIO()&gt;&gt;&gt; f.write(&#x27;中文&#x27;.encode(&#x27;utf-8&#x27;))6&gt;&gt;&gt; print(f.getvalue())b&#x27;\\xe4\\xb8\\xad\\xe6\\x96\\x87&#x27;\n请注意，写入的不是str，而是经过UTF-8编码的bytes。\n和StringIO类似，可以用一个bytes初始化BytesIO，然后，像读文件一样读取：\n1234&gt;&gt;&gt; from io import BytesIO&gt;&gt;&gt; f = BytesIO(b&#x27;\\xe4\\xb8\\xad\\xe6\\x96\\x87&#x27;)&gt;&gt;&gt; f.read()b&#x27;\\xe4\\xb8\\xad\\xe6\\x96\\x87&#x27;\n小结\nStringIO和BytesIO是在内存中操作str和bytes的方法，使得和读写文件具有一致的接口。\n参考源码\ndo_stringio.py\ndo_bytesio.py\n\n如果我们要操作文件、目录，可以在命令行下面输入操作系统提供的各种命令来完成。比如dir、cp等命令。\n如果要在Python程序中执行这些目录和文件的操作怎么办？其实操作系统提供的命令只是简单地调用了操作系统提供的接口函数，Python内置的os模块也可以直接调用操作系统提供的接口函数。\n打开Python交互式命令行，我们来看看如何使用os模块的基本功能：\n123&gt;&gt;&gt; import os&gt;&gt;&gt; os.name # 操作系统类型&#x27;posix&#x27;\n如果是posix，说明系统是Linux、Unix或macOS，如果是nt，就是Windows系统。\n要获取详细的系统信息，可以调用uname()函数：\n12&gt;&gt;&gt; os.uname()posix.uname_result(sysname=&#x27;Darwin&#x27;, nodename=&#x27;MichaelMacPro.local&#x27;, release=&#x27;14.3.0&#x27;, version=&#x27;Darwin Kernel Version 14.3.0: Mon Mar 23 11:59:05 PDT 2015; root:xnu-2782.20.48~5/RELEASE_X86_64&#x27;, machine=&#x27;x86_64&#x27;)\n注意uname()函数在Windows上不提供，也就是说，os模块的某些函数是跟操作系统相关的。\n环境变量\n在操作系统中定义的环境变量，全部保存在os.environ这个变量中，可以直接查看：\n12&gt;&gt;&gt; os.environenviron(&#123;&#x27;VERSIONER_PYTHON_PREFER_32_BIT&#x27;: &#x27;no&#x27;, &#x27;TERM_PROGRAM_VERSION&#x27;: &#x27;326&#x27;, &#x27;LOGNAME&#x27;: &#x27;michael&#x27;, &#x27;USER&#x27;: &#x27;michael&#x27;, &#x27;PATH&#x27;: &#x27;/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/X11/bin:/usr/local/mysql/bin&#x27;, ...&#125;)\n要获取某个环境变量的值，可以调用os.environ.get('key')：\n1234&gt;&gt;&gt; os.environ.get(&#x27;PATH&#x27;)&#x27;/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/X11/bin:/usr/local/mysql/bin&#x27;&gt;&gt;&gt; os.environ.get(&#x27;x&#x27;, &#x27;default&#x27;)&#x27;default&#x27;\n操作文件和目录\n操作文件和目录的函数一部分放在os模块中，一部分放在os.path模块中，这一点要注意一下。查看、创建和删除目录可以这么调用：\n12345678910# 查看当前目录的绝对路径:&gt;&gt;&gt; os.path.abspath(&#x27;.&#x27;)&#x27;/Users/michael&#x27;# 在某个目录下创建一个新目录，首先把新目录的完整路径表示出来:&gt;&gt;&gt; os.path.join(&#x27;/Users/michael&#x27;, &#x27;testdir&#x27;)&#x27;/Users/michael/testdir&#x27;# 然后创建一个目录:&gt;&gt;&gt; os.mkdir(&#x27;/Users/michael/testdir&#x27;)# 删掉一个目录:&gt;&gt;&gt; os.rmdir(&#x27;/Users/michael/testdir&#x27;)\n把两个路径合成一个时，不要直接拼字符串，而要通过os.path.join()函数，这样可以正确处理不同操作系统的路径分隔符。在Linux/Unix/Mac下，os.path.join()返回这样的字符串：\n1part-1/part-2\n而Windows下会返回这样的字符串：\n1part-1\\part-2\n同样的道理，要拆分路径时，也不要直接去拆字符串，而要通过os.path.split()函数，这样可以把一个路径拆分为两部分，后一部分总是最后级别的目录或文件名：\n12&gt;&gt;&gt; os.path.split(&#x27;/Users/michael/testdir/file.txt&#x27;)(&#x27;/Users/michael/testdir&#x27;, &#x27;file.txt&#x27;)\nos.path.splitext()可以直接让你得到文件扩展名，很多时候非常方便：\n12&gt;&gt;&gt; os.path.splitext(&#x27;/path/to/file.txt&#x27;)(&#x27;/path/to/file&#x27;, &#x27;.txt&#x27;)\n这些合并、拆分路径的函数并不要求目录和文件要真实存在，它们只对字符串进行操作。\n文件操作使用下面的函数。假定当前目录下有一个test.txt文件：\n1234# 对文件重命名:&gt;&gt;&gt; os.rename(&#x27;test.txt&#x27;, &#x27;test.py&#x27;)# 删掉文件:&gt;&gt;&gt; os.remove(&#x27;test.py&#x27;)\n但是复制文件的函数居然在os模块中不存在！原因是复制文件并非由操作系统提供的系统调用。理论上讲，我们通过上一节的读写文件可以完成文件复制，只不过要多写很多代码。\n幸运的是shutil模块提供了copyfile()的函数，你还可以在shutil模块中找到很多实用函数，它们可以看做是os模块的补充。\n最后看看如何利用Python的特性来过滤文件。比如我们要列出当前目录下的所有目录，只需要一行代码：\n12&gt;&gt;&gt; [x for x in os.listdir(&#x27;.&#x27;) if os.path.isdir(x)][&#x27;.lein&#x27;, &#x27;.local&#x27;, &#x27;.m2&#x27;, &#x27;.npm&#x27;, &#x27;.ssh&#x27;, &#x27;.Trash&#x27;, &#x27;.vim&#x27;, &#x27;Applications&#x27;, &#x27;Desktop&#x27;, ...]\n要列出所有的.py文件，也只需一行代码：\n12&gt;&gt;&gt; [x for x in os.listdir(&#x27;.&#x27;) if os.path.isfile(x) and os.path.splitext(x)[1]==&#x27;.py&#x27;][&#x27;apis.py&#x27;, &#x27;config.py&#x27;, &#x27;models.py&#x27;, &#x27;pymonitor.py&#x27;, &#x27;test_db.py&#x27;, &#x27;urls.py&#x27;, &#x27;wsgiapp.py&#x27;]\n是不是非常简洁？\n小结\nPython的os模块封装了操作系统的目录和文件操作，要注意这些函数有的在os模块中，有的在os.path模块中。\n练习\n\n利用os模块编写一个能实现dir -l输出的程序。\n编写一个程序，能在当前目录以及当前目录的所有子目录下查找文件名包含指定字符串的文件，并打印出相对路径。\n\n参考源码\ndo_dir\n在程序运行的过程中，所有的变量都是在内存中，比如，定义一个dict：\n1d = dict(name=&#x27;Bob&#x27;, age=20, score=88)\n可以随时修改变量，比如把name改成'Bill'，但是一旦程序结束，变量所占用的内存就被操作系统全部回收。如果没有把修改后的'Bill'存储到磁盘上，下次重新运行程序，变量又被初始化为'Bob'。\n我们把变量从内存中变成可存储或传输的过程称之为序列化，在Python中叫pickling，在其他语言中也被称之为serialization，marshalling，flattening等等，都是一个意思。\n序列化之后，就可以把序列化后的内容写入磁盘，或者通过网络传输到别的机器上。\n反过来，把变量内容从序列化的对象重新读到内存里称之为反序列化，即unpickling。\nPython提供了pickle模块来实现序列化。\n首先，我们尝试把一个对象序列化并写入文件：\n1234&gt;&gt;&gt; import pickle&gt;&gt;&gt; d = dict(name=&#x27;Bob&#x27;, age=20, score=88)&gt;&gt;&gt; pickle.dumps(d)b&#x27;\\x80\\x03&#125;q\\x00(X\\x03\\x00\\x00\\x00ageq\\x01K\\x14X\\x05\\x00\\x00\\x00scoreq\\x02KXX\\x04\\x00\\x00\\x00nameq\\x03X\\x03\\x00\\x00\\x00Bobq\\x04u.&#x27;\npickle.dumps()方法把任意对象序列化成一个bytes，然后，就可以把这个bytes写入文件。或者用另一个方法pickle.dump()直接把对象序列化后写入一个file-like Object：\n123&gt;&gt;&gt; f = open(&#x27;dump.txt&#x27;, &#x27;wb&#x27;)&gt;&gt;&gt; pickle.dump(d, f)&gt;&gt;&gt; f.close()\n看看写入的dump.txt文件，一堆乱七八糟的内容，这些都是Python保存的对象内部信息。\n当我们要把对象从磁盘读到内存时，可以先把内容读到一个bytes，然后用pickle.loads()方法反序列化出对象，也可以直接用pickle.load()方法从一个file-like Object中直接反序列化出对象。我们打开另一个Python命令行来反序列化刚才保存的对象：\n12345&gt;&gt;&gt; f = open(&#x27;dump.txt&#x27;, &#x27;rb&#x27;)&gt;&gt;&gt; d = pickle.load(f)&gt;&gt;&gt; f.close()&gt;&gt;&gt; d&#123;&#x27;age&#x27;: 20, &#x27;score&#x27;: 88, &#x27;name&#x27;: &#x27;Bob&#x27;&#125;\n变量的内容又回来了！\n当然，这个变量和原来的变量是完全不相干的对象，它们只是内容相同而已。\nPickle的问题和所有其他编程语言特有的序列化问题一样，就是它只能用于Python，并且可能不同版本的Python彼此都不兼容，因此，只能用Pickle保存那些不重要的数据，不能成功地反序列化也没关系。\nJSON\n如果我们要在不同的编程语言之间传递对象，就必须把对象序列化为标准格式，比如XML，但更好的方法是序列化为JSON，因为JSON表示出来就是一个字符串，可以被所有语言读取，也可以方便地存储到磁盘或者通过网络传输。JSON不仅是标准格式，并且比XML更快，而且可以直接在Web页面中读取，非常方便。\nJSON表示的对象就是标准的JavaScript语言的对象，JSON和Python内置的数据类型对应如下：\n\n\n\nJSON类型\nPython类型\n\n\n\n\n{}\ndict\n\n\n[]\nlist\n\n\n“string”\nstr\n\n\n1234.56\nint或float\n\n\ntrue/false\nTrue/False\n\n\nnull\nNone\n\n\n\nPython内置的json模块提供了非常完善的Python对象到JSON格式的转换。我们先看看如何把Python对象变成一个JSON：\n1234&gt;&gt;&gt; import json&gt;&gt;&gt; d = dict(name=&#x27;Bob&#x27;, age=20, score=88)&gt;&gt;&gt; json.dumps(d)&#x27;&#123;&quot;age&quot;: 20, &quot;score&quot;: 88, &quot;name&quot;: &quot;Bob&quot;&#125;&#x27;\ndumps()方法返回一个str，内容就是标准的JSON。类似的，dump()方法可以直接把JSON写入一个file-like Object。\n要把JSON反序列化为Python对象，用loads()或者对应的load()方法，前者把JSON的字符串反序列化，后者从file-like Object中读取字符串并反序列化：\n123&gt;&gt;&gt; json_str = &#x27;&#123;&quot;age&quot;: 20, &quot;score&quot;: 88, &quot;name&quot;: &quot;Bob&quot;&#125;&#x27;&gt;&gt;&gt; json.loads(json_str)&#123;&#x27;age&#x27;: 20, &#x27;score&#x27;: 88, &#x27;name&#x27;: &#x27;Bob&#x27;&#125;\n由于JSON标准规定JSON编码是UTF-8，所以我们总是能正确地在Python的str与JSON的字符串之间转换。\nJSON进阶\nPython的dict对象可以直接序列化为JSON的&#123;&#125;，不过，很多时候，我们更喜欢用class表示对象，比如定义Student类，然后序列化：\n12345678910import jsonclass Student(object):    def __init__(self, name, age, score):        self.name = name        self.age = age        self.score = scores = Student(&#x27;Bob&#x27;, 20, 88)print(json.dumps(s))\n运行代码，毫不留情地得到一个TypeError：\n123Traceback (most recent call last):  ...TypeError: &lt;__main__.Student object at 0x10603cc50&gt; is not JSON serializable\n错误的原因是Student对象不是一个可序列化为JSON的对象。\n如果连class的实例对象都无法序列化为JSON，这肯定不合理！\n别急，我们仔细看看dumps()方法的参数列表，可以发现，除了第一个必须的obj参数外，dumps()方法还提供了一大堆的可选参数：\nhttps://docs.python.org/3/library/json.html#json.dumps\n这些可选参数就是让我们来定制JSON序列化。前面的代码之所以无法把Student类实例序列化为JSON，是因为默认情况下，dumps()方法不知道如何将Student实例变为一个JSON的&#123;&#125;对象。\n可选参数default就是把任意一个对象变成一个可序列为JSON的对象，我们只需要为Student专门写一个转换函数，再把函数传进去即可：\n123456def student2dict(std):    return &#123;        &#x27;name&#x27;: std.name,        &#x27;age&#x27;: std.age,        &#x27;score&#x27;: std.score    &#125;\n这样，Student实例首先被student2dict()函数转换成dict，然后再被顺利序列化为JSON：\n12&gt;&gt;&gt; print(json.dumps(s, default=student2dict))&#123;&quot;age&quot;: 20, &quot;name&quot;: &quot;Bob&quot;, &quot;score&quot;: 88&#125;\n不过，下次如果遇到一个Teacher类的实例，照样无法序列化为JSON。我们可以偷个懒，把任意class的实例变为dict：\n1print(json.dumps(s, default=lambda obj: obj.__dict__))\n因为通常class的实例都有一个__dict__属性，它就是一个dict，用来存储实例变量。也有少数例外，比如定义了__slots__的class。\n同样的道理，如果我们要把JSON反序列化为一个Student对象实例，loads()方法首先转换出一个dict对象，然后，我们传入的object_hook函数负责把dict转换为Student实例：\n12def dict2student(d):    return Student(d[&#x27;name&#x27;], d[&#x27;age&#x27;], d[&#x27;score&#x27;])\n运行结果如下：\n123&gt;&gt;&gt; json_str = &#x27;&#123;&quot;age&quot;: 20, &quot;score&quot;: 88, &quot;name&quot;: &quot;Bob&quot;&#125;&#x27;&gt;&gt;&gt; print(json.loads(json_str, object_hook=dict2student))&lt;__main__.Student object at 0x10cd3c190&gt;\n打印出的是反序列化的Student实例对象。\n练习\n对中文进行JSON序列化时，json.dumps()提供了一个ensure_ascii参数，观察该参数对结果的影响：\n12345import jsonobj = dict(name=&#x27;小明&#x27;, age=20)s = json.dumps(obj, ensure_ascii=True)print(s)\n小结\nPython语言特定的序列化模块是pickle，但如果要把序列化搞得更通用、更符合Web标准，就可以使用json模块。\njson模块的dumps()和loads()函数是定义得非常好的接口的典范。当我们使用时，只需要传入一个必须的参数。但是，当默认的序列化或反序列机制不满足我们的要求时，我们又可以传入更多的参数来定制序列化或反序列化的规则，既做到了接口简单易用，又做到了充分的扩展性和灵活性。\n参考源码\nuse_pickle.py\nuse_json.py\n","dateCreated":"2025-06-14T23:10:34+08:00","dateModified":"2025-06-14T23:39:21+08:00","datePublished":"2025-06-14T23:10:34+08:00","description":"","headline":"9.pythonIO编程","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/","keywords":"python"}</script>
+    <meta name="description" content="IO在计算机中指Input&#x2F;Output，也就是输入和输出。由于程序和运行时数据是在内存中驻留，由CPU这个超快的计算核心来执行，涉及到数据交换的地方，通常是磁盘、网络等，就需要IO接口。 比如你打开浏览器，访问新浪首页，浏览器这个程序就需要通过网络IO获取新浪的网页。浏览器首先会发送数据给新浪服务器，告诉它我想要首页的HTML，这个动作是往外发数据，叫Output，随后新浪服务器把网页发过来，这">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="9.pythonIO编程">
+<meta property="og:url" content="https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="IO在计算机中指Input&#x2F;Output，也就是输入和输出。由于程序和运行时数据是在内存中驻留，由CPU这个超快的计算核心来执行，涉及到数据交换的地方，通常是磁盘、网络等，就需要IO接口。 比如你打开浏览器，访问新浪首页，浏览器这个程序就需要通过网络IO获取新浪的网页。浏览器首先会发送数据给新浪服务器，告诉它我想要首页的HTML，这个动作是往外发数据，叫Output，随后新浪服务器把网页发过来，这">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2025-06-14T15:10:34.000Z">
+<meta property="article:modified_time" content="2025-06-14T15:39:21.138Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="python">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            9.pythonIO编程
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2025-06-14T23:10:34+08:00">
+	
+		    2025 年 6 月 14 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/python/">python</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <p>IO在计算机中指Input/Output，也就是输入和输出。由于程序和运行时数据是在内存中驻留，由CPU这个超快的计算核心来执行，涉及到数据交换的地方，通常是磁盘、网络等，就需要IO接口。</p>
+<p>比如你打开浏览器，访问新浪首页，浏览器这个程序就需要通过网络IO获取新浪的网页。浏览器首先会发送数据给新浪服务器，告诉它我想要首页的HTML，这个动作是往外发数据，叫Output，随后新浪服务器把网页发过来，这个动作是从外面接收数据，叫Input。所以，通常，程序完成IO操作会有Input和Output两个数据流。当然也有只用一个的情况，比如，从磁盘读取文件到内存，就只有Input操作，反过来，把数据写到磁盘文件里，就只是一个Output操作。</p>
+<p>IO编程中，Stream（流）是一个很重要的概念，可以把流想象成一个水管，数据就是水管里的水，但是只能单向流动。Input Stream就是数据从外面（磁盘、网络）流进内存，Output Stream就是数据从内存流到外面去。对于浏览网页来说，浏览器和新浪服务器之间至少需要建立两根水管，才可以既能发数据，又能收数据。</p>
+<p>由于CPU和内存的速度远远高于外设的速度，所以，在IO编程中，就存在速度严重不匹配的问题。举个例子来说，比如要把100M的数据写入磁盘，CPU输出100M的数据只需要0.01秒，可是磁盘要接收这100M数据可能需要10秒，怎么办呢？有两种办法：</p>
+<p>第一种是CPU等着，也就是程序暂停执行后续代码，等100M的数据在10秒后写入磁盘，再接着往下执行，这种模式称为同步IO；</p>
+<p>另一种方法是CPU不等待，只是告诉磁盘，“您老慢慢写，不着急，我接着干别的事去了”，于是，后续代码可以立刻接着执行，这种模式称为异步IO。</p>
+<p>同步和异步的区别就在于是否等待IO执行的结果。好比你去麦当劳点餐，你说“来个汉堡”，服务员告诉你，对不起，汉堡要现做，需要等5分钟，于是你站在收银台前面等了5分钟，拿到汉堡再去逛商场，这是同步IO。</p>
+<p>你说“来个汉堡”，服务员告诉你，汉堡需要等5分钟，你可以先去逛商场，等做好了，我们再通知你，这样你可以立刻去干别的事情（逛商场），这是异步IO。</p>
+<p>很明显，使用异步IO来编写程序性能会远远高于同步IO，但是异步IO的缺点是编程模型复杂。想想看，你得知道什么时候通知你“汉堡做好了”，而通知你的方法也各不相同。如果是服务员跑过来找到你，这是回调模式，如果服务员发短信通知你，你就得不停地检查手机，这是轮询模式。总之，异步IO的复杂度远远高于同步IO。</p>
+<p>操作IO的能力都是由操作系统提供的，每一种编程语言都会把操作系统提供的低级C接口封装起来方便使用，Python也不例外。我们后面会详细讨论Python的IO编程接口。</p>
+<p>注意，本章的IO编程都是同步模式，异步IO由于复杂度太高，后续涉及到服务器端程序开发时我们再讨论。</p>
+<p>读写文件是最常见的IO操作。Python内置了读写文件的函数，用法和C是兼容的。</p>
+<p>读写文件前，我们先必须了解一下，在磁盘上读写文件的功能都是由操作系统提供的，现代操作系统不允许普通的程序直接操作磁盘，所以，读写文件就是请求操作系统打开一个文件对象（通常称为文件描述符），然后，通过操作系统提供的接口从这个文件对象中读取数据（读文件），或者把数据写入这个文件对象（写文件）。</p>
+<h3 id="读文件">读文件</h3>
+<p>要以读文件的模式打开一个文件对象，使用Python内置的<code>open()</code>函数，传入文件名和标示符：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; f = open(&#x27;/Users/michael/test.txt&#x27;, &#x27;r&#x27;)</span><br></pre></td></tr></table></figure>
+<p>标示符<code>'r'</code>表示读，这样，我们就成功地打开了一个文件。</p>
+<p>如果文件不存在，<code>open()</code>函数就会抛出一个<code>IOError</code>的错误，并且给出错误码和详细的信息告诉你文件不存在：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; f=open(&#x27;/Users/michael/notfound.txt&#x27;, &#x27;r&#x27;)</span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;</span><br><span class="line">FileNotFoundError: [Errno 2] No such file or directory: &#x27;/Users/michael/notfound.txt&#x27;</span><br></pre></td></tr></table></figure>
+<p>如果文件打开成功，接下来，调用<code>read()</code>方法可以一次读取文件的全部内容，Python把内容读到内存，用一个<code>str</code>对象表示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; f.read()</span><br><span class="line">&#x27;Hello, world!&#x27;</span><br></pre></td></tr></table></figure>
+<p>最后一步是调用<code>close()</code>方法关闭文件。文件使用完毕后必须关闭，因为文件对象会占用操作系统的资源，并且操作系统同一时间能打开的文件数量也是有限的：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; f.close()</span><br></pre></td></tr></table></figure>
+<p>由于文件读写时都有可能产生<code>IOError</code>，一旦出错，后面的<code>f.close()</code>就不会调用。所以，为了保证无论是否出错都能正确地关闭文件，我们可以使用<code>try ... finally</code>来实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    f = <span class="built_in">open</span>(<span class="string">&#x27;/path/to/file&#x27;</span>, <span class="string">&#x27;r&#x27;</span>)</span><br><span class="line">    <span class="built_in">print</span>(f.read())</span><br><span class="line"><span class="keyword">finally</span>:</span><br><span class="line">    <span class="keyword">if</span> f:</span><br><span class="line">        f.close()</span><br></pre></td></tr></table></figure>
+<p>但是每次都这么写实在太繁琐，所以，Python引入了<code>with</code>语句来自动帮我们调用<code>close()</code>方法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&#x27;/path/to/file&#x27;</span>, <span class="string">&#x27;r&#x27;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    <span class="built_in">print</span>(f.read())</span><br></pre></td></tr></table></figure>
+<p>这和前面的<code>try ... finally</code>是一样的，但是代码更佳简洁，并且不必调用<code>f.close()</code>方法。</p>
+<p>调用<code>read()</code>会一次性读取文件的全部内容，如果文件有10G，内存就爆了，所以，要保险起见，可以反复调用<code>read(size)</code>方法，每次最多读取size个字节的内容。另外，调用<code>readline()</code>可以每次读取一行内容，调用<code>readlines()</code>一次读取所有内容并按行返回<code>list</code>。因此，要根据需要决定怎么调用。</p>
+<p>如果文件很小，<code>read()</code>一次性读取最方便；如果不能确定文件大小，反复调用<code>read(size)</code>比较保险；如果是配置文件，调用<code>readlines()</code>最方便：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> line <span class="keyword">in</span> f.readlines():</span><br><span class="line">    <span class="built_in">print</span>(line.strip()) <span class="comment"># 把末尾的&#x27;\n&#x27;删掉</span></span><br></pre></td></tr></table></figure>
+<h3 id="file-like-Object">file-like Object</h3>
+<p>像<code>open()</code>函数返回的这种有个<code>read()</code>方法的对象，在Python中统称为file-like Object。除了file外，还可以是内存的字节流，网络流，自定义流等等。file-like Object不要求从特定类继承，只要写个<code>read()</code>方法就行。</p>
+<p><code>StringIO</code>就是在内存中创建的file-like Object，常用作临时缓冲。</p>
+<h3 id="二进制文件">二进制文件</h3>
+<p>前面讲的默认都是读取文本文件，并且是UTF-8编码的文本文件。要读取二进制文件，比如图片、视频等等，用<code>'rb'</code>模式打开文件即可：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; f = open(&#x27;/Users/michael/test.jpg&#x27;, &#x27;rb&#x27;)</span><br><span class="line">&gt;&gt;&gt; f.read()</span><br><span class="line">b&#x27;\xff\xd8\xff\xe1\x00\x18Exif\x00\x00...&#x27; # 十六进制表示的字节</span><br></pre></td></tr></table></figure>
+<h3 id="字符编码">字符编码</h3>
+<p>要读取非UTF-8编码的文本文件，需要给<code>open()</code>函数传入<code>encoding</code>参数，例如，读取GBK编码的文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; f = open(&#x27;/Users/michael/gbk.txt&#x27;, &#x27;r&#x27;, encoding=&#x27;gbk&#x27;)</span><br><span class="line">&gt;&gt;&gt; f.read()</span><br><span class="line">&#x27;测试&#x27;</span><br></pre></td></tr></table></figure>
+<p>遇到有些编码不规范的文件，你可能会遇到<code>UnicodeDecodeError</code>，因为在文本文件中可能夹杂了一些非法编码的字符。遇到这种情况，<code>open()</code>函数还接收一个<code>errors</code>参数，表示如果遇到编码错误后如何处理。最简单的方式是直接忽略：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; f = open(&#x27;/Users/michael/gbk.txt&#x27;, &#x27;r&#x27;, encoding=&#x27;gbk&#x27;, errors=&#x27;ignore&#x27;)</span><br></pre></td></tr></table></figure>
+<h3 id="写文件">写文件</h3>
+<p>写文件和读文件是一样的，唯一区别是调用<code>open()</code>函数时，传入标识符<code>'w'</code>或者<code>'wb'</code>表示写文本文件或写二进制文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; f = open(&#x27;/Users/michael/test.txt&#x27;, &#x27;w&#x27;)</span><br><span class="line">&gt;&gt;&gt; f.write(&#x27;Hello, world!&#x27;)</span><br><span class="line">&gt;&gt;&gt; f.close()</span><br></pre></td></tr></table></figure>
+<p>你可以反复调用<code>write()</code>来写入文件，但是务必要调用<code>f.close()</code>来关闭文件。当我们写文件时，操作系统往往不会立刻把数据写入磁盘，而是放到内存缓存起来，空闲的时候再慢慢写入。只有调用<code>close()</code>方法时，操作系统才保证把没有写入的数据全部写入磁盘。忘记调用<code>close()</code>的后果是数据可能只写了一部分到磁盘，剩下的丢失了。所以，还是用<code>with</code>语句来得保险：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&#x27;/Users/michael/test.txt&#x27;</span>, <span class="string">&#x27;w&#x27;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    f.write(<span class="string">&#x27;Hello, world!&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>要写入特定编码的文本文件，请给<code>open()</code>函数传入<code>encoding</code>参数，将字符串自动转换成指定编码。</p>
+<p>细心的童鞋会发现，以<code>'w'</code>模式写入文件时，如果文件已存在，会直接覆盖（相当于删掉后新写入一个文件）。如果我们希望追加到文件末尾怎么办？可以传入<code>'a'</code>以追加（append）模式写入。</p>
+<p>所有模式的定义及含义可以参考Python的<a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#open">官方文档</a>。</p>
+<h3 id="练习">练习</h3>
+<p>请将本地一个文本文件读为一个str并打印出来：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">fpath = <span class="string">&#x27;/etc/timezone&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(fpath, <span class="string">&#x27;r&#x27;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    s = f.read()</span><br><span class="line">    <span class="built_in">print</span>(s)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 运行代码观察结果</span></span><br></pre></td></tr></table></figure>
+<h3 id="小结">小结</h3>
+<p>在Python中，文件读写是通过<code>open()</code>函数打开的文件对象完成的。使用<code>with</code>语句操作文件IO是个好习惯。</p>
+<h3 id="参考源码">参考源码</h3>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/python/io/file/with_file.py">with_file.py</a></p>
+<h2 id="StringIO和BytesIO">StringIO和BytesIO</h2>
+<h3 id="StringIO">StringIO</h3>
+<p>很多时候，数据读写不一定是文件，也可以在内存中读写。</p>
+<p><code>StringIO</code>顾名思义就是在内存中读写<code>str</code>。</p>
+<p>要把<code>str</code>写入<code>StringIO</code>，我们需要先创建一个<code>StringIO</code>，然后，像文件一样写入即可：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; from io import StringIO</span><br><span class="line">&gt;&gt;&gt; f = StringIO()</span><br><span class="line">&gt;&gt;&gt; f.write(&#x27;hello&#x27;)</span><br><span class="line">5</span><br><span class="line">&gt;&gt;&gt; f.write(&#x27; &#x27;)</span><br><span class="line">1</span><br><span class="line">&gt;&gt;&gt; f.write(&#x27;world!&#x27;)</span><br><span class="line">6</span><br><span class="line">&gt;&gt;&gt; print(f.getvalue())</span><br><span class="line">hello world!</span><br></pre></td></tr></table></figure>
+<p><code>getvalue()</code>方法用于获得写入后的<code>str</code>。</p>
+<p>要读取<code>StringIO</code>，可以用一个<code>str</code>初始化<code>StringIO</code>，然后，像读文件一样读取：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; from io import StringIO</span><br><span class="line">&gt;&gt;&gt; f = StringIO(&#x27;Hello!\nHi!\nGoodbye!&#x27;)</span><br><span class="line">&gt;&gt;&gt; while True:</span><br><span class="line">...     s = f.readline()</span><br><span class="line">...     if s == &#x27;&#x27;:</span><br><span class="line">...         break</span><br><span class="line">...     print(s.strip())</span><br><span class="line">...</span><br><span class="line">Hello!</span><br><span class="line">Hi!</span><br><span class="line">Goodbye!</span><br></pre></td></tr></table></figure>
+<h3 id="BytesIO">BytesIO</h3>
+<p><code>StringIO</code>操作的只能是<code>str</code>，如果要操作二进制数据，就需要使用<code>BytesIO</code>。</p>
+<p><code>BytesIO</code>实现了在内存中读写<code>bytes</code>，我们创建一个``Bytes<code>IO</code>，然后写入一些bytes：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; from io import BytesIO</span><br><span class="line">&gt;&gt;&gt; f = BytesIO()</span><br><span class="line">&gt;&gt;&gt; f.write(&#x27;中文&#x27;.encode(&#x27;utf-8&#x27;))</span><br><span class="line">6</span><br><span class="line">&gt;&gt;&gt; print(f.getvalue())</span><br><span class="line">b&#x27;\xe4\xb8\xad\xe6\x96\x87&#x27;</span><br></pre></td></tr></table></figure>
+<p>请注意，写入的不是<code>str</code>，而是经过UTF-8编码的<code>bytes</code>。</p>
+<p>和<code>StringIO</code>类似，可以用一个<code>bytes</code>初始化<code>BytesIO</code>，然后，像读文件一样读取：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; from io import BytesIO</span><br><span class="line">&gt;&gt;&gt; f = BytesIO(b&#x27;\xe4\xb8\xad\xe6\x96\x87&#x27;)</span><br><span class="line">&gt;&gt;&gt; f.read()</span><br><span class="line">b&#x27;\xe4\xb8\xad\xe6\x96\x87&#x27;</span><br></pre></td></tr></table></figure>
+<h3 id="小结-2">小结</h3>
+<p><code>StringIO</code>和<code>BytesIO</code>是在内存中操作<code>str</code>和<code>bytes</code>的方法，使得和读写文件具有一致的接口。</p>
+<h3 id="参考源码-2">参考源码</h3>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/python/io/stringio-bytesio/do_stringio.py">do_stringio.py</a></p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/python/io/stringio-bytesio/do_bytesio.py">do_bytesio.py</a></p>
+<hr>
+<p>如果我们要操作文件、目录，可以在命令行下面输入操作系统提供的各种命令来完成。比如<code>dir</code>、<code>cp</code>等命令。</p>
+<p>如果要在Python程序中执行这些目录和文件的操作怎么办？其实操作系统提供的命令只是简单地调用了操作系统提供的接口函数，Python内置的<code>os</code>模块也可以直接调用操作系统提供的接口函数。</p>
+<p>打开Python交互式命令行，我们来看看如何使用<code>os</code>模块的基本功能：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; import os</span><br><span class="line">&gt;&gt;&gt; os.name # 操作系统类型</span><br><span class="line">&#x27;posix&#x27;</span><br></pre></td></tr></table></figure>
+<p>如果是<code>posix</code>，说明系统是<code>Linux</code>、<code>Unix</code>或<code>macOS</code>，如果是<code>nt</code>，就是<code>Windows</code>系统。</p>
+<p>要获取详细的系统信息，可以调用<code>uname()</code>函数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; os.uname()</span><br><span class="line">posix.uname_result(sysname=&#x27;Darwin&#x27;, nodename=&#x27;MichaelMacPro.local&#x27;, release=&#x27;14.3.0&#x27;, version=&#x27;Darwin Kernel Version 14.3.0: Mon Mar 23 11:59:05 PDT 2015; root:xnu-2782.20.48~5/RELEASE_X86_64&#x27;, machine=&#x27;x86_64&#x27;)</span><br></pre></td></tr></table></figure>
+<p>注意<code>uname()</code>函数在Windows上不提供，也就是说，<code>os</code>模块的某些函数是跟操作系统相关的。</p>
+<h3 id="环境变量">环境变量</h3>
+<p>在操作系统中定义的环境变量，全部保存在<code>os.environ</code>这个变量中，可以直接查看：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; os.environ</span><br><span class="line">environ(&#123;&#x27;VERSIONER_PYTHON_PREFER_32_BIT&#x27;: &#x27;no&#x27;, &#x27;TERM_PROGRAM_VERSION&#x27;: &#x27;326&#x27;, &#x27;LOGNAME&#x27;: &#x27;michael&#x27;, &#x27;USER&#x27;: &#x27;michael&#x27;, &#x27;PATH&#x27;: &#x27;/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/X11/bin:/usr/local/mysql/bin&#x27;, ...&#125;)</span><br></pre></td></tr></table></figure>
+<p>要获取某个环境变量的值，可以调用<code>os.environ.get('key')</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; os.environ.get(&#x27;PATH&#x27;)</span><br><span class="line">&#x27;/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/X11/bin:/usr/local/mysql/bin&#x27;</span><br><span class="line">&gt;&gt;&gt; os.environ.get(&#x27;x&#x27;, &#x27;default&#x27;)</span><br><span class="line">&#x27;default&#x27;</span><br></pre></td></tr></table></figure>
+<h3 id="操作文件和目录">操作文件和目录</h3>
+<p>操作文件和目录的函数一部分放在<code>os</code>模块中，一部分放在<code>os.path</code>模块中，这一点要注意一下。查看、创建和删除目录可以这么调用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"># 查看当前目录的绝对路径:</span><br><span class="line">&gt;&gt;&gt; os.path.abspath(&#x27;.&#x27;)</span><br><span class="line">&#x27;/Users/michael&#x27;</span><br><span class="line"># 在某个目录下创建一个新目录，首先把新目录的完整路径表示出来:</span><br><span class="line">&gt;&gt;&gt; os.path.join(&#x27;/Users/michael&#x27;, &#x27;testdir&#x27;)</span><br><span class="line">&#x27;/Users/michael/testdir&#x27;</span><br><span class="line"># 然后创建一个目录:</span><br><span class="line">&gt;&gt;&gt; os.mkdir(&#x27;/Users/michael/testdir&#x27;)</span><br><span class="line"># 删掉一个目录:</span><br><span class="line">&gt;&gt;&gt; os.rmdir(&#x27;/Users/michael/testdir&#x27;)</span><br></pre></td></tr></table></figure>
+<p>把两个路径合成一个时，不要直接拼字符串，而要通过<code>os.path.join()</code>函数，这样可以正确处理不同操作系统的路径分隔符。在Linux/Unix/Mac下，<code>os.path.join()</code>返回这样的字符串：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">part-1/part-2</span><br></pre></td></tr></table></figure>
+<p>而Windows下会返回这样的字符串：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">part-1\part-2</span><br></pre></td></tr></table></figure>
+<p>同样的道理，要拆分路径时，也不要直接去拆字符串，而要通过<code>os.path.split()</code>函数，这样可以把一个路径拆分为两部分，后一部分总是最后级别的目录或文件名：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; os.path.split(&#x27;/Users/michael/testdir/file.txt&#x27;)</span><br><span class="line">(&#x27;/Users/michael/testdir&#x27;, &#x27;file.txt&#x27;)</span><br></pre></td></tr></table></figure>
+<p><code>os.path.splitext()</code>可以直接让你得到文件扩展名，很多时候非常方便：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; os.path.splitext(&#x27;/path/to/file.txt&#x27;)</span><br><span class="line">(&#x27;/path/to/file&#x27;, &#x27;.txt&#x27;)</span><br></pre></td></tr></table></figure>
+<p>这些合并、拆分路径的函数并不要求目录和文件要真实存在，它们只对字符串进行操作。</p>
+<p>文件操作使用下面的函数。假定当前目录下有一个<code>test.txt</code>文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 对文件重命名:</span><br><span class="line">&gt;&gt;&gt; os.rename(&#x27;test.txt&#x27;, &#x27;test.py&#x27;)</span><br><span class="line"># 删掉文件:</span><br><span class="line">&gt;&gt;&gt; os.remove(&#x27;test.py&#x27;)</span><br></pre></td></tr></table></figure>
+<p>但是复制文件的函数居然在<code>os</code>模块中不存在！原因是复制文件并非由操作系统提供的系统调用。理论上讲，我们通过上一节的读写文件可以完成文件复制，只不过要多写很多代码。</p>
+<p>幸运的是<code>shutil</code>模块提供了<code>copyfile()</code>的函数，你还可以在<code>shutil</code>模块中找到很多实用函数，它们可以看做是<code>os</code>模块的补充。</p>
+<p>最后看看如何利用Python的特性来过滤文件。比如我们要列出当前目录下的所有目录，只需要一行代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; [x for x in os.listdir(&#x27;.&#x27;) if os.path.isdir(x)]</span><br><span class="line">[&#x27;.lein&#x27;, &#x27;.local&#x27;, &#x27;.m2&#x27;, &#x27;.npm&#x27;, &#x27;.ssh&#x27;, &#x27;.Trash&#x27;, &#x27;.vim&#x27;, &#x27;Applications&#x27;, &#x27;Desktop&#x27;, ...]</span><br></pre></td></tr></table></figure>
+<p>要列出所有的<code>.py</code>文件，也只需一行代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; [x for x in os.listdir(&#x27;.&#x27;) if os.path.isfile(x) and os.path.splitext(x)[1]==&#x27;.py&#x27;]</span><br><span class="line">[&#x27;apis.py&#x27;, &#x27;config.py&#x27;, &#x27;models.py&#x27;, &#x27;pymonitor.py&#x27;, &#x27;test_db.py&#x27;, &#x27;urls.py&#x27;, &#x27;wsgiapp.py&#x27;]</span><br></pre></td></tr></table></figure>
+<p>是不是非常简洁？</p>
+<h3 id="小结-3">小结</h3>
+<p>Python的<code>os</code>模块封装了操作系统的目录和文件操作，要注意这些函数有的在<code>os</code>模块中，有的在<code>os.path</code>模块中。</p>
+<h3 id="练习-2">练习</h3>
+<ol>
+<li>利用<code>os</code>模块编写一个能实现<code>dir -l</code>输出的程序。</li>
+<li>编写一个程序，能在当前目录以及当前目录的所有子目录下查找文件名包含指定字符串的文件，并打印出相对路径。</li>
+</ol>
+<h3 id="参考源码-3">参考源码</h3>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/python/io/dir/do_dir.py">do_dir</a></p>
+<p>在程序运行的过程中，所有的变量都是在内存中，比如，定义一个dict：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">d = <span class="built_in">dict</span>(name=<span class="string">&#x27;Bob&#x27;</span>, age=<span class="number">20</span>, score=<span class="number">88</span>)</span><br></pre></td></tr></table></figure>
+<p>可以随时修改变量，比如把<code>name</code>改成<code>'Bill'</code>，但是一旦程序结束，变量所占用的内存就被操作系统全部回收。如果没有把修改后的<code>'Bill'</code>存储到磁盘上，下次重新运行程序，变量又被初始化为<code>'Bob'</code>。</p>
+<p>我们把变量从内存中变成可存储或传输的过程称之为序列化，在Python中叫pickling，在其他语言中也被称之为serialization，marshalling，flattening等等，都是一个意思。</p>
+<p>序列化之后，就可以把序列化后的内容写入磁盘，或者通过网络传输到别的机器上。</p>
+<p>反过来，把变量内容从序列化的对象重新读到内存里称之为反序列化，即unpickling。</p>
+<p>Python提供了<code>pickle</code>模块来实现序列化。</p>
+<p>首先，我们尝试把一个对象序列化并写入文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; import pickle</span><br><span class="line">&gt;&gt;&gt; d = dict(name=&#x27;Bob&#x27;, age=20, score=88)</span><br><span class="line">&gt;&gt;&gt; pickle.dumps(d)</span><br><span class="line">b&#x27;\x80\x03&#125;q\x00(X\x03\x00\x00\x00ageq\x01K\x14X\x05\x00\x00\x00scoreq\x02KXX\x04\x00\x00\x00nameq\x03X\x03\x00\x00\x00Bobq\x04u.&#x27;</span><br></pre></td></tr></table></figure>
+<p><code>pickle.dumps()</code>方法把任意对象序列化成一个<code>bytes</code>，然后，就可以把这个<code>bytes</code>写入文件。或者用另一个方法<code>pickle.dump()</code>直接把对象序列化后写入一个file-like Object：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; f = open(&#x27;dump.txt&#x27;, &#x27;wb&#x27;)</span><br><span class="line">&gt;&gt;&gt; pickle.dump(d, f)</span><br><span class="line">&gt;&gt;&gt; f.close()</span><br></pre></td></tr></table></figure>
+<p>看看写入的<code>dump.txt</code>文件，一堆乱七八糟的内容，这些都是Python保存的对象内部信息。</p>
+<p>当我们要把对象从磁盘读到内存时，可以先把内容读到一个<code>bytes</code>，然后用<code>pickle.loads()</code>方法反序列化出对象，也可以直接用<code>pickle.load()</code>方法从一个<code>file-like Object</code>中直接反序列化出对象。我们打开另一个Python命令行来反序列化刚才保存的对象：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; f = open(&#x27;dump.txt&#x27;, &#x27;rb&#x27;)</span><br><span class="line">&gt;&gt;&gt; d = pickle.load(f)</span><br><span class="line">&gt;&gt;&gt; f.close()</span><br><span class="line">&gt;&gt;&gt; d</span><br><span class="line">&#123;&#x27;age&#x27;: 20, &#x27;score&#x27;: 88, &#x27;name&#x27;: &#x27;Bob&#x27;&#125;</span><br></pre></td></tr></table></figure>
+<p>变量的内容又回来了！</p>
+<p>当然，这个变量和原来的变量是完全不相干的对象，它们只是内容相同而已。</p>
+<p>Pickle的问题和所有其他编程语言特有的序列化问题一样，就是它只能用于Python，并且可能不同版本的Python彼此都不兼容，因此，只能用Pickle保存那些不重要的数据，不能成功地反序列化也没关系。</p>
+<h3 id="JSON">JSON</h3>
+<p>如果我们要在不同的编程语言之间传递对象，就必须把对象序列化为标准格式，比如XML，但更好的方法是序列化为JSON，因为JSON表示出来就是一个字符串，可以被所有语言读取，也可以方便地存储到磁盘或者通过网络传输。JSON不仅是标准格式，并且比XML更快，而且可以直接在Web页面中读取，非常方便。</p>
+<p>JSON表示的对象就是标准的JavaScript语言的对象，JSON和Python内置的数据类型对应如下：</p>
+<table>
+<thead>
+<tr>
+<th>JSON类型</th>
+<th>Python类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{}</td>
+<td>dict</td>
+</tr>
+<tr>
+<td>[]</td>
+<td>list</td>
+</tr>
+<tr>
+<td>“string”</td>
+<td>str</td>
+</tr>
+<tr>
+<td>1234.56</td>
+<td>int或float</td>
+</tr>
+<tr>
+<td>true/false</td>
+<td>True/False</td>
+</tr>
+<tr>
+<td>null</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<p>Python内置的<code>json</code>模块提供了非常完善的Python对象到JSON格式的转换。我们先看看如何把Python对象变成一个JSON：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; import json</span><br><span class="line">&gt;&gt;&gt; d = dict(name=&#x27;Bob&#x27;, age=20, score=88)</span><br><span class="line">&gt;&gt;&gt; json.dumps(d)</span><br><span class="line">&#x27;&#123;&quot;age&quot;: 20, &quot;score&quot;: 88, &quot;name&quot;: &quot;Bob&quot;&#125;&#x27;</span><br></pre></td></tr></table></figure>
+<p><code>dumps()</code>方法返回一个<code>str</code>，内容就是标准的JSON。类似的，<code>dump()</code>方法可以直接把JSON写入一个<code>file-like Object</code>。</p>
+<p>要把JSON反序列化为Python对象，用<code>loads()</code>或者对应的<code>load()</code>方法，前者把JSON的字符串反序列化，后者从<code>file-like Object</code>中读取字符串并反序列化：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; json_str = &#x27;&#123;&quot;age&quot;: 20, &quot;score&quot;: 88, &quot;name&quot;: &quot;Bob&quot;&#125;&#x27;</span><br><span class="line">&gt;&gt;&gt; json.loads(json_str)</span><br><span class="line">&#123;&#x27;age&#x27;: 20, &#x27;score&#x27;: 88, &#x27;name&#x27;: &#x27;Bob&#x27;&#125;</span><br></pre></td></tr></table></figure>
+<p>由于JSON标准规定JSON编码是UTF-8，所以我们总是能正确地在Python的<code>str</code>与JSON的字符串之间转换。</p>
+<h3 id="JSON进阶">JSON进阶</h3>
+<p>Python的<code>dict</code>对象可以直接序列化为JSON的<code>&#123;&#125;</code>，不过，很多时候，我们更喜欢用<code>class</code>表示对象，比如定义<code>Student</code>类，然后序列化：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">import json</span><br><span class="line"></span><br><span class="line">class Student(object):</span><br><span class="line">    def __init__(self, name, age, score):</span><br><span class="line">        self.name = name</span><br><span class="line">        self.age = age</span><br><span class="line">        self.score = score</span><br><span class="line"></span><br><span class="line">s = Student(&#x27;Bob&#x27;, 20, 88)</span><br><span class="line">print(json.dumps(s))</span><br></pre></td></tr></table></figure>
+<p>运行代码，毫不留情地得到一个<code>TypeError</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Traceback (most recent call last):</span><br><span class="line">  ...</span><br><span class="line">TypeError: &lt;__main__.Student object at 0x10603cc50&gt; is not JSON serializable</span><br></pre></td></tr></table></figure>
+<p>错误的原因是<code>Student</code>对象不是一个可序列化为JSON的对象。</p>
+<p>如果连<code>class</code>的实例对象都无法序列化为JSON，这肯定不合理！</p>
+<p>别急，我们仔细看看<code>dumps()</code>方法的参数列表，可以发现，除了第一个必须的<code>obj</code>参数外，<code>dumps()</code>方法还提供了一大堆的可选参数：</p>
+<p><a target="_blank" rel="noopener" href="https://docs.python.org/3/library/json.html#json.dumps">https://docs.python.org/3/library/json.html#json.dumps</a></p>
+<p>这些可选参数就是让我们来定制JSON序列化。前面的代码之所以无法把<code>Student</code>类实例序列化为JSON，是因为默认情况下，<code>dumps()</code>方法不知道如何将<code>Student</code>实例变为一个JSON的<code>&#123;&#125;</code>对象。</p>
+<p>可选参数<code>default</code>就是把任意一个对象变成一个可序列为JSON的对象，我们只需要为<code>Student</code>专门写一个转换函数，再把函数传进去即可：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">student2dict</span>(<span class="params">std</span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&#x27;name&#x27;</span>: std.name,</span><br><span class="line">        <span class="string">&#x27;age&#x27;</span>: std.age,</span><br><span class="line">        <span class="string">&#x27;score&#x27;</span>: std.score</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>这样，<code>Student</code>实例首先被<code>student2dict()</code>函数转换成<code>dict</code>，然后再被顺利序列化为JSON：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; print(json.dumps(s, default=student2dict))</span><br><span class="line">&#123;&quot;age&quot;: 20, &quot;name&quot;: &quot;Bob&quot;, &quot;score&quot;: 88&#125;</span><br></pre></td></tr></table></figure>
+<p>不过，下次如果遇到一个<code>Teacher</code>类的实例，照样无法序列化为JSON。我们可以偷个懒，把任意<code>class</code>的实例变为<code>dict</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(json.dumps(s, default=<span class="keyword">lambda</span> obj: obj.__dict__))</span><br></pre></td></tr></table></figure>
+<p>因为通常<code>class</code>的实例都有一个<code>__dict__</code>属性，它就是一个<code>dict</code>，用来存储实例变量。也有少数例外，比如定义了<code>__slots__</code>的class。</p>
+<p>同样的道理，如果我们要把JSON反序列化为一个<code>Student</code>对象实例，<code>loads()</code>方法首先转换出一个<code>dict</code>对象，然后，我们传入的<code>object_hook</code>函数负责把<code>dict</code>转换为<code>Student</code>实例：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">dict2student</span>(<span class="params">d</span>):</span><br><span class="line">    <span class="keyword">return</span> Student(d[<span class="string">&#x27;name&#x27;</span>], d[<span class="string">&#x27;age&#x27;</span>], d[<span class="string">&#x27;score&#x27;</span>])</span><br></pre></td></tr></table></figure>
+<p>运行结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; json_str = &#x27;&#123;&quot;age&quot;: 20, &quot;score&quot;: 88, &quot;name&quot;: &quot;Bob&quot;&#125;&#x27;</span><br><span class="line">&gt;&gt;&gt; print(json.loads(json_str, object_hook=dict2student))</span><br><span class="line">&lt;__main__.Student object at 0x10cd3c190&gt;</span><br></pre></td></tr></table></figure>
+<p>打印出的是反序列化的<code>Student</code>实例对象。</p>
+<h3 id="练习-3">练习</h3>
+<p>对中文进行JSON序列化时，<code>json.dumps()</code>提供了一个<code>ensure_ascii</code>参数，观察该参数对结果的影响：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line">obj = <span class="built_in">dict</span>(name=<span class="string">&#x27;小明&#x27;</span>, age=<span class="number">20</span>)</span><br><span class="line">s = json.dumps(obj, ensure_ascii=<span class="literal">True</span>)</span><br><span class="line"><span class="built_in">print</span>(s)</span><br></pre></td></tr></table></figure>
+<h3 id="小结-4">小结</h3>
+<p>Python语言特定的序列化模块是<code>pickle</code>，但如果要把序列化搞得更通用、更符合Web标准，就可以使用<code>json</code>模块。</p>
+<p><code>json</code>模块的<code>dumps()</code>和<code>loads()</code>函数是定义得非常好的接口的典范。当我们使用时，只需要传入一个必须的参数。但是，当默认的序列化或反序列机制不满足我们的要求时，我们又可以传入更多的参数来定制序列化或反序列化的规则，既做到了接口简单易用，又做到了充分的扩展性和灵活性。</p>
+<h3 id="参考源码-4">参考源码</h3>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/python/io/serialization/use_pickle.py">use_pickle.py</a></p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/python/io/serialization/use_json.py">use_json.py</a></p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/python/" rel="tag">python</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../6.python%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                    data-tooltip="6.python面向对象编程"
+                    aria-label="上一篇: 6.python面向对象编程"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../7.%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E9%AB%98%E7%BA%A7%E7%BC%96%E7%A8%8B/"
+                    data-tooltip="7.面向对象高级编程"
+                    aria-label="下一篇: 7.面向对象高级编程"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../6.python%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%BC%96%E7%A8%8B/"
+                    data-tooltip="6.python面向对象编程"
+                    aria-label="上一篇: 6.python面向对象编程"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../7.%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E9%AB%98%E7%BA%A7%E7%BC%96%E7%A8%8B/"
+                    data-tooltip="7.面向对象高级编程"
+                    aria-label="下一篇: 7.面向对象高级编程"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/06/14/python/9.pythonIO%E7%BC%96%E7%A8%8B/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 198 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

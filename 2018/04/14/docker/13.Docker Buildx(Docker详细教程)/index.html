@@ -1,0 +1,1098 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>13.Docker Buildx(Docker详细教程) - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"# Docker Buildx\nDocker Buildx 是一个 docker CLI 插件，其扩展了 docker 命令，支持 Moby BuildKit 提供的功能。提供了与 docker build 相同的用户体验，并增加了许多新功能。\n\n该功能仅适用于 Docker v19.03+ 版本\n\n# 使用 BuildKit 构建镜像\nBuildKit 是下一代的镜像构建组件，在 https://github.com/moby/buildkit 开源。\n注意：如果您的镜像构建使用的是云服务商提供的镜像构建服务（腾讯云容器服务、阿里云容器服务等），由于上述服务提供商的 Docker 版本低于 18.09，BuildKit 无法使用，将造成镜像构建失败。建议使用 BuildKit 构建镜像时使用一个新的 Dockerfile 文件（例如 Dockerfile.buildkit）\n目前，Docker Hub 自动构建已经支持 buildkit，具体请参考 https://github.com/docker-practice/docker-hub-buildx\n# Dockerfile 新增指令详解\n启用 BuildKit 之后，我们可以使用下面几个新的 Dockerfile 指令来加快镜像构建。\n# RUN --mount=type=cache\n目前，几乎所有的程序都会使用依赖管理工具，例如 Go 中的 go mod、Node.js 中的 npm 等等，当我们构建一个镜像时，往往会重复的从互联网中获取依赖包，难以缓存，大大降低了镜像的构建效率。\n例如一个前端工程需要用到 npm：\n12345678910111213141516FROM node:alpine as builderWORKDIR /appCOPY package.json /app/RUN npm i --registry=https://registry.npm.taobao.org \\        &amp;&amp; rm -rf ~/.npmCOPY src /app/srcRUN npm run buildFROM nginx:alpineCOPY --from=builder /app/dist /app/dist\n使用多阶段构建，构建的镜像中只包含了目标文件夹 dist，但仍然存在一些问题，当 package.json 文件变动时，RUN npm i &amp;&amp; rm -rf ~/.npm 这一层会重新执行，变更多次后，生成了大量的中间层镜像。\n为解决这个问题，进一步的我们可以设想一个类似 数据卷 的功能，在镜像构建时把 node_modules 文件夹挂载上去，在构建完成后，这个 node_modules 文件夹会自动卸载，实际的镜像中并不包含 node_modules 这个文件夹，这样我们就省去了每次获取依赖的时间，大大增加了镜像构建效率，同时也避免了生成了大量的中间层镜像。\nBuildKit 提供了 RUN --mount=type=cache 指令，可以实现上边的设想。\n12345678910111213141516171819202122232425# syntax = docker/dockerfile:experimentalFROM node:alpine as builderWORKDIR /appCOPY package.json /app/RUN --mount=type=cache,target=/app/node_modules,id=my_app_npm_module,sharing=locked \\    --mount=type=cache,target=/root/.npm,id=npm_cache \\        npm i --registry=https://registry.npm.taobao.orgCOPY src /app/srcRUN --mount=type=cache,target=/app/node_modules,id=my_app_npm_module,sharing=locked \\# --mount=type=cache,target=/app/dist,id=my_app_dist,sharing=locked \\        npm run buildFROM nginx:alpine# COPY --from=builder /app/dist /app/dist# 为了更直观的说明 from 和 source 指令，这里使用 RUN 指令RUN --mount=type=cache,target=/tmp/dist,from=builder,source=/app/dist \\    # --mount=type=cache,target/tmp/dist,from=my_app_dist,sharing=locked \\    mkdir -p /app/dist &amp;&amp; cp -r /tmp/dist/* /app/dist\n由于 BuildKit 为实验特性，每个 Dockerfile 文件开头都必须加上如下指令\n1# syntax = docker/dockerfile:experimental\n第一个 RUN 指令执行后，id 为 my_app_npm_module 的缓存文件夹挂载到了 /app/node_modules 文件夹中。多次执行也不会产生多个中间层镜像。\n第二个 RUN 指令执行时需要用到 node_modules 文件夹，node_modules 已经挂载，命令也可以正确执行。\n第三个 RUN 指令将上一阶段产生的文件复制到指定位置，from 指明缓存的来源，这里 builder 表示缓存来源于构建的第一阶段，source 指明缓存来源的文件夹。\n上面的 Dockerfile 中 --mount=type=cache,... 中指令作用如下：\n\n\n\nOption\nDescription\n\n\n\n\nid\nid 设置一个标志，以便区分缓存。\n\n\ntarget (必填项)\n缓存的挂载目标文件夹。\n\n\nro,readonly\n只读，缓存文件夹不能被写入。\n\n\nsharing\n有 shared private locked 值可供选择。sharing 设置当一个缓存被多次使用时的表现，由于 BuildKit 支持并行构建，当多个步骤使用同一缓存时（同一 id）会发生冲突。shared 表示多个步骤可以同时读写，private 表示当多个步骤使用同一缓存时，每个步骤使用不同的缓存，locked 表示当一个步骤完成释放缓存后，后一个步骤才能继续使用该缓存。\n\n\nfrom\n缓存来源（构建阶段），不填写时为空文件夹。\n\n\nsource\n来源的文件夹路径。\n\n\n\n# RUN --mount=type=bind\n该指令可以将一个镜像（或上一构建阶段）的文件挂载到指定位置。\n123# syntax = docker/dockerfile:experimentalRUN --mount=type=bind,from=php:alpine,source=/usr/local/bin/docker-php-entrypoint,target=/docker-php-entrypoint \\        cat /docker-php-entrypoint\n# RUN --mount=type=tmpfs\n该指令可以将一个 tmpfs 文件系统挂载到指定位置。\n123# syntax = docker/dockerfile:experimentalRUN --mount=type=tmpfs,target=/temp \\        mount | grep /temp\n# RUN --mount=type=secret\n该指令可以将一个文件(例如密钥)挂载到指定位置。\n123# syntax = docker/dockerfile:experimentalRUN --mount=type=secret,id=aws,target=/root/.aws/credentials \\        cat /root/.aws/credentials\n1$ docker build -t test --secret id=aws,src=$HOME/.aws/credentials .\n# RUN --mount=type=ssh\n该指令可以挂载 ssh 密钥。\n12345# syntax = docker/dockerfile:experimentalFROM alpineRUN apk add --no-cache openssh-clientRUN mkdir -p -m 0700 ~/.ssh &amp;&amp; ssh-keyscan gitlab.com &gt;&gt; ~/.ssh/known_hostsRUN --mount=type=ssh ssh git@gitlab.com | tee /hello\n1234$ eval $(ssh-agent)$ ssh-add ~/.ssh/id_rsa(Input your passphrase here)$ docker build -t test --ssh default=$SSH_AUTH_SOCK .\n# 官方文档\n\nhttps://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md\n\n# 使用 Buildx 构建镜像\n# 使用\n你可以直接使用 docker buildx build 命令构建镜像。\n123$ docker buildx build .[+] Building 8.4s (23/32) =&gt; ...\nBuildx 使用 BuildKit 引擎 进行构建，支持许多新的功能，具体参考 Buildkit 一节。\n# 官方文档\n\nhttps://docs.docker.com/engine/reference/commandline/buildx/\n\n# 使用 buildx 构建多种系统架构支持的 Docker 镜像\n在之前的版本中构建多种系统架构支持的 Docker 镜像，要想使用统一的名字必须使用 $ docker manifest 命令。\n在 Docker 19.03+ 版本中可以使用 $ docker buildx build 命令使用 BuildKit 构建镜像。该命令支持 --platform 参数可以同时构建支持多种系统架构的 Docker 镜像，大大简化了构建步骤。\n# 新建 builder 实例\nDocker for Linux 不支持构建 arm 架构镜像，我们可以运行一个新的容器让其支持该特性，Docker 桌面版无需进行此项设置。\n1$ docker run --rm --privileged tonistiigi/binfmt:latest --install all\n由于 Docker 默认的 builder 实例不支持同时指定多个 --platform，我们必须首先创建一个新的 builder 实例。同时由于国内拉取镜像较缓慢，我们可以使用配置了 镜像加速地址 (opens new window) 的 dockerpracticesig/buildkit:master (opens new window) 镜像替换官方镜像。\n\n如果你有私有的镜像加速器，可以基于 https://github.com/docker-practice/buildx 构建自己的 buildkit 镜像并使用它。\n\n123456789# 适用于国内环境$ docker buildx create --use --name=mybuilder-cn --driver docker-container --driver-opt image=dockerpracticesig/buildkit:master# 适用于腾讯云环境(腾讯云主机、coding.net 持续集成)$ docker buildx create --use --name=mybuilder-cn --driver docker-container --driver-opt image=dockerpracticesig/buildkit:master-tencent# $ docker buildx create --name mybuilder --driver docker-container$ docker buildx use mybuilder\n# 构建镜像\n新建 Dockerfile 文件。\n12345FROM --platform=$TARGETPLATFORM alpineRUN uname -a &gt; /os.txtCMD cat /os.txt\n使用 $ docker buildx build 命令构建镜像，注意将 myusername 替换为自己的 Docker Hub 用户名。\n--push 参数表示将构建好的镜像推送到 Docker 仓库。\n1234$ docker buildx build --platform linux/arm,linux/arm64,linux/amd64 -t myusername/hello . --push# 查看镜像信息$ docker buildx imagetools inspect myusername/hello\n在不同架构运行该镜像，可以得到该架构的信息。\n1234567891011# arm$ docker run -it --rm myusername/helloLinux buildkitsandbox 4.9.125-linuxkit #1 SMP Fri Sep 7 08:20:28 UTC 2018 armv7l Linux# arm64$ docker run -it --rm myusername/helloLinux buildkitsandbox 4.9.125-linuxkit #1 SMP Fri Sep 7 08:20:28 UTC 2018 aarch64 Linux# amd64$ docker run -it --rm myusername/helloLinux buildkitsandbox 4.9.125-linuxkit #1 SMP Fri Sep 7 08:20:28 UTC 2018 x86_64 Linux\n# 架构相关变量\nDockerfile 支持如下架构相关的变量\nTARGETPLATFORM\n构建镜像的目标平台，例如 linux/amd64, linux/arm/v7, windows/amd64。\nTARGETOS\nTARGETPLATFORM 的 OS 类型，例如 linux, windows\nTARGETARCH\nTARGETPLATFORM 的架构类型，例如 amd64, arm\nTARGETVARIANT\nTARGETPLATFORM 的变种，该变量可能为空，例如 v7\nBUILDPLATFORM\n构建镜像主机平台，例如 linux/amd64\nBUILDOS\nBUILDPLATFORM 的 OS 类型，例如 linux\nBUILDARCH\nBUILDPLATFORM 的架构类型，例如 amd64\nBUILDVARIANT\nBUILDPLATFORM 的变种，该变量可能为空，例如 v7\n# 使用举例\n例如我们要构建支持 linux/arm/v7 和 linux/amd64 两种架构的镜像。假设已经生成了两个平台对应的二进制文件：\n\nbin/dist-linux-arm\nbin/dist-linux-amd64\n\n那么 Dockerfile 可以这样书写：\n12345678910FROM scratch# 使用变量必须申明ARG TARGETOSARG TARGETARCHCOPY bin/dist-$&#123;TARGETOS&#125;-$&#123;TARGETARCH&#125; /distENTRYPOINT [&quot;dist&quot;]\n","dateCreated":"2018-04-14T16:02:39+08:00","dateModified":"2025-06-16T10:22:53+08:00","datePublished":"2018-04-14T16:02:39+08:00","description":"","headline":"13.Docker Buildx(Docker详细教程)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/","keywords":"Docker"}</script>
+    <meta name="description" content="# Docker Buildx Docker Buildx 是一个 docker CLI 插件，其扩展了 docker 命令，支持 Moby BuildKit 提供的功能。提供了与 docker build 相同的用户体验，并增加了许多新功能。  该功能仅适用于 Docker v19.03+ 版本  # 使用 BuildKit 构建镜像 BuildKit 是下一代的镜像构建组件，在 https:&#x2F;">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="13.Docker Buildx(Docker详细教程)">
+<meta property="og:url" content="https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="# Docker Buildx Docker Buildx 是一个 docker CLI 插件，其扩展了 docker 命令，支持 Moby BuildKit 提供的功能。提供了与 docker build 相同的用户体验，并增加了许多新功能。  该功能仅适用于 Docker v19.03+ 版本  # 使用 BuildKit 构建镜像 BuildKit 是下一代的镜像构建组件，在 https:&#x2F;">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2018-04-14T08:02:39.000Z">
+<meta property="article:modified_time" content="2025-06-16T02:22:53.958Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="Docker">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            13.Docker Buildx(Docker详细教程)
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2018-04-14T16:02:39+08:00">
+	
+		    2018 年 4 月 14 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/devops/">devops</a>, <a class="category-link" href="../../../../../categories/devops/Docker/">Docker</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="Docker-Buildx"><a href="#docker-buildx">#</a> Docker Buildx</h2>
+<p>Docker Buildx 是一个 docker CLI 插件，其扩展了 docker 命令，支持 <a target="_blank" rel="noopener" href="https://vuepress.mirror.docker-practice.com/buildx/buildkit.html">Moby BuildKit</a> 提供的功能。提供了与 docker build 相同的用户体验，并增加了许多新功能。</p>
+<blockquote>
+<p>该功能仅适用于 Docker v19.03+ 版本</p>
+</blockquote>
+<h2 id="使用-BuildKit-构建镜像"><a href="#%E4%BD%BF%E7%94%A8-buildkit-%E6%9E%84%E5%BB%BA%E9%95%9C%E5%83%8F">#</a> 使用 <code>BuildKit</code> 构建镜像</h2>
+<p><strong>BuildKit</strong> 是下一代的镜像构建组件，在 <a target="_blank" rel="noopener" href="https://github.com/moby/buildkit">https://github.com/moby/buildkit</a> 开源。</p>
+<p><strong>注意：如果您的镜像构建使用的是云服务商提供的镜像构建服务（腾讯云容器服务、阿里云容器服务等），由于上述服务提供商的 Docker 版本低于 18.09，BuildKit 无法使用，将造成镜像构建失败。建议使用 BuildKit 构建镜像时使用一个新的 Dockerfile 文件（例如 Dockerfile.buildkit）</strong></p>
+<p>目前，Docker Hub 自动构建已经支持 buildkit，具体请参考 <a target="_blank" rel="noopener" href="https://github.com/docker-practice/docker-hub-buildx">https://github.com/docker-practice/docker-hub-buildx</a></p>
+<h2 id="Dockerfile-新增指令详解"><a href="#dockerfile-%E6%96%B0%E5%A2%9E%E6%8C%87%E4%BB%A4%E8%AF%A6%E8%A7%A3">#</a> <code>Dockerfile</code> 新增指令详解</h2>
+<p>启用 <code>BuildKit</code> 之后，我们可以使用下面几个新的 <code>Dockerfile</code> 指令来加快镜像构建。</p>
+<h3 id="RUN-mount-type-cache"><a href="#run-mount-type-cache">#</a> <code>RUN --mount=type=cache</code></h3>
+<p>目前，几乎所有的程序都会使用依赖管理工具，例如 <code>Go</code> 中的 <code>go mod</code>、<code>Node.js</code> 中的 <code>npm</code> 等等，当我们构建一个镜像时，往往会重复的从互联网中获取依赖包，难以缓存，大大降低了镜像的构建效率。</p>
+<p>例如一个前端工程需要用到 <code>npm</code>：</p>
+<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> node:alpine as builder</span><br><span class="line"></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="language-bash"> /app</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">COPY</span><span class="language-bash"> package.json /app/</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> npm i --registry=https://registry.npm.taobao.org \</span></span><br><span class="line"><span class="language-bash">        &amp;&amp; <span class="built_in">rm</span> -rf ~/.npm</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">COPY</span><span class="language-bash"> src /app/src</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> npm run build</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">FROM</span> nginx:alpine</span><br><span class="line"></span><br><span class="line"><span class="keyword">COPY</span><span class="language-bash"> --from=builder /app/dist /app/dist</span></span><br></pre></td></tr></table></figure>
+<p>使用多阶段构建，构建的镜像中只包含了目标文件夹 <code>dist</code>，但仍然存在一些问题，当 <code>package.json</code> 文件变动时，<code>RUN npm i &amp;&amp; rm -rf ~/.npm</code> 这一层会重新执行，变更多次后，生成了大量的中间层镜像。</p>
+<p>为解决这个问题，进一步的我们可以设想一个类似 <strong>数据卷</strong> 的功能，在镜像构建时把 <code>node_modules</code> 文件夹挂载上去，在构建完成后，这个 <code>node_modules</code> 文件夹会自动卸载，实际的镜像中并不包含 <code>node_modules</code> 这个文件夹，这样我们就省去了每次获取依赖的时间，大大增加了镜像构建效率，同时也避免了生成了大量的中间层镜像。</p>
+<p><code>BuildKit</code> 提供了 <code>RUN --mount=type=cache</code> 指令，可以实现上边的设想。</p>
+<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># syntax = docker/dockerfile:experimental</span></span><br><span class="line"><span class="keyword">FROM</span> node:alpine as builder</span><br><span class="line"></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="language-bash"> /app</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">COPY</span><span class="language-bash"> package.json /app/</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> --mount=<span class="built_in">type</span>=cache,target=/app/node_modules,<span class="built_in">id</span>=my_app_npm_module,sharing=locked \</span></span><br><span class="line"><span class="language-bash">    --mount=<span class="built_in">type</span>=cache,target=/root/.npm,<span class="built_in">id</span>=npm_cache \</span></span><br><span class="line"><span class="language-bash">        npm i --registry=https://registry.npm.taobao.org</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">COPY</span><span class="language-bash"> src /app/src</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> --mount=<span class="built_in">type</span>=cache,target=/app/node_modules,<span class="built_in">id</span>=my_app_npm_module,sharing=locked \</span></span><br><span class="line"><span class="language-bash"><span class="comment"># --mount=type=cache,target=/app/dist,id=my_app_dist,sharing=locked \</span></span></span><br><span class="line"><span class="language-bash">        npm run build</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">FROM</span> nginx:alpine</span><br><span class="line"></span><br><span class="line"><span class="comment"># COPY --from=builder /app/dist /app/dist</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 为了更直观的说明 from 和 source 指令，这里使用 RUN 指令</span></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> --mount=<span class="built_in">type</span>=cache,target=/tmp/dist,from=builder,<span class="built_in">source</span>=/app/dist \</span></span><br><span class="line"><span class="language-bash">    <span class="comment"># --mount=type=cache,target/tmp/dist,from=my_app_dist,sharing=locked \</span></span></span><br><span class="line"><span class="language-bash">    <span class="built_in">mkdir</span> -p /app/dist &amp;&amp; <span class="built_in">cp</span> -r /tmp/dist/* /app/dist</span></span><br></pre></td></tr></table></figure>
+<p><strong>由于 <code>BuildKit</code> 为实验特性，每个 <code>Dockerfile</code> 文件开头都必须加上如下指令</strong></p>
+<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># syntax = docker/dockerfile:experimental</span></span><br></pre></td></tr></table></figure>
+<p>第一个 <code>RUN</code> 指令执行后，<code>id</code> 为 <code>my_app_npm_module</code> 的缓存文件夹挂载到了 <code>/app/node_modules</code> 文件夹中。多次执行也不会产生多个中间层镜像。</p>
+<p>第二个 <code>RUN</code> 指令执行时需要用到 <code>node_modules</code> 文件夹，<code>node_modules</code> 已经挂载，命令也可以正确执行。</p>
+<p>第三个 <code>RUN</code> 指令将上一阶段产生的文件复制到指定位置，<code>from</code> 指明缓存的来源，这里 <code>builder</code> 表示缓存来源于构建的第一阶段，<code>source</code> 指明缓存来源的文件夹。</p>
+<p>上面的 <code>Dockerfile</code> 中 <code>--mount=type=cache,...</code> 中指令作用如下：</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td><code>id</code> 设置一个标志，以便区分缓存。</td>
+</tr>
+<tr>
+<td><code>target</code> (必填项)</td>
+<td>缓存的挂载目标文件夹。</td>
+</tr>
+<tr>
+<td><code>ro</code>,<code>readonly</code></td>
+<td>只读，缓存文件夹不能被写入。</td>
+</tr>
+<tr>
+<td><code>sharing</code></td>
+<td>有 <code>shared</code> <code>private</code> <code>locked</code> 值可供选择。<code>sharing</code> 设置当一个缓存被多次使用时的表现，由于 <code>BuildKit</code> 支持并行构建，当多个步骤使用同一缓存时（同一 <code>id</code>）会发生冲突。<code>shared</code> 表示多个步骤可以同时读写，<code>private</code> 表示当多个步骤使用同一缓存时，每个步骤使用不同的缓存，<code>locked</code> 表示当一个步骤完成释放缓存后，后一个步骤才能继续使用该缓存。</td>
+</tr>
+<tr>
+<td><code>from</code></td>
+<td>缓存来源（构建阶段），不填写时为空文件夹。</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>来源的文件夹路径。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="RUN-mount-type-bind"><a href="#run-mount-type-bind">#</a> <code>RUN --mount=type=bind</code></h3>
+<p>该指令可以将一个镜像（或上一构建阶段）的文件挂载到指定位置。</p>
+<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># syntax = docker/dockerfile:experimental</span></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> --mount=<span class="built_in">type</span>=<span class="built_in">bind</span>,from=php:alpine,<span class="built_in">source</span>=/usr/local/bin/docker-php-entrypoint,target=/docker-php-entrypoint \</span></span><br><span class="line"><span class="language-bash">        <span class="built_in">cat</span> /docker-php-entrypoint</span></span><br></pre></td></tr></table></figure>
+<h3 id="RUN-mount-type-tmpfs"><a href="#run-mount-type-tmpfs">#</a> <code>RUN --mount=type=tmpfs</code></h3>
+<p>该指令可以将一个 <code>tmpfs</code> 文件系统挂载到指定位置。</p>
+<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># syntax = docker/dockerfile:experimental</span></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> --mount=<span class="built_in">type</span>=tmpfs,target=/temp \</span></span><br><span class="line"><span class="language-bash">        mount | grep /temp</span></span><br></pre></td></tr></table></figure>
+<h3 id="RUN-mount-type-secret"><a href="#run-mount-type-secret">#</a> <code>RUN --mount=type=secret</code></h3>
+<p>该指令可以将一个文件(例如密钥)挂载到指定位置。</p>
+<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># syntax = docker/dockerfile:experimental</span></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> --mount=<span class="built_in">type</span>=secret,<span class="built_in">id</span>=aws,target=/root/.aws/credentials \</span></span><br><span class="line"><span class="language-bash">        <span class="built_in">cat</span> /root/.aws/credentials</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker build -t <span class="built_in">test</span> --secret <span class="built_in">id</span>=aws,src=<span class="variable">$HOME</span>/.aws/credentials .</span><br></pre></td></tr></table></figure>
+<h3 id="RUN-mount-type-ssh"><a href="#run-mount-type-ssh">#</a> <code>RUN --mount=type=ssh</code></h3>
+<p>该指令可以挂载 <code>ssh</code> 密钥。</p>
+<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># syntax = docker/dockerfile:experimental</span></span><br><span class="line"><span class="keyword">FROM</span> alpine</span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> apk add --no-cache openssh-client</span></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> <span class="built_in">mkdir</span> -p -m 0700 ~/.ssh &amp;&amp; ssh-keyscan gitlab.com &gt;&gt; ~/.ssh/known_hosts</span></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> --mount=<span class="built_in">type</span>=ssh ssh git@gitlab.com | <span class="built_in">tee</span> /hello</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">eval</span> $(ssh-agent)</span><br><span class="line">$ ssh-add ~/.ssh/id_rsa</span><br><span class="line">(Input your passphrase here)</span><br><span class="line">$ docker build -t <span class="built_in">test</span> --ssh default=<span class="variable">$SSH_AUTH_SOCK</span> .</span><br></pre></td></tr></table></figure>
+<h2 id="官方文档"><a href="#%E5%AE%98%E6%96%B9%E6%96%87%E6%A1%A3">#</a> 官方文档</h2>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md">https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md</a></li>
+</ul>
+<h2 id="使用-Buildx-构建镜像"><a href="#%E4%BD%BF%E7%94%A8-buildx-%E6%9E%84%E5%BB%BA%E9%95%9C%E5%83%8F">#</a> 使用 Buildx 构建镜像</h2>
+<h2 id="使用"><a href="#%E4%BD%BF%E7%94%A8">#</a> 使用</h2>
+<p>你可以直接使用 <code>docker buildx build</code> 命令构建镜像。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ docker buildx build .</span><br><span class="line">[+] Building 8.4s (23/32)</span><br><span class="line"> =&gt; ...</span><br></pre></td></tr></table></figure>
+<p>Buildx 使用 <a target="_blank" rel="noopener" href="https://vuepress.mirror.docker-practice.com/buildx/buildkit.html">BuildKit 引擎</a> 进行构建，支持许多新的功能，具体参考 <a target="_blank" rel="noopener" href="https://vuepress.mirror.docker-practice.com/buildx/buildkit.html">Buildkit</a> 一节。</p>
+<h2 id="官方文档-2"><a href="#%E5%AE%98%E6%96%B9%E6%96%87%E6%A1%A3">#</a> 官方文档</h2>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://docs.docker.com/engine/reference/commandline/buildx/">https://docs.docker.com/engine/reference/commandline/buildx/</a></li>
+</ul>
+<h2 id="使用-buildx-构建多种系统架构支持的-Docker-镜像"><a href="#%E4%BD%BF%E7%94%A8-buildx-%E6%9E%84%E5%BB%BA%E5%A4%9A%E7%A7%8D%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E6%94%AF%E6%8C%81%E7%9A%84-docker-%E9%95%9C%E5%83%8F">#</a> 使用 buildx 构建多种系统架构支持的 Docker 镜像</h2>
+<p>在之前的版本中构建多种系统架构支持的 Docker 镜像，要想使用统一的名字必须使用 <a target="_blank" rel="noopener" href="https://vuepress.mirror.docker-practice.com/image/manifest.html"><code>$ docker manifest</code></a> 命令。</p>
+<p>在 Docker 19.03+ 版本中可以使用 <code>$ docker buildx build</code> 命令使用 <code>BuildKit</code> 构建镜像。该命令支持 <code>--platform</code> 参数可以同时构建支持多种系统架构的 Docker 镜像，大大简化了构建步骤。</p>
+<h2 id="新建-builder-实例"><a href="#%E6%96%B0%E5%BB%BA-builder-%E5%AE%9E%E4%BE%8B">#</a> 新建 <code>builder</code> 实例</h2>
+<p>Docker for Linux 不支持构建 <code>arm</code> 架构镜像，我们可以运行一个新的容器让其支持该特性，Docker 桌面版无需进行此项设置。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker run --<span class="built_in">rm</span> --privileged tonistiigi/binfmt:latest --install all</span><br></pre></td></tr></table></figure>
+<p>由于 Docker 默认的 <code>builder</code> 实例不支持同时指定多个 <code>--platform</code>，我们必须首先创建一个新的 <code>builder</code> 实例。同时由于国内拉取镜像较缓慢，我们可以使用配置了 <a target="_blank" rel="noopener" href="https://github.com/moby/buildkit/blob/master/docs/buildkitd.toml.md">镜像加速地址 (opens new window)</a> 的 <a target="_blank" rel="noopener" href="https://github.com/docker-practice/buildx"><code>dockerpracticesig/buildkit:master</code> (opens new window)</a> 镜像替换官方镜像。</p>
+<blockquote>
+<p>如果你有私有的镜像加速器，可以基于 <a target="_blank" rel="noopener" href="https://github.com/docker-practice/buildx">https://github.com/docker-practice/buildx</a> 构建自己的 buildkit 镜像并使用它。</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 适用于国内环境</span></span><br><span class="line">$ docker buildx create --use --name=mybuilder-cn --driver docker-container --driver-opt image=dockerpracticesig/buildkit:master</span><br><span class="line"></span><br><span class="line"><span class="comment"># 适用于腾讯云环境(腾讯云主机、coding.net 持续集成)</span></span><br><span class="line">$ docker buildx create --use --name=mybuilder-cn --driver docker-container --driver-opt image=dockerpracticesig/buildkit:master-tencent</span><br><span class="line"></span><br><span class="line"><span class="comment"># $ docker buildx create --name mybuilder --driver docker-container</span></span><br><span class="line"></span><br><span class="line">$ docker buildx use mybuilder</span><br></pre></td></tr></table></figure>
+<h2 id="构建镜像"><a href="#%E6%9E%84%E5%BB%BA%E9%95%9C%E5%83%8F">#</a> 构建镜像</h2>
+<p>新建 Dockerfile 文件。</p>
+<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> --platform=$TARGETPLATFORM alpine</span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> <span class="built_in">uname</span> -a &gt; /os.txt</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">CMD</span><span class="language-bash"> <span class="built_in">cat</span> /os.txt</span></span><br></pre></td></tr></table></figure>
+<p>使用 <code>$ docker buildx build</code> 命令构建镜像，注意将 <code>myusername</code> 替换为自己的 Docker Hub 用户名。</p>
+<p><code>--push</code> 参数表示将构建好的镜像推送到 Docker 仓库。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ docker buildx build --platform linux/arm,linux/arm64,linux/amd64 -t myusername/hello . --push</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看镜像信息</span></span><br><span class="line">$ docker buildx imagetools inspect myusername/hello</span><br></pre></td></tr></table></figure>
+<p>在不同架构运行该镜像，可以得到该架构的信息。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># arm</span></span><br><span class="line">$ docker run -it --<span class="built_in">rm</span> myusername/hello</span><br><span class="line">Linux buildkitsandbox 4.9.125-linuxkit <span class="comment">#1 SMP Fri Sep 7 08:20:28 UTC 2018 armv7l Linux</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># arm64</span></span><br><span class="line">$ docker run -it --<span class="built_in">rm</span> myusername/hello</span><br><span class="line">Linux buildkitsandbox 4.9.125-linuxkit <span class="comment">#1 SMP Fri Sep 7 08:20:28 UTC 2018 aarch64 Linux</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># amd64</span></span><br><span class="line">$ docker run -it --<span class="built_in">rm</span> myusername/hello</span><br><span class="line">Linux buildkitsandbox 4.9.125-linuxkit <span class="comment">#1 SMP Fri Sep 7 08:20:28 UTC 2018 x86_64 Linux</span></span><br></pre></td></tr></table></figure>
+<h2 id="架构相关变量"><a href="#%E6%9E%B6%E6%9E%84%E7%9B%B8%E5%85%B3%E5%8F%98%E9%87%8F">#</a> 架构相关变量</h2>
+<p><code>Dockerfile</code> 支持如下架构相关的变量</p>
+<p><strong>TARGETPLATFORM</strong></p>
+<p>构建镜像的目标平台，例如 <code>linux/amd64</code>, <code>linux/arm/v7</code>, <code>windows/amd64</code>。</p>
+<p><strong>TARGETOS</strong></p>
+<p><code>TARGETPLATFORM</code> 的 OS 类型，例如 <code>linux</code>, <code>windows</code></p>
+<p><strong>TARGETARCH</strong></p>
+<p><code>TARGETPLATFORM</code> 的架构类型，例如 <code>amd64</code>, <code>arm</code></p>
+<p><strong>TARGETVARIANT</strong></p>
+<p><code>TARGETPLATFORM</code> 的变种，该变量可能为空，例如 <code>v7</code></p>
+<p><strong>BUILDPLATFORM</strong></p>
+<p>构建镜像主机平台，例如 <code>linux/amd64</code></p>
+<p><strong>BUILDOS</strong></p>
+<p><code>BUILDPLATFORM</code> 的 OS 类型，例如 <code>linux</code></p>
+<p><strong>BUILDARCH</strong></p>
+<p><code>BUILDPLATFORM</code> 的架构类型，例如 <code>amd64</code></p>
+<p><strong>BUILDVARIANT</strong></p>
+<p><code>BUILDPLATFORM</code> 的变种，该变量可能为空，例如 <code>v7</code></p>
+<h3 id="使用举例"><a href="#%E4%BD%BF%E7%94%A8%E4%B8%BE%E4%BE%8B">#</a> 使用举例</h3>
+<p>例如我们要构建支持 <code>linux/arm/v7</code> 和 <code>linux/amd64</code> 两种架构的镜像。假设已经生成了两个平台对应的二进制文件：</p>
+<ul>
+<li><code>bin/dist-linux-arm</code></li>
+<li><code>bin/dist-linux-amd64</code></li>
+</ul>
+<p>那么 <code>Dockerfile</code> 可以这样书写：</p>
+<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> scratch</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用变量必须申明</span></span><br><span class="line"><span class="keyword">ARG</span> TARGETOS</span><br><span class="line"></span><br><span class="line"><span class="keyword">ARG</span> TARGETARCH</span><br><span class="line"></span><br><span class="line"><span class="keyword">COPY</span><span class="language-bash"> bin/dist-<span class="variable">$&#123;TARGETOS&#125;</span>-<span class="variable">$&#123;TARGETARCH&#125;</span> /dist</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">ENTRYPOINT</span><span class="language-bash"> [<span class="string">&quot;dist&quot;</span>]</span></span><br></pre></td></tr></table></figure>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/Docker/" rel="tag">Docker</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../15/docker/14.Docker%20Podman(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    data-tooltip="14.Docker Podman(Docker详细教程)"
+                    aria-label="上一篇: 14.Docker Podman(Docker详细教程)"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../13/docker/12.Docker%20%E5%BA%95%E5%B1%82%E5%AE%9E%E7%8E%B0(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    data-tooltip="12.Docker 底层实现(Docker详细教程)"
+                    aria-label="下一篇: 12.Docker 底层实现(Docker详细教程)"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../15/docker/14.Docker%20Podman(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    data-tooltip="14.Docker Podman(Docker详细教程)"
+                    aria-label="上一篇: 14.Docker Podman(Docker详细教程)"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../13/docker/12.Docker%20%E5%BA%95%E5%B1%82%E5%AE%9E%E7%8E%B0(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    data-tooltip="12.Docker 底层实现(Docker详细教程)"
+                    aria-label="下一篇: 12.Docker 底层实现(Docker详细教程)"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/14/docker/13.Docker%20Buildx(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 198 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

@@ -1,0 +1,1456 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>Docker Compose - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"# Compose 简介\nCompose 项目是 Docker 官方的开源项目，负责实现对 Docker 容器集群的快速编排。从功能上看，跟 OpenStack 中的 Heat 十分类似。\n其代码目前在 https://github.com/docker/compose (opens new window) 上开源。\nCompose 定位是 「定义和运行多个 Docker 容器的应用（Defining and running multi-container Docker applications）」，其前身是开源项目 Fig。\n通过第一部分中的介绍，我们知道使用一个 Dockerfile 模板文件，可以让用户很方便的定义一个单独的应用容器。然而，在日常工作中，经常会碰到需要多个容器相互配合来完成某项任务的情况。例如要实现一个 Web 项目，除了 Web 服务容器本身，往往还需要再加上后端的数据库服务容器，甚至还包括负载均衡容器等。\nCompose 恰好满足了这样的需求。它允许用户通过一个单独的 docker-compose.yml 模板文件（YAML 格式）来定义一组相关联的应用容器为一个项目（project）。\nCompose 中有两个重要的概念：\n\n\n服务 (service)：一个应用的容器，实际上可以包括若干运行相同镜像的容器实例。\n\n\n项目 (project)：由一组关联的应用容器组成的一个完整业务单元，在 docker-compose.yml 文件中定义。\n\n\nCompose 的默认管理对象是项目，通过子命令对项目中的一组容器进行便捷地生命周期管理。\nCompose 项目由 Python 编写，实现上调用了 Docker 服务提供的 API 来对容器进行管理。因此，只要所操作的平台支持 Docker API，就可以在其上利用 Compose 来进行编排管理。\n# 安装与卸载\nCompose 支持 Linux、macOS、Windows 三大平台。\nDocker Desktop for Mac/Windows 自带 compose，安装 Docker 之后可以直接使用。\n123$ docker compose versionDocker Compose version v2.6.0\nLinux 系统请使用以下介绍的方法安装。\n# 二进制包\n在 Linux 上的也安装十分简单，从 官方 GitHub Release (opens new window) 处直接下载编译好的二进制文件即可。\n例如，在 Linux 64 位系统上直接下载对应的二进制包。\n12345678$ DOCKER_CONFIG=/usr/local/lib/docker/cli-plugins$ sudo mkdir -p $DOCKER_CONFIG/cli-plugins$ sudo curl -SL https://github.com/docker/compose/releases/download/v2.6.1/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose$ sudo chmod +x $DOCKER_CONFIG/cli-plugins$ docker compose version# 国内用户可以使用以下方式加快下载$ sudo curl -SL https://download.fastgit.org/docker/compose/releases/download/v2.6.1/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose\n# 使用\n# 术语\n首先介绍几个术语。\n\n\n服务 (service)：一个应用容器，实际上可以运行多个相同镜像的实例。\n\n\n项目 (project)：由一组关联的应用容器组成的一个完整业务单元。\n\n\n可见，一个项目可以由多个服务（容器）关联而成，Compose 面向项目进行管理。\n# 场景\n最常见的项目是 web 网站，该项目应该包含 web 应用和缓存。\n下面我们用 Python 来建立一个能够记录页面访问次数的 web 网站。\n# web 应用\n新建文件夹，在该目录中编写 app.py 文件\n12345678910111213from flask import Flaskfrom redis import Redisapp = Flask(__name__)redis = Redis(host=&#x27;redis&#x27;, port=6379)@app.route(&#x27;/&#x27;)def hello():    count = redis.incr(&#x27;hits&#x27;)    return &#x27;Hello World! 该页面已被访问 &#123;&#125; 次。\\n&#x27;.format(count)if __name__ == &quot;__main__&quot;:    app.run(host=&quot;0.0.0.0&quot;, debug=True)\n# Dockerfile\n编写 Dockerfile 文件，内容为\n12345FROM python:3.6-alpineADD . /codeWORKDIR /codeRUN pip install redis flaskCMD [&quot;python&quot;, &quot;app.py&quot;]\n# docker-compose.yml\n编写 docker-compose.yml 文件，这个是 Compose 使用的主模板文件。\n12345678910version: &#x27;3&#x27;services:  web:    build: .    ports:     - &quot;5000:5000&quot;  redis:    image: &quot;redis:alpine&quot;\n# 运行 compose 项目\n此时访问本地 5000 端口，每次刷新页面，计数就会加 1。\n# Compose 命令说明\n# 命令对象与格式\n对于 Compose 来说，大部分命令的对象既可以是项目本身，也可以指定为项目中的服务或者容器。如果没有特别的说明，命令对象将是项目，这意味着项目中所有的服务都会受到命令影响。\n执行 docker compose [COMMAND] --help 可以查看具体某个命令的使用格式。\ndocker compose 命令的基本的使用格式是\n1docker compose [-f=&lt;arg&gt;...] [options] [COMMAND] [ARGS...]\n# 命令选项\n\n\n-f, --file FILE 指定使用的 Compose 模板文件，默认为 docker-compose.yml，可以多次指定。\n\n\n-p, --project-name NAME 指定项目名称，默认将使用所在目录名称作为项目名。\n\n\n--verbose 输出更多调试信息。\n\n\n-v, --version 打印版本并退出。\n\n\n# 命令使用说明\n# build\n格式为 docker compose build [options] [SERVICE...]。\n构建（重新构建）项目中的服务容器。\n服务容器一旦构建后，将会带上一个标记名，例如对于 web 项目中的一个 db 容器，可能是 web_db。\n可以随时在项目目录下运行 docker compose build 来重新构建服务。\n选项包括：\n\n\n--force-rm 删除构建过程中的临时容器。\n\n\n--no-cache 构建镜像过程中不使用 cache（这将加长构建过程）。\n\n\n--pull 始终尝试通过 pull 来获取更新版本的镜像。\n\n\n# config\n验证 Compose 文件格式是否正确，若正确则显示配置，若格式错误显示错误原因。\n# down\n此命令将会停止 up 命令所启动的容器，并移除网络\n# exec\n进入指定的容器。\n# help\n获得一个命令的帮助。\n# images\n列出 Compose 文件中包含的镜像。\n# kill\n格式为 docker compose kill [options] [SERVICE...]。\n通过发送 SIGKILL 信号来强制停止服务容器。\n支持通过 -s 参数来指定发送的信号，例如通过如下指令发送 SIGINT 信号。\n1$ docker compose kill -s SIGINT\n# logs\n格式为 docker compose logs [options] [SERVICE...]。\n查看服务容器的输出。默认情况下，docker compose 将对不同的服务输出使用不同的颜色来区分。可以通过 --no-color 来关闭颜色。\n该命令在调试问题的时候十分有用。\n# pause\n格式为 docker compose pause [SERVICE...]。\n暂停一个服务容器。\n# port\n格式为 docker compose port [options] SERVICE PRIVATE_PORT。\n打印某个容器端口所映射的公共端口。\n选项：\n\n\n--protocol=proto 指定端口协议，tcp（默认值）或者 udp。\n\n\n--index=index 如果同一服务存在多个容器，指定命令对象容器的序号（默认为 1）。\n\n\n# ps\n格式为 docker compose ps [options] [SERVICE...]。\n列出项目中目前的所有容器。\n选项：\n\n-q 只打印容器的 ID 信息。\n\n# pull\n格式为 docker compose pull [options] [SERVICE...]。\n拉取服务依赖的镜像。\n选项：\n\n--ignore-pull-failures 忽略拉取镜像过程中的错误。\n\n# push\n推送服务依赖的镜像到 Docker 镜像仓库。\n# restart\n格式为 docker compose restart [options] [SERVICE...]。\n重启项目中的服务。\n选项：\n\n-t, --timeout TIMEOUT 指定重启前停止容器的超时（默认为 10 秒）。\n\n# rm\n格式为 docker compose rm [options] [SERVICE...]。\n删除所有（停止状态的）服务容器。推荐先执行 docker compose stop 命令来停止容器。\n选项：\n\n\n-f, --force 强制直接删除，包括非停止状态的容器。一般尽量不要使用该选项。\n\n\n-v 删除容器所挂载的数据卷。\n\n\n# run\n格式为 docker compose run [options] [-p PORT...] [-e KEY=VAL...] SERVICE [COMMAND] [ARGS...]。\n在指定服务上执行一个命令。\n例如：\n1$ docker compose run ubuntu ping docker.com\n将会启动一个 ubuntu 服务容器，并执行 ping docker.com 命令。\n默认情况下，如果存在关联，则所有关联的服务将会自动被启动，除非这些服务已经在运行中。\n该命令类似启动容器后运行指定的命令，相关卷、链接等等都将会按照配置自动创建。\n两个不同点：\n\n\n给定命令将会覆盖原有的自动运行命令；\n\n\n不会自动创建端口，以避免冲突。\n\n\n如果不希望自动启动关联的容器，可以使用 --no-deps 选项，例如\n1$ docker compose run --no-deps web python manage.py shell\n将不会启动 web 容器所关联的其它容器。\n选项：\n\n\n-d 后台运行容器。\n\n\n--name NAME 为容器指定一个名字。\n\n\n--entrypoint CMD 覆盖默认的容器启动指令。\n\n\n-e KEY=VAL 设置环境变量值，可多次使用选项来设置多个环境变量。\n\n\n-u, --user=&quot;&quot; 指定运行容器的用户名或者 uid。\n\n\n--no-deps 不自动启动关联的服务容器。\n\n\n--rm 运行命令后自动删除容器，d 模式下将忽略。\n\n\n-p, --publish=[] 映射容器端口到本地主机。\n\n\n--service-ports 配置服务端口并映射到本地主机。\n\n\n-T 不分配伪 tty，意味着依赖 tty 的指令将无法运行。\n\n\n# start\n格式为 docker compose start [SERVICE...]。\n启动已经存在的服务容器。\n# stop\n格式为 docker compose stop [options] [SERVICE...]。\n停止已经处于运行状态的容器，但不删除它。通过 docker compose start 可以再次启动这些容器。\n选项：\n\n-t, --timeout TIMEOUT 停止容器时候的超时（默认为 10 秒）。\n\n# top\n查看各个服务容器内运行的进程。\n# unpause\n格式为 docker compose unpause [SERVICE...]。\n恢复处于暂停状态中的服务。\n# up\n格式为 docker compose up [options] [SERVICE...]。\n该命令十分强大，它将尝试自动完成包括构建镜像，（重新）创建服务，启动服务，并关联服务相关容器的一系列操作。\n链接的服务都将会被自动启动，除非已经处于运行状态。\n可以说，大部分时候都可以直接通过该命令来启动一个项目。\n默认情况，docker compose up 启动的容器都在前台，控制台将会同时打印所有容器的输出信息，可以很方便进行调试。\n当通过 Ctrl-C 停止命令时，所有容器将会停止。\n如果使用 docker compose up -d，将会在后台启动并运行所有的容器。一般推荐生产环境下使用该选项。\n默认情况，如果服务容器已经存在，docker compose up 将会尝试停止容器，然后重新创建（保持使用 volumes-from 挂载的卷），以保证新启动的服务匹配 docker-compose.yml 文件的最新内容。如果用户不希望容器被停止并重新创建，可以使用 docker compose up --no-recreate。这样将只会启动处于停止状态的容器，而忽略已经运行的服务。如果用户只想重新部署某个服务，可以使用 docker compose up --no-deps -d &lt;SERVICE_NAME&gt; 来重新创建服务并后台停止旧服务，启动新服务，并不会影响到其所依赖的服务。\n选项：\n\n\n-d 在后台运行服务容器。\n\n\n--no-color 不使用颜色来区分不同的服务的控制台输出。\n\n\n--no-deps 不启动服务所链接的容器。\n\n\n--force-recreate 强制重新创建容器，不能与 --no-recreate 同时使用。\n\n\n--no-recreate 如果容器已经存在了，则不重新创建，不能与 --force-recreate 同时使用。\n\n\n--no-build 不自动构建缺失的服务镜像。\n\n\n-t, --timeout TIMEOUT 停止容器时候的超时（默认为 10 秒）。\n\n\n# version\n格式为 docker compose version。\n打印版本信息。\n# 参考资料\n\n官方文档 (opens new window)\n\n# Compose 模板文件\n模板文件是使用 Compose 的核心，涉及到的指令关键字也比较多。但大家不用担心，这里面大部分指令跟 docker run 相关参数的含义都是类似的。\n默认的模板文件名称为 docker-compose.yml，格式为 YAML 格式。\n123456789version: &quot;3&quot;services:  webapp:    image: examples/web    ports:      - &quot;80:80&quot;    volumes:      - &quot;/data&quot;\n注意每个服务都必须通过 image 指令指定镜像或 build 指令（需要 Dockerfile）等来自动构建生成镜像。\n如果使用 build 指令，在 Dockerfile 中设置的选项(例如：CMD, EXPOSE, VOLUME, ENV 等) 将会自动被获取，无需在 docker-compose.yml 中重复设置。\n下面分别介绍各个指令的用法。\n# build\n指定 Dockerfile 所在文件夹的路径（可以是绝对路径，或者相对 docker-compose.yml 文件的路径）。 Compose 将会利用它自动构建这个镜像，然后使用这个镜像。\n12345version: &#x27;3&#x27;services:  webapp:    build: ./dir\n你也可以使用 context 指令指定 Dockerfile 所在文件夹的路径。\n使用 dockerfile 指令指定 Dockerfile 文件名。\n使用 arg 指令指定构建镜像时的变量。\n123456789version: &#x27;3&#x27;services:  webapp:    build:      context: ./dir      dockerfile: Dockerfile-alternate      args:        buildno: 1\n使用 cache_from 指定构建镜像的缓存\n12345build:  context: .  cache_from:    - alpine:latest    - corp/web_app:3.14\n# cap_add, cap_drop\n指定容器的内核能力（capacity）分配。\n例如，让容器拥有所有能力可以指定为：\n去掉 NET_ADMIN 能力可以指定为：\n# command\n覆盖容器启动后默认执行的命令。\n1command: echo &quot;hello world&quot;\n# configs\n仅用于 Swarm mode，详细内容请查看 Swarm mode 一节。\n# cgroup_parent\n指定父 cgroup 组，意味着将继承该组的资源限制。\n例如，创建了一个 cgroup 组名称为 cgroups_1。\n1cgroup_parent: cgroups_1\n# container_name\n指定容器名称。默认将会使用 项目名称_服务名称_序号 这样的格式。\n1container_name: docker-web-container\n\n注意: 指定容器名称后，该服务将无法进行扩展（scale），因为 Docker 不允许多个容器具有相同的名称。\n\n# deploy\n仅用于 Swarm mode，详细内容请查看 Swarm mode 一节\n# devices\n指定设备映射关系。\n12devices:  - &quot;/dev/ttyUSB1:/dev/ttyUSB0&quot;\n# depends_on\n解决容器的依赖、启动先后的问题。以下例子中会先启动 redis db 再启动 web\n1234567891011121314version: &#x27;3&#x27;services:  web:    build: .    depends_on:      - db      - redis  redis:    image: redis  db:    image: postgres\n\n注意：web 服务不会等待 redis db 「完全启动」之后才启动。\n\n# dns\n自定义 DNS 服务器。可以是一个值，也可以是一个列表。\n12345dns: 8.8.8.8dns:  - 8.8.8.8  - 114.114.114.114\n# dns_search\n配置 DNS 搜索域。可以是一个值，也可以是一个列表。\n12345dns_search: example.comdns_search:  - domain1.example.com  - domain2.example.com\n# tmpfs\n挂载一个 tmpfs 文件系统到容器。\n1234tmpfs: /runtmpfs:  - /run  - /tmp\n# env_file\n从文件中获取环境变量，可以为单独的文件路径或列表。\n如果通过 docker compose -f FILE 方式来指定 Compose 模板文件，则 env_file 中变量的路径会基于模板文件路径。\n如果有变量名称与 environment 指令冲突，则按照惯例，以后者为准。\n123456env_file: .envenv_file:  - ./common.env  - ./apps/web.env  - /opt/secrets.env\n环境变量文件中每一行必须符合格式，支持 # 开头的注释行。\n12# common.env: Set development environmentPROG_ENV=development\n# environment\n设置环境变量。你可以使用数组或字典两种格式。\n只给定名称的变量会自动获取运行 Compose 主机上对应变量的值，可以用来防止泄露不必要的数据。\n1234567environment:  RACK_ENV: development  SESSION_SECRET:environment:  - RACK_ENV=development  - SESSION_SECRET\n如果变量名称或者值中用到 true|false，yes|no 等表达 布尔 (opens new window) 含义的词汇，最好放到引号里，避免 YAML 自动解析某些内容为对应的布尔语义。这些特定词汇，包括\n1y|Y|yes|Yes|YES|n|N|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF\n# expose\n暴露端口，但不映射到宿主机，只被连接的服务访问。\n仅可以指定内部端口为参数\n123expose: - &quot;3000&quot; - &quot;8000&quot;\n# external_links\n\n注意：不建议使用该指令。\n\n链接到 docker-compose.yml 外部的容器，甚至并非 Compose 管理的外部容器。\n1234external_links: - redis_1 - project_db_1:mysql - project_db_1:postgresql\n# extra_hosts\n类似 Docker 中的 --add-host 参数，指定额外的 host 名称映射信息。\n123extra_hosts: - &quot;googledns:8.8.8.8&quot; - &quot;dockerhub:52.1.157.61&quot;\n会在启动后的服务容器中 /etc/hosts 文件中添加如下两条条目。\n128.8.8.8 googledns52.1.157.61 dockerhub\n# healthcheck\n通过命令检查容器是否健康运行。\n12345healthcheck:  test: [&quot;CMD&quot;, &quot;curl&quot;, &quot;-f&quot;, &quot;http://localhost&quot;]  interval: 1m30s  timeout: 10s  retries: 3\n# image\n指定为镜像名称或镜像 ID。如果镜像在本地不存在，Compose 将会尝试拉取这个镜像。\n123image: ubuntuimage: orchardup/postgresqlimage: a4bc65fd\n# labels\n为容器添加 Docker 元数据（metadata）信息。例如可以为容器添加辅助说明信息。\n1234labels:  com.startupteam.description: &quot;webapp for a startup team&quot;  com.startupteam.department: &quot;devops department&quot;  com.startupteam.release: &quot;rc3 for v1.0&quot;\n# links\n\n注意：不推荐使用该指令。\n\n# logging\n配置日志选项。\n1234logging:  driver: syslog  options:    syslog-address: &quot;tcp://192.168.0.42:123&quot;\n目前支持三种日志驱动类型。\n123driver: &quot;json-file&quot;driver: &quot;syslog&quot;driver: &quot;none&quot;\noptions 配置日志驱动的相关参数。\n123options:  max-size: &quot;200k&quot;  max-file: &quot;10&quot;\n# network_mode\n设置网络模式。使用和 docker run 的 --network 参数一样的值。\n12345network_mode: &quot;bridge&quot;network_mode: &quot;host&quot;network_mode: &quot;none&quot;network_mode: &quot;service:[service name]&quot;network_mode: &quot;container:[container name/id]&quot;\n# networks\n配置容器连接的网络。\n1234567891011version: &quot;3&quot;services:  some-service:    networks:     - some-network     - other-networknetworks:  some-network:  other-network:\n# pid\n跟主机系统共享进程命名空间。打开该选项的容器之间，以及容器和宿主机系统之间可以通过进程 ID 来相互访问和操作。\n# ports\n暴露端口信息。\n使用宿主端口：容器端口 (HOST:CONTAINER) 格式，或者仅仅指定容器的端口（宿主将会随机选择端口）都可以。\n12345ports: - &quot;3000&quot; - &quot;8000:8000&quot; - &quot;49100:22&quot; - &quot;127.0.0.1:8001:8001&quot;\n注意：当使用 HOST:CONTAINER 格式来映射端口时，如果你使用的容器端口小于 60 并且没放到引号里，可能会得到错误结果，因为 YAML 会自动解析 xx:yy 这种数字格式为 60 进制。为避免出现这种问题，建议数字串都采用引号包括起来的字符串格式。\n# secrets\n存储敏感数据，例如 mysql 服务密码。\n12345678910111213141516version: &quot;3.1&quot;services:mysql:  image: mysql  environment:    MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password  secrets:    - db_root_password    - my_other_secretsecrets:  my_secret:    file: ./my_secret.txt  my_other_secret:    external: true\n# security_opt\n指定容器模板标签（label）机制的默认属性（用户、角色、类型、级别等）。例如配置标签的用户名和角色名。\n123security_opt:    - label:user:USER    - label:role:ROLE\n# stop_signal\n设置另一个信号来停止容器。在默认情况下使用的是 SIGTERM 停止容器。\n# sysctls\n配置容器内核参数。\n1234567sysctls:  net.core.somaxconn: 1024  net.ipv4.tcp_syncookies: 0sysctls:  - net.core.somaxconn=1024  - net.ipv4.tcp_syncookies=0\n# ulimits\n指定容器的 ulimits 限制值。\n例如，指定最大进程数为 65535，指定文件句柄数为 20000（软限制，应用可以随时修改，不能超过硬限制） 和 40000（系统硬限制，只能 root 用户提高）。\n12345ulimits:  nproc: 65535  nofile:    soft: 20000    hard: 40000\n# volumes\n数据卷所挂载路径设置。可以设置为宿主机路径(HOST:CONTAINER)或者数据卷名称(VOLUME:CONTAINER)，并且可以设置访问模式 （HOST:CONTAINER:ro）。\n该指令中路径支持相对路径。\n1234volumes: - /var/lib/mysql - cache/:/tmp/cache - ~/configs:/etc/configs/:ro\n如果路径为数据卷名称，必须在文件中配置数据卷。\n12345678910version: &quot;3&quot;services:  my_src:    image: mysql:8.0    volumes:      - mysql_data:/var/lib/mysqlvolumes:  mysql_data:  \n# 其它指令\n此外，还有包括 domainname, entrypoint, hostname, ipc, mac_address, privileged, read_only, shm_size, restart, stdin_open, tty, user, working_dir 等指令，基本跟 docker run 中对应参数的功能一致。\n指定服务容器启动后执行的入口文件。\n1entrypoint: /code/entrypoint.sh\n指定容器中运行应用的用户名。\n指定容器中工作目录。\n指定容器中搜索域名、主机名、mac 地址等。\n123domainname: your_website.comhostname: testmac_address: 08-00-27-00-0C-0A\n允许容器中运行一些特权命令。\n指定容器退出后的重启策略为始终重启。该命令对保持服务始终运行十分有效，在生产环境中推荐配置为 always 或者 unless-stopped。\n以只读模式挂载容器的 root 文件系统，意味着不能对容器内容进行修改。\n打开标准输入，可以接受外部输入。\n模拟一个伪终端。\n# 读取变量\nCompose 模板文件支持动态读取主机的系统环境变量和当前目录下的 .env 文件中的变量。\n例如，下面的 Compose 文件将从运行它的环境中读取变量 $&#123;MONGO_VERSION&#125; 的值，并写入执行的指令中。\n12345version: &quot;3&quot;services:db:  image: &quot;mongo:$&#123;MONGO_VERSION&#125;&quot;\n如果执行 MONGO_VERSION=3.2 docker compose up 则会启动一个 mongo:3.2 镜像的容器；如果执行 MONGO_VERSION=2.8 docker compose up 则会启动一个 mongo:2.8 镜像的容器。\n若当前目录存在 .env 文件，执行 docker compose 命令时将从该文件中读取变量。\n在当前目录新建 .env 文件并写入以下内容。\n12# 支持 # 号注释MONGO_VERSION=3.6\n执行 docker compose up 则会启动一个 mongo:3.6 镜像的容器。\n# 参考资料\n\n官方文档 (opens new window)\nawesome-compose (opens new window)\n\n# 使用 Django\n\n本小节内容适合 Python 开发人员阅读。\n\n我们现在将使用 Docker Compose 配置并运行一个 Django/PostgreSQL 应用。\n在一切工作开始前，需要先编辑好三个必要的文件。\n第一步，因为应用将要运行在一个满足所有环境依赖的 Docker 容器里面，那么我们可以通过编辑 Dockerfile 文件来指定 Docker 容器要安装内容。内容如下：\n1234567FROM python:3ENV PYTHONUNBUFFERED 1RUN mkdir /codeWORKDIR /codeCOPY requirements.txt /code/RUN pip install -r requirements.txtCOPY . /code/\n以上内容指定应用将使用安装了 Python 以及必要依赖包的镜像。更多关于如何编写 Dockerfile 文件的信息可以查看 Dockerfile 使用。\n第二步，在 requirements.txt 文件里面写明需要安装的具体依赖包名。\n12Django&gt;=2.0,&lt;3.0psycopg2&gt;=2.7,&lt;3.0\n第三步，docker-compose.yml 文件将把所有的东西关联起来。它描述了应用的构成（一个 web 服务和一个数据库）、使用的 Docker 镜像、镜像之间的连接、挂载到容器的卷，以及服务开放的端口。\n123456789101112131415version: &quot;3&quot;services:  db:    image: postgres    environment:      POSTGRES_PASSWORD: &#x27;postgres&#x27;  web:    build: .    command: python manage.py runserver 0.0.0.0:8000    volumes:      - .:/code    ports:      - &quot;8000:8000&quot;\n查看 docker-compose.yml 章节 了解更多详细的工作机制。\n现在我们就可以使用 docker compose run 命令启动一个 Django 应用了。\n1$ docker compose run web django-admin startproject django_example .\n由于 web 服务所使用的镜像并不存在，所以 Compose 会首先使用 Dockerfile 为 web 服务构建一个镜像，接着使用这个镜像在容器里运行 django-admin startproject django_example 指令。\n这将在当前目录生成一个 Django 应用。\n12$ lsDockerfile       docker-compose.yml          django_example       manage.py       requirements.txt\n如果你的系统是 Linux,记得更改文件权限。\n1$ sudo chown -R $USER:$USER .\n首先，我们要为应用设置好数据库的连接信息。用以下内容替换 django_example/settings.py 文件中 DATABASES = ... 定义的节点内容。\n12345678910DATABASES = &#123;    &#x27;default&#x27;: &#123;        &#x27;ENGINE&#x27;: &#x27;django.db.backends.postgresql&#x27;,        &#x27;NAME&#x27;: &#x27;postgres&#x27;,        &#x27;USER&#x27;: &#x27;postgres&#x27;,        &#x27;HOST&#x27;: &#x27;db&#x27;,        &#x27;PORT&#x27;: 5432,        &#x27;PASSWORD&#x27;: &#x27;postgres&#x27;,    &#125;&#125;\n这些信息是在 postgres (opens new window) 镜像固定设置好的。然后，运行 docker compose up ：\n123456789101112131415161718192021$ docker compose updjango_db_1 is up-to-dateCreating django_web_1 ...Creating django_web_1 ... doneAttaching to django_db_1, django_web_1db_1   | The files belonging to this database system will be owned by user &quot;postgres&quot;.db_1   | This user must also own the server process.db_1   |db_1   | The database cluster will be initialized with locale &quot;en_US.utf8&quot;.db_1   | The default database encoding has accordingly been set to &quot;UTF8&quot;.db_1   | The default text search configuration will be set to &quot;english&quot;.web_1  | Performing system checks...web_1  |web_1  | System check identified no issues (0 silenced).web_1  |web_1  | November 23, 2017 - 06:21:19web_1  | Django version 1.11.7, using settings &#x27;django_example.settings&#x27;web_1  | Starting development server at http://0.0.0.0:8000/web_1  | Quit the server with CONTROL-C.\n这个 Django 应用已经开始在你的 Docker 守护进程里监听着 8000 端口了。打开 127.0.0.1:8000 即可看到 Django 欢迎页面。\n你还可以在 Docker 上运行其它的管理命令，例如对于同步数据库结构这种事，在运行完 docker compose up 后，在另外一个终端进入文件夹运行以下命令即可：\n1$ docker compose run web python manage.py syncdb\n# 使用 Rails\n\n本小节内容适合 Ruby 开发人员阅读。\n\n我们现在将使用 Compose 配置并运行一个 Rails/PostgreSQL 应用。\n在一切工作开始前，需要先设置好三个必要的文件。\n首先，因为应用将要运行在一个满足所有环境依赖的 Docker 容器里面，那么我们可以通过编辑 Dockerfile 文件来指定 Docker 容器要安装内容。内容如下：\n1234567FROM rubyRUN apt-get update -qq &amp;&amp; apt-get install -y build-essential libpq-devRUN mkdir /myappWORKDIR /myappADD Gemfile /myapp/GemfileRUN bundle installADD . /myapp\n以上内容指定应用将使用安装了 Ruby、Bundler 以及其依赖件的镜像。更多关于如何编写 Dockerfile 文件的信息可以查看 Dockerfile 使用。\n下一步，我们需要一个引导加载 Rails 的文件 Gemfile 。 等一会儿它还会被 rails new 命令覆盖重写。\n12source &#x27;https://rubygems.org&#x27;gem &#x27;rails&#x27;, &#x27;4.0.2&#x27;\n最后，docker-compose.yml 文件才是最神奇的地方。 docker-compose.yml 文件将把所有的东西关联起来。它描述了应用的构成（一个 web 服务和一个数据库）、每个镜像的来源（数据库运行在使用预定义的 PostgreSQL 镜像，web 应用侧将从本地目录创建）、镜像之间的连接，以及服务开放的端口。\n123456789101112131415version: &quot;3&quot;services:  db:    image: postgres    ports:      - &quot;5432&quot;  web:    build: .    command: bundle exec rackup -p 3000    volumes:      - .:/myapp    ports:      - &quot;3000:3000&quot;\n所有文件就绪后，我们就可以通过使用 docker compose run 命令生成应用的骨架了。\n1$ docker compose run web rails new . --force --database=postgresql --skip-bundle\nCompose 会先使用 Dockerfile 为 web 服务创建一个镜像，接着使用这个镜像在容器里运行 rails new 和它之后的命令。一旦这个命令运行完后，应该就可以看一个崭新的应用已经生成了。\n123456$ lsDockerfile   app          docker-compose.yml      tmpGemfile      bin          lib          vendorGemfile.lock condocker-compose       logREADME.rdoc  condocker-compose.ru    publicRakefile     db           test\n在新的 Gemfile 文件去掉加载 therubyracer 的行的注释，这样我们便可以使用 Javascript 运行环境：\n1gem &#x27;therubyracer&#x27;, platforms: :ruby\n现在我们已经有一个新的 Gemfile 文件，需要再重新创建镜像。（这个会步骤会改变 Dockerfile 文件本身，所以需要重建一次）。\n应用现在就可以启动了，但配置还未完成。Rails 默认读取的数据库目标是 localhost ，我们需要手动指定容器的 db 。同样的，还需要把用户名修改成和 postgres 镜像预定的一致。 打开最新生成的 database.yml 文件。用以下内容替换：\n123456789101112development: &amp;default  adapter: postgresql  encoding: unicode  database: postgres  pool: 5  username: postgres  password:  host: dbtest:  &lt;&lt;: *default  database: myapp_test\n现在就可以启动应用了。\n如果一切正常，你应该可以看到 PostgreSQL 的输出，几秒后可以看到这样的重复信息：\n123myapp_web_1 | [2014-01-17 17:16:29] INFO  WEBrick 1.3.1myapp_web_1 | [2014-01-17 17:16:29] INFO  ruby 2.0.0 (2013-11-22) [x86_64-linux-gnu]myapp_web_1 | [2014-01-17 17:16:29] INFO  WEBrick::HTTPServer#start: pid=1 port=3000\n最后， 我们需要做的是创建数据库，打开另一个终端，运行：\n1$ docker compose run web rake db:create\n这个 web 应用已经开始在你的 docker 守护进程里面监听着 3000 端口了。\n","dateCreated":"2018-04-21T16:02:39+08:00","dateModified":"2025-06-16T10:23:33+08:00","datePublished":"2018-04-21T16:02:39+08:00","description":"","headline":"Docker Compose","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2018/04/21/docker/Docker%20Compose/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2018/04/21/docker/Docker%20Compose/","keywords":"Docker, Docker Compose"}</script>
+    <meta name="description" content="# Compose 简介 Compose 项目是 Docker 官方的开源项目，负责实现对 Docker 容器集群的快速编排。从功能上看，跟 OpenStack 中的 Heat 十分类似。 其代码目前在 https:&#x2F;&#x2F;github.com&#x2F;docker&#x2F;compose (opens new window) 上开源。 Compose 定位是 「定义和运行多个 Docker 容器的应用（Defini">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="Docker Compose">
+<meta property="og:url" content="https://chankein.github.io/2018/04/21/docker/Docker%20Compose/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="# Compose 简介 Compose 项目是 Docker 官方的开源项目，负责实现对 Docker 容器集群的快速编排。从功能上看，跟 OpenStack 中的 Heat 十分类似。 其代码目前在 https:&#x2F;&#x2F;github.com&#x2F;docker&#x2F;compose (opens new window) 上开源。 Compose 定位是 「定义和运行多个 Docker 容器的应用（Defini">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2018-04-21T08:02:39.000Z">
+<meta property="article:modified_time" content="2025-06-16T02:23:33.562Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="Docker">
+<meta property="article:tag" content="Docker Compose">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            Docker Compose
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2018-04-21T16:02:39+08:00">
+	
+		    2018 年 4 月 21 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/devops/">devops</a>, <a class="category-link" href="../../../../../categories/devops/Docker/">Docker</a>, <a class="category-link" href="../../../../../categories/devops/Docker/Docker-Compose/">Docker Compose</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="Compose-简介"><a href="#compose-%E7%AE%80%E4%BB%8B">#</a> Compose 简介</h2>
+<p><code>Compose</code> 项目是 Docker 官方的开源项目，负责实现对 Docker 容器集群的快速编排。从功能上看，跟 <code>OpenStack</code> 中的 <code>Heat</code> 十分类似。</p>
+<p>其代码目前在 <a target="_blank" rel="noopener" href="https://github.com/docker/compose">https://github.com/docker/compose (opens new window)</a> 上开源。</p>
+<p><code>Compose</code> 定位是 「定义和运行多个 Docker 容器的应用（Defining and running multi-container Docker applications）」，其前身是开源项目 Fig。</p>
+<p>通过第一部分中的介绍，我们知道使用一个 <code>Dockerfile</code> 模板文件，可以让用户很方便的定义一个单独的应用容器。然而，在日常工作中，经常会碰到需要多个容器相互配合来完成某项任务的情况。例如要实现一个 Web 项目，除了 Web 服务容器本身，往往还需要再加上后端的数据库服务容器，甚至还包括负载均衡容器等。</p>
+<p><code>Compose</code> 恰好满足了这样的需求。它允许用户通过一个单独的 <code>docker-compose.yml</code> 模板文件（YAML 格式）来定义一组相关联的应用容器为一个项目（project）。</p>
+<p><code>Compose</code> 中有两个重要的概念：</p>
+<ul>
+<li>
+<p>服务 (<code>service</code>)：一个应用的容器，实际上可以包括若干运行相同镜像的容器实例。</p>
+</li>
+<li>
+<p>项目 (<code>project</code>)：由一组关联的应用容器组成的一个完整业务单元，在 <code>docker-compose.yml</code> 文件中定义。</p>
+</li>
+</ul>
+<p><code>Compose</code> 的默认管理对象是项目，通过子命令对项目中的一组容器进行便捷地生命周期管理。</p>
+<p><code>Compose</code> 项目由 Python 编写，实现上调用了 Docker 服务提供的 API 来对容器进行管理。因此，只要所操作的平台支持 Docker API，就可以在其上利用 <code>Compose</code> 来进行编排管理。</p>
+<h2 id="安装与卸载"><a href="#%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8D%B8%E8%BD%BD">#</a> 安装与卸载</h2>
+<p><code>Compose</code> 支持 Linux、macOS、Windows 三大平台。</p>
+<p><code>Docker Desktop for Mac/Windows</code> 自带 <code>compose</code>，安装 Docker 之后可以直接使用。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ docker compose version</span><br><span class="line"></span><br><span class="line">Docker Compose version v2.6.0</span><br></pre></td></tr></table></figure>
+<p>Linux 系统请使用以下介绍的方法安装。</p>
+<h2 id="二进制包"><a href="#%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%8C%85">#</a> 二进制包</h2>
+<p>在 Linux 上的也安装十分简单，从 <a target="_blank" rel="noopener" href="https://github.com/docker/compose/releases">官方 GitHub Release (opens new window)</a> 处直接下载编译好的二进制文件即可。</p>
+<p>例如，在 Linux 64 位系统上直接下载对应的二进制包。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ DOCKER_CONFIG=/usr/local/lib/docker/cli-plugins</span><br><span class="line">$ <span class="built_in">sudo</span> <span class="built_in">mkdir</span> -p <span class="variable">$DOCKER_CONFIG</span>/cli-plugins</span><br><span class="line">$ <span class="built_in">sudo</span> curl -SL https://github.com/docker/compose/releases/download/v2.6.1/docker-compose-linux-x86_64 -o <span class="variable">$DOCKER_CONFIG</span>/cli-plugins/docker-compose</span><br><span class="line">$ <span class="built_in">sudo</span> <span class="built_in">chmod</span> +x <span class="variable">$DOCKER_CONFIG</span>/cli-plugins</span><br><span class="line">$ docker compose version</span><br><span class="line"></span><br><span class="line"><span class="comment"># 国内用户可以使用以下方式加快下载</span></span><br><span class="line">$ <span class="built_in">sudo</span> curl -SL https://download.fastgit.org/docker/compose/releases/download/v2.6.1/docker-compose-linux-x86_64 -o <span class="variable">$DOCKER_CONFIG</span>/cli-plugins/docker-compose</span><br></pre></td></tr></table></figure>
+<h2 id="使用"><a href="#%E4%BD%BF%E7%94%A8">#</a> 使用</h2>
+<h2 id="术语"><a href="#%E6%9C%AF%E8%AF%AD">#</a> 术语</h2>
+<p>首先介绍几个术语。</p>
+<ul>
+<li>
+<p>服务 (<code>service</code>)：一个应用容器，实际上可以运行多个相同镜像的实例。</p>
+</li>
+<li>
+<p>项目 (<code>project</code>)：由一组关联的应用容器组成的一个完整业务单元。</p>
+</li>
+</ul>
+<p>可见，一个项目可以由多个服务（容器）关联而成，<code>Compose</code> 面向项目进行管理。</p>
+<h2 id="场景"><a href="#%E5%9C%BA%E6%99%AF">#</a> 场景</h2>
+<p>最常见的项目是 web 网站，该项目应该包含 web 应用和缓存。</p>
+<p>下面我们用 <code>Python</code> 来建立一个能够记录页面访问次数的 web 网站。</p>
+<h3 id="web-应用"><a href="#web-%E5%BA%94%E7%94%A8">#</a> web 应用</h3>
+<p>新建文件夹，在该目录中编写 <code>app.py</code> 文件</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Flask</span><br><span class="line"><span class="keyword">from</span> redis <span class="keyword">import</span> Redis</span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line">redis = Redis(host=<span class="string">&#x27;redis&#x27;</span>, port=<span class="number">6379</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route(<span class="params"><span class="string">&#x27;/&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">hello</span>():</span><br><span class="line">    count = redis.incr(<span class="string">&#x27;hits&#x27;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&#x27;Hello World! 该页面已被访问 &#123;&#125; 次。\n&#x27;</span>.<span class="built_in">format</span>(count)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    app.run(host=<span class="string">&quot;0.0.0.0&quot;</span>, debug=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="Dockerfile"><a href="#dockerfile">#</a> Dockerfile</h3>
+<p>编写 <code>Dockerfile</code> 文件，内容为</p>
+<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> python:<span class="number">3.6</span>-alpine</span><br><span class="line"><span class="keyword">ADD</span><span class="language-bash"> . /code</span></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="language-bash"> /code</span></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> pip install redis flask</span></span><br><span class="line"><span class="keyword">CMD</span><span class="language-bash"> [<span class="string">&quot;python&quot;</span>, <span class="string">&quot;app.py&quot;</span>]</span></span><br></pre></td></tr></table></figure>
+<h3 id="docker-compose-yml"><a href="#docker-compose-yml">#</a> docker-compose.yml</h3>
+<p>编写 <code>docker-compose.yml</code> 文件，这个是 Compose 使用的主模板文件。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&#x27;3&#x27;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">web:</span></span><br><span class="line">    <span class="attr">build:</span> <span class="string">.</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">     <span class="bullet">-</span> <span class="string">&quot;5000:5000&quot;</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">redis:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">&quot;redis:alpine&quot;</span></span><br></pre></td></tr></table></figure>
+<h3 id="运行-compose-项目"><a href="#%E8%BF%90%E8%A1%8C-compose-%E9%A1%B9%E7%9B%AE">#</a> 运行 compose 项目</h3>
+<p>此时访问本地 <code>5000</code> 端口，每次刷新页面，计数就会加 1。</p>
+<h2 id="Compose-命令说明"><a href="#compose-%E5%91%BD%E4%BB%A4%E8%AF%B4%E6%98%8E">#</a> Compose 命令说明</h2>
+<h2 id="命令对象与格式"><a href="#%E5%91%BD%E4%BB%A4%E5%AF%B9%E8%B1%A1%E4%B8%8E%E6%A0%BC%E5%BC%8F">#</a> 命令对象与格式</h2>
+<p>对于 Compose 来说，大部分命令的对象既可以是项目本身，也可以指定为项目中的服务或者容器。如果没有特别的说明，命令对象将是项目，这意味着项目中所有的服务都会受到命令影响。</p>
+<p>执行 <code>docker compose [COMMAND] --help</code> 可以查看具体某个命令的使用格式。</p>
+<p><code>docker compose</code> 命令的基本的使用格式是</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker compose [-f=&lt;arg&gt;...] [options] [COMMAND] [ARGS...]</span><br></pre></td></tr></table></figure>
+<h2 id="命令选项"><a href="#%E5%91%BD%E4%BB%A4%E9%80%89%E9%A1%B9">#</a> 命令选项</h2>
+<ul>
+<li>
+<p><code>-f, --file FILE</code> 指定使用的 Compose 模板文件，默认为 <code>docker-compose.yml</code>，可以多次指定。</p>
+</li>
+<li>
+<p><code>-p, --project-name NAME</code> 指定项目名称，默认将使用所在目录名称作为项目名。</p>
+</li>
+<li>
+<p><code>--verbose</code> 输出更多调试信息。</p>
+</li>
+<li>
+<p><code>-v, --version</code> 打印版本并退出。</p>
+</li>
+</ul>
+<h2 id="命令使用说明"><a href="#%E5%91%BD%E4%BB%A4%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E">#</a> 命令使用说明</h2>
+<h3 id="build"><a href="#build">#</a> <code>build</code></h3>
+<p>格式为 <code>docker compose build [options] [SERVICE...]</code>。</p>
+<p>构建（重新构建）项目中的服务容器。</p>
+<p>服务容器一旦构建后，将会带上一个标记名，例如对于 web 项目中的一个 db 容器，可能是 web_db。</p>
+<p>可以随时在项目目录下运行 <code>docker compose build</code> 来重新构建服务。</p>
+<p>选项包括：</p>
+<ul>
+<li>
+<p><code>--force-rm</code> 删除构建过程中的临时容器。</p>
+</li>
+<li>
+<p><code>--no-cache</code> 构建镜像过程中不使用 cache（这将加长构建过程）。</p>
+</li>
+<li>
+<p><code>--pull</code> 始终尝试通过 pull 来获取更新版本的镜像。</p>
+</li>
+</ul>
+<h3 id="config"><a href="#config">#</a> <code>config</code></h3>
+<p>验证 Compose 文件格式是否正确，若正确则显示配置，若格式错误显示错误原因。</p>
+<h3 id="down"><a href="#down">#</a> <code>down</code></h3>
+<p>此命令将会停止 <code>up</code> 命令所启动的容器，并移除网络</p>
+<h3 id="exec"><a href="#exec">#</a> <code>exec</code></h3>
+<p>进入指定的容器。</p>
+<h3 id="help"><a href="#help">#</a> <code>help</code></h3>
+<p>获得一个命令的帮助。</p>
+<h3 id="images"><a href="#images">#</a> <code>images</code></h3>
+<p>列出 Compose 文件中包含的镜像。</p>
+<h3 id="kill"><a href="#kill">#</a> <code>kill</code></h3>
+<p>格式为 <code>docker compose kill [options] [SERVICE...]</code>。</p>
+<p>通过发送 <code>SIGKILL</code> 信号来强制停止服务容器。</p>
+<p>支持通过 <code>-s</code> 参数来指定发送的信号，例如通过如下指令发送 <code>SIGINT</code> 信号。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker compose <span class="built_in">kill</span> -s SIGINT</span><br></pre></td></tr></table></figure>
+<h3 id="logs"><a href="#logs">#</a> <code>logs</code></h3>
+<p>格式为 <code>docker compose logs [options] [SERVICE...]</code>。</p>
+<p>查看服务容器的输出。默认情况下，docker compose 将对不同的服务输出使用不同的颜色来区分。可以通过 <code>--no-color</code> 来关闭颜色。</p>
+<p>该命令在调试问题的时候十分有用。</p>
+<h3 id="pause"><a href="#pause">#</a> <code>pause</code></h3>
+<p>格式为 <code>docker compose pause [SERVICE...]</code>。</p>
+<p>暂停一个服务容器。</p>
+<h3 id="port"><a href="#port">#</a> <code>port</code></h3>
+<p>格式为 <code>docker compose port [options] SERVICE PRIVATE_PORT</code>。</p>
+<p>打印某个容器端口所映射的公共端口。</p>
+<p>选项：</p>
+<ul>
+<li>
+<p><code>--protocol=proto</code> 指定端口协议，tcp（默认值）或者 udp。</p>
+</li>
+<li>
+<p><code>--index=index</code> 如果同一服务存在多个容器，指定命令对象容器的序号（默认为 1）。</p>
+</li>
+</ul>
+<h3 id="ps"><a href="#ps">#</a> <code>ps</code></h3>
+<p>格式为 <code>docker compose ps [options] [SERVICE...]</code>。</p>
+<p>列出项目中目前的所有容器。</p>
+<p>选项：</p>
+<ul>
+<li><code>-q</code> 只打印容器的 ID 信息。</li>
+</ul>
+<h3 id="pull"><a href="#pull">#</a> <code>pull</code></h3>
+<p>格式为 <code>docker compose pull [options] [SERVICE...]</code>。</p>
+<p>拉取服务依赖的镜像。</p>
+<p>选项：</p>
+<ul>
+<li><code>--ignore-pull-failures</code> 忽略拉取镜像过程中的错误。</li>
+</ul>
+<h3 id="push"><a href="#push">#</a> <code>push</code></h3>
+<p>推送服务依赖的镜像到 Docker 镜像仓库。</p>
+<h3 id="restart"><a href="#restart">#</a> <code>restart</code></h3>
+<p>格式为 <code>docker compose restart [options] [SERVICE...]</code>。</p>
+<p>重启项目中的服务。</p>
+<p>选项：</p>
+<ul>
+<li><code>-t, --timeout TIMEOUT</code> 指定重启前停止容器的超时（默认为 10 秒）。</li>
+</ul>
+<h3 id="rm"><a href="#rm">#</a> <code>rm</code></h3>
+<p>格式为 <code>docker compose rm [options] [SERVICE...]</code>。</p>
+<p>删除所有（停止状态的）服务容器。推荐先执行 <code>docker compose stop</code> 命令来停止容器。</p>
+<p>选项：</p>
+<ul>
+<li>
+<p><code>-f, --force</code> 强制直接删除，包括非停止状态的容器。一般尽量不要使用该选项。</p>
+</li>
+<li>
+<p><code>-v</code> 删除容器所挂载的数据卷。</p>
+</li>
+</ul>
+<h3 id="run"><a href="#run">#</a> <code>run</code></h3>
+<p>格式为 <code>docker compose run [options] [-p PORT...] [-e KEY=VAL...] SERVICE [COMMAND] [ARGS...]</code>。</p>
+<p>在指定服务上执行一个命令。</p>
+<p>例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker compose run ubuntu ping docker.com</span><br></pre></td></tr></table></figure>
+<p>将会启动一个 ubuntu 服务容器，并执行 <code>ping docker.com</code> 命令。</p>
+<p>默认情况下，如果存在关联，则所有关联的服务将会自动被启动，除非这些服务已经在运行中。</p>
+<p>该命令类似启动容器后运行指定的命令，相关卷、链接等等都将会按照配置自动创建。</p>
+<p>两个不同点：</p>
+<ul>
+<li>
+<p>给定命令将会覆盖原有的自动运行命令；</p>
+</li>
+<li>
+<p>不会自动创建端口，以避免冲突。</p>
+</li>
+</ul>
+<p>如果不希望自动启动关联的容器，可以使用 <code>--no-deps</code> 选项，例如</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker compose run --no-deps web python manage.py shell</span><br></pre></td></tr></table></figure>
+<p>将不会启动 web 容器所关联的其它容器。</p>
+<p>选项：</p>
+<ul>
+<li>
+<p><code>-d</code> 后台运行容器。</p>
+</li>
+<li>
+<p><code>--name NAME</code> 为容器指定一个名字。</p>
+</li>
+<li>
+<p><code>--entrypoint CMD</code> 覆盖默认的容器启动指令。</p>
+</li>
+<li>
+<p><code>-e KEY=VAL</code> 设置环境变量值，可多次使用选项来设置多个环境变量。</p>
+</li>
+<li>
+<p><code>-u, --user=&quot;&quot;</code> 指定运行容器的用户名或者 uid。</p>
+</li>
+<li>
+<p><code>--no-deps</code> 不自动启动关联的服务容器。</p>
+</li>
+<li>
+<p><code>--rm</code> 运行命令后自动删除容器，<code>d</code> 模式下将忽略。</p>
+</li>
+<li>
+<p><code>-p, --publish=[]</code> 映射容器端口到本地主机。</p>
+</li>
+<li>
+<p><code>--service-ports</code> 配置服务端口并映射到本地主机。</p>
+</li>
+<li>
+<p><code>-T</code> 不分配伪 tty，意味着依赖 tty 的指令将无法运行。</p>
+</li>
+</ul>
+<h3 id="start"><a href="#start">#</a> <code>start</code></h3>
+<p>格式为 <code>docker compose start [SERVICE...]</code>。</p>
+<p>启动已经存在的服务容器。</p>
+<h3 id="stop"><a href="#stop">#</a> <code>stop</code></h3>
+<p>格式为 <code>docker compose stop [options] [SERVICE...]</code>。</p>
+<p>停止已经处于运行状态的容器，但不删除它。通过 <code>docker compose start</code> 可以再次启动这些容器。</p>
+<p>选项：</p>
+<ul>
+<li><code>-t, --timeout TIMEOUT</code> 停止容器时候的超时（默认为 10 秒）。</li>
+</ul>
+<h3 id="top"><a href="#top">#</a> <code>top</code></h3>
+<p>查看各个服务容器内运行的进程。</p>
+<h3 id="unpause"><a href="#unpause">#</a> <code>unpause</code></h3>
+<p>格式为 <code>docker compose unpause [SERVICE...]</code>。</p>
+<p>恢复处于暂停状态中的服务。</p>
+<h3 id="up"><a href="#up">#</a> <code>up</code></h3>
+<p>格式为 <code>docker compose up [options] [SERVICE...]</code>。</p>
+<p>该命令十分强大，它将尝试自动完成包括构建镜像，（重新）创建服务，启动服务，并关联服务相关容器的一系列操作。</p>
+<p>链接的服务都将会被自动启动，除非已经处于运行状态。</p>
+<p>可以说，大部分时候都可以直接通过该命令来启动一个项目。</p>
+<p>默认情况，<code>docker compose up</code> 启动的容器都在前台，控制台将会同时打印所有容器的输出信息，可以很方便进行调试。</p>
+<p>当通过 <code>Ctrl-C</code> 停止命令时，所有容器将会停止。</p>
+<p>如果使用 <code>docker compose up -d</code>，将会在后台启动并运行所有的容器。一般推荐生产环境下使用该选项。</p>
+<p>默认情况，如果服务容器已经存在，<code>docker compose up</code> 将会尝试停止容器，然后重新创建（保持使用 <code>volumes-from</code> 挂载的卷），以保证新启动的服务匹配 <code>docker-compose.yml</code> 文件的最新内容。如果用户不希望容器被停止并重新创建，可以使用 <code>docker compose up --no-recreate</code>。这样将只会启动处于停止状态的容器，而忽略已经运行的服务。如果用户只想重新部署某个服务，可以使用 <code>docker compose up --no-deps -d &lt;SERVICE_NAME&gt;</code> 来重新创建服务并后台停止旧服务，启动新服务，并不会影响到其所依赖的服务。</p>
+<p>选项：</p>
+<ul>
+<li>
+<p><code>-d</code> 在后台运行服务容器。</p>
+</li>
+<li>
+<p><code>--no-color</code> 不使用颜色来区分不同的服务的控制台输出。</p>
+</li>
+<li>
+<p><code>--no-deps</code> 不启动服务所链接的容器。</p>
+</li>
+<li>
+<p><code>--force-recreate</code> 强制重新创建容器，不能与 <code>--no-recreate</code> 同时使用。</p>
+</li>
+<li>
+<p><code>--no-recreate</code> 如果容器已经存在了，则不重新创建，不能与 <code>--force-recreate</code> 同时使用。</p>
+</li>
+<li>
+<p><code>--no-build</code> 不自动构建缺失的服务镜像。</p>
+</li>
+<li>
+<p><code>-t, --timeout TIMEOUT</code> 停止容器时候的超时（默认为 10 秒）。</p>
+</li>
+</ul>
+<h3 id="version"><a href="#version">#</a> <code>version</code></h3>
+<p>格式为 <code>docker compose version</code>。</p>
+<p>打印版本信息。</p>
+<h2 id="参考资料"><a href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99">#</a> 参考资料</h2>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://docs.docker.com/compose/reference/">官方文档 (opens new window)</a></li>
+</ul>
+<h2 id="Compose-模板文件"><a href="#compose-%E6%A8%A1%E6%9D%BF%E6%96%87%E4%BB%B6">#</a> Compose 模板文件</h2>
+<p>模板文件是使用 <code>Compose</code> 的核心，涉及到的指令关键字也比较多。但大家不用担心，这里面大部分指令跟 <code>docker run</code> 相关参数的含义都是类似的。</p>
+<p>默认的模板文件名称为 <code>docker-compose.yml</code>，格式为 YAML 格式。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&quot;3&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">webapp:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">examples/web</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;80:80&quot;</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;/data&quot;</span></span><br></pre></td></tr></table></figure>
+<p>注意每个服务都必须通过 <code>image</code> 指令指定镜像或 <code>build</code> 指令（需要 Dockerfile）等来自动构建生成镜像。</p>
+<p>如果使用 <code>build</code> 指令，在 <code>Dockerfile</code> 中设置的选项(例如：<code>CMD</code>, <code>EXPOSE</code>, <code>VOLUME</code>, <code>ENV</code> 等) 将会自动被获取，无需在 <code>docker-compose.yml</code> 中重复设置。</p>
+<p>下面分别介绍各个指令的用法。</p>
+<h2 id="build-2"><a href="#build">#</a> <code>build</code></h2>
+<p>指定 <code>Dockerfile</code> 所在文件夹的路径（可以是绝对路径，或者相对 docker-compose.yml 文件的路径）。 <code>Compose</code> 将会利用它自动构建这个镜像，然后使用这个镜像。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&#x27;3&#x27;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">webapp:</span></span><br><span class="line">    <span class="attr">build:</span> <span class="string">./dir</span></span><br></pre></td></tr></table></figure>
+<p>你也可以使用 <code>context</code> 指令指定 <code>Dockerfile</code> 所在文件夹的路径。</p>
+<p>使用 <code>dockerfile</code> 指令指定 <code>Dockerfile</code> 文件名。</p>
+<p>使用 <code>arg</code> 指令指定构建镜像时的变量。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&#x27;3&#x27;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">webapp:</span></span><br><span class="line">    <span class="attr">build:</span></span><br><span class="line">      <span class="attr">context:</span> <span class="string">./dir</span></span><br><span class="line">      <span class="attr">dockerfile:</span> <span class="string">Dockerfile-alternate</span></span><br><span class="line">      <span class="attr">args:</span></span><br><span class="line">        <span class="attr">buildno:</span> <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>使用 <code>cache_from</code> 指定构建镜像的缓存</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">build:</span></span><br><span class="line">  <span class="attr">context:</span> <span class="string">.</span></span><br><span class="line">  <span class="attr">cache_from:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">alpine:latest</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">corp/web_app:3.14</span></span><br></pre></td></tr></table></figure>
+<h2 id="cap-add-cap-drop"><a href="#cap-add-cap-drop">#</a> <code>cap_add, cap_drop</code></h2>
+<p>指定容器的内核能力（capacity）分配。</p>
+<p>例如，让容器拥有所有能力可以指定为：</p>
+<p>去掉 NET_ADMIN 能力可以指定为：</p>
+<h2 id="command"><a href="#command">#</a> <code>command</code></h2>
+<p>覆盖容器启动后默认执行的命令。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">command:</span> <span class="string">echo</span> <span class="string">&quot;hello world&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="configs"><a href="#configs">#</a> <code>configs</code></h2>
+<p>仅用于 <code>Swarm mode</code>，详细内容请查看 <a target="_blank" rel="noopener" href="https://vuepress.mirror.docker-practice.com/swarm_mode/"><code>Swarm mode</code></a> 一节。</p>
+<h2 id="cgroup-parent"><a href="#cgroup-parent">#</a> <code>cgroup_parent</code></h2>
+<p>指定父 <code>cgroup</code> 组，意味着将继承该组的资源限制。</p>
+<p>例如，创建了一个 cgroup 组名称为 <code>cgroups_1</code>。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">cgroup_parent:</span> <span class="string">cgroups_1</span></span><br></pre></td></tr></table></figure>
+<h2 id="container-name"><a href="#container-name">#</a> <code>container_name</code></h2>
+<p>指定容器名称。默认将会使用 <code>项目名称_服务名称_序号</code> 这样的格式。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">container_name:</span> <span class="string">docker-web-container</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意: 指定容器名称后，该服务将无法进行扩展（scale），因为 Docker 不允许多个容器具有相同的名称。</p>
+</blockquote>
+<h2 id="deploy"><a href="#deploy">#</a> <code>deploy</code></h2>
+<p>仅用于 <code>Swarm mode</code>，详细内容请查看 <a target="_blank" rel="noopener" href="https://vuepress.mirror.docker-practice.com/swarm_mode/"><code>Swarm mode</code></a> 一节</p>
+<h2 id="devices"><a href="#devices">#</a> <code>devices</code></h2>
+<p>指定设备映射关系。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">devices:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">&quot;/dev/ttyUSB1:/dev/ttyUSB0&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="depends-on"><a href="#depends-on">#</a> <code>depends_on</code></h2>
+<p>解决容器的依赖、启动先后的问题。以下例子中会先启动 <code>redis</code> <code>db</code> 再启动 <code>web</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&#x27;3&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">web:</span></span><br><span class="line">    <span class="attr">build:</span> <span class="string">.</span></span><br><span class="line">    <span class="attr">depends_on:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">db</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">redis</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">redis:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">redis</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">db:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">postgres</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意：<code>web</code> 服务不会等待 <code>redis</code> <code>db</code> 「完全启动」之后才启动。</p>
+</blockquote>
+<h2 id="dns"><a href="#dns">#</a> <code>dns</code></h2>
+<p>自定义 <code>DNS</code> 服务器。可以是一个值，也可以是一个列表。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">dns:</span> <span class="number">8.8</span><span class="number">.8</span><span class="number">.8</span></span><br><span class="line"></span><br><span class="line"><span class="attr">dns:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="number">8.8</span><span class="number">.8</span><span class="number">.8</span></span><br><span class="line">  <span class="bullet">-</span> <span class="number">114.114</span><span class="number">.114</span><span class="number">.114</span></span><br></pre></td></tr></table></figure>
+<h2 id="dns-search"><a href="#dns-search">#</a> <code>dns_search</code></h2>
+<p>配置 <code>DNS</code> 搜索域。可以是一个值，也可以是一个列表。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">dns_search:</span> <span class="string">example.com</span></span><br><span class="line"></span><br><span class="line"><span class="attr">dns_search:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">domain1.example.com</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">domain2.example.com</span></span><br></pre></td></tr></table></figure>
+<h2 id="tmpfs"><a href="#tmpfs">#</a> <code>tmpfs</code></h2>
+<p>挂载一个 tmpfs 文件系统到容器。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">tmpfs:</span> <span class="string">/run</span></span><br><span class="line"><span class="attr">tmpfs:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/run</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">/tmp</span></span><br></pre></td></tr></table></figure>
+<h2 id="env-file"><a href="#env-file">#</a> <code>env_file</code></h2>
+<p>从文件中获取环境变量，可以为单独的文件路径或列表。</p>
+<p>如果通过 <code>docker compose -f FILE</code> 方式来指定 Compose 模板文件，则 <code>env_file</code> 中变量的路径会基于模板文件路径。</p>
+<p>如果有变量名称与 <code>environment</code> 指令冲突，则按照惯例，以后者为准。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">env_file: .<span class="built_in">env</span></span><br><span class="line"></span><br><span class="line">env_file:</span><br><span class="line">  - ./common.env</span><br><span class="line">  - ./apps/web.env</span><br><span class="line">  - /opt/secrets.env</span><br></pre></td></tr></table></figure>
+<p>环境变量文件中每一行必须符合格式，支持 <code>#</code> 开头的注释行。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># common.env: Set development environment</span></span><br><span class="line">PROG_ENV=development</span><br></pre></td></tr></table></figure>
+<h2 id="environment"><a href="#environment">#</a> <code>environment</code></h2>
+<p>设置环境变量。你可以使用数组或字典两种格式。</p>
+<p>只给定名称的变量会自动获取运行 Compose 主机上对应变量的值，可以用来防止泄露不必要的数据。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">environment:</span></span><br><span class="line">  <span class="attr">RACK_ENV:</span> <span class="string">development</span></span><br><span class="line">  <span class="attr">SESSION_SECRET:</span></span><br><span class="line"></span><br><span class="line"><span class="attr">environment:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">RACK_ENV=development</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">SESSION_SECRET</span></span><br></pre></td></tr></table></figure>
+<p>如果变量名称或者值中用到 <code>true|false，yes|no</code> 等表达 <a target="_blank" rel="noopener" href="https://yaml.org/type/bool.html">布尔 (opens new window)</a> 含义的词汇，最好放到引号里，避免 YAML 自动解析某些内容为对应的布尔语义。这些特定词汇，包括</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">y|Y|<span class="built_in">yes</span>|Yes|YES|n|N|no|No|NO|<span class="literal">true</span>|True|TRUE|<span class="literal">false</span>|False|FALSE|on|On|ON|off|Off|OFF</span><br></pre></td></tr></table></figure>
+<h2 id="expose"><a href="#expose">#</a> <code>expose</code></h2>
+<p>暴露端口，但不映射到宿主机，只被连接的服务访问。</p>
+<p>仅可以指定内部端口为参数</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">expose:</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">&quot;3000&quot;</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">&quot;8000&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="external-links"><a href="#external-links">#</a> <code>external_links</code></h2>
+<blockquote>
+<p>注意：不建议使用该指令。</p>
+</blockquote>
+<p>链接到 <code>docker-compose.yml</code> 外部的容器，甚至并非 <code>Compose</code> 管理的外部容器。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">external_links:</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">redis_1</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">project_db_1:mysql</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">project_db_1:postgresql</span></span><br></pre></td></tr></table></figure>
+<h2 id="extra-hosts"><a href="#extra-hosts">#</a> <code>extra_hosts</code></h2>
+<p>类似 Docker 中的 <code>--add-host</code> 参数，指定额外的 host 名称映射信息。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">extra_hosts:</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">&quot;googledns:8.8.8.8&quot;</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">&quot;dockerhub:52.1.157.61&quot;</span></span><br></pre></td></tr></table></figure>
+<p>会在启动后的服务容器中 <code>/etc/hosts</code> 文件中添加如下两条条目。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">8.8.8.8 googledns</span><br><span class="line">52.1.157.61 dockerhub</span><br></pre></td></tr></table></figure>
+<h2 id="healthcheck"><a href="#healthcheck">#</a> <code>healthcheck</code></h2>
+<p>通过命令检查容器是否健康运行。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">healthcheck:</span></span><br><span class="line">  <span class="attr">test:</span> [<span class="string">&quot;CMD&quot;</span>, <span class="string">&quot;curl&quot;</span>, <span class="string">&quot;-f&quot;</span>, <span class="string">&quot;http://localhost&quot;</span>]</span><br><span class="line">  <span class="attr">interval:</span> <span class="string">1m30s</span></span><br><span class="line">  <span class="attr">timeout:</span> <span class="string">10s</span></span><br><span class="line">  <span class="attr">retries:</span> <span class="number">3</span></span><br></pre></td></tr></table></figure>
+<h2 id="image"><a href="#image">#</a> <code>image</code></h2>
+<p>指定为镜像名称或镜像 ID。如果镜像在本地不存在，<code>Compose</code> 将会尝试拉取这个镜像。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">image:</span> <span class="string">ubuntu</span></span><br><span class="line"><span class="attr">image:</span> <span class="string">orchardup/postgresql</span></span><br><span class="line"><span class="attr">image:</span> <span class="string">a4bc65fd</span></span><br></pre></td></tr></table></figure>
+<h2 id="labels"><a href="#labels">#</a> <code>labels</code></h2>
+<p>为容器添加 Docker 元数据（metadata）信息。例如可以为容器添加辅助说明信息。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">labels:</span></span><br><span class="line">  <span class="attr">com.startupteam.description:</span> <span class="string">&quot;webapp for a startup team&quot;</span></span><br><span class="line">  <span class="attr">com.startupteam.department:</span> <span class="string">&quot;devops department&quot;</span></span><br><span class="line">  <span class="attr">com.startupteam.release:</span> <span class="string">&quot;rc3 for v1.0&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="links"><a href="#links">#</a> <code>links</code></h2>
+<blockquote>
+<p>注意：不推荐使用该指令。</p>
+</blockquote>
+<h2 id="logging"><a href="#logging">#</a> <code>logging</code></h2>
+<p>配置日志选项。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">logging:</span></span><br><span class="line">  <span class="attr">driver:</span> <span class="string">syslog</span></span><br><span class="line">  <span class="attr">options:</span></span><br><span class="line">    <span class="attr">syslog-address:</span> <span class="string">&quot;tcp://192.168.0.42:123&quot;</span></span><br></pre></td></tr></table></figure>
+<p>目前支持三种日志驱动类型。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">driver:</span> <span class="string">&quot;json-file&quot;</span></span><br><span class="line"><span class="attr">driver:</span> <span class="string">&quot;syslog&quot;</span></span><br><span class="line"><span class="attr">driver:</span> <span class="string">&quot;none&quot;</span></span><br></pre></td></tr></table></figure>
+<p><code>options</code> 配置日志驱动的相关参数。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">options:</span></span><br><span class="line">  <span class="attr">max-size:</span> <span class="string">&quot;200k&quot;</span></span><br><span class="line">  <span class="attr">max-file:</span> <span class="string">&quot;10&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="network-mode"><a href="#network-mode">#</a> <code>network_mode</code></h2>
+<p>设置网络模式。使用和 <code>docker run</code> 的 <code>--network</code> 参数一样的值。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">network_mode:</span> <span class="string">&quot;bridge&quot;</span></span><br><span class="line"><span class="attr">network_mode:</span> <span class="string">&quot;host&quot;</span></span><br><span class="line"><span class="attr">network_mode:</span> <span class="string">&quot;none&quot;</span></span><br><span class="line"><span class="attr">network_mode:</span> <span class="string">&quot;service:[service name]&quot;</span></span><br><span class="line"><span class="attr">network_mode:</span> <span class="string">&quot;container:[container name/id]&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="networks"><a href="#networks">#</a> <code>networks</code></h2>
+<p>配置容器连接的网络。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&quot;3&quot;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">some-service:</span></span><br><span class="line">    <span class="attr">networks:</span></span><br><span class="line">     <span class="bullet">-</span> <span class="string">some-network</span></span><br><span class="line">     <span class="bullet">-</span> <span class="string">other-network</span></span><br><span class="line"></span><br><span class="line"><span class="attr">networks:</span></span><br><span class="line">  <span class="attr">some-network:</span></span><br><span class="line">  <span class="attr">other-network:</span></span><br></pre></td></tr></table></figure>
+<h2 id="pid"><a href="#pid">#</a> <code>pid</code></h2>
+<p>跟主机系统共享进程命名空间。打开该选项的容器之间，以及容器和宿主机系统之间可以通过进程 ID 来相互访问和操作。</p>
+<h2 id="ports"><a href="#ports">#</a> <code>ports</code></h2>
+<p>暴露端口信息。</p>
+<p>使用宿主端口：容器端口 <code>(HOST:CONTAINER)</code> 格式，或者仅仅指定容器的端口（宿主将会随机选择端口）都可以。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">ports:</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">&quot;3000&quot;</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">&quot;8000:8000&quot;</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">&quot;49100:22&quot;</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">&quot;127.0.0.1:8001:8001&quot;</span></span><br></pre></td></tr></table></figure>
+<p><em>注意：当使用 <code>HOST:CONTAINER</code> 格式来映射端口时，如果你使用的容器端口小于 60 并且没放到引号里，可能会得到错误结果，因为 <code>YAML</code> 会自动解析 <code>xx:yy</code> 这种数字格式为 60 进制。为避免出现这种问题，建议数字串都采用引号包括起来的字符串格式。</em></p>
+<h2 id="secrets"><a href="#secrets">#</a> <code>secrets</code></h2>
+<p>存储敏感数据，例如 <code>mysql</code> 服务密码。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&quot;3.1&quot;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line"></span><br><span class="line"><span class="attr">mysql:</span></span><br><span class="line">  <span class="attr">image:</span> <span class="string">mysql</span></span><br><span class="line">  <span class="attr">environment:</span></span><br><span class="line">    <span class="attr">MYSQL_ROOT_PASSWORD_FILE:</span> <span class="string">/run/secrets/db_root_password</span></span><br><span class="line">  <span class="attr">secrets:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">db_root_password</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">my_other_secret</span></span><br><span class="line"></span><br><span class="line"><span class="attr">secrets:</span></span><br><span class="line">  <span class="attr">my_secret:</span></span><br><span class="line">    <span class="attr">file:</span> <span class="string">./my_secret.txt</span></span><br><span class="line">  <span class="attr">my_other_secret:</span></span><br><span class="line">    <span class="attr">external:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<h2 id="security-opt"><a href="#security-opt">#</a> <code>security_opt</code></h2>
+<p>指定容器模板标签（label）机制的默认属性（用户、角色、类型、级别等）。例如配置标签的用户名和角色名。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">security_opt:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">label:user:USER</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">label:role:ROLE</span></span><br></pre></td></tr></table></figure>
+<h2 id="stop-signal"><a href="#stop-signal">#</a> <code>stop_signal</code></h2>
+<p>设置另一个信号来停止容器。在默认情况下使用的是 SIGTERM 停止容器。</p>
+<h2 id="sysctls"><a href="#sysctls">#</a> <code>sysctls</code></h2>
+<p>配置容器内核参数。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">sysctls:</span></span><br><span class="line">  <span class="attr">net.core.somaxconn:</span> <span class="number">1024</span></span><br><span class="line">  <span class="attr">net.ipv4.tcp_syncookies:</span> <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="attr">sysctls:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">net.core.somaxconn=1024</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">net.ipv4.tcp_syncookies=0</span></span><br></pre></td></tr></table></figure>
+<h2 id="ulimits"><a href="#ulimits">#</a> <code>ulimits</code></h2>
+<p>指定容器的 ulimits 限制值。</p>
+<p>例如，指定最大进程数为 65535，指定文件句柄数为 20000（软限制，应用可以随时修改，不能超过硬限制） 和 40000（系统硬限制，只能 root 用户提高）。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">ulimits:</span></span><br><span class="line">  <span class="attr">nproc:</span> <span class="number">65535</span></span><br><span class="line">  <span class="attr">nofile:</span></span><br><span class="line">    <span class="attr">soft:</span> <span class="number">20000</span></span><br><span class="line">    <span class="attr">hard:</span> <span class="number">40000</span></span><br></pre></td></tr></table></figure>
+<h2 id="volumes"><a href="#volumes">#</a> <code>volumes</code></h2>
+<p>数据卷所挂载路径设置。可以设置为宿主机路径(<code>HOST:CONTAINER</code>)或者数据卷名称(<code>VOLUME:CONTAINER</code>)，并且可以设置访问模式 （<code>HOST:CONTAINER:ro</code>）。</p>
+<p>该指令中路径支持相对路径。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">volumes:</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">/var/lib/mysql</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">cache/:/tmp/cache</span></span><br><span class="line"> <span class="bullet">-</span> <span class="string">~/configs:/etc/configs/:ro</span></span><br></pre></td></tr></table></figure>
+<p>如果路径为数据卷名称，必须在文件中配置数据卷。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&quot;3&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">my_src:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">mysql:8.0</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">mysql_data:/var/lib/mysql</span></span><br><span class="line"></span><br><span class="line"><span class="attr">volumes:</span></span><br><span class="line">  <span class="attr">mysql_data:</span>  </span><br></pre></td></tr></table></figure>
+<h2 id="其它指令"><a href="#%E5%85%B6%E5%AE%83%E6%8C%87%E4%BB%A4">#</a> 其它指令</h2>
+<p>此外，还有包括 <code>domainname, entrypoint, hostname, ipc, mac_address, privileged, read_only, shm_size, restart, stdin_open, tty, user, working_dir</code> 等指令，基本跟 <code>docker run</code> 中对应参数的功能一致。</p>
+<p>指定服务容器启动后执行的入口文件。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">entrypoint:</span> <span class="string">/code/entrypoint.sh</span></span><br></pre></td></tr></table></figure>
+<p>指定容器中运行应用的用户名。</p>
+<p>指定容器中工作目录。</p>
+<p>指定容器中搜索域名、主机名、mac 地址等。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">domainname:</span> <span class="string">your_website.com</span></span><br><span class="line"><span class="attr">hostname:</span> <span class="string">test</span></span><br><span class="line"><span class="attr">mac_address:</span> <span class="number">08</span><span class="number">-00</span><span class="number">-27</span><span class="number">-00</span><span class="string">-0C-0A</span></span><br></pre></td></tr></table></figure>
+<p>允许容器中运行一些特权命令。</p>
+<p>指定容器退出后的重启策略为始终重启。该命令对保持服务始终运行十分有效，在生产环境中推荐配置为 <code>always</code> 或者 <code>unless-stopped</code>。</p>
+<p>以只读模式挂载容器的 root 文件系统，意味着不能对容器内容进行修改。</p>
+<p>打开标准输入，可以接受外部输入。</p>
+<p>模拟一个伪终端。</p>
+<h2 id="读取变量"><a href="#%E8%AF%BB%E5%8F%96%E5%8F%98%E9%87%8F">#</a> 读取变量</h2>
+<p>Compose 模板文件支持动态读取主机的系统环境变量和当前目录下的 <code>.env</code> 文件中的变量。</p>
+<p>例如，下面的 Compose 文件将从运行它的环境中读取变量 <code>$&#123;MONGO_VERSION&#125;</code> 的值，并写入执行的指令中。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&quot;3&quot;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line"></span><br><span class="line"><span class="attr">db:</span></span><br><span class="line">  <span class="attr">image:</span> <span class="string">&quot;mongo:$&#123;MONGO_VERSION&#125;&quot;</span></span><br></pre></td></tr></table></figure>
+<p>如果执行 <code>MONGO_VERSION=3.2 docker compose up</code> 则会启动一个 <code>mongo:3.2</code> 镜像的容器；如果执行 <code>MONGO_VERSION=2.8 docker compose up</code> 则会启动一个 <code>mongo:2.8</code> 镜像的容器。</p>
+<p>若当前目录存在 <code>.env</code> 文件，执行 <code>docker compose</code> 命令时将从该文件中读取变量。</p>
+<p>在当前目录新建 <code>.env</code> 文件并写入以下内容。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 支持 # 号注释</span></span><br><span class="line">MONGO_VERSION=3.6</span><br></pre></td></tr></table></figure>
+<p>执行 <code>docker compose up</code> 则会启动一个 <code>mongo:3.6</code> 镜像的容器。</p>
+<h2 id="参考资料-2"><a href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99">#</a> 参考资料</h2>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://docs.docker.com/compose/compose-file/">官方文档 (opens new window)</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/docker/awesome-compose">awesome-compose (opens new window)</a></li>
+</ul>
+<h2 id="使用-Django"><a href="#%E4%BD%BF%E7%94%A8-django">#</a> 使用 Django</h2>
+<blockquote>
+<p>本小节内容适合 <code>Python</code> 开发人员阅读。</p>
+</blockquote>
+<p>我们现在将使用 <code>Docker Compose</code> 配置并运行一个 <code>Django/PostgreSQL</code> 应用。</p>
+<p>在一切工作开始前，需要先编辑好三个必要的文件。</p>
+<p>第一步，因为应用将要运行在一个满足所有环境依赖的 Docker 容器里面，那么我们可以通过编辑 <code>Dockerfile</code> 文件来指定 Docker 容器要安装内容。内容如下：</p>
+<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> python:<span class="number">3</span></span><br><span class="line"><span class="keyword">ENV</span> PYTHONUNBUFFERED <span class="number">1</span></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> <span class="built_in">mkdir</span> /code</span></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="language-bash"> /code</span></span><br><span class="line"><span class="keyword">COPY</span><span class="language-bash"> requirements.txt /code/</span></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> pip install -r requirements.txt</span></span><br><span class="line"><span class="keyword">COPY</span><span class="language-bash"> . /code/</span></span><br></pre></td></tr></table></figure>
+<p>以上内容指定应用将使用安装了 Python 以及必要依赖包的镜像。更多关于如何编写 <code>Dockerfile</code> 文件的信息可以查看 <a target="_blank" rel="noopener" href="https://vuepress.mirror.docker-practice.com/image/dockerfile/">Dockerfile 使用</a>。</p>
+<p>第二步，在 <code>requirements.txt</code> 文件里面写明需要安装的具体依赖包名。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Django&gt;=2.0,&lt;3.0</span><br><span class="line">psycopg2&gt;=2.7,&lt;3.0</span><br></pre></td></tr></table></figure>
+<p>第三步，<code>docker-compose.yml</code> 文件将把所有的东西关联起来。它描述了应用的构成（一个 web 服务和一个数据库）、使用的 Docker 镜像、镜像之间的连接、挂载到容器的卷，以及服务开放的端口。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&quot;3&quot;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">db:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">postgres</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="attr">POSTGRES_PASSWORD:</span> <span class="string">&#x27;postgres&#x27;</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">web:</span></span><br><span class="line">    <span class="attr">build:</span> <span class="string">.</span></span><br><span class="line">    <span class="attr">command:</span> <span class="string">python</span> <span class="string">manage.py</span> <span class="string">runserver</span> <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span><span class="string">:8000</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">.:/code</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;8000:8000&quot;</span></span><br></pre></td></tr></table></figure>
+<p>查看 <a target="_blank" rel="noopener" href="https://vuepress.mirror.docker-practice.com/compose/compose_file.html"><code>docker-compose.yml</code> 章节</a> 了解更多详细的工作机制。</p>
+<p>现在我们就可以使用 <code>docker compose run</code> 命令启动一个 <code>Django</code> 应用了。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker compose run web django-admin startproject django_example .</span><br></pre></td></tr></table></figure>
+<p>由于 web 服务所使用的镜像并不存在，所以 Compose 会首先使用 <code>Dockerfile</code> 为 web 服务构建一个镜像，接着使用这个镜像在容器里运行 <code>django-admin startproject django_example</code> 指令。</p>
+<p>这将在当前目录生成一个 <code>Django</code> 应用。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">ls</span></span><br><span class="line">Dockerfile       docker-compose.yml          django_example       manage.py       requirements.txt</span><br></pre></td></tr></table></figure>
+<p>如果你的系统是 Linux,记得更改文件权限。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">sudo</span> <span class="built_in">chown</span> -R <span class="variable">$USER</span>:<span class="variable">$USER</span> .</span><br></pre></td></tr></table></figure>
+<p>首先，我们要为应用设置好数据库的连接信息。用以下内容替换 <code>django_example/settings.py</code> 文件中 <code>DATABASES = ...</code> 定义的节点内容。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">DATABASES = &#123;</span><br><span class="line">    <span class="string">&#x27;default&#x27;</span>: &#123;</span><br><span class="line">        <span class="string">&#x27;ENGINE&#x27;</span>: <span class="string">&#x27;django.db.backends.postgresql&#x27;</span>,</span><br><span class="line">        <span class="string">&#x27;NAME&#x27;</span>: <span class="string">&#x27;postgres&#x27;</span>,</span><br><span class="line">        <span class="string">&#x27;USER&#x27;</span>: <span class="string">&#x27;postgres&#x27;</span>,</span><br><span class="line">        <span class="string">&#x27;HOST&#x27;</span>: <span class="string">&#x27;db&#x27;</span>,</span><br><span class="line">        <span class="string">&#x27;PORT&#x27;</span>: <span class="number">5432</span>,</span><br><span class="line">        <span class="string">&#x27;PASSWORD&#x27;</span>: <span class="string">&#x27;postgres&#x27;</span>,</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这些信息是在 <a target="_blank" rel="noopener" href="https://hub.docker.com/_/postgres/">postgres (opens new window)</a> 镜像固定设置好的。然后，运行 <code>docker compose up</code> ：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">$ docker compose up</span><br><span class="line"></span><br><span class="line">django_db_1 is up-to-date</span><br><span class="line">Creating django_web_1 ...</span><br><span class="line">Creating django_web_1 ... <span class="keyword">done</span></span><br><span class="line">Attaching to django_db_1, django_web_1</span><br><span class="line">db_1   | The files belonging to this database system will be owned by user <span class="string">&quot;postgres&quot;</span>.</span><br><span class="line">db_1   | This user must also own the server process.</span><br><span class="line">db_1   |</span><br><span class="line">db_1   | The database cluster will be initialized with locale <span class="string">&quot;en_US.utf8&quot;</span>.</span><br><span class="line">db_1   | The default database encoding has accordingly been <span class="built_in">set</span> to <span class="string">&quot;UTF8&quot;</span>.</span><br><span class="line">db_1   | The default text search configuration will be <span class="built_in">set</span> to <span class="string">&quot;english&quot;</span>.</span><br><span class="line"></span><br><span class="line">web_1  | Performing system checks...</span><br><span class="line">web_1  |</span><br><span class="line">web_1  | System check identified no issues (0 silenced).</span><br><span class="line">web_1  |</span><br><span class="line">web_1  | November 23, 2017 - 06:21:19</span><br><span class="line">web_1  | Django version 1.11.7, using settings <span class="string">&#x27;django_example.settings&#x27;</span></span><br><span class="line">web_1  | Starting development server at http://0.0.0.0:8000/</span><br><span class="line">web_1  | Quit the server with CONTROL-C.</span><br></pre></td></tr></table></figure>
+<p>这个 <code>Django</code> 应用已经开始在你的 Docker 守护进程里监听着 <code>8000</code> 端口了。打开 <code>127.0.0.1:8000</code> 即可看到 <code>Django</code> 欢迎页面。</p>
+<p>你还可以在 Docker 上运行其它的管理命令，例如对于同步数据库结构这种事，在运行完 <code>docker compose up</code> 后，在另外一个终端进入文件夹运行以下命令即可：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker compose run web python manage.py syncdb</span><br></pre></td></tr></table></figure>
+<h2 id="使用-Rails"><a href="#%E4%BD%BF%E7%94%A8-rails">#</a> 使用 Rails</h2>
+<blockquote>
+<p>本小节内容适合 <code>Ruby</code> 开发人员阅读。</p>
+</blockquote>
+<p>我们现在将使用 <code>Compose</code> 配置并运行一个 <code>Rails/PostgreSQL</code> 应用。</p>
+<p>在一切工作开始前，需要先设置好三个必要的文件。</p>
+<p>首先，因为应用将要运行在一个满足所有环境依赖的 Docker 容器里面，那么我们可以通过编辑 <code>Dockerfile</code> 文件来指定 Docker 容器要安装内容。内容如下：</p>
+<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> ruby</span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> apt-get update -qq &amp;&amp; apt-get install -y build-essential libpq-dev</span></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> <span class="built_in">mkdir</span> /myapp</span></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="language-bash"> /myapp</span></span><br><span class="line"><span class="keyword">ADD</span><span class="language-bash"> Gemfile /myapp/Gemfile</span></span><br><span class="line"><span class="keyword">RUN</span><span class="language-bash"> bundle install</span></span><br><span class="line"><span class="keyword">ADD</span><span class="language-bash"> . /myapp</span></span><br></pre></td></tr></table></figure>
+<p>以上内容指定应用将使用安装了 Ruby、Bundler 以及其依赖件的镜像。更多关于如何编写 Dockerfile 文件的信息可以查看 <a target="_blank" rel="noopener" href="https://vuepress.mirror.docker-practice.com/image/dockerfile/">Dockerfile 使用</a>。</p>
+<p>下一步，我们需要一个引导加载 Rails 的文件 <code>Gemfile</code> 。 等一会儿它还会被 <code>rails new</code> 命令覆盖重写。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">source</span> <span class="string">&#x27;https://rubygems.org&#x27;</span></span><br><span class="line">gem <span class="string">&#x27;rails&#x27;</span>, <span class="string">&#x27;4.0.2&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>最后，<code>docker-compose.yml</code> 文件才是最神奇的地方。 <code>docker-compose.yml</code> 文件将把所有的东西关联起来。它描述了应用的构成（一个 web 服务和一个数据库）、每个镜像的来源（数据库运行在使用预定义的 PostgreSQL 镜像，web 应用侧将从本地目录创建）、镜像之间的连接，以及服务开放的端口。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&quot;3&quot;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">db:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">postgres</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;5432&quot;</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">web:</span></span><br><span class="line">    <span class="attr">build:</span> <span class="string">.</span></span><br><span class="line">    <span class="attr">command:</span> <span class="string">bundle</span> <span class="string">exec</span> <span class="string">rackup</span> <span class="string">-p</span> <span class="number">3000</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">.:/myapp</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;3000:3000&quot;</span></span><br></pre></td></tr></table></figure>
+<p>所有文件就绪后，我们就可以通过使用 <code>docker compose run</code> 命令生成应用的骨架了。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker compose run web rails new . --force --database=postgresql --skip-bundle</span><br></pre></td></tr></table></figure>
+<p><code>Compose</code> 会先使用 <code>Dockerfile</code> 为 web 服务创建一个镜像，接着使用这个镜像在容器里运行 <code>rails new</code> 和它之后的命令。一旦这个命令运行完后，应该就可以看一个崭新的应用已经生成了。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">ls</span></span><br><span class="line">Dockerfile   app          docker-compose.yml      tmp</span><br><span class="line">Gemfile      bin          lib          vendor</span><br><span class="line">Gemfile.lock condocker-compose       <span class="built_in">log</span></span><br><span class="line">README.rdoc  condocker-compose.ru    public</span><br><span class="line">Rakefile     db           <span class="built_in">test</span></span><br></pre></td></tr></table></figure>
+<p>在新的 <code>Gemfile</code> 文件去掉加载 <code>therubyracer</code> 的行的注释，这样我们便可以使用 Javascript 运行环境：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gem <span class="string">&#x27;therubyracer&#x27;</span>, platforms: :ruby</span><br></pre></td></tr></table></figure>
+<p>现在我们已经有一个新的 <code>Gemfile</code> 文件，需要再重新创建镜像。（这个会步骤会改变 Dockerfile 文件本身，所以需要重建一次）。</p>
+<p>应用现在就可以启动了，但配置还未完成。Rails 默认读取的数据库目标是 <code>localhost</code> ，我们需要手动指定容器的 <code>db</code> 。同样的，还需要把用户名修改成和 postgres 镜像预定的一致。 打开最新生成的 <code>database.yml</code> 文件。用以下内容替换：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">development: &amp;default</span><br><span class="line">  adapter: postgresql</span><br><span class="line">  encoding: unicode</span><br><span class="line">  database: postgres</span><br><span class="line">  pool: 5</span><br><span class="line">  username: postgres</span><br><span class="line">  password:</span><br><span class="line">  host: db</span><br><span class="line"></span><br><span class="line"><span class="built_in">test</span>:</span><br><span class="line">  &lt;&lt;: *default</span><br><span class="line">  database: myapp_test</span><br></pre></td></tr></table></figure>
+<p>现在就可以启动应用了。</p>
+<p>如果一切正常，你应该可以看到 PostgreSQL 的输出，几秒后可以看到这样的重复信息：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">myapp_web_1 | [2014-01-17 17:16:29] INFO  WEBrick 1.3.1</span><br><span class="line">myapp_web_1 | [2014-01-17 17:16:29] INFO  ruby 2.0.0 (2013-11-22) [x86_64-linux-gnu]</span><br><span class="line">myapp_web_1 | [2014-01-17 17:16:29] INFO  WEBrick::HTTPServer#start: pid=1 port=3000</span><br></pre></td></tr></table></figure>
+<p>最后， 我们需要做的是创建数据库，打开另一个终端，运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker compose run web rake db:create</span><br></pre></td></tr></table></figure>
+<p>这个 web 应用已经开始在你的 docker 守护进程里面监听着 3000 端口了。</p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/Docker/" rel="tag">Docker</a> <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/Docker-Compose/" rel="tag">Docker Compose</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../../06/24/java/JAVA-IO/"
+                    data-tooltip="JAVA-IO"
+                    aria-label="上一篇: JAVA-IO"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../20/docker/Kubernetes/"
+                    data-tooltip="Kubernetes"
+                    aria-label="下一篇: Kubernetes"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/21/docker/Docker%20Compose/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/21/docker/Docker%20Compose/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/21/docker/Docker%20Compose/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/21/docker/Docker%20Compose/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../../06/24/java/JAVA-IO/"
+                    data-tooltip="JAVA-IO"
+                    aria-label="上一篇: JAVA-IO"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../20/docker/Kubernetes/"
+                    data-tooltip="Kubernetes"
+                    aria-label="下一篇: Kubernetes"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/21/docker/Docker%20Compose/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/21/docker/Docker%20Compose/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/21/docker/Docker%20Compose/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/21/docker/Docker%20Compose/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/21/docker/Docker%20Compose/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/21/docker/Docker%20Compose/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/21/docker/Docker%20Compose/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/21/docker/Docker%20Compose/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 198 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

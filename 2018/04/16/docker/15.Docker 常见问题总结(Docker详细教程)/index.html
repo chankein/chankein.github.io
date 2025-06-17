@@ -1,0 +1,1100 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>15.Docker 常见问题总结(Docker详细教程) - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"# 常见问题总结\n# 镜像相关\n# 如何批量清理临时镜像文件？\n答：可以使用 docker image prune 命令。\n# 如何查看镜像支持的环境变量？\n答：可以使用 docker run IMAGE env 命令。\n# 本地的镜像文件都存放在哪里？\n答：与 Docker 相关的本地资源默认存放在 /var/lib/docker/ 目录下，以 overlay2 文件系统为例，其中 containers 目录存放容器信息，image 目录存放镜像信息，overlay2 目录下存放具体的镜像层文件。\n# 构建 Docker 镜像应该遵循哪些原则？\n答：整体原则上，尽量保持镜像功能的明确和内容的精简，要点包括\n\n\n尽量选取满足需求但较小的基础系统镜像，例如大部分时候可以选择 alpine 镜像，仅有不足六兆大小；\n\n\n清理编译生成文件、安装包的缓存等临时文件；\n\n\n安装各个软件时候要指定准确的版本号，并避免引入不需要的依赖；\n\n\n从安全角度考虑，应用要尽量使用系统的库和依赖；\n\n\n如果安装应用时候需要配置一些特殊的环境变量，在安装后要还原不需要保持的变量值；\n\n\n使用 Dockerfile 创建镜像时候要添加 .dockerignore 文件或使用干净的工作目录。\n\n\n更多内容请查看 Dockerfile 最佳实践\n# 碰到网络问题，无法 pull 镜像，命令行指定 http_proxy 无效？\n答：在 Docker 配置文件中添加 export http_proxy=&quot;http://&lt;PROXY_HOST&gt;:&lt;PROXY_PORT&gt;&quot;，之后重启 Docker 服务即可。\n# 容器相关\n# 容器退出后，通过 docker container ls 命令查看不到，数据会丢失么？\n答：容器退出后会处于终止（exited）状态，此时可以通过 docker container ls -a 查看。其中的数据也不会丢失，还可以通过 docker start 命令来启动它。只有删除掉容器才会清除所有数据。\n# 如何停止所有正在运行的容器？\n答：可以使用 docker stop $(docker container ls -q) 命令。\n# 如何批量清理已经停止的容器？\n答：可以使用 docker container prune 命令。\n# 如何获取某个容器的 PID 信息？\n答：可以使用\n1docker inspect --format &#x27;&#123;&#123; .State.Pid &#125;&#125;&#x27; &lt;CONTAINER ID or NAME&gt;\n# 如何获取某个容器的 IP 地址？\n答：可以使用\n1docker inspect --format &#x27;&#123;&#123; .NetworkSettings.IPAddress &#125;&#125;&#x27; &lt;CONTAINER ID or NAME&gt;\n# 如何给容器指定一个固定 IP 地址，而不是每次重启容器 IP 地址都会变？\n答：使用以下命令启动容器可以使容器 IP 固定不变\n123$ docker network create -d bridge --subnet 172.25.0.0/16 my-net$ docker run --network=my-net --ip=172.25.3.3 -itd --name=my-container busybox\n# 如何临时退出一个正在交互的容器的终端，而不终止它？\n答：按 Ctrl-p Ctrl-q。如果按 Ctrl-c 往往会让容器内应用进程终止，进而会终止容器。\n# 使用 docker port 命令映射容器的端口时，系统报错“Error: No public port ‘80’ published for xxx”？\n答：\n\n\n创建镜像时 Dockerfile 要通过 EXPOSE 指定正确的开放端口；\n\n\n容器启动时指定 PublishAllPort = true。\n\n\n# 可以在一个容器中同时运行多个应用进程么？\n答：一般并不推荐在同一个容器内运行多个应用进程。如果有类似需求，可以通过一些额外的进程管理机制，比如 supervisord 来管理所运行的进程。可以参考 https://docs.docker.com/config/containers/multi-service\\_container/ 。\n# 如何控制容器占用系统资源（CPU、内存）的份额？\n答：在使用 docker create 命令创建容器或使用 docker run 创建并启动容器的时候，可以使用 -c|–cpu-shares[=0] 参数来调整容器使用 CPU 的权重；使用 -m|–memory[=MEMORY] 参数来调整容器使用内存的大小。\n# 仓库相关\n# 仓库（Repository）、注册服务器（Registry）、注册索引（Index） 有何关系？\n首先，仓库是存放一组关联镜像的集合，比如同一个应用的不同版本的镜像。\n注册服务器是存放实际的镜像文件的地方。注册索引则负责维护用户的账号、权限、搜索、标签等的管理。因此，注册服务器利用注册索引来实现认证等管理。\n# 配置相关\n# Docker 的配置文件放在哪里，如何修改配置？\n答：使用 systemd 的系统（如 Ubuntu 16.04、Centos 等）的配置文件在 /etc/docker/daemon.json。\n# 如何更改 Docker 的默认存储位置？\n答：Docker 的默认存储位置是 /var/lib/docker，如果希望将 Docker 的本地文件存储到其他分区，可以使用 Linux 软连接的方式来完成，或者在启动 daemon 时通过 -g 参数指定，或者修改配置文件 /etc/docker/daemon.json 的 “data-root” 项 。可以使用 docker system info | grep &quot;Root Dir&quot; 查看当前使用的存储位置。\n例如，如下操作将默认存储位置迁移到 /storage/docker。\n1234567891011121314[root@s26 ~]# df -hFilesystem                    Size  Used Avail Use% Mounted on/dev/mapper/VolGroup-lv_root   50G  5.3G   42G  12% /tmpfs                          48G  228K   48G   1% /dev/shm/dev/sda1                     485M   40M  420M   9% /boot/dev/mapper/VolGroup-lv_home  222G  188M  210G   1% /home/dev/sdb2                     2.7T  323G  2.3T  13% /storage[root@s26 ~]# service docker stop[root@s26 ~]# cd /var/lib/[root@s26 lib]# mv docker /storage/[root@s26 lib]# ln -s /storage/docker/ docker[root@s26 lib]# ls -la dockerlrwxrwxrwx. 1 root root 15 11月 17 13:43 docker -&gt; /storage/docker[root@s26 lib]# service docker start\n# 使用内存和 swap 限制启动容器时候报警告：“WARNING: Your kernel does not support cgroup swap limit. WARNING: Your kernel does not support swap limit capabilities. Limitation discarded.”？\n答：这是因为系统默认没有开启对内存和 swap 使用的统计功能，引入该功能会带来性能的下降。要开启该功能，可以采取如下操作：\n\n\n编辑 /etc/default/grub 文件（Ubuntu 系统为例），配置 GRUB_CMDLINE_LINUX=&quot;cgroup_enable=memory swapaccount=1&quot;\n\n\n更新 grub：$ sudo update-grub\n\n\n重启系统，即可。\n\n\n# Docker 与虚拟化\n# Docker 与 LXC（Linux Container）有何不同？\n答：LXC 利用 Linux 上相关技术实现了容器。Docker 则在如下的几个方面进行了改进：\n\n移植性：通过抽象容器配置，容器可以实现从一个平台移植到另一个平台；\n镜像系统：基于 OverlayFS 的镜像系统为容器的分发带来了很多的便利，同时共同的镜像层只需要存储一份，实现高效率的存储；\n版本管理：类似于Git的版本管理理念，用户可以更方便的创建、管理镜像文件；\n仓库系统：仓库系统大大降低了镜像的分发和管理的成本；\n周边工具：各种现有工具（配置管理、云平台）对 Docker 的支持，以及基于 Docker的 PaaS、CI 等系统，让 Docker 的应用更加方便和多样化。\n\n# Docker 与 Vagrant 有何不同？\n答：两者的定位完全不同。\n\n\nVagrant 类似 Boot2Docker（一款运行 Docker 的最小内核），是一套虚拟机的管理环境。Vagrant 可以在多种系统上和虚拟机软件中运行，可以在 Windows，Mac 等非 Linux 平台上为 Docker 提供支持，自身具有较好的包装性和移植性。\n\n\n原生的 Docker 自身只能运行在 Linux 平台上，但启动和运行的性能都比虚拟机要快，往往更适合快速开发和部署应用的场景。\n\n\n简单说：Vagrant 适合用来管理虚拟机，而 Docker 适合用来管理应用环境。\n# 开发环境中 Docker 和 Vagrant 该如何选择？\n答：Docker 不是虚拟机，而是进程隔离，对于资源的消耗很少，但是目前需要 Linux 环境支持。Vagrant 是虚拟机上做的封装，虚拟机本身会消耗资源。\n如果本地使用的 Linux 环境，推荐都使用 Docker。\n如果本地使用的是 macOS 或者 Windows 环境，那就需要开虚拟机，单一开发环境下 Vagrant 更简单；多环境开发下推荐在 Vagrant 里面再使用 Docker 进行环境隔离。\n# 其它\n# Docker 能在非 Linux 平台（比如 Windows 或 macOS ）上运行么？\n答：完全可以。安装方法请查看 安装 Docker 一节\n# 如何将一台宿主主机的 Docker 环境迁移到另外一台宿主主机？\n答：停止 Docker 服务。将整个 Docker 存储文件夹复制到另外一台宿主主机，然后调整另外一台宿主主机的配置即可。\n# 如何进入 Docker 容器的网络命名空间？\n答：Docker 在创建容器后，删除了宿主主机上 /var/run/netns 目录中的相关的网络命名空间文件。因此，在宿主主机上是无法看到或访问容器的网络命名空间的。\n用户可以通过如下方法来手动恢复它。\n首先，使用下面的命令查看容器进程信息，比如这里的 1234。\n12$ docker inspect --format=&#x27;&#123;&#123;. State.Pid&#125;&#125; &#x27; $container_id1234\n接下来，在 /proc 目录下，把对应的网络命名空间文件链接到 /var/run/netns 目录。\n1$ sudo ln -s /proc/1234/ns/net /var/run/netns/\n然后，在宿主主机上就可以看到容器的网络命名空间信息。例如\n12$ sudo ip netns show1234\n此时，用户可以通过正常的系统命令来查看或操作容器的命名空间了。例如修改容器的 IP 地址信息为 172.17.0.100/16。\n1$ sudo ip netns exec 1234 ifconfig eth0 172.17.0.100/16\n# 如何获取容器绑定到本地那个 veth 接口上？\n答：Docker 容器启动后，会通过 veth 接口对连接到本地网桥，veth 接口命名跟容器命名毫无关系，十分难以找到对应关系。\n最简单的一种方式是通过查看接口的索引号，在容器中执行 ip a 命令，查看到本地接口最前面的接口索引号，如 205，将此值加上 1，即 206，然后在本地主机执行 ip a 命令，查找接口索引号为 206 的接口，两者即为连接的 veth 接口对。\n","dateCreated":"2018-04-16T16:02:39+08:00","dateModified":"2025-06-16T10:23:02+08:00","datePublished":"2018-04-16T16:02:39+08:00","description":"","headline":"15.Docker 常见问题总结(Docker详细教程)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/","keywords":"Docker"}</script>
+    <meta name="description" content="# 常见问题总结 # 镜像相关 # 如何批量清理临时镜像文件？ 答：可以使用 docker image prune 命令。 # 如何查看镜像支持的环境变量？ 答：可以使用 docker run IMAGE env 命令。 # 本地的镜像文件都存放在哪里？ 答：与 Docker 相关的本地资源默认存放在 &#x2F;var&#x2F;lib&#x2F;docker&#x2F; 目录下，以 overlay2 文件系统为例，其中 contai">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="15.Docker 常见问题总结(Docker详细教程)">
+<meta property="og:url" content="https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="# 常见问题总结 # 镜像相关 # 如何批量清理临时镜像文件？ 答：可以使用 docker image prune 命令。 # 如何查看镜像支持的环境变量？ 答：可以使用 docker run IMAGE env 命令。 # 本地的镜像文件都存放在哪里？ 答：与 Docker 相关的本地资源默认存放在 &#x2F;var&#x2F;lib&#x2F;docker&#x2F; 目录下，以 overlay2 文件系统为例，其中 contai">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2018-04-16T08:02:39.000Z">
+<meta property="article:modified_time" content="2025-06-16T02:23:02.869Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="Docker">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            15.Docker 常见问题总结(Docker详细教程)
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2018-04-16T16:02:39+08:00">
+	
+		    2018 年 4 月 16 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/devops/">devops</a>, <a class="category-link" href="../../../../../categories/devops/Docker/">Docker</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="常见问题总结"><a href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93">#</a> 常见问题总结</h2>
+<h2 id="镜像相关"><a href="#%E9%95%9C%E5%83%8F%E7%9B%B8%E5%85%B3">#</a> 镜像相关</h2>
+<h3 id="如何批量清理临时镜像文件？"><a href="#%E5%A6%82%E4%BD%95%E6%89%B9%E9%87%8F%E6%B8%85%E7%90%86%E4%B8%B4%E6%97%B6%E9%95%9C%E5%83%8F%E6%96%87%E4%BB%B6">#</a> 如何批量清理临时镜像文件？</h3>
+<p>答：可以使用 <code>docker image prune</code> 命令。</p>
+<h3 id="如何查看镜像支持的环境变量？"><a href="#%E5%A6%82%E4%BD%95%E6%9F%A5%E7%9C%8B%E9%95%9C%E5%83%8F%E6%94%AF%E6%8C%81%E7%9A%84%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F">#</a> 如何查看镜像支持的环境变量？</h3>
+<p>答：可以使用 <code>docker run IMAGE env</code> 命令。</p>
+<h3 id="本地的镜像文件都存放在哪里？"><a href="#%E6%9C%AC%E5%9C%B0%E7%9A%84%E9%95%9C%E5%83%8F%E6%96%87%E4%BB%B6%E9%83%BD%E5%AD%98%E6%94%BE%E5%9C%A8%E5%93%AA%E9%87%8C">#</a> 本地的镜像文件都存放在哪里？</h3>
+<p>答：与 Docker 相关的本地资源默认存放在 <code>/var/lib/docker/</code> 目录下，以 <code>overlay2</code> 文件系统为例，其中 <code>containers</code> 目录存放容器信息，<code>image</code> 目录存放镜像信息，<code>overlay2</code> 目录下存放具体的镜像层文件。</p>
+<h3 id="构建-Docker-镜像应该遵循哪些原则？"><a href="#%E6%9E%84%E5%BB%BA-docker-%E9%95%9C%E5%83%8F%E5%BA%94%E8%AF%A5%E9%81%B5%E5%BE%AA%E5%93%AA%E4%BA%9B%E5%8E%9F%E5%88%99">#</a> 构建 Docker 镜像应该遵循哪些原则？</h3>
+<p>答：整体原则上，尽量保持镜像功能的明确和内容的精简，要点包括</p>
+<ul>
+<li>
+<p>尽量选取满足需求但较小的基础系统镜像，例如大部分时候可以选择 <code>alpine</code> 镜像，仅有不足六兆大小；</p>
+</li>
+<li>
+<p>清理编译生成文件、安装包的缓存等临时文件；</p>
+</li>
+<li>
+<p>安装各个软件时候要指定准确的版本号，并避免引入不需要的依赖；</p>
+</li>
+<li>
+<p>从安全角度考虑，应用要尽量使用系统的库和依赖；</p>
+</li>
+<li>
+<p>如果安装应用时候需要配置一些特殊的环境变量，在安装后要还原不需要保持的变量值；</p>
+</li>
+<li>
+<p>使用 Dockerfile 创建镜像时候要添加 .dockerignore 文件或使用干净的工作目录。</p>
+</li>
+</ul>
+<p>更多内容请查看 <a target="_blank" rel="noopener" href="https://vuepress.mirror.docker-practice.com/appendix/best_practices.html">Dockerfile 最佳实践</a></p>
+<h3 id="碰到网络问题，无法-pull-镜像，命令行指定-http-proxy-无效？"><a href="#%E7%A2%B0%E5%88%B0%E7%BD%91%E7%BB%9C%E9%97%AE%E9%A2%98-%E6%97%A0%E6%B3%95-pull-%E9%95%9C%E5%83%8F-%E5%91%BD%E4%BB%A4%E8%A1%8C%E6%8C%87%E5%AE%9A-http-proxy-%E6%97%A0%E6%95%88">#</a> 碰到网络问题，无法 pull 镜像，命令行指定 http_proxy 无效？</h3>
+<p>答：在 Docker 配置文件中添加 <code>export http_proxy=&quot;http://&lt;PROXY_HOST&gt;:&lt;PROXY_PORT&gt;&quot;</code>，之后重启 Docker 服务即可。</p>
+<h2 id="容器相关"><a href="#%E5%AE%B9%E5%99%A8%E7%9B%B8%E5%85%B3">#</a> 容器相关</h2>
+<h3 id="容器退出后，通过-docker-container-ls-命令查看不到，数据会丢失么？"><a href="#%E5%AE%B9%E5%99%A8%E9%80%80%E5%87%BA%E5%90%8E-%E9%80%9A%E8%BF%87-docker-container-ls-%E5%91%BD%E4%BB%A4%E6%9F%A5%E7%9C%8B%E4%B8%8D%E5%88%B0-%E6%95%B0%E6%8D%AE%E4%BC%9A%E4%B8%A2%E5%A4%B1%E4%B9%88">#</a> 容器退出后，通过 docker container ls 命令查看不到，数据会丢失么？</h3>
+<p>答：容器退出后会处于终止（exited）状态，此时可以通过 <code>docker container ls -a</code> 查看。其中的数据也不会丢失，还可以通过 <code>docker start</code> 命令来启动它。只有删除掉容器才会清除所有数据。</p>
+<h3 id="如何停止所有正在运行的容器？"><a href="#%E5%A6%82%E4%BD%95%E5%81%9C%E6%AD%A2%E6%89%80%E6%9C%89%E6%AD%A3%E5%9C%A8%E8%BF%90%E8%A1%8C%E7%9A%84%E5%AE%B9%E5%99%A8">#</a> 如何停止所有正在运行的容器？</h3>
+<p>答：可以使用 <code>docker stop $(docker container ls -q)</code> 命令。</p>
+<h3 id="如何批量清理已经停止的容器？"><a href="#%E5%A6%82%E4%BD%95%E6%89%B9%E9%87%8F%E6%B8%85%E7%90%86%E5%B7%B2%E7%BB%8F%E5%81%9C%E6%AD%A2%E7%9A%84%E5%AE%B9%E5%99%A8">#</a> 如何批量清理已经停止的容器？</h3>
+<p>答：可以使用 <code>docker container prune</code> 命令。</p>
+<h3 id="如何获取某个容器的-PID-信息？"><a href="#%E5%A6%82%E4%BD%95%E8%8E%B7%E5%8F%96%E6%9F%90%E4%B8%AA%E5%AE%B9%E5%99%A8%E7%9A%84-pid-%E4%BF%A1%E6%81%AF">#</a> 如何获取某个容器的 PID 信息？</h3>
+<p>答：可以使用</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker inspect --format <span class="string">&#x27;&#123;&#123; .State.Pid &#125;&#125;&#x27;</span> &lt;CONTAINER ID or NAME&gt;</span><br></pre></td></tr></table></figure>
+<h3 id="如何获取某个容器的-IP-地址？"><a href="#%E5%A6%82%E4%BD%95%E8%8E%B7%E5%8F%96%E6%9F%90%E4%B8%AA%E5%AE%B9%E5%99%A8%E7%9A%84-ip-%E5%9C%B0%E5%9D%80">#</a> 如何获取某个容器的 IP 地址？</h3>
+<p>答：可以使用</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker inspect --format <span class="string">&#x27;&#123;&#123; .NetworkSettings.IPAddress &#125;&#125;&#x27;</span> &lt;CONTAINER ID or NAME&gt;</span><br></pre></td></tr></table></figure>
+<h3 id="如何给容器指定一个固定-IP-地址，而不是每次重启容器-IP-地址都会变？"><a href="#%E5%A6%82%E4%BD%95%E7%BB%99%E5%AE%B9%E5%99%A8%E6%8C%87%E5%AE%9A%E4%B8%80%E4%B8%AA%E5%9B%BA%E5%AE%9A-ip-%E5%9C%B0%E5%9D%80-%E8%80%8C%E4%B8%8D%E6%98%AF%E6%AF%8F%E6%AC%A1%E9%87%8D%E5%90%AF%E5%AE%B9%E5%99%A8-ip-%E5%9C%B0%E5%9D%80%E9%83%BD%E4%BC%9A%E5%8F%98">#</a> 如何给容器指定一个固定 IP 地址，而不是每次重启容器 IP 地址都会变？</h3>
+<p>答：使用以下命令启动容器可以使容器 IP 固定不变</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ docker network create -d bridge --subnet 172.25.0.0/16 my-net</span><br><span class="line"></span><br><span class="line">$ docker run --network=my-net --ip=172.25.3.3 -itd --name=my-container busybox</span><br></pre></td></tr></table></figure>
+<h3 id="如何临时退出一个正在交互的容器的终端，而不终止它？"><a href="#%E5%A6%82%E4%BD%95%E4%B8%B4%E6%97%B6%E9%80%80%E5%87%BA%E4%B8%80%E4%B8%AA%E6%AD%A3%E5%9C%A8%E4%BA%A4%E4%BA%92%E7%9A%84%E5%AE%B9%E5%99%A8%E7%9A%84%E7%BB%88%E7%AB%AF-%E8%80%8C%E4%B8%8D%E7%BB%88%E6%AD%A2%E5%AE%83">#</a> 如何临时退出一个正在交互的容器的终端，而不终止它？</h3>
+<p>答：按 <code>Ctrl-p Ctrl-q</code>。如果按 <code>Ctrl-c</code> 往往会让容器内应用进程终止，进而会终止容器。</p>
+<h3 id="使用-docker-port-命令映射容器的端口时，系统报错“Error-No-public-port-‘80’-published-for-xxx”？"><a href="#%E4%BD%BF%E7%94%A8-docker-port-%E5%91%BD%E4%BB%A4%E6%98%A0%E5%B0%84%E5%AE%B9%E5%99%A8%E7%9A%84%E7%AB%AF%E5%8F%A3%E6%97%B6-%E7%B3%BB%E7%BB%9F%E6%8A%A5%E9%94%99-error-no-public-port-80-published-for-xxx">#</a> 使用 <code>docker port</code> 命令映射容器的端口时，系统报错“Error: No public port ‘80’ published for xxx”？</h3>
+<p>答：</p>
+<ul>
+<li>
+<p>创建镜像时 <code>Dockerfile</code> 要通过 <code>EXPOSE</code> 指定正确的开放端口；</p>
+</li>
+<li>
+<p>容器启动时指定 <code>PublishAllPort = true</code>。</p>
+</li>
+</ul>
+<h3 id="可以在一个容器中同时运行多个应用进程么？"><a href="#%E5%8F%AF%E4%BB%A5%E5%9C%A8%E4%B8%80%E4%B8%AA%E5%AE%B9%E5%99%A8%E4%B8%AD%E5%90%8C%E6%97%B6%E8%BF%90%E8%A1%8C%E5%A4%9A%E4%B8%AA%E5%BA%94%E7%94%A8%E8%BF%9B%E7%A8%8B%E4%B9%88">#</a> 可以在一个容器中同时运行多个应用进程么？</h3>
+<p>答：一般并不推荐在同一个容器内运行多个应用进程。如果有类似需求，可以通过一些额外的进程管理机制，比如 <code>supervisord</code> 来管理所运行的进程。可以参考 <a target="_blank" rel="noopener" href="https://docs.docker.com/config/containers/multi-service%5C_container/">https://docs.docker.com/config/containers/multi-service\_container/</a> 。</p>
+<h3 id="如何控制容器占用系统资源（CPU、内存）的份额？"><a href="#%E5%A6%82%E4%BD%95%E6%8E%A7%E5%88%B6%E5%AE%B9%E5%99%A8%E5%8D%A0%E7%94%A8%E7%B3%BB%E7%BB%9F%E8%B5%84%E6%BA%90-cpu%E3%80%81%E5%86%85%E5%AD%98-%E7%9A%84%E4%BB%BD%E9%A2%9D">#</a> 如何控制容器占用系统资源（CPU、内存）的份额？</h3>
+<p>答：在使用 <code>docker create</code> 命令创建容器或使用 <code>docker run</code> 创建并启动容器的时候，可以使用 -c|–cpu-shares[=0] 参数来调整容器使用 CPU 的权重；使用 -m|–memory[=MEMORY] 参数来调整容器使用内存的大小。</p>
+<h2 id="仓库相关"><a href="#%E4%BB%93%E5%BA%93%E7%9B%B8%E5%85%B3">#</a> 仓库相关</h2>
+<h3 id="仓库（Repository）、注册服务器（Registry）、注册索引（Index）-有何关系？"><a href="#%E4%BB%93%E5%BA%93-repository-%E3%80%81%E6%B3%A8%E5%86%8C%E6%9C%8D%E5%8A%A1%E5%99%A8-registry-%E3%80%81%E6%B3%A8%E5%86%8C%E7%B4%A2%E5%BC%95-index-%E6%9C%89%E4%BD%95%E5%85%B3%E7%B3%BB">#</a> 仓库（Repository）、注册服务器（Registry）、注册索引（Index） 有何关系？</h3>
+<p>首先，仓库是存放一组关联镜像的集合，比如同一个应用的不同版本的镜像。</p>
+<p>注册服务器是存放实际的镜像文件的地方。注册索引则负责维护用户的账号、权限、搜索、标签等的管理。因此，注册服务器利用注册索引来实现认证等管理。</p>
+<h2 id="配置相关"><a href="#%E9%85%8D%E7%BD%AE%E7%9B%B8%E5%85%B3">#</a> 配置相关</h2>
+<h3 id="Docker-的配置文件放在哪里，如何修改配置？"><a href="#docker-%E7%9A%84%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E6%94%BE%E5%9C%A8%E5%93%AA%E9%87%8C-%E5%A6%82%E4%BD%95%E4%BF%AE%E6%94%B9%E9%85%8D%E7%BD%AE">#</a> Docker 的配置文件放在哪里，如何修改配置？</h3>
+<p>答：使用 <code>systemd</code> 的系统（如 Ubuntu 16.04、Centos 等）的配置文件在 <code>/etc/docker/daemon.json</code>。</p>
+<h3 id="如何更改-Docker-的默认存储位置？"><a href="#%E5%A6%82%E4%BD%95%E6%9B%B4%E6%94%B9-docker-%E7%9A%84%E9%BB%98%E8%AE%A4%E5%AD%98%E5%82%A8%E4%BD%8D%E7%BD%AE">#</a> 如何更改 Docker 的默认存储位置？</h3>
+<p>答：Docker 的默认存储位置是 <code>/var/lib/docker</code>，如果希望将 Docker 的本地文件存储到其他分区，可以使用 Linux 软连接的方式来完成，或者在启动 daemon 时通过 <code>-g</code> 参数指定，或者修改配置文件 <code>/etc/docker/daemon.json</code> 的 “data-root” 项 。可以使用 <code>docker system info | grep &quot;Root Dir&quot;</code> 查看当前使用的存储位置。</p>
+<p>例如，如下操作将默认存储位置迁移到 /storage/docker。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[root@s26 ~]# <span class="built_in">df</span> -h</span><br><span class="line">Filesystem                    Size  Used Avail Use% Mounted on</span><br><span class="line">/dev/mapper/VolGroup-lv_root   50G  5.3G   42G  12% /</span><br><span class="line">tmpfs                          48G  228K   48G   1% /dev/shm</span><br><span class="line">/dev/sda1                     485M   40M  420M   9% /boot</span><br><span class="line">/dev/mapper/VolGroup-lv_home  222G  188M  210G   1% /home</span><br><span class="line">/dev/sdb2                     2.7T  323G  2.3T  13% /storage</span><br><span class="line">[root@s26 ~]# service docker stop</span><br><span class="line">[root@s26 ~]# <span class="built_in">cd</span> /var/lib/</span><br><span class="line">[root@s26 lib]# <span class="built_in">mv</span> docker /storage/</span><br><span class="line">[root@s26 lib]# <span class="built_in">ln</span> -s /storage/docker/ docker</span><br><span class="line">[root@s26 lib]# <span class="built_in">ls</span> -la docker</span><br><span class="line">lrwxrwxrwx. 1 root root 15 11月 17 13:43 docker -&gt; /storage/docker</span><br><span class="line">[root@s26 lib]# service docker start</span><br></pre></td></tr></table></figure>
+<h3 id="使用内存和-swap-限制启动容器时候报警告：“WARNING-Your-kernel-does-not-support-cgroup-swap-limit-WARNING-Your-kernel-does-not-support-swap-limit-capabilities-Limitation-discarded-”？"><a href="#%E4%BD%BF%E7%94%A8%E5%86%85%E5%AD%98%E5%92%8C-swap-%E9%99%90%E5%88%B6%E5%90%AF%E5%8A%A8%E5%AE%B9%E5%99%A8%E6%97%B6%E5%80%99%E6%8A%A5%E8%AD%A6%E5%91%8A-warning-your-kernel-does-not-support-cgroup-swap-limit-warning-your-kernel-does-not-support-swap-limit-capabilities-limitation-discarded">#</a> 使用内存和 swap 限制启动容器时候报警告：“WARNING: Your kernel does not support cgroup swap limit. WARNING: Your kernel does not support swap limit capabilities. Limitation discarded.”？</h3>
+<p>答：这是因为系统默认没有开启对内存和 swap 使用的统计功能，引入该功能会带来性能的下降。要开启该功能，可以采取如下操作：</p>
+<ul>
+<li>
+<p>编辑 <code>/etc/default/grub</code> 文件（Ubuntu 系统为例），配置 <code>GRUB_CMDLINE_LINUX=&quot;cgroup_enable=memory swapaccount=1&quot;</code></p>
+</li>
+<li>
+<p>更新 grub：<code>$ sudo update-grub</code></p>
+</li>
+<li>
+<p>重启系统，即可。</p>
+</li>
+</ul>
+<h2 id="Docker-与虚拟化"><a href="#docker-%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%8C%96">#</a> Docker 与虚拟化</h2>
+<h3 id="Docker-与-LXC（Linux-Container）有何不同？"><a href="#docker-%E4%B8%8E-lxc-linux-container-%E6%9C%89%E4%BD%95%E4%B8%8D%E5%90%8C">#</a> Docker 与 LXC（Linux Container）有何不同？</h3>
+<p>答：LXC 利用 Linux 上相关技术实现了容器。Docker 则在如下的几个方面进行了改进：</p>
+<ul>
+<li>移植性：通过抽象容器配置，容器可以实现从一个平台移植到另一个平台；</li>
+<li>镜像系统：基于 OverlayFS 的镜像系统为容器的分发带来了很多的便利，同时共同的镜像层只需要存储一份，实现高效率的存储；</li>
+<li>版本管理：类似于Git的版本管理理念，用户可以更方便的创建、管理镜像文件；</li>
+<li>仓库系统：仓库系统大大降低了镜像的分发和管理的成本；</li>
+<li>周边工具：各种现有工具（配置管理、云平台）对 Docker 的支持，以及基于 Docker的 PaaS、CI 等系统，让 Docker 的应用更加方便和多样化。</li>
+</ul>
+<h3 id="Docker-与-Vagrant-有何不同？"><a href="#docker-%E4%B8%8E-vagrant-%E6%9C%89%E4%BD%95%E4%B8%8D%E5%90%8C">#</a> Docker 与 Vagrant 有何不同？</h3>
+<p>答：两者的定位完全不同。</p>
+<ul>
+<li>
+<p>Vagrant 类似 Boot2Docker（一款运行 Docker 的最小内核），是一套虚拟机的管理环境。Vagrant 可以在多种系统上和虚拟机软件中运行，可以在 Windows，Mac 等非 Linux 平台上为 Docker 提供支持，自身具有较好的包装性和移植性。</p>
+</li>
+<li>
+<p>原生的 Docker 自身只能运行在 Linux 平台上，但启动和运行的性能都比虚拟机要快，往往更适合快速开发和部署应用的场景。</p>
+</li>
+</ul>
+<p>简单说：Vagrant 适合用来管理虚拟机，而 Docker 适合用来管理应用环境。</p>
+<h3 id="开发环境中-Docker-和-Vagrant-该如何选择？"><a href="#%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83%E4%B8%AD-docker-%E5%92%8C-vagrant-%E8%AF%A5%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9">#</a> 开发环境中 Docker 和 Vagrant 该如何选择？</h3>
+<p>答：Docker 不是虚拟机，而是进程隔离，对于资源的消耗很少，但是目前需要 Linux 环境支持。Vagrant 是虚拟机上做的封装，虚拟机本身会消耗资源。</p>
+<p>如果本地使用的 Linux 环境，推荐都使用 Docker。</p>
+<p>如果本地使用的是 macOS 或者 Windows 环境，那就需要开虚拟机，单一开发环境下 Vagrant 更简单；多环境开发下推荐在 Vagrant 里面再使用 Docker 进行环境隔离。</p>
+<h2 id="其它"><a href="#%E5%85%B6%E5%AE%83">#</a> 其它</h2>
+<h3 id="Docker-能在非-Linux-平台（比如-Windows-或-macOS-）上运行么？"><a href="#docker-%E8%83%BD%E5%9C%A8%E9%9D%9E-linux-%E5%B9%B3%E5%8F%B0-%E6%AF%94%E5%A6%82-windows-%E6%88%96-macos-%E4%B8%8A%E8%BF%90%E8%A1%8C%E4%B9%88">#</a> Docker 能在非 Linux 平台（比如 Windows 或 macOS ）上运行么？</h3>
+<p>答：完全可以。安装方法请查看 <a target="_blank" rel="noopener" href="https://vuepress.mirror.docker-practice.com/install/">安装 Docker</a> 一节</p>
+<h3 id="如何将一台宿主主机的-Docker-环境迁移到另外一台宿主主机？"><a href="#%E5%A6%82%E4%BD%95%E5%B0%86%E4%B8%80%E5%8F%B0%E5%AE%BF%E4%B8%BB%E4%B8%BB%E6%9C%BA%E7%9A%84-docker-%E7%8E%AF%E5%A2%83%E8%BF%81%E7%A7%BB%E5%88%B0%E5%8F%A6%E5%A4%96%E4%B8%80%E5%8F%B0%E5%AE%BF%E4%B8%BB%E4%B8%BB%E6%9C%BA">#</a> 如何将一台宿主主机的 Docker 环境迁移到另外一台宿主主机？</h3>
+<p>答：停止 Docker 服务。将整个 Docker 存储文件夹复制到另外一台宿主主机，然后调整另外一台宿主主机的配置即可。</p>
+<h3 id="如何进入-Docker-容器的网络命名空间？"><a href="#%E5%A6%82%E4%BD%95%E8%BF%9B%E5%85%A5-docker-%E5%AE%B9%E5%99%A8%E7%9A%84%E7%BD%91%E7%BB%9C%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4">#</a> 如何进入 Docker 容器的网络命名空间？</h3>
+<p>答：Docker 在创建容器后，删除了宿主主机上 <code>/var/run/netns</code> 目录中的相关的网络命名空间文件。因此，在宿主主机上是无法看到或访问容器的网络命名空间的。</p>
+<p>用户可以通过如下方法来手动恢复它。</p>
+<p>首先，使用下面的命令查看容器进程信息，比如这里的 1234。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ docker inspect --format=<span class="string">&#x27;&#123;&#123;. State.Pid&#125;&#125; &#x27;</span> <span class="variable">$container_id</span></span><br><span class="line">1234</span><br></pre></td></tr></table></figure>
+<p>接下来，在 <code>/proc</code> 目录下，把对应的网络命名空间文件链接到 <code>/var/run/netns</code> 目录。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">sudo</span> <span class="built_in">ln</span> -s /proc/1234/ns/net /var/run/netns/</span><br></pre></td></tr></table></figure>
+<p>然后，在宿主主机上就可以看到容器的网络命名空间信息。例如</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">sudo</span> ip netns show</span><br><span class="line">1234</span><br></pre></td></tr></table></figure>
+<p>此时，用户可以通过正常的系统命令来查看或操作容器的命名空间了。例如修改容器的 IP 地址信息为 <code>172.17.0.100/16</code>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">sudo</span> ip netns <span class="built_in">exec</span> 1234 ifconfig eth0 172.17.0.100/16</span><br></pre></td></tr></table></figure>
+<h3 id="如何获取容器绑定到本地那个-veth-接口上？"><a href="#%E5%A6%82%E4%BD%95%E8%8E%B7%E5%8F%96%E5%AE%B9%E5%99%A8%E7%BB%91%E5%AE%9A%E5%88%B0%E6%9C%AC%E5%9C%B0%E9%82%A3%E4%B8%AA-veth-%E6%8E%A5%E5%8F%A3%E4%B8%8A">#</a> 如何获取容器绑定到本地那个 veth 接口上？</h3>
+<p>答：Docker 容器启动后，会通过 veth 接口对连接到本地网桥，veth 接口命名跟容器命名毫无关系，十分难以找到对应关系。</p>
+<p>最简单的一种方式是通过查看接口的索引号，在容器中执行 <code>ip a</code> 命令，查看到本地接口最前面的接口索引号，如 <code>205</code>，将此值加上 1，即 <code>206</code>，然后在本地主机执行 <code>ip a</code> 命令，查找接口索引号为 <code>206</code> 的接口，两者即为连接的 veth 接口对。</p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/Docker/" rel="tag">Docker</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../17/docker/16.Docker%20%E5%91%BD%E4%BB%A4(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    data-tooltip="16.Docker 命令(Docker详细教程)"
+                    aria-label="上一篇: 16.Docker 命令(Docker详细教程)"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../15/docker/14.Docker%20Podman(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    data-tooltip="14.Docker Podman(Docker详细教程)"
+                    aria-label="下一篇: 14.Docker Podman(Docker详细教程)"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../17/docker/16.Docker%20%E5%91%BD%E4%BB%A4(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    data-tooltip="16.Docker 命令(Docker详细教程)"
+                    aria-label="上一篇: 16.Docker 命令(Docker详细教程)"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../15/docker/14.Docker%20Podman(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    data-tooltip="14.Docker Podman(Docker详细教程)"
+                    aria-label="下一篇: 14.Docker Podman(Docker详细教程)"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/16/docker/15.Docker%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 198 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>
