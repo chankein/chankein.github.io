@@ -302,6 +302,334 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../2017/11/30/database/%E6%90%AD%E5%BB%BA%E9%AB%98%E5%90%9E%E5%90%90%E9%87%8FKafka%E5%88%86%E5%B8%83%E5%BC%8F%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85%E6%B6%88%E6%81%AF%E9%9B%86%E7%BE%A4/"
+                            aria-label=": 搭建高吞吐量Kafka分布式发布订阅消息集群"
+                        >
+                            搭建高吞吐量Kafka分布式发布订阅消息集群
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2017-11-30T23:14:37+08:00">
+	
+		    2017 年 11 月 30 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/database/">database</a>, <a class="category-link" href="../../categories/database/hadoop/">hadoop</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="搭建高吞吐量-Kafka-分布式发布订阅消息-集群">搭建高吞吐量 Kafka 分布式发布订阅消息 集群</h2>
+<h3 id="简介">简介</h3>
+<p>Kafka 是一种高吞吐的分布式发布订阅消息系统，能够替代传统的消息队列用于解耦合数据处理，缓存未处理消息等，同时具有更高的吞吐率，支持分区、多副本、冗余，因此被广泛用于大规模消息数据处理应用。Kafka 支持Java 及多种其它语言客户端，可与Hadoop、Storm、Spark等其它大数据工具结合使用。</p>
+<h3 id="环境">环境</h3>
+<p>Zookeeper集群: 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181</p>
+<p>kafka 集群: 192.168.252.124 , 192.168.252.125 , 192.168.252.126</p>
+<p>kafka-manager: 192.168.252.127</p>
+<h4 id="主机名修改">主机名修改</h4>
+<p>CentOs7.3 修改主机名</p>
+<h4 id="ssh-免密登录">ssh 免密登录</h4>
+<p>CentOs7.3 ssh 免密登录</p>
+<h4 id="安装-JDK1-8">安装 JDK1.8</h4>
+<p><a href="https://chankein.github.io/2018/01/07/java/CentOs7-3-%E5%AE%89%E8%A3%85-JDK1-8/">CentOs7.3 安装 JDK1.8</a></p>
+<h4 id="搭建-Zookeeper-集群">搭建 Zookeeper 集群</h4>
+<p><a href="https://chankein.github.io/2017/11/27/database/CentOs7-3%E6%90%AD%E5%BB%BAZooKeeper-3-4-9Cluster-%E9%9B%86%E7%BE%A4%E6%9C%8D%E5%8A%A1/">CentOs7.3 搭建 ZooKeeper-3.4.9 Cluster 集群服务</a></p>
+<p>Zookeeper集群: 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181</p>
+<p>主机名依次被我修改成: <strong>node1,node2,node3</strong></p>
+<h3 id="搭建-kafka-集群">搭建 kafka 集群</h3>
+<p>kafka 集群: 192.168.252.124 , 192.168.252.125 , 192.168.252.126</p>
+<p>主机名依次被我修改成: <strong>node4,node5,node6</strong></p>
+<h4 id="1-下载代码">1.下载代码</h4>
+<p><a target="_blank" rel="noopener" href="https://kafka.apache.org/downloads">kafka 官网下载 http://kafka.apache.org/downloads</a></p>
+<p>下载最新版本的kafka ，</p>
+<p>清华镜像:<a target="_blank" rel="noopener" href="https://mirrors.tuna.tsinghua.edu.cn/apache/kafka/">https://mirrors.tuna.tsinghua.edu.cn/apache/kafka/</a></p>
+<p>阿里镜像:<a target="_blank" rel="noopener" href="https://mirrors.aliyun.com/apache/kafka/">https://mirrors.aliyun.com/apache/kafka/</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ cd /opt</span><br><span class="line">$ wget https://mirrors.tuna.tsinghua.edu.cn/apache/kafka/0.11.0.0/kafka_2.12-0.11.0.0.tgz</span><br><span class="line">$ tar -zxvf kafka_2.12-0.11.0.0.tgz</span><br><span class="line">$ cd kafka_2.12-0.11.0.0</span><br></pre></td></tr></table></figure>
+<h4 id="2-修改配置">2.修改配置</h4>
+<p>在 node4 操作</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ vi /opt/kafka_2.12-0.11.0.0/config/server.properties</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">broker.id=0  每台服务器不能重复</span><br><span class="line"></span><br><span class="line">#设置zookeeper的集群地址</span><br><span class="line">zookeeper.connect=192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181</span><br></pre></td></tr></table></figure>
+<p>把配置复制到 node5,node6 集群</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;5..6&#125; ; do scp -r /opt/kafka_2.12-0.11.0.0/ node$a:/opt/kafka_2.12-0.11.0.0 ; done</span><br></pre></td></tr></table></figure>
+<p>修改 node5,node6 集群的<code>broker.id</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ vi /opt/kafka_2.12-0.11.0.0/config/server.properties</span><br></pre></td></tr></table></figure>
+<h4 id="3-启动kafka">3.启动kafka</h4>
+<p>在 node1,启动 Kafka使用的 ZooKeeper，所以先<strong>启动ZooKeeper服务器</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;1..3&#125; ; do ssh node$a &quot;source /etc/profile;  /opt/zookeeper-3.4.9/bin/zkServer.sh start&quot; ; done</span><br></pre></td></tr></table></figure>
+<p><strong>现在 node4 启动Kafka服务器</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;4..6&#125; ; do ssh node$a &quot;source /etc/profile;  /opt/kafka_2.12-0.11.0.0/bin/kafka-server-start.sh /opt/kafka_2.12-0.11.0.0/config/server.properties&quot; ; done</span><br></pre></td></tr></table></figure>
+<p>或者后台启动运行，日志查看去Kafka解压目录有个<code>log</code> 文件夹查看</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;4..6&#125; ; do ssh node$a &quot;source /etc/profile; nohup  /opt/kafka_2.12-0.11.0.0/bin/kafka-server-start.sh /opt/kafka_2.12-0.11.0.0/config/server.properties &gt; /dev/null 2&gt;&amp;1 &amp;&quot; ; done</span><br></pre></td></tr></table></figure>
+<p>查看进程，Kafka 是否启动成功</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ jps</span><br><span class="line">3825 Kafka</span><br><span class="line">6360 Jps</span><br></pre></td></tr></table></figure>
+<p>如果报错删除</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">kafka.common.KafkaException: Failed to acquire lock on file .lock in /tmp/kafka-logs. A Kafka instance in another process or thread is using this directory.</span><br><span class="line"></span><br><span class="line">$ rm -rf /tmp/kafka-logs</span><br></pre></td></tr></table></figure>
+<h4 id="4-创建主题">4.创建主题</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka_2.12-0.11.0.0/bin/kafka-topics.sh --create --zookeeper 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181 --replication-factor 2 --partitions 1 --topic ymq</span><br></pre></td></tr></table></figure>
+<p>--replication-factor 2 #复制两份<br>
+--partitions 1 #创建1个分区<br>
+--topic #主题为ymq</p>
+<p>运行list topic命令，可以看到该主题：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka_2.12-0.11.0.0/bin/kafka-topics.sh --list --zookeeper 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181</span><br></pre></td></tr></table></figure>
+<h4 id="5-生产消息">5.生产消息</h4>
+<p>Kafka附带一个命令行客户端，它将从文件或标准输入中输入，并将其作为消息发送到Kafka群集。默认情况下，每行将作为单独的消息发送。</p>
+<p>在 <strong>node5</strong> 运行生产者，然后在控制台中输入一些消息以发送到服务器。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka_2.12-0.11.0.0/bin/kafka-console-producer.sh --broker-list localhost:9092 --topic ymq</span><br><span class="line">&gt;www.ymq.io</span><br></pre></td></tr></table></figure>
+<h4 id="6-消费消息">6.消费消息</h4>
+<p>在<strong>node6</strong> 运行消费者，将把消息转储到标准输出。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka_2.12-0.11.0.0/bin/kafka-console-consumer.sh --zookeeper 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181  --topic ymq --from-beginning</span><br><span class="line">Using the ConsoleConsumer with old consumer is deprecated and will be removed in a future major release. Consider using the new consumer by passing [bootstrap-server] instead of [zookeeper]. </span><br><span class="line">www.ymq.io</span><br></pre></td></tr></table></figure>
+<h4 id="7-topic详情">7.topic详情</h4>
+<p>用describe 查看集群中topic每个节点情况</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka_2.12-0.11.0.0/bin/kafka-topics.sh --describe --zookeeper 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181 --topic ymq</span><br><span class="line">Topic:ymq    PartitionCount:1    ReplicationFactor:2    Configs:</span><br><span class="line">    Topic: ymq    Partition: 0    Leader: 1    Replicas: 1,3    Isr: 3,1</span><br></pre></td></tr></table></figure>
+<p>以下是输出的说明。第一行给出了所有分区的摘要，每个附加行提供有关一个分区的信息。由于我们这个主题只有一个分区，只有一行。</p>
+<p><code>leader</code>负责给定分区的读取和写入分配节点编号，每个分区的部分数据会随机指定不同的节点<br>
+<code>replicas</code>是复制此分区的日志的节点列表<br>
+<code>isr</code>一组正在同步的副本列表</p>
+<h4 id="8-删除topic">8.删除topic</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka_2.12-0.11.0.0/bin/kafka-topics.sh --delete --zookeeper 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181 --topic ymq</span><br><span class="line">Topic ymq is marked for deletion.</span><br><span class="line">Note: This will have no impact if delete.topic.enable is not set to true.</span><br></pre></td></tr></table></figure>
+<h4 id="9-停止kafka">9.停止kafka</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;4..6&#125; ; do ssh node$a &quot;source /etc/profile;  /opt/kafka_2.12-0.11.0.0/bin/kafka-server-stop.sh /opt/kafka_2.12-0.11.0.0/config/server.properties &quot; ; done</span><br></pre></td></tr></table></figure>
+<h3 id="部署-Kafka-Manager">部署 Kafka Manager</h3>
+<p><a target="_blank" rel="noopener" href="https://link.segmentfault.com/?enc=6ZQFukUws0SityhjcZS7%2BA%3D%3D.UA1i%2BFoCJb9acAXO0wn2%2Fwrb30d86%2FFy9%2BmmhdomvtwBafct3qYMupcbZpUnKPRW">Yahoo开源Kafka集群管理器Kafka Manager</a></p>
+<p>作为一个分布式的消息发布-订阅系统，Apache Kafka在Yahoo内部已经被很多团队所使用，例如媒体分析团队就将其应用到了实时分析流水线中，同时，Yahoo整个Kafka集群处理的峰值带宽超过了20Gbps（压缩数据）。为了让开发者和服务工程师能够更加简单地维护Kafka集群，Yahoo构建了一个基于Web的管理工具，称为Kafka Manager，日前该项目已经在GitHub上开源。</p>
+<p>通过Kafka Manager用户能够更容易地发现集群中哪些主题或者分区分布不均匀，同时能够管理多个集群，能够更容易地检查集群的状态，能够创建主题，执行首选的副本选择，能够基于集群当前的状态生成分区分配，并基于生成的分配执行分区的重分配，此外，Kafka Manager还是一个非常好的可以快速查看集群状态的工具。</p>
+<p>Kafka Manager使用Scala语言编写，其Web控制台基于Play Framework实现，除此之外，Yahoo还迁移了一些Apache Kafka的帮助程序以便能够与Apache Curator框架一起工作。</p>
+<p>一、它支持以下内容：</p>
+<ul>
+<li>管理多个群集</li>
+<li>容易检查集群状态（主题，消费者，偏移量，经纪人，副本分发，分区分配）</li>
+<li>运行首选副本选举</li>
+<li>使用选项生成分区分配，以选择要使用的代理</li>
+<li>运行分区的重新分配（基于生成的分配）</li>
+<li>创建可选主题配置的主题（0.8.1.1具有不同于0.8.2+的配置）</li>
+<li>删除主题（仅支持0.8.2+，并记住在代理配​​置中设置delete.topic.enable = true）</li>
+<li>主题列表现在表示标记为删除的主题（仅支持0.8.2+）</li>
+<li>批量生成多个主题的分区分配，并选择要使用的代理</li>
+<li>批量运行多个主题的分区重新分配</li>
+<li>将分区添加到现有主题</li>
+<li>更新现有主题的配置</li>
+<li>可选地，启用JMX轮询代理级和主题级度量。</li>
+<li>可选地筛选出在zookeeper中没有ids / owner /＆offset /目录的消费者。</li>
+</ul>
+<h4 id="源码，并编译打包">源码，并编译打包</h4>
+<p>在 kafka-manager: 192.168.252.127 <strong>node7</strong> 部署</p>
+<p><strong>编译超级慢</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ yum install git</span><br><span class="line">$ cd /opt/</span><br><span class="line">$ git clone https://github.com/yahoo/kafka-manager</span><br><span class="line">$ cd kafka-manager/</span><br><span class="line">$ ./sbt clean dist</span><br></pre></td></tr></table></figure>
+<h4 id="下载编译好的包">下载编译好的包</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ yum install unzip</span><br><span class="line">$ unzip kafka-manager-1.3.2.1.zip</span><br><span class="line">$ vi /opt/kafka-manager-1.3.2.1/conf/application.conf</span><br></pre></td></tr></table></figure>
+<p>修改这个 zk 地址</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kafka-manager.zkhosts=&quot;192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181&quot;</span><br></pre></td></tr></table></figure>
+<h4 id="启动-kafka-manager">启动 kafka-manager</h4>
+<p>默认端口 <code>NettyServer - Listening for HTTP on /0:0:0:0:0:0:0:0:9000</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka-manager-1.3.2.1/bin/kafka-manager -Dconfig.file=conf/application.conf</span><br></pre></td></tr></table></figure>
+<p>或者后台运行 并且配置端口</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ nohup bin/kafka-manager  -Dconfig.file=/home/hadoop/app/kafka-manager-1.3.2.1/conf/application.conf -Dhttp.port=9000 &amp;</span><br></pre></td></tr></table></figure>
+<p>访问： <a target="_blank" rel="noopener" href="http://ip:9000">http://ip:9000</a></p>
+<p><img src="/assets/images/kafka.webp" alt="图片描述" title="图片描述"></p>
+<p>图片描述</p>
+<p>图片描述</p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2017/11/30/database/%E6%90%AD%E5%BB%BA%E9%AB%98%E5%90%9E%E5%90%90%E9%87%8FKafka%E5%88%86%E5%B8%83%E5%BC%8F%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85%E6%B6%88%E6%81%AF%E9%9B%86%E7%BE%A4/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../2017/11/27/database/CentOs7-3%E6%90%AD%E5%BB%BAZooKeeper-3-4-9Cluster-%E9%9B%86%E7%BE%A4%E6%9C%8D%E5%8A%A1/"
+                            aria-label=": CentOs7.3搭建ZooKeeper-3.4.9Cluster 集群服务"
+                        >
+                            CentOs7.3搭建ZooKeeper-3.4.9Cluster 集群服务
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2017-11-27T23:08:40+08:00">
+	
+		    2017 年 11 月 27 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/database/">database</a>, <a class="category-link" href="../../categories/database/hadoop/">hadoop</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="CentOs7-3-搭建-ZooKeeper-3-4-9-Cluster-集群服务">CentOs7.3 搭建 ZooKeeper-3.4.9 Cluster 集群服务</h2>
+<h2 id="Zookeeper-概述">Zookeeper 概述</h2>
+<p>zookeeper实际上是yahoo开发的，用于分布式中<strong>一致性处理的框架</strong>。最初其作为研发Hadoop时的副产品。由于分布式系统中一致性处理较为困难，其他的分布式系统没有必要 费劲重复造轮子，故随后的分布式系统中大量应用了zookeeper，以至于zookeeper成为了各种分布式系统的基础组件，其地位之重要，可想而知。著名的<strong>hadoop，kafka，dubbo 都是基于zookeeper而构建</strong>。</p>
+<p>要想理解zookeeper到底是做啥的，那首先得理解清楚，<strong>什么是一致性？</strong></p>
+<p>所谓的一致性，实际上就是围绕着“看见”来的。谁能看见？能否看见？什么时候看见？举个例子：淘宝后台卖家，在后台上架一件大促的商品，通过服务器A提交到主数据库，假设刚提交后立马就有用户去通过应用服务器B去从数据库查询该商品，就会出现一个现象，卖家已经更新成功了，然而买家却看不到；而经过一段时间后，主数据库的数据同步到了从数据库，买家就能查到了。</p>
+<p>假设卖家更新成功之后买家立马就能看到卖家的更新，则称为<strong>强一致性</strong></p>
+<p>如果卖家更新成功后买家不能看到卖家更新的内容，则称为<strong>弱一致性</strong></p>
+<p>而卖家更新成功后，买家经过一段时间最终能看到卖家的更新，则称为<strong>最终一致性</strong></p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/leesf456/p/6001278.html">《一致性协议》</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/leesf456/p/6036548.html">《ZooKeeper应用场景》</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/leesf456/p/5992377.html">《分布式架构》</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/leesf456/tag/%E5%88%86%E5%B8%83%E5%BC%8F/">《分布式 ZooKeeper 系列》</a></p>
+<h2 id="环境">环境</h2>
+<p>VMware版本号：12.0.0</p>
+<p>CentOS版本：CentOS 7.3.1611</p>
+<p>ZooKeeper版本：ZooKeeper-3.4.9.tar.gz</p>
+<p>虚拟机IP：192.168.252.101，192.168.252.102，192.168.252.103</p>
+<p>集群主机名称：node1，node2，node3</p>
+<p>集群主机用户：都是用root用户</p>
+<p>集群JDK环境：jdk-8u144-linux-x64.tar.gz JDK 1.8 安装 具体参考<a href="https://chankein.github.io/2018/01/07/java/CentOs7-3-%E5%AE%89%E8%A3%85-JDK1-8/">《CentOs7.3 安装 JDK1.8》</a></p>
+<p>集群主机之间设置免密登陆：</p>
+<h3 id="注意事项">注意事项</h3>
+<p>关闭防火墙</p>
+<p>centos 6.x 关闭 iptables</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ service iptables stop # 关闭命令：</span><br></pre></td></tr></table></figure>
+<p>centos 7.x 关闭firewall</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ systemctl stop firewalld.service # 停止firewall</span><br></pre></td></tr></table></figure>
+<h2 id="ZooKeeper-安装">ZooKeeper 安装</h2>
+<h3 id="1-下载ZooKeeper">1.下载ZooKeeper</h3>
+<p>下载最新版本的ZooKeeper ，我在北京我就选择，清华镜像比较快</p>
+<p>清华镜像:<a target="_blank" rel="noopener" href="https://mirrors.tuna.tsinghua.edu.cn/apache/zookeeper/">https://mirrors.tuna.tsinghua.edu.cn/apache/zookeeper/</a></p>
+<p>阿里镜像:<a target="_blank" rel="noopener" href="https://mirrors.aliyun.com/apache/zookeeper/">https://mirrors.aliyun.com/apache/zookeeper/</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cd /opt/</span><br><span class="line">$ wget https://mirrors.tuna.tsinghua.edu.cn/apache/zookeeper/zookeeper-3.4.9/zookeeper-3.4.9.tar.gz</span><br></pre></td></tr></table></figure>
+<p>或者在浏览器下载上传至opt 目录</p>
+<h3 id="2-提取tar文件">2.提取tar文件</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ cd /opt/</span><br><span class="line">$ tar -zxf  zookeeper-3.4.9.tar.gz</span><br><span class="line">$ cd zookeeper-3.4.9</span><br></pre></td></tr></table></figure>
+<p>创建<code>data</code>文件夹 用于存储数据文件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ mkdir /opt/zookeeper-3.4.9/data</span><br></pre></td></tr></table></figure>
+<p>创建<code>logs</code>文件夹 用于存储日志</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ mkdir /opt/zookeeper-3.4.9/logs  </span><br></pre></td></tr></table></figure>
+<h3 id="3-创建配置文件">3.创建配置文件</h3>
+<p><strong>zoo.cfg</strong></p>
+<p>zookeeper的主要配置文件，因为Zookeeper是一个集群服务，集群的每个节点都需要这个配置文件。为了避免出差错，zoo.cfg这个配置文件里没有跟特定节点相关的配置，所以每个节点上的这个zoo.cfg都是一模一样的配置。这样就非常便于管理了，比如我们可以把这个文件提交到版本控制里管理起来。其实这给我们设计集群系统的时候也是个提示：集群系统一般有很多配置，应该尽量将通用的配置和特定每个服务的配置(比如服务标识)分离，这样通用的配置在不同服务之间copy就ok了</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ vi /opt/zookeeper-3.4.9/conf/zoo.cfg</span><br></pre></td></tr></table></figure>
+<p>编辑内容如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">tickTime = 2000</span><br><span class="line">dataDir =  /opt/zookeeper-3.4.9/data</span><br><span class="line">dataLogDir = /opt/zookeeper-3.4.9/logs</span><br><span class="line">tickTime = 2000</span><br><span class="line">clientPort = 2181</span><br><span class="line">initLimit = 5</span><br><span class="line">syncLimit = 2</span><br><span class="line"></span><br><span class="line">server.1=node1:2888:3888</span><br><span class="line">server.2=node2:2888:3888</span><br><span class="line">server.3=node3:2888:3888</span><br></pre></td></tr></table></figure>
+<h4 id="配置文件描述">配置文件描述</h4>
+<p><strong>tickTime</strong></p>
+<ul>
+<li>tickTime则是上述两个超时配置的基本单位，例如对于initLimit，其配置值为5，说明其超时时间为 2000ms * 5 = 10秒。</li>
+</ul>
+<p><strong>dataDir</strong></p>
+<ul>
+<li>其配置的含义跟单机模式下的含义类似，不同的是集群模式下还有一个myid文件。myid文件的内容只有一行，且内容只能为1 - 255之间的数字，这个数字亦即上面介绍server.id中的id，表示zk进程的id。</li>
+</ul>
+<p><strong>dataLogDir</strong></p>
+<ul>
+<li>如果没提供的话使用的则是dataDir。zookeeper的持久化都存储在这两个目录里。dataLogDir里是放到的顺序日志(WAL)。而dataDir里放的是内存数据结构的snapshot，便于快速恢复。为了达到性能最大化，一般建议把dataDir和dataLogDir分到不同的磁盘上，这样就可以充分利用磁盘顺序写的特性。</li>
+</ul>
+<p><strong>initLimit</strong></p>
+<ul>
+<li>ZooKeeper集群模式下包含多个zk进程，其中一个进程为leader，余下的进程为follower。</li>
+</ul>
+<p>当follower最初与leader建立连接时，它们之间会传输相当多的数据，尤其是follower的数据落后leader很多。initLimit配置follower与leader之间建立连接后进行同步的最长时间。</p>
+<p><strong>syncLimit</strong></p>
+<ul>
+<li>配置follower和leader之间发送消息，请求和应答的最大时间长度。</li>
+</ul>
+<p><strong>server.id=host:port1:port2</strong></p>
+<p><code>server.id</code> 其中id为一个数字，表示zk进程的id，这个id也是data目录下myid文件的内容</p>
+<p><code>host</code> 是该zk进程所在的IP地址</p>
+<p><code>port1</code> 表示follower和leader交换消息所使用的端口</p>
+<p><code>port2</code> 表示选举leader所使用的端口</p>
+<h3 id="4-创建myid-文件">4.创建myid 文件</h3>
+<p>在data里会放置一个myid文件，里面就一个数字，用来唯一标识这个服务。这个id是很重要的，一定要保证整个集群中唯一</p>
+<p>ZooKeeper会根据这个id来取出server.x上的配置。比如当前id为1，则对应着zoo.cfg里的server.1的配置</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ echo &quot;1&quot; &gt; /opt/zookeeper-3.4.9/data/myid</span><br></pre></td></tr></table></figure>
+<p>这样一台node1机器就配置完了</p>
+<h3 id="5-复制集群配置">5.复制集群配置</h3>
+<p>在集群node1 上执行,复制配置好的zookeeper到其他两台主机上</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;2..3&#125; ; do scp -r /opt/zookeeper-3.4.9/ node$a:/opt/zookeeper-3.4.9 ; done</span><br></pre></td></tr></table></figure>
+<p>在集群node1 上执行 ,批量修改myid 文件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;1..3&#125; ; do ssh node$a &quot;source /etc/profile; echo $a &gt; /opt/zookeeper-3.4.9/data/myid&quot; ; done</span><br></pre></td></tr></table></figure>
+<h2 id="集群操作">集群操作</h2>
+<p><strong>在集群任意一台机器上执行</strong></p>
+<h3 id="启动集群">启动集群</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;1..3&#125; ; do ssh node$a &quot;source /etc/profile; /opt/zookeeper-3.4.9/bin/zkServer.sh start&quot; ; done</span><br></pre></td></tr></table></figure>
+<p>响应</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Starting zookeeper ... STARTED</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Starting zookeeper ... STARTED</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Starting zookeeper ... STARTED</span><br></pre></td></tr></table></figure>
+<h3 id="连接集群">连接集群</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/zookeeper-3.4.9/bin/zkCli.sh -server node1:2181,node2:2181,node3:2181</span><br></pre></td></tr></table></figure>
+<p>响应</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">Connecting to node1:2181,node2:2181,node3:2181</span><br><span class="line">2017-08-23 11:08:10,323 [myid:] - INFO  [main:Environment@100] - Client environment:zookeeper.version=3.4.9-1757313, built on 08/23/2016 06:50 GMT</span><br><span class="line">2017-08-23 11:08:10,328 [myid:] - INFO  [main:Environment@100] - Client environment:host.name=node1</span><br><span class="line">2017-08-23 11:08:10,329 [myid:] - INFO  [main:Environment@100] - Client environment:java.version=1.8.0_144</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:java.vendor=Oracle Corporation</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:java.home=/usr/lib/jvm/jre</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:java.class.path=/opt/zookeeper-3.4.9/bin/../build/classes:/opt/zookeeper-3.4.9/bin/../build/lib/*.jar:/opt/zookeeper-3.4.9/bin/../lib/slf4j-log4j12-1.6.1.jar:/opt/zookeeper-3.4.9/bin/../lib/slf4j-api-1.6.1.jar:/opt/zookeeper-3.4.9/bin/../lib/netty-3.10.5.Final.jar:/opt/zookeeper-3.4.9/bin/../lib/log4j-1.2.16.jar:/opt/zookeeper-3.4.9/bin/../lib/jline-0.9.94.jar:/opt/zookeeper-3.4.9/bin/../zookeeper-3.4.9.jar:/opt/zookeeper-3.4.9/bin/../src/java/lib/*.jar:/opt/zookeeper-3.4.9/bin/../conf:.:/lib/jvm/lib:/lib/jvm/jre/lib</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:java.library.path=/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:java.io.tmpdir=/tmp</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:java.compiler=&lt;NA&gt;</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:os.name=Linux</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:os.arch=amd64</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:os.version=3.10.0-514.26.2.el7.x86_64</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:user.name=root</span><br><span class="line">2017-08-23 11:08:10,332 [myid:] - INFO  [main:Environment@100] - Client environment:user.home=/root</span><br><span class="line">2017-08-23 11:08:10,332 [myid:] - INFO  [main:Environment@100] - Client environment:user.dir=/root</span><br><span class="line">2017-08-23 11:08:10,333 [myid:] - INFO  [main:ZooKeeper@438] - Initiating client connection, connectString=node1:2181,node2:2181,node3:2181 sessionTimeout=30000 watcher=org.apache.zookeeper.ZooKeeperMain$MyWatcher@506c589e</span><br><span class="line">2017-08-23 11:08:10,361 [myid:] - INFO  [main-SendThread(node3:2181):ClientCnxn$SendThread@1032] - Opening socket connection to server node3/192.168.252.123:2181. Will not attempt to authenticate using SASL (unknown error)</span><br><span class="line">Welcome to ZooKeeper!</span><br><span class="line">JLine support is enabled</span><br><span class="line">2017-08-23 11:08:10,474 [myid:] - INFO  [main-SendThread(node3:2181):ClientCnxn$SendThread@876] - Socket connection established to node3/192.168.252.123:2181, initiating session</span><br><span class="line">[zk: node1:2181,node2:2181,node3:2181(CONNECTING) 0] 2017-08-23 11:08:10,535 [myid:] - INFO  [main-SendThread(node3:2181):ClientCnxn$SendThread@1299] - Session establishment complete on server node3/192.168.252.123:2181, sessionid = 0x35e0d0716340000, negotiated timeout = 30000</span><br><span class="line"></span><br><span class="line">WATCHER::</span><br><span class="line"></span><br><span class="line">WatchedEvent state:SyncConnected type:None path:null</span><br><span class="line"></span><br><span class="line">[zk: node1:2181,node2:2181,node3:2181(CONNECTED) 0]</span><br></pre></td></tr></table></figure>
+<p>从日志可以看出客户端成功连接的是node3 连接上哪台机器的zk进程是随机的</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">2017-08-23 11:08:10,361 [myid:] - INFO  [main-SendThread(node3:2181):ClientCnxn$SendThread@1032] - Opening socket connection to server node3/192.168.252.123:2181. Will not attempt to authenticate using SASL (unknown error)</span><br><span class="line">Welcome to ZooKeeper!</span><br><span class="line">JLine support is enabled</span><br></pre></td></tr></table></figure>
+<h3 id="集群状态">集群状态</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;1..3&#125; ; do ssh node$a &quot;source /etc/profile; /opt/zookeeper-3.4.9/bin/zkServer.sh status&quot; ; done</span><br></pre></td></tr></table></figure>
+<p>响应</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Mode: follower</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Mode: leader</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Mode: follower</span><br></pre></td></tr></table></figure>
+<p>通过日志我可以看到 node2 leader (ps 是老大)，其他 node1 ,node2 follower (ps 都是小弟)</p>
+<p>Leader 怎么选举的可以参考<a target="_blank" rel="noopener" href="https://www.cnblogs.com/leesf456/p/6107600.html">《Zookeeper的Leader选举》</a></p>
+<h3 id="停止集群">停止集群</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;1..3&#125; ; do ssh node$a &quot;source /etc/profile; /opt/zookeeper-3.4.9/bin/zkServer.sh stop&quot; ; done</span><br></pre></td></tr></table></figure>
+<p>响应</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Stopping zookeeper ... STOPPED</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Stopping zookeeper ... STOPPED</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Stopping zookeeper ... STOPPED</span><br></pre></td></tr></table></figure>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2017/11/27/database/CentOs7-3%E6%90%AD%E5%BB%BAZooKeeper-3-4-9Cluster-%E9%9B%86%E7%BE%A4%E6%9C%8D%E5%8A%A1/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../2017/11/25/database/Hive-2-3-0-%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA%E4%B8%8E%E4%BD%BF%E7%94%A8/"
                             aria-label=": Hive-2.3.0 快速搭建与使用"
                         >
@@ -1698,402 +2026,6 @@ State: 信息表示所有更新都已同步发送到从服务器，并且主服�
         
     </article>
     
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2017/08/16/database/CentOs7-3-%E5%AE%89%E8%A3%85-MySQL-5-7-19-%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%89%88%E6%9C%AC/"
-                            aria-label=": CentOs7.3 安装 MySQL 5.7.19 二进制版本"
-                        >
-                            CentOs7.3 安装 MySQL 5.7.19 二进制版本
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2017-08-16T22:55:08+08:00">
-	
-		    2017 年 8 月 16 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/database/">database</a>, <a class="category-link" href="../../categories/database/mysql/">mysql</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h2 id="CentOs7-3-安装-MySQL-5-7-19-二进制版本">CentOs7.3 安装 MySQL 5.7.19 二进制版本</h2>
-<p><a target="_blank" rel="noopener" href="https://dev.mysql.com/doc/refman/5.7/en/binary-installation.html">参考官网 - 使用通用二进制文件在Unix / Linux上安装MySQL</a></p>
-<p><a target="_blank" rel="noopener" href="https://dev.mysql.com/downloads/mysql/">MySQL社区版 下载地址</a></p>
-<p>采用二进制方式免编译安装MySQL,适合各类MySQL产品系列,不需要复杂的编译设置和编译时间等待,直接解压下载的软件包,初始化即可完成MySQL的安装和启动.</p>
-<h3 id="1-准备工作">1.准备工作</h3>
-<h4 id="依赖环境">依赖环境</h4>
-<p>关闭防火墙</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ systemctl stop firewalld.service</span><br></pre></td></tr></table></figure>
-<p>MySQL依赖于libaio 库</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ yum search libaio</span><br><span class="line">$ yum install libaio</span><br></pre></td></tr></table></figure>
-<h4 id="下载，解压，重命名">下载，解压，重命名</h4>
-<p>通常解压在 <code>/usr/local/mysql</code></p>
-<p>把<code>mysql-5.7.19-linux-glibc2.12-x86_64</code> 文件夹，重命名成<code>mysql</code>,这样就凑成<code>/usr/local/mysql</code>目录了</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ cd /opt/</span><br><span class="line">$ wget https://dev.mysql.com/get/Downloads/MySQL-5.7/mysql-5.7.19-linux-glibc2.12-x86_64.tar.gz</span><br><span class="line">$ tar -zxvf /opt/mysql-5.7.19-linux-glibc2.12-x86_64.tar.gz -C /usr/local/</span><br><span class="line">$ mv /usr/local/mysql-5.7.19-linux-glibc2.12-x86_64/ /usr/local/mysql</span><br></pre></td></tr></table></figure>
-<p>解压目录内容</p>
-<p><code>bin</code> mysqld服务器，客户端和实用程序<br>
-<code>data</code> 日志文件，数据库<br>
-<code>docs</code> MySQL手册信息格式<br>
-<code>man</code> Unix手册页<br>
-<code>include</code> 包含（标题）文件<br>
-<code>lib</code> 库<br>
-<code>share</code> 其他支持文件，包括错误消息，示例配置文件，用于数据库安装的SQL</p>
-<h3 id="2-安装MySQL">2.安装MySQL</h3>
-<p><strong>1. 新建用户组和用户</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ cd /usr/local/mysql/ </span><br><span class="line">$ groupadd mysql</span><br><span class="line">$ useradd mysql -g mysql</span><br></pre></td></tr></table></figure>
-<p><strong>2. 创建目录并授权</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ mkdir data mysql-files</span><br><span class="line">$ chmod 750 mysql-files</span><br><span class="line">$ chown -R mysql .</span><br><span class="line">$ chgrp -R mysql .</span><br></pre></td></tr></table></figure>
-<p><strong>3. 初始化MySQL</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ bin/mysqld --initialize --user=mysql # MySQL 5.7.6 and up</span><br></pre></td></tr></table></figure>
-<h4 id="注意密码">注意密码</h4>
-<p><strong>4. mysql 临时密码</strong></p>
-<blockquote>
-<p>[注意]root@localhost生成临时密码：<code>;b;s;)/rn6A3</code>,也就是<code>root@localhost:</code>后的字符串</p>
-</blockquote>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">2017-08-26T03:23:35.368366Z 0 [Warning] TIMESTAMP with implicit DEFAULT value is deprecated. Please use --explicit_defaults_for_timestamp server option (see documentation for more details).</span><br><span class="line">2017-08-26T03:23:35.748679Z 0 [Warning] InnoDB: New log files created, LSN=45790</span><br><span class="line">2017-08-26T03:23:35.793190Z 0 [Warning] InnoDB: Creating foreign key constraint system tables.</span><br><span class="line">2017-08-26T03:23:35.848286Z 0 [Warning] No existing UUID has been found, so we assume that this is the first time that this server has been started. Generating a new UUID: f210c54b-8a0d-11e7-abbd-000c29129bb0.</span><br><span class="line">2017-08-26T03:23:35.848889Z 0 [Warning] Gtid table is not ready to be used. Table &#x27;mysql.gtid_executed&#x27; cannot be opened.</span><br><span class="line">2017-08-26T03:23:35.849421Z 1 [Note] A temporary password is generated for root@localhost: ;b;s;)/rn6A3</span><br></pre></td></tr></table></figure>
-<p><strong>5. 生成RSA私钥，可以跳过此步骤</strong></p>
-<p><code>mysql_ssl_rsa_setup</code>需要<code>openssl</code>支持，用于启用数据量ssl连接，需要进一步配置。</p>
-<p><a href="https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/">参考-MySQL 使用 SSL 连接</a></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ bin/mysql_ssl_rsa_setup </span><br></pre></td></tr></table></figure>
-<p><strong>6. 授予读写权限</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ chown -R root .</span><br><span class="line">$ chown -R mysql data mysql-files</span><br></pre></td></tr></table></figure>
-<p><strong>7. 添加到MySQL 启动脚本到系统服务</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ cp support-files/mysql.server /etc/init.d/mysql.server</span><br></pre></td></tr></table></figure>
-<h3 id="3-启动MySQL服务">3.启动MySQL服务</h3>
-<p><strong>启动脚本有两个分别是：</strong></p>
-<p><code>/usr/local/mysql/bin/mysqld_safe</code><br>
-<code>/usr/local/mysql/support-files/mysql.server</code>（即<code>/etc/init.d/mysqld</code>）</p>
-<p><strong>当启动mysqld时，<code>mysqld_safe</code>同时启动</strong></p>
-<p><strong><code>mysqld_safe</code>监控<code>mysqld</code>服务,记录错误日志，并在<code>mysqld</code>因故障停止时将其重启</strong></p>
-<h4 id="启动方式一">启动方式一</h4>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ bin/mysqld_safe --user=mysql &amp;</span><br></pre></td></tr></table></figure>
-<h4 id="启动方式二">启动方式二</h4>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ service mysql.server start</span><br></pre></td></tr></table></figure>
-<p>或者</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/mysql/support-files/mysql.server start</span><br></pre></td></tr></table></figure>
-<h4 id="如若出现报错">如若出现报错</h4>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Starting MySQL.2017-08-26T07:31:24.312411Z mysqld_safe error: log-error set to &#x27;/var/log/mariadb/mariadb.log&#x27;, however file don&#x27;t exists. Create writable for user &#x27;mysql&#x27;.</span><br><span class="line"> ERROR! The server quit without updating PID file (/var/lib/mysql/node1.pid).</span><br></pre></td></tr></table></figure>
-<p><strong>给日志目录授予读写权限</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ mkdir /var/log/mariadb</span><br><span class="line">$ touch /var/log/mariadb/mariadb.log</span><br><span class="line">$ chown -R mysql:mysql /var/log/mariadb</span><br></pre></td></tr></table></figure>
-<h3 id="4-登录MySQL">4.登录MySQL</h3>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ /usr/local/mysql/bin/mysql -uroot -p</span><br><span class="line">Enter password: </span><br></pre></td></tr></table></figure>
-<p><strong>如果不知道密码</strong><br>
-密码在，安装MySQL步骤 4 ，有提到，怎么找初始化临时密码</p>
-<h4 id="如若出现报错-2">如若出现报错</h4>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Enter password: </span><br><span class="line">ERROR 2002 (HY000): Can&#x27;t connect to local MySQL server through socket &#x27;/tmp/mysql.sock&#x27; (2)</span><br></pre></td></tr></table></figure>
-<p><strong>故障分析</strong></p>
-<p>查看mysql实例的状态</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ netstat -ntlp  | grep 3306</span><br><span class="line">tcp6       0      0 :::3306                 :::*                    LISTEN      10794/mysqld  </span><br></pre></td></tr></table></figure>
-<p>查看my.cnf关于socket的配置</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ more /etc/my.cnf |grep sock</span><br><span class="line">socket=/var/lib/mysql/mysql.sock</span><br></pre></td></tr></table></figure>
-<p><strong>解决方法,修改<code>/etc/my.cnf</code></strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ vi /etc/my.cnf</span><br></pre></td></tr></table></figure>
-<p>修改 <code>[mysqld]</code>组下的 <code>socket</code> 路径，我是选择注释掉，加一行为<code>tmp/mysql.soc</code></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[mysqld]</span><br><span class="line">datadir=/var/lib/mysql</span><br><span class="line">#socket=/var/lib/mysql/mysql.sock</span><br><span class="line">socket=/tmp/mysql.sock</span><br></pre></td></tr></table></figure>
-<p><strong>重启MySQL 服务</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ service mysql.server start</span><br><span class="line">Shutting down MySQL.. SUCCESS!</span><br></pre></td></tr></table></figure>
-<p>再次登录</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ /usr/local/mysql/bin/mysql -uroot -p</span><br></pre></td></tr></table></figure>
-<p><strong>如果不知道密码</strong><br>
-密码在，安装MySQL步骤 4 ，有提到，怎么找初始化临时密码</p>
-<h4 id="设置MySQL密码">设置MySQL密码</h4>
-<p>登陆成功后，设置MySQL密码</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; ALTER USER   &#x27;root&#x27;@&#x27;localhost&#x27; identified by &#x27;mima&#x27;;  </span><br></pre></td></tr></table></figure>
-<p>或者</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; set password=password(&quot;mima&quot;);</span><br></pre></td></tr></table></figure>
-<p>刷新权限</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; flush privileges;</span><br><span class="line">mysql&gt; exit;</span><br></pre></td></tr></table></figure>
-<p>查看mysql.user表中存在哪些帐户 以及它们的密码是否为空：</p>
-<p>MySQL 5.7.6起，使用这个语句：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">SELECT</span> <span class="keyword">User</span>, Host, HEX(authentication_string) <span class="keyword">FROM</span> mysql.user;</span><br><span class="line"><span class="operator">+</span><span class="comment">---------------+-----------+------------------------------------------------------------------------------------+</span></span><br><span class="line"><span class="operator">|</span> <span class="keyword">User</span>          <span class="operator">|</span> Host      <span class="operator">|</span> HEX(authentication_string)                                                         <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">---------------+-----------+------------------------------------------------------------------------------------+</span></span><br><span class="line"><span class="operator">|</span> root          <span class="operator">|</span> localhost <span class="operator">|</span> <span class="number">2</span>A39383730334637413534333934344644333831383037373636394637344436303631364442324338 <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> mysql.session <span class="operator">|</span> localhost <span class="operator">|</span> <span class="number">2</span>A5448495349534E4F544156414C494450415353574F52445448415443414E42455553454448455245 <span class="operator">|</span></span><br><span class="line"><span class="operator">|</span> mysql.sys     <span class="operator">|</span> localhost <span class="operator">|</span> <span class="number">2</span>A5448495349534E4F544156414C494450415353574F52445448415443414E42455553454448455245 <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">---------------+-----------+------------------------------------------------------------------------------------+</span></span><br></pre></td></tr></table></figure>
-<h4 id="开启远程登录">开启远程登录</h4>
-<p>关闭防火墙</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ systemctl stop firewalld.service</span><br></pre></td></tr></table></figure>
-<p>以权限用户root登录</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ /usr/local/mysql/bin/mysql -uroot -p</span><br></pre></td></tr></table></figure>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> use mysql;</span><br><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">update</span> <span class="keyword">user</span> <span class="keyword">set</span> host <span class="operator">=</span> <span class="string">&#x27;%&#x27;</span> <span class="keyword">where</span> <span class="keyword">user</span> <span class="operator">=</span><span class="string">&#x27;root&#x27;</span>;</span><br><span class="line">mysql<span class="operator">&gt;</span> flush privileges;</span><br></pre></td></tr></table></figure>
-<p>第1行：选择mysql库<br>
-第2行：修改host值（以通配符%的内容增加主机/IP地址），当然也可以直接增加IP地址<br>
-第3行：刷新MySQL的系统权限相关表</p>
-<p>或者</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">grant</span> <span class="keyword">all</span> privileges <span class="keyword">on</span> <span class="operator">*</span>.<span class="operator">*</span>  <span class="keyword">to</span>  <span class="string">&#x27;root&#x27;</span>@<span class="string">&#x27;%&#x27;</span>  identified <span class="keyword">by</span> <span class="string">&#x27;mima&#x27;</span>  <span class="keyword">with</span> <span class="keyword">grant</span> option;</span><br><span class="line">mysql<span class="operator">&gt;</span> flush privileges;</span><br></pre></td></tr></table></figure>
-<h3 id="推荐阅读">推荐阅读</h3>
-<p><a href="https://chankein.github.io/2017/09/16/database/%E6%90%AD%E5%BB%BAMySQL5-7-19%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6-%E4%BB%A5%E5%8F%8A%E5%A4%8D%E5%88%B6%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82%E5%88%86%E6%9E%90/">CentOs7.3 搭建 MySQL 5.7.19 主从复制，以及复制实现细节分析</a></p>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2017/08/16/database/CentOs7-3-%E5%AE%89%E8%A3%85-MySQL-5-7-19-%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%89%88%E6%9C%AC/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2017/08/12/git/git%E6%95%99%E7%A8%8B/"
-                            aria-label=": git教程"
-                        >
-                            git教程
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2017-08-12T15:38:45+08:00">
-	
-		    2017 年 8 月 12 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/devops/">devops</a>, <a class="category-link" href="../../categories/devops/git/">git</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h5 id="初始化仓库">初始化仓库:</h5>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git init</span><br></pre></td></tr></table></figure>
-<p>如果当前目录下有几个文件想要纳入版本控制，需要先用 git add 命令告诉 Git 开始对这些文件进行跟踪，然后提交：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git add *.c</span><br><span class="line">$ git add README</span><br><span class="line">$ git commit -m &#x27;initial project version&#x27;</span><br></pre></td></tr></table></figure>
-<p><img src="/assets/images/fileStatusLifecycle.png" alt="image"></p>
-<h5 id="忽略某些文件">忽略某些文件</h5>
-<p>我们可以创建一个名为 .gitignore 的文件，列出要忽略的文件模式。<br>
-文件 .gitignore 的格式规范如下：</p>
-<ul>
-<li>所有空行或者以注释符号 ＃ 开头的行都会被 Git 忽略。</li>
-<li>可以使用标准的 glob 模式匹配。</li>
-<li>匹配模式最后跟反斜杠（/）说明要忽略的是目录。</li>
-<li>要忽略指定模式以外的文件或目录，可以在模式前加上惊叹号（!）取反。</li>
-</ul>
-<p>所谓的 glob 模式是指 shell 所使用的简化了的正则表达式。星号（*）匹配零个或多个任意字符；[abc] 匹配任何一个列在方括号中的字符（这个例子要么匹配一个 a，要么匹配一个 b，要么匹配一个 c）；问号（?）只匹配一个任意字符；如果在方括号中使用短划线分隔两个字符，表示所有在这两个字符范围内的都可以匹配（比如 [0-9] 表示匹配所有 0 到 9 的数字）。</p>
-<p>我们再看一个 .gitignore 文件的例子：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># 此为注释 – 将被 Git 忽略</span><br><span class="line"># 忽略所有 .a 结尾的文件</span><br><span class="line">*.a</span><br><span class="line"># 但 lib.a 除外</span><br><span class="line">!lib.a</span><br><span class="line"># 仅仅忽略项目根目录下的 TODO 文件，不包括 subdir/TODO</span><br><span class="line">/TODO</span><br><span class="line"># 忽略 build/ 目录下的所有文件</span><br><span class="line">build/</span><br><span class="line"># 会忽略 doc/notes.txt 但不包括 doc/server/arch.txt</span><br><span class="line">doc/*.txt</span><br><span class="line"># 忽略 doc/ 目录下所有扩展名为 txt 的文件</span><br><span class="line">doc/**/*.txt</span><br></pre></td></tr></table></figure>
-<h5 id="跟踪新文件">跟踪新文件</h5>
-<p>使用命令 git add 开始跟踪一个新文件。所以，要跟踪 README 文件，运行：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git add README</span><br></pre></td></tr></table></figure>
-<h5 id="提交更新">提交更新</h5>
-<p>每次准备提交前，先用 git status 看下，是不是都已暂存起来了，然后再运行提交命令 git commit：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git commit</span><br></pre></td></tr></table></figure>
-<p>这种方式会启动文本编辑器以便输入本次提交的说明。（默认会启用 shell 的环境变量 $EDITOR 所指定的软件，一般都是 vim 或 emacs。当然也可以按照第一章介绍的方式，使用 ++git config --global core.editor++ 命令设定你喜欢的编辑软件。）</p>
-<p>默认的提交消息包含最后一次运行 git status 的输出，放在注释行里，另外开头还有一空行，供你输入提交说明。你完全可以去掉这些注释行，不过留着也没关系，多少能帮你回想起这次更新的内容有哪些。（如果觉得这还不够，可以用 -v 选项将修改差异的每一行都包含到注释中来。）退出编辑器时，Git 会丢掉注释行，将说明内容和本次更新提交到仓库。</p>
-<p>另外也可以用 +±m++ 参数后跟提交说明的方式，在一行命令中提交更新：</p>
-<p>跳过使用暂存区域<br>
-Git 提供了一个跳过使用暂存区域的方式，只要在提交的时候，给 <strong>git commit 加上 -a</strong> 选项，Git 就会自动把所有已经跟踪过的文件暂存起来一并提交，从而跳过 git add 步骤</p>
-<h5 id="移除文件">移除文件</h5>
-<p>要从 Git 中移除某个文件，就必须要从已跟踪文件清单中移除（确切地说，是从暂存区域移除），然后提交。可以用 <strong>git rm</strong> 命令完成此项工作，并连带从工作目录中删除指定的文件，这样以后就不会出现在未跟踪文件清单中了。</p>
-<h5 id="移动文件">移动文件</h5>
-<p>要在 Git 中对文件改名，可以这么做：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git mv file_from file_to</span><br></pre></td></tr></table></figure>
-<p>运行 git mv 就相当于运行了下面三条命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ mv README.txt README</span><br><span class="line">$ git rm README.txt</span><br><span class="line">$ git add README</span><br></pre></td></tr></table></figure>
-<h5 id="查看提交历史">查看提交历史</h5>
-<p>默认不用任何参数的话，git log 会按提交时间列出所有的更新，最近的更新排在最上面。看到了吗，每次更新都有一个 SHA-1 校验和、作者的名字和电子邮件地址、提交时间，最后缩进一个段落显示提交说明。</p>
-<p>git log 有许多选项可以帮助你搜寻感兴趣的提交，接下来我们介绍些最常用的。</p>
-<p>我们常用 -p 选项展开显示每次提交的内容差异，用 -2 则仅显示最近的两次更新</p>
-<p>某些时候，单词层面的对比，比行层面的对比，更加容易观察。Git 提供了 +±-word-diff++ 选项。我们可以将其添加到 ++git log -p++ 命令的后面，从而获取单词层面上的对比。在程序代码中进行单词层面的对比常常是没什么用的。不过当你需要在书籍、论文这种很大的文本文件上进行对比的时候，这个功能就显出用武之地了。</p>
-<p>另外，git log 还提供了许多摘要选项可以用，比如 --stat，仅显示简要的增改行数统计</p>
-<p>用 oneline 或 format 时结合 --graph 选项，可以看到开头多出一些 ASCII 字符串表示的简单图形，形象地展示了每个提交所在的分支及其分化衍合情况。</p>
-<p>另外还有按照时间作限制的选项，比如 --since 和 --until。</p>
-<h5 id="撤消操作">撤消操作</h5>
-<p>有时候我们提交完了才发现漏掉了几个文件没有加，或者提交信息写错了。想要撤消刚才的提交操作，可以使用 --amend 选项重新提交：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git commit --amend</span><br></pre></td></tr></table></figure>
-<p><a target="_blank" rel="noopener" href="https://git-scm.com/book/zh/v1/Git-%E5%9F%BA%E7%A1%80-%E6%92%A4%E6%B6%88%E6%93%8D%E4%BD%9C">撤消操作</a></p>
-<h5 id="远程仓库的使用">远程仓库的使用</h5>
-<p>查看当前的远程库<br>
-要查看当前配置有哪些远程仓库，可以用 git remote 命令，它会列出每个远程库的简短名字。<br>
-也可以加上 -v 选项（译注：此为 --verbose 的简写，取首字母），显示对应的克隆地址</p>
-<p>添加远程仓库</p>
-<p>要添加一个新的远程仓库，可以指定一个简单的名字，以便将来引用，运行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote add [shortname] [url]：</span><br></pre></td></tr></table></figure>
-<p>现在可以用字符串 pb 指代对应的仓库地址了。比如说，要抓取所有 Paul 有的，但本地仓库没有的信息，可以运行 git fetch pb</p>
-<p>从远程仓库抓取数据</p>
-<p>正如之前所看到的，可以用下面的命令从远程仓库抓取数据到本地：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git fetch [remote-name]</span><br></pre></td></tr></table></figure>
-<p>推送数据到远程仓库</p>
-<p>目进行到一个阶段，要同别人分享目前的成果，可以将本地仓库中的数据推送到远程仓库。实现这个任务的命令很简单：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push [remote-name] [branch-name]。</span><br></pre></td></tr></table></figure>
-<p>如果要把本地的 master 分支推送到 origin 服务器上（再次说明下，克隆操作会自动使用默认的 master 和 origin 名字），可以运行下面的命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git push origin master</span><br></pre></td></tr></table></figure>
-<p>查看远程仓库信息<br>
-我们可以通过命令</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote show [remote-name]</span><br></pre></td></tr></table></figure>
-<p>查看某个远程仓库的详细信息</p>
-<p>远程仓库的删除和重命名<br>
-在新版 Git 中可以用 git remote rename 命令修改某个远程仓库在本地的简称，比如想把 pb 改成 paul，可以这么运行：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ git remote rename pb paul</span><br><span class="line">$ git remote</span><br><span class="line">origin</span><br><span class="line">paul</span><br></pre></td></tr></table></figure>
-<p>碰到远端仓库服务器迁移，或者原来的克隆镜像不再使用，又或者某个参与者不再贡献代码，那么需要移除对应的远端仓库，可以运行 git remote rm 命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git remote rm paul</span><br><span class="line">$ git remote</span><br><span class="line">origin</span><br></pre></td></tr></table></figure>
-<h5 id="打标签">打标签</h5>
-<p><a target="_blank" rel="noopener" href="https://git-scm.com/book/zh/v1/Git-%E5%9F%BA%E7%A1%80-%E6%89%93%E6%A0%87%E7%AD%BE/">打标签</a></p>
-<h5 id="Git-命令别名">Git 命令别名</h5>
-<p>Git 并不会推断你输入的几个字符将会是哪条命令，不过如果想偷懒，少敲几个命令的字符，可以用 git config 为命令设置别名。来看看下面的例子：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ git config --global alias.co checkout</span><br><span class="line">$ git config --global alias.br branch</span><br><span class="line">$ git config --global alias.ci commit</span><br><span class="line">$ git config --global alias.st status</span><br></pre></td></tr></table></figure>
-<p>取消暂存文件时的输入比较繁琐，可以自己设置一下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git config --global alias.unstage &#x27;reset HEAD --&#x27;</span><br></pre></td></tr></table></figure>
-<p>这样一来，下面的两条命令完全等同：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git unstage fileA</span><br><span class="line">$ git reset HEAD fileA</span><br></pre></td></tr></table></figure>
-<p>显然，使用别名的方式看起来更清楚。另外，我们还经常设置 last 命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git config --global alias.last &#x27;log -1 HEAD&#x27;</span><br></pre></td></tr></table></figure>
-<p>然后要看最后一次的提交信息，就变得简单多了</p>
-<h5 id="分支的新建与切换">分支的新建与切换</h5>
-<p>要新建并切换到该分支，运行 git checkout 并加上 -b 参数：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git checkout -b iss53</span><br><span class="line">Switched to a new branch &#x27;iss53&#x27;</span><br></pre></td></tr></table></figure>
-<p>回到 master 分支并把它合并进来，然后发布到生产服务器。用 git merge 命令来进行合并：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ git checkout master</span><br><span class="line">$ git merge hotfix</span><br><span class="line">Updating f42c576..3a0874c</span><br><span class="line">Fast-forward</span><br><span class="line"> README | 1 -</span><br><span class="line"> 1 file changed, 1 deletion(-)</span><br></pre></td></tr></table></figure>
-<p>这相当于执行下面这两条命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git branch iss53</span><br><span class="line">$ git checkout iss53</span><br></pre></td></tr></table></figure>
-<p>如果顺着一个分支走下去可以到达另一个分支的话，那么 Git 在合并两者时，只会简单地把指针右移，因为这种单线的历史分支不存在任何需要解决的分歧，所以这种合并过程可以称为快进（Fast forward）。</p>
-<p>合并之后，master 分支和 hotfix 分支指向同一位置。<br>
-由于当前 hotfix 分支和 master 都指向相同的提交对象，所以 hotfix 已经完成了历史使命，可以删掉了。使用 git branch 的 -d 选项执行删除操作：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git branch -d hotfix</span><br><span class="line">Deleted branch hotfix (was 3a0874c).</span><br></pre></td></tr></table></figure>
-<h5 id="遇到冲突时的分支合并">遇到冲突时的分支合并</h5>
-<p>有时候合并操作并不会如此顺利。如果在不同的分支中都修改了同一个文件的同一部分，Git 就无法干净地把两者合到一起（译注：逻辑上说，这种问题只能由人来裁决。）。<br>
-Git 作了合并，但没有提交，它会停下来等你解决冲突。要看看哪些文件在合并时发生冲突，可以用 <strong>git status</strong> 查阅</p>
-<p>任何包含未解决冲突的文件都会以未合并（unmerged）的状态列出。Git 会在有冲突的文件里加入标准的冲突解决标记，可以通过它们来手工定位并解决这些冲突。可以看到此文件包含类似下面这样的部分：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</span><br><span class="line">&lt;div id=&quot;footer&quot;&gt;contact : email.support@github.com&lt;/div&gt;</span><br><span class="line">=======</span><br><span class="line">&lt;div id=&quot;footer&quot;&gt;</span><br><span class="line">  please contact us at support@github.com</span><br><span class="line">&lt;/div&gt;</span><br><span class="line">&gt;&gt;&gt;&gt;&gt;&gt;&gt; iss53</span><br></pre></td></tr></table></figure>
-<p>可以看到 ======= 隔开的上半部分，是 HEAD（即 master 分支，在运行 merge 命令时所切换到的分支）中的内容，下半部分是在 iss53 分支中的内容。解决冲突的办法无非是二者选其一或者由你亲自整合到一起。比如你可以通过把这段内容替换为下面这样来解决：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;div id=&quot;footer&quot;&gt;</span><br><span class="line">please contact us at email.support@github.com</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-<p>这个解决方案各采纳了两个分支中的一部分内容，而且我还删除了 &lt;&lt;&lt;&lt;&lt;&lt;&lt;，======= 和 &gt;&gt;&gt;&gt;&gt;&gt;&gt; 这些行。在解决了所有文件里的所有冲突后，运行 git add 将把它们标记为已解决状态（译注：实际上就是来一次快照保存到暂存区域。）。</p>
-<p>再运行一次 git status 来确认所有冲突都已解决：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ git status</span><br><span class="line">On branch master</span><br><span class="line">Changes to be committed:</span><br><span class="line">  (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)</span><br><span class="line"></span><br><span class="line">        modified:   index.html</span><br></pre></td></tr></table></figure>
-<p>如果觉得满意了，并且确认所有冲突都已解决，也就是进入了暂存区，就可以用 git commit 来完成这次合并提交。提交的记录差不多是这样：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Merge branch &#x27;iss53&#x27;</span><br><span class="line"></span><br><span class="line">Conflicts:</span><br><span class="line">  index.html</span><br><span class="line">#</span><br><span class="line"># It looks like you may be committing a merge.</span><br><span class="line"># If this is not correct, please remove the file</span><br><span class="line">#       .git/MERGE_HEAD</span><br><span class="line"># and try again.</span><br><span class="line">#</span><br></pre></td></tr></table></figure>
-<h5 id="查看当前的远程库">查看当前的远程库</h5>
-<p>要查看当前配置有哪些远程仓库，可以用 git remote 命令，它会列出每个远程库的简短名字。<br>
-可以加上 -v 选项（译注：此为 --verbose 的简写，取首字母），显示对应的克隆地址</p>
-<h5 id="添加远程仓库">添加远程仓库</h5>
-<p>要添加一个新的远程仓库，可以指定一个简单的名字，以便将来引用，运行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote add [shortname] [url]：</span><br></pre></td></tr></table></figure>
-<h5 id="从远程仓库抓取数据">从远程仓库抓取数据</h5>
-<p>正如之前所看到的，可以用下面的命令从远程仓库抓取数据到本地：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git fetch [remote-name]</span><br></pre></td></tr></table></figure>
-<p>推送数据到远程仓库<br>
-项目进行到一个阶段，要同别人分享目前的成果，可以将本地仓库中的数据推送到远程仓库。实现这个任务的命令很简单： git push [remote-name] [branch-name]。如果要把本地的 master 分支推送到 origin 服务器上（再次说明下，克隆操作会自动使用默认的 master 和 origin 名字），可以运行下面的命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git push origin master</span><br></pre></td></tr></table></figure>
-<p>只有在所克隆的服务器上有写权限，或者同一时刻没有其他人在推数据，这条命令才会如期完成任务。如果在你推数据前，已经有其他人推送了若干更新，那你的推送操作就会被驳回。你必须先把他们的更新抓取到本地，合并到自己的项目中，然后才可以再次推送。</p>
-<p>查看远程仓库信息<br>
-我们可以通过命令</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote show [remote-name]</span><br></pre></td></tr></table></figure>
-<p>查看某个远程仓库的详细信息</p>
-<h1></h1>
-<p>远程仓库的删除和重命名<br>
-在新版 Git 中可以用 git remote rename 命令修改某个远程仓库在本地的简称，比如想把 pb 改成 paul，可以这么运行：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ git remote rename pb paul</span><br><span class="line">$ git remote</span><br><span class="line">origin</span><br><span class="line">paul</span><br></pre></td></tr></table></figure>
-<p>注意，对远程仓库的重命名，也会使对应的分支名称发生变化，原来的 pb/master 分支现在成了 paul/master。</p>
-<p>碰到远端仓库服务器迁移，或者原来的克隆镜像不再使用，又或者某个参与者不再贡献代码，那么需要移除对应的远端仓库，可以运行 git remote rm 命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git remote rm paul</span><br><span class="line">$ git remote</span><br><span class="line">origin</span><br></pre></td></tr></table></figure>
-<h5 id="远程分支">远程分支</h5>
-<p>我们用 ==(远程仓库名)/(分支名)== 这样的形式表示远程分支。比如我们想看看上次同 origin 仓库通讯时 master 分支的样子，就应该查看 origin/master 分支。如果你和同伴一起修复某个问题，但他们先推送了一个 iss53 分支到远程仓库，虽然你可能也有一个本地的 iss53 分支，但指向服务器上最新更新的却应该是 origin/iss53 分支。</p>
-<p>可以运行 git fetch origin 来同步远程服务器上的数据到本地。该命令首先找到 origin 是哪个服务器（本例为 <a target="_blank" rel="noopener" href="http://git.ourcompany.com">git.ourcompany.com</a>），从上面获取你尚未拥有的数据，更新你本地的数据库，然后把 origin/master 的指针移到它最新的位置上<br>
-<img src="/assets/images/gitfetch.png" alt="image"></p>
-<p>为了演示拥有多个远程分支（在不同的远程服务器上）的项目是如何工作的，我们假设你还有另一个仅供你的敏捷开发小组使用的内部服务器 <a target="_blank" rel="noopener" href="http://git.team1.ourcompany.com">git.team1.ourcompany.com</a>。可以用第二章中提到的 git remote add 命令把它加为当前项目的远程分支之一。我们把它命名为 teamone，以便代替完整的 Git URL 以方便使用<br>
-<img src="/assets/images/gitaddremote.png" alt="image"><br>
-现在你可以用 git fetch teamone 来获取小组服务器上你还没有的数据了。由于当前该服务器上的内容是你 origin 服务器上的子集，Git 不会下载任何数据，而只是简单地创建一个名为 teamone/master 的远程分支，指向 teamone 服务器上 master 分支所在的提交对象 31b8e（见图 3-26）。</p>
-<p><img src="/assets/images/gitfetchremote.png" alt="image"></p>
-<h5 id="推送本地分支">推送本地分支</h5>
-<p>要想和其他人分享某个本地分支，你需要把它推送到一个你拥有写权限的远程仓库。你创建的本地分支不会因为你的写入操作而被自动同步到你引入的远程服务器上，你需要明确地执行推送分支的操作。</p>
-<p>如果你有个叫 serverfix 的分支需要和他人一起开发，可以运行 git push (远程仓库名) (分支名)：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ git push origin serverfix</span><br><span class="line">Counting objects: 20, done.</span><br><span class="line">Compressing objects: 100% (14/14), done.</span><br><span class="line">Writing objects: 100% (15/15), 1.74 KiB, done.</span><br><span class="line">Total 15 (delta 5), reused 0 (delta 0)</span><br><span class="line">To git@github.com:schacon/simplegit.git</span><br><span class="line"> * [new branch]      serverfix -&gt; serverfix</span><br></pre></td></tr></table></figure>
-<p>这里其实走了一点捷径。Git 自动把 serverfix 分支名扩展为 refs/heads/serverfix:refs/heads/serverfix，意为“取出我在本地的 serverfix 分支，推送到远程仓库的 serverfix 分支中去”。</p>
-<p>也可以运行 ==git push origin serverfix:serverfix== 来实现相同的效果，它的意思是“上传我本地的 serverfix 分支到远程仓库中去，仍旧称它为 serverfix 分支”。通过此语法，你可以把本地分支推送到某个命名不同的远程分支：若想把远程分支叫作 awesomebranch，可以用 git push origin serverfix:awesomebranch 来推送数据。</p>
-<h5 id="跟踪远程分支">跟踪远程分支</h5>
-<p>从远程分支 checkout 出来的本地分支，称为 跟踪分支 (tracking branch)。跟踪分支是一种和某个远程分支有直接联系的本地分支。在跟踪分支里输入 git push，Git 会自行推断应该向哪个服务器的哪个分支推送数据。同样，在这些分支里运行 git pull 会获取所有远程索引，并把它们的数据都合并到本地分支中来。</p>
-<p>在克隆仓库时，Git 通常会自动创建一个名为 master 的分支来跟踪 origin/master。这正是 git push 和 git pull 一开始就能正常工作的原因。当然，你可以随心所欲地设定为其它跟踪分支，比如 origin 上除了 master 之外的其它分支。刚才我们已经看到了这样的一个例子：git checkout -b [分支名] [远程名]/[分支名]。如果你有 1.6.2 以上版本的 Git，还可以用 --track 选项简化：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git checkout --track origin/serverfix</span><br><span class="line">Branch serverfix set up to track remote branch serverfix from origin.</span><br><span class="line">Switched to a new branch &#x27;serverfix&#x27;</span><br></pre></td></tr></table></figure>
-<p>要为本地分支设定不同于远程分支的名字，只需在第一个版本的命令里换个名字：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git checkout -b sf origin/serverfix</span><br><span class="line">Branch sf set up to track remote branch serverfix from origin.</span><br><span class="line">Switched to a new branch &#x27;sf&#x27;</span><br></pre></td></tr></table></figure>
-<p>现在你的本地分支 sf 会自动将推送和抓取数据的位置定位到 origin/serverfix 了</p>
-<h5 id="删除远程分支">删除远程分支</h5>
-<p>如果不再需要某个远程分支了，比如搞定了某个特性并把它合并进了远程的 master 分支（或任何其他存放稳定代码的分支），可以用这个非常无厘头的语法来删除它：git push [远程名] :[分支名]。如果想在服务器上删除 serverfix 分支，运行下面的命令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git push origin :serverfix</span><br><span class="line">To git@github.com:schacon/simplegit.git</span><br><span class="line"> - [deleted]         serverfix</span><br></pre></td></tr></table></figure>
-<p>咚！服务器上的分支没了。你最好特别留心这一页，因为你一定会用到那个命令，而且你很可能会忘掉它的语法。有种方便记忆这条命令的方法：==记住我们不久前见过的 git push [远程名] [本地分支]:[远程分支] 语法，如果省略 [本地分支]，那就等于是在说“在这里提取空白然后把它变成[远程分支]”==。</p>
-<h5 id="解决远程分支和本地冲突">解决远程分支和本地冲突</h5>
-<p>1.先将本地修改储存起来</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git stash</span><br></pre></td></tr></table></figure>
-<p>2.pull内容</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git pull</span><br></pre></td></tr></table></figure>
-<p>3.还原暂存内容</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git stash pop stash@&#123;0&#125;</span><br></pre></td></tr></table></figure>
-<p>4.解决冲突</p>
-<p>5.提交</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git commit -m &#x27;&#x27;</span><br></pre></td></tr></table></figure>
-<ol start="6">
-<li>打标签</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git tag v1.1 -m &#x27;&#x27;</span><br></pre></td></tr></table></figure>
-<p>7.列标签</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git tag -l</span><br></pre></td></tr></table></figure>
-<p>8.获取标签代码</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout </span><br></pre></td></tr></table></figure>
-<p>9.提交标签到远程端</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push tag </span><br></pre></td></tr></table></figure>
-<h5 id="拉取本地没有的远程分支">拉取本地没有的远程分支</h5>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -b 本地分支名 origin/远程分支名</span><br></pre></td></tr></table></figure>
-<p><a target="_blank" rel="noopener" href="https://git-scm.com/book/zh/v1/Git-%E5%88%86%E6%94%AF-%E5%88%86%E6%94%AF%E7%9A%84%E5%8F%98%E5%9F%BA/">后续:变基rebase</a></p>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2017/08/12/git/git%E6%95%99%E7%A8%8B/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -2421,7 +2353,7 @@ Git 作了合并，但没有提交，它会停下来等你解决冲突。要看�
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 199 篇文章
+                找到 210 篇文章
             </p>
         </div>
     </div>

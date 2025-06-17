@@ -302,6 +302,334 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../../2017/11/30/database/%E6%90%AD%E5%BB%BA%E9%AB%98%E5%90%9E%E5%90%90%E9%87%8FKafka%E5%88%86%E5%B8%83%E5%BC%8F%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85%E6%B6%88%E6%81%AF%E9%9B%86%E7%BE%A4/"
+                            aria-label=": 搭建高吞吐量Kafka分布式发布订阅消息集群"
+                        >
+                            搭建高吞吐量Kafka分布式发布订阅消息集群
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2017-11-30T23:14:37+08:00">
+	
+		    2017 年 11 月 30 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../">database</a>, <a class="category-link" href="">hadoop</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="搭建高吞吐量-Kafka-分布式发布订阅消息-集群">搭建高吞吐量 Kafka 分布式发布订阅消息 集群</h2>
+<h3 id="简介">简介</h3>
+<p>Kafka 是一种高吞吐的分布式发布订阅消息系统，能够替代传统的消息队列用于解耦合数据处理，缓存未处理消息等，同时具有更高的吞吐率，支持分区、多副本、冗余，因此被广泛用于大规模消息数据处理应用。Kafka 支持Java 及多种其它语言客户端，可与Hadoop、Storm、Spark等其它大数据工具结合使用。</p>
+<h3 id="环境">环境</h3>
+<p>Zookeeper集群: 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181</p>
+<p>kafka 集群: 192.168.252.124 , 192.168.252.125 , 192.168.252.126</p>
+<p>kafka-manager: 192.168.252.127</p>
+<h4 id="主机名修改">主机名修改</h4>
+<p>CentOs7.3 修改主机名</p>
+<h4 id="ssh-免密登录">ssh 免密登录</h4>
+<p>CentOs7.3 ssh 免密登录</p>
+<h4 id="安装-JDK1-8">安装 JDK1.8</h4>
+<p><a href="https://chankein.github.io/2018/01/07/java/CentOs7-3-%E5%AE%89%E8%A3%85-JDK1-8/">CentOs7.3 安装 JDK1.8</a></p>
+<h4 id="搭建-Zookeeper-集群">搭建 Zookeeper 集群</h4>
+<p><a href="https://chankein.github.io/2017/11/27/database/CentOs7-3%E6%90%AD%E5%BB%BAZooKeeper-3-4-9Cluster-%E9%9B%86%E7%BE%A4%E6%9C%8D%E5%8A%A1/">CentOs7.3 搭建 ZooKeeper-3.4.9 Cluster 集群服务</a></p>
+<p>Zookeeper集群: 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181</p>
+<p>主机名依次被我修改成: <strong>node1,node2,node3</strong></p>
+<h3 id="搭建-kafka-集群">搭建 kafka 集群</h3>
+<p>kafka 集群: 192.168.252.124 , 192.168.252.125 , 192.168.252.126</p>
+<p>主机名依次被我修改成: <strong>node4,node5,node6</strong></p>
+<h4 id="1-下载代码">1.下载代码</h4>
+<p><a target="_blank" rel="noopener" href="https://kafka.apache.org/downloads">kafka 官网下载 http://kafka.apache.org/downloads</a></p>
+<p>下载最新版本的kafka ，</p>
+<p>清华镜像:<a target="_blank" rel="noopener" href="https://mirrors.tuna.tsinghua.edu.cn/apache/kafka/">https://mirrors.tuna.tsinghua.edu.cn/apache/kafka/</a></p>
+<p>阿里镜像:<a target="_blank" rel="noopener" href="https://mirrors.aliyun.com/apache/kafka/">https://mirrors.aliyun.com/apache/kafka/</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ cd /opt</span><br><span class="line">$ wget https://mirrors.tuna.tsinghua.edu.cn/apache/kafka/0.11.0.0/kafka_2.12-0.11.0.0.tgz</span><br><span class="line">$ tar -zxvf kafka_2.12-0.11.0.0.tgz</span><br><span class="line">$ cd kafka_2.12-0.11.0.0</span><br></pre></td></tr></table></figure>
+<h4 id="2-修改配置">2.修改配置</h4>
+<p>在 node4 操作</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ vi /opt/kafka_2.12-0.11.0.0/config/server.properties</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">broker.id=0  每台服务器不能重复</span><br><span class="line"></span><br><span class="line">#设置zookeeper的集群地址</span><br><span class="line">zookeeper.connect=192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181</span><br></pre></td></tr></table></figure>
+<p>把配置复制到 node5,node6 集群</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;5..6&#125; ; do scp -r /opt/kafka_2.12-0.11.0.0/ node$a:/opt/kafka_2.12-0.11.0.0 ; done</span><br></pre></td></tr></table></figure>
+<p>修改 node5,node6 集群的<code>broker.id</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ vi /opt/kafka_2.12-0.11.0.0/config/server.properties</span><br></pre></td></tr></table></figure>
+<h4 id="3-启动kafka">3.启动kafka</h4>
+<p>在 node1,启动 Kafka使用的 ZooKeeper，所以先<strong>启动ZooKeeper服务器</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;1..3&#125; ; do ssh node$a &quot;source /etc/profile;  /opt/zookeeper-3.4.9/bin/zkServer.sh start&quot; ; done</span><br></pre></td></tr></table></figure>
+<p><strong>现在 node4 启动Kafka服务器</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;4..6&#125; ; do ssh node$a &quot;source /etc/profile;  /opt/kafka_2.12-0.11.0.0/bin/kafka-server-start.sh /opt/kafka_2.12-0.11.0.0/config/server.properties&quot; ; done</span><br></pre></td></tr></table></figure>
+<p>或者后台启动运行，日志查看去Kafka解压目录有个<code>log</code> 文件夹查看</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;4..6&#125; ; do ssh node$a &quot;source /etc/profile; nohup  /opt/kafka_2.12-0.11.0.0/bin/kafka-server-start.sh /opt/kafka_2.12-0.11.0.0/config/server.properties &gt; /dev/null 2&gt;&amp;1 &amp;&quot; ; done</span><br></pre></td></tr></table></figure>
+<p>查看进程，Kafka 是否启动成功</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ jps</span><br><span class="line">3825 Kafka</span><br><span class="line">6360 Jps</span><br></pre></td></tr></table></figure>
+<p>如果报错删除</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">kafka.common.KafkaException: Failed to acquire lock on file .lock in /tmp/kafka-logs. A Kafka instance in another process or thread is using this directory.</span><br><span class="line"></span><br><span class="line">$ rm -rf /tmp/kafka-logs</span><br></pre></td></tr></table></figure>
+<h4 id="4-创建主题">4.创建主题</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka_2.12-0.11.0.0/bin/kafka-topics.sh --create --zookeeper 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181 --replication-factor 2 --partitions 1 --topic ymq</span><br></pre></td></tr></table></figure>
+<p>--replication-factor 2 #复制两份<br>
+--partitions 1 #创建1个分区<br>
+--topic #主题为ymq</p>
+<p>运行list topic命令，可以看到该主题：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka_2.12-0.11.0.0/bin/kafka-topics.sh --list --zookeeper 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181</span><br></pre></td></tr></table></figure>
+<h4 id="5-生产消息">5.生产消息</h4>
+<p>Kafka附带一个命令行客户端，它将从文件或标准输入中输入，并将其作为消息发送到Kafka群集。默认情况下，每行将作为单独的消息发送。</p>
+<p>在 <strong>node5</strong> 运行生产者，然后在控制台中输入一些消息以发送到服务器。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka_2.12-0.11.0.0/bin/kafka-console-producer.sh --broker-list localhost:9092 --topic ymq</span><br><span class="line">&gt;www.ymq.io</span><br></pre></td></tr></table></figure>
+<h4 id="6-消费消息">6.消费消息</h4>
+<p>在<strong>node6</strong> 运行消费者，将把消息转储到标准输出。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka_2.12-0.11.0.0/bin/kafka-console-consumer.sh --zookeeper 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181  --topic ymq --from-beginning</span><br><span class="line">Using the ConsoleConsumer with old consumer is deprecated and will be removed in a future major release. Consider using the new consumer by passing [bootstrap-server] instead of [zookeeper]. </span><br><span class="line">www.ymq.io</span><br></pre></td></tr></table></figure>
+<h4 id="7-topic详情">7.topic详情</h4>
+<p>用describe 查看集群中topic每个节点情况</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka_2.12-0.11.0.0/bin/kafka-topics.sh --describe --zookeeper 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181 --topic ymq</span><br><span class="line">Topic:ymq    PartitionCount:1    ReplicationFactor:2    Configs:</span><br><span class="line">    Topic: ymq    Partition: 0    Leader: 1    Replicas: 1,3    Isr: 3,1</span><br></pre></td></tr></table></figure>
+<p>以下是输出的说明。第一行给出了所有分区的摘要，每个附加行提供有关一个分区的信息。由于我们这个主题只有一个分区，只有一行。</p>
+<p><code>leader</code>负责给定分区的读取和写入分配节点编号，每个分区的部分数据会随机指定不同的节点<br>
+<code>replicas</code>是复制此分区的日志的节点列表<br>
+<code>isr</code>一组正在同步的副本列表</p>
+<h4 id="8-删除topic">8.删除topic</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka_2.12-0.11.0.0/bin/kafka-topics.sh --delete --zookeeper 192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181 --topic ymq</span><br><span class="line">Topic ymq is marked for deletion.</span><br><span class="line">Note: This will have no impact if delete.topic.enable is not set to true.</span><br></pre></td></tr></table></figure>
+<h4 id="9-停止kafka">9.停止kafka</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;4..6&#125; ; do ssh node$a &quot;source /etc/profile;  /opt/kafka_2.12-0.11.0.0/bin/kafka-server-stop.sh /opt/kafka_2.12-0.11.0.0/config/server.properties &quot; ; done</span><br></pre></td></tr></table></figure>
+<h3 id="部署-Kafka-Manager">部署 Kafka Manager</h3>
+<p><a target="_blank" rel="noopener" href="https://link.segmentfault.com/?enc=6ZQFukUws0SityhjcZS7%2BA%3D%3D.UA1i%2BFoCJb9acAXO0wn2%2Fwrb30d86%2FFy9%2BmmhdomvtwBafct3qYMupcbZpUnKPRW">Yahoo开源Kafka集群管理器Kafka Manager</a></p>
+<p>作为一个分布式的消息发布-订阅系统，Apache Kafka在Yahoo内部已经被很多团队所使用，例如媒体分析团队就将其应用到了实时分析流水线中，同时，Yahoo整个Kafka集群处理的峰值带宽超过了20Gbps（压缩数据）。为了让开发者和服务工程师能够更加简单地维护Kafka集群，Yahoo构建了一个基于Web的管理工具，称为Kafka Manager，日前该项目已经在GitHub上开源。</p>
+<p>通过Kafka Manager用户能够更容易地发现集群中哪些主题或者分区分布不均匀，同时能够管理多个集群，能够更容易地检查集群的状态，能够创建主题，执行首选的副本选择，能够基于集群当前的状态生成分区分配，并基于生成的分配执行分区的重分配，此外，Kafka Manager还是一个非常好的可以快速查看集群状态的工具。</p>
+<p>Kafka Manager使用Scala语言编写，其Web控制台基于Play Framework实现，除此之外，Yahoo还迁移了一些Apache Kafka的帮助程序以便能够与Apache Curator框架一起工作。</p>
+<p>一、它支持以下内容：</p>
+<ul>
+<li>管理多个群集</li>
+<li>容易检查集群状态（主题，消费者，偏移量，经纪人，副本分发，分区分配）</li>
+<li>运行首选副本选举</li>
+<li>使用选项生成分区分配，以选择要使用的代理</li>
+<li>运行分区的重新分配（基于生成的分配）</li>
+<li>创建可选主题配置的主题（0.8.1.1具有不同于0.8.2+的配置）</li>
+<li>删除主题（仅支持0.8.2+，并记住在代理配​​置中设置delete.topic.enable = true）</li>
+<li>主题列表现在表示标记为删除的主题（仅支持0.8.2+）</li>
+<li>批量生成多个主题的分区分配，并选择要使用的代理</li>
+<li>批量运行多个主题的分区重新分配</li>
+<li>将分区添加到现有主题</li>
+<li>更新现有主题的配置</li>
+<li>可选地，启用JMX轮询代理级和主题级度量。</li>
+<li>可选地筛选出在zookeeper中没有ids / owner /＆offset /目录的消费者。</li>
+</ul>
+<h4 id="源码，并编译打包">源码，并编译打包</h4>
+<p>在 kafka-manager: 192.168.252.127 <strong>node7</strong> 部署</p>
+<p><strong>编译超级慢</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ yum install git</span><br><span class="line">$ cd /opt/</span><br><span class="line">$ git clone https://github.com/yahoo/kafka-manager</span><br><span class="line">$ cd kafka-manager/</span><br><span class="line">$ ./sbt clean dist</span><br></pre></td></tr></table></figure>
+<h4 id="下载编译好的包">下载编译好的包</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ yum install unzip</span><br><span class="line">$ unzip kafka-manager-1.3.2.1.zip</span><br><span class="line">$ vi /opt/kafka-manager-1.3.2.1/conf/application.conf</span><br></pre></td></tr></table></figure>
+<p>修改这个 zk 地址</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kafka-manager.zkhosts=&quot;192.168.252.121:2181,192.168.252.122:2181,192.168.252.123:2181&quot;</span><br></pre></td></tr></table></figure>
+<h4 id="启动-kafka-manager">启动 kafka-manager</h4>
+<p>默认端口 <code>NettyServer - Listening for HTTP on /0:0:0:0:0:0:0:0:9000</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/kafka-manager-1.3.2.1/bin/kafka-manager -Dconfig.file=conf/application.conf</span><br></pre></td></tr></table></figure>
+<p>或者后台运行 并且配置端口</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ nohup bin/kafka-manager  -Dconfig.file=/home/hadoop/app/kafka-manager-1.3.2.1/conf/application.conf -Dhttp.port=9000 &amp;</span><br></pre></td></tr></table></figure>
+<p>访问： <a target="_blank" rel="noopener" href="http://ip:9000">http://ip:9000</a></p>
+<p><img src="/assets/images/kafka.webp" alt="图片描述" title="图片描述"></p>
+<p>图片描述</p>
+<p>图片描述</p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../2017/11/30/database/%E6%90%AD%E5%BB%BA%E9%AB%98%E5%90%9E%E5%90%90%E9%87%8FKafka%E5%88%86%E5%B8%83%E5%BC%8F%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85%E6%B6%88%E6%81%AF%E9%9B%86%E7%BE%A4/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../../2017/11/27/database/CentOs7-3%E6%90%AD%E5%BB%BAZooKeeper-3-4-9Cluster-%E9%9B%86%E7%BE%A4%E6%9C%8D%E5%8A%A1/"
+                            aria-label=": CentOs7.3搭建ZooKeeper-3.4.9Cluster 集群服务"
+                        >
+                            CentOs7.3搭建ZooKeeper-3.4.9Cluster 集群服务
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2017-11-27T23:08:40+08:00">
+	
+		    2017 年 11 月 27 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../">database</a>, <a class="category-link" href="">hadoop</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="CentOs7-3-搭建-ZooKeeper-3-4-9-Cluster-集群服务">CentOs7.3 搭建 ZooKeeper-3.4.9 Cluster 集群服务</h2>
+<h2 id="Zookeeper-概述">Zookeeper 概述</h2>
+<p>zookeeper实际上是yahoo开发的，用于分布式中<strong>一致性处理的框架</strong>。最初其作为研发Hadoop时的副产品。由于分布式系统中一致性处理较为困难，其他的分布式系统没有必要 费劲重复造轮子，故随后的分布式系统中大量应用了zookeeper，以至于zookeeper成为了各种分布式系统的基础组件，其地位之重要，可想而知。著名的<strong>hadoop，kafka，dubbo 都是基于zookeeper而构建</strong>。</p>
+<p>要想理解zookeeper到底是做啥的，那首先得理解清楚，<strong>什么是一致性？</strong></p>
+<p>所谓的一致性，实际上就是围绕着“看见”来的。谁能看见？能否看见？什么时候看见？举个例子：淘宝后台卖家，在后台上架一件大促的商品，通过服务器A提交到主数据库，假设刚提交后立马就有用户去通过应用服务器B去从数据库查询该商品，就会出现一个现象，卖家已经更新成功了，然而买家却看不到；而经过一段时间后，主数据库的数据同步到了从数据库，买家就能查到了。</p>
+<p>假设卖家更新成功之后买家立马就能看到卖家的更新，则称为<strong>强一致性</strong></p>
+<p>如果卖家更新成功后买家不能看到卖家更新的内容，则称为<strong>弱一致性</strong></p>
+<p>而卖家更新成功后，买家经过一段时间最终能看到卖家的更新，则称为<strong>最终一致性</strong></p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/leesf456/p/6001278.html">《一致性协议》</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/leesf456/p/6036548.html">《ZooKeeper应用场景》</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/leesf456/p/5992377.html">《分布式架构》</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/leesf456/tag/%E5%88%86%E5%B8%83%E5%BC%8F/">《分布式 ZooKeeper 系列》</a></p>
+<h2 id="环境">环境</h2>
+<p>VMware版本号：12.0.0</p>
+<p>CentOS版本：CentOS 7.3.1611</p>
+<p>ZooKeeper版本：ZooKeeper-3.4.9.tar.gz</p>
+<p>虚拟机IP：192.168.252.101，192.168.252.102，192.168.252.103</p>
+<p>集群主机名称：node1，node2，node3</p>
+<p>集群主机用户：都是用root用户</p>
+<p>集群JDK环境：jdk-8u144-linux-x64.tar.gz JDK 1.8 安装 具体参考<a href="https://chankein.github.io/2018/01/07/java/CentOs7-3-%E5%AE%89%E8%A3%85-JDK1-8/">《CentOs7.3 安装 JDK1.8》</a></p>
+<p>集群主机之间设置免密登陆：</p>
+<h3 id="注意事项">注意事项</h3>
+<p>关闭防火墙</p>
+<p>centos 6.x 关闭 iptables</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ service iptables stop # 关闭命令：</span><br></pre></td></tr></table></figure>
+<p>centos 7.x 关闭firewall</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ systemctl stop firewalld.service # 停止firewall</span><br></pre></td></tr></table></figure>
+<h2 id="ZooKeeper-安装">ZooKeeper 安装</h2>
+<h3 id="1-下载ZooKeeper">1.下载ZooKeeper</h3>
+<p>下载最新版本的ZooKeeper ，我在北京我就选择，清华镜像比较快</p>
+<p>清华镜像:<a target="_blank" rel="noopener" href="https://mirrors.tuna.tsinghua.edu.cn/apache/zookeeper/">https://mirrors.tuna.tsinghua.edu.cn/apache/zookeeper/</a></p>
+<p>阿里镜像:<a target="_blank" rel="noopener" href="https://mirrors.aliyun.com/apache/zookeeper/">https://mirrors.aliyun.com/apache/zookeeper/</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cd /opt/</span><br><span class="line">$ wget https://mirrors.tuna.tsinghua.edu.cn/apache/zookeeper/zookeeper-3.4.9/zookeeper-3.4.9.tar.gz</span><br></pre></td></tr></table></figure>
+<p>或者在浏览器下载上传至opt 目录</p>
+<h3 id="2-提取tar文件">2.提取tar文件</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ cd /opt/</span><br><span class="line">$ tar -zxf  zookeeper-3.4.9.tar.gz</span><br><span class="line">$ cd zookeeper-3.4.9</span><br></pre></td></tr></table></figure>
+<p>创建<code>data</code>文件夹 用于存储数据文件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ mkdir /opt/zookeeper-3.4.9/data</span><br></pre></td></tr></table></figure>
+<p>创建<code>logs</code>文件夹 用于存储日志</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ mkdir /opt/zookeeper-3.4.9/logs  </span><br></pre></td></tr></table></figure>
+<h3 id="3-创建配置文件">3.创建配置文件</h3>
+<p><strong>zoo.cfg</strong></p>
+<p>zookeeper的主要配置文件，因为Zookeeper是一个集群服务，集群的每个节点都需要这个配置文件。为了避免出差错，zoo.cfg这个配置文件里没有跟特定节点相关的配置，所以每个节点上的这个zoo.cfg都是一模一样的配置。这样就非常便于管理了，比如我们可以把这个文件提交到版本控制里管理起来。其实这给我们设计集群系统的时候也是个提示：集群系统一般有很多配置，应该尽量将通用的配置和特定每个服务的配置(比如服务标识)分离，这样通用的配置在不同服务之间copy就ok了</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ vi /opt/zookeeper-3.4.9/conf/zoo.cfg</span><br></pre></td></tr></table></figure>
+<p>编辑内容如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">tickTime = 2000</span><br><span class="line">dataDir =  /opt/zookeeper-3.4.9/data</span><br><span class="line">dataLogDir = /opt/zookeeper-3.4.9/logs</span><br><span class="line">tickTime = 2000</span><br><span class="line">clientPort = 2181</span><br><span class="line">initLimit = 5</span><br><span class="line">syncLimit = 2</span><br><span class="line"></span><br><span class="line">server.1=node1:2888:3888</span><br><span class="line">server.2=node2:2888:3888</span><br><span class="line">server.3=node3:2888:3888</span><br></pre></td></tr></table></figure>
+<h4 id="配置文件描述">配置文件描述</h4>
+<p><strong>tickTime</strong></p>
+<ul>
+<li>tickTime则是上述两个超时配置的基本单位，例如对于initLimit，其配置值为5，说明其超时时间为 2000ms * 5 = 10秒。</li>
+</ul>
+<p><strong>dataDir</strong></p>
+<ul>
+<li>其配置的含义跟单机模式下的含义类似，不同的是集群模式下还有一个myid文件。myid文件的内容只有一行，且内容只能为1 - 255之间的数字，这个数字亦即上面介绍server.id中的id，表示zk进程的id。</li>
+</ul>
+<p><strong>dataLogDir</strong></p>
+<ul>
+<li>如果没提供的话使用的则是dataDir。zookeeper的持久化都存储在这两个目录里。dataLogDir里是放到的顺序日志(WAL)。而dataDir里放的是内存数据结构的snapshot，便于快速恢复。为了达到性能最大化，一般建议把dataDir和dataLogDir分到不同的磁盘上，这样就可以充分利用磁盘顺序写的特性。</li>
+</ul>
+<p><strong>initLimit</strong></p>
+<ul>
+<li>ZooKeeper集群模式下包含多个zk进程，其中一个进程为leader，余下的进程为follower。</li>
+</ul>
+<p>当follower最初与leader建立连接时，它们之间会传输相当多的数据，尤其是follower的数据落后leader很多。initLimit配置follower与leader之间建立连接后进行同步的最长时间。</p>
+<p><strong>syncLimit</strong></p>
+<ul>
+<li>配置follower和leader之间发送消息，请求和应答的最大时间长度。</li>
+</ul>
+<p><strong>server.id=host:port1:port2</strong></p>
+<p><code>server.id</code> 其中id为一个数字，表示zk进程的id，这个id也是data目录下myid文件的内容</p>
+<p><code>host</code> 是该zk进程所在的IP地址</p>
+<p><code>port1</code> 表示follower和leader交换消息所使用的端口</p>
+<p><code>port2</code> 表示选举leader所使用的端口</p>
+<h3 id="4-创建myid-文件">4.创建myid 文件</h3>
+<p>在data里会放置一个myid文件，里面就一个数字，用来唯一标识这个服务。这个id是很重要的，一定要保证整个集群中唯一</p>
+<p>ZooKeeper会根据这个id来取出server.x上的配置。比如当前id为1，则对应着zoo.cfg里的server.1的配置</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ echo &quot;1&quot; &gt; /opt/zookeeper-3.4.9/data/myid</span><br></pre></td></tr></table></figure>
+<p>这样一台node1机器就配置完了</p>
+<h3 id="5-复制集群配置">5.复制集群配置</h3>
+<p>在集群node1 上执行,复制配置好的zookeeper到其他两台主机上</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;2..3&#125; ; do scp -r /opt/zookeeper-3.4.9/ node$a:/opt/zookeeper-3.4.9 ; done</span><br></pre></td></tr></table></figure>
+<p>在集群node1 上执行 ,批量修改myid 文件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;1..3&#125; ; do ssh node$a &quot;source /etc/profile; echo $a &gt; /opt/zookeeper-3.4.9/data/myid&quot; ; done</span><br></pre></td></tr></table></figure>
+<h2 id="集群操作">集群操作</h2>
+<p><strong>在集群任意一台机器上执行</strong></p>
+<h3 id="启动集群">启动集群</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;1..3&#125; ; do ssh node$a &quot;source /etc/profile; /opt/zookeeper-3.4.9/bin/zkServer.sh start&quot; ; done</span><br></pre></td></tr></table></figure>
+<p>响应</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Starting zookeeper ... STARTED</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Starting zookeeper ... STARTED</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Starting zookeeper ... STARTED</span><br></pre></td></tr></table></figure>
+<h3 id="连接集群">连接集群</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ /opt/zookeeper-3.4.9/bin/zkCli.sh -server node1:2181,node2:2181,node3:2181</span><br></pre></td></tr></table></figure>
+<p>响应</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">Connecting to node1:2181,node2:2181,node3:2181</span><br><span class="line">2017-08-23 11:08:10,323 [myid:] - INFO  [main:Environment@100] - Client environment:zookeeper.version=3.4.9-1757313, built on 08/23/2016 06:50 GMT</span><br><span class="line">2017-08-23 11:08:10,328 [myid:] - INFO  [main:Environment@100] - Client environment:host.name=node1</span><br><span class="line">2017-08-23 11:08:10,329 [myid:] - INFO  [main:Environment@100] - Client environment:java.version=1.8.0_144</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:java.vendor=Oracle Corporation</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:java.home=/usr/lib/jvm/jre</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:java.class.path=/opt/zookeeper-3.4.9/bin/../build/classes:/opt/zookeeper-3.4.9/bin/../build/lib/*.jar:/opt/zookeeper-3.4.9/bin/../lib/slf4j-log4j12-1.6.1.jar:/opt/zookeeper-3.4.9/bin/../lib/slf4j-api-1.6.1.jar:/opt/zookeeper-3.4.9/bin/../lib/netty-3.10.5.Final.jar:/opt/zookeeper-3.4.9/bin/../lib/log4j-1.2.16.jar:/opt/zookeeper-3.4.9/bin/../lib/jline-0.9.94.jar:/opt/zookeeper-3.4.9/bin/../zookeeper-3.4.9.jar:/opt/zookeeper-3.4.9/bin/../src/java/lib/*.jar:/opt/zookeeper-3.4.9/bin/../conf:.:/lib/jvm/lib:/lib/jvm/jre/lib</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:java.library.path=/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:java.io.tmpdir=/tmp</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:java.compiler=&lt;NA&gt;</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:os.name=Linux</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:os.arch=amd64</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:os.version=3.10.0-514.26.2.el7.x86_64</span><br><span class="line">2017-08-23 11:08:10,331 [myid:] - INFO  [main:Environment@100] - Client environment:user.name=root</span><br><span class="line">2017-08-23 11:08:10,332 [myid:] - INFO  [main:Environment@100] - Client environment:user.home=/root</span><br><span class="line">2017-08-23 11:08:10,332 [myid:] - INFO  [main:Environment@100] - Client environment:user.dir=/root</span><br><span class="line">2017-08-23 11:08:10,333 [myid:] - INFO  [main:ZooKeeper@438] - Initiating client connection, connectString=node1:2181,node2:2181,node3:2181 sessionTimeout=30000 watcher=org.apache.zookeeper.ZooKeeperMain$MyWatcher@506c589e</span><br><span class="line">2017-08-23 11:08:10,361 [myid:] - INFO  [main-SendThread(node3:2181):ClientCnxn$SendThread@1032] - Opening socket connection to server node3/192.168.252.123:2181. Will not attempt to authenticate using SASL (unknown error)</span><br><span class="line">Welcome to ZooKeeper!</span><br><span class="line">JLine support is enabled</span><br><span class="line">2017-08-23 11:08:10,474 [myid:] - INFO  [main-SendThread(node3:2181):ClientCnxn$SendThread@876] - Socket connection established to node3/192.168.252.123:2181, initiating session</span><br><span class="line">[zk: node1:2181,node2:2181,node3:2181(CONNECTING) 0] 2017-08-23 11:08:10,535 [myid:] - INFO  [main-SendThread(node3:2181):ClientCnxn$SendThread@1299] - Session establishment complete on server node3/192.168.252.123:2181, sessionid = 0x35e0d0716340000, negotiated timeout = 30000</span><br><span class="line"></span><br><span class="line">WATCHER::</span><br><span class="line"></span><br><span class="line">WatchedEvent state:SyncConnected type:None path:null</span><br><span class="line"></span><br><span class="line">[zk: node1:2181,node2:2181,node3:2181(CONNECTED) 0]</span><br></pre></td></tr></table></figure>
+<p>从日志可以看出客户端成功连接的是node3 连接上哪台机器的zk进程是随机的</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">2017-08-23 11:08:10,361 [myid:] - INFO  [main-SendThread(node3:2181):ClientCnxn$SendThread@1032] - Opening socket connection to server node3/192.168.252.123:2181. Will not attempt to authenticate using SASL (unknown error)</span><br><span class="line">Welcome to ZooKeeper!</span><br><span class="line">JLine support is enabled</span><br></pre></td></tr></table></figure>
+<h3 id="集群状态">集群状态</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;1..3&#125; ; do ssh node$a &quot;source /etc/profile; /opt/zookeeper-3.4.9/bin/zkServer.sh status&quot; ; done</span><br></pre></td></tr></table></figure>
+<p>响应</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Mode: follower</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Mode: leader</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Mode: follower</span><br></pre></td></tr></table></figure>
+<p>通过日志我可以看到 node2 leader (ps 是老大)，其他 node1 ,node2 follower (ps 都是小弟)</p>
+<p>Leader 怎么选举的可以参考<a target="_blank" rel="noopener" href="https://www.cnblogs.com/leesf456/p/6107600.html">《Zookeeper的Leader选举》</a></p>
+<h3 id="停止集群">停止集群</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ for a in &#123;1..3&#125; ; do ssh node$a &quot;source /etc/profile; /opt/zookeeper-3.4.9/bin/zkServer.sh stop&quot; ; done</span><br></pre></td></tr></table></figure>
+<p>响应</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Stopping zookeeper ... STOPPED</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Stopping zookeeper ... STOPPED</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/zookeeper-3.4.9/bin/../conf/zoo.cfg</span><br><span class="line">Stopping zookeeper ... STOPPED</span><br></pre></td></tr></table></figure>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../2017/11/27/database/CentOs7-3%E6%90%AD%E5%BB%BAZooKeeper-3-4-9Cluster-%E9%9B%86%E7%BE%A4%E6%9C%8D%E5%8A%A1/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../../2017/11/25/database/Hive-2-3-0-%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA%E4%B8%8E%E4%BD%BF%E7%94%A8/"
                             aria-label=": Hive-2.3.0 快速搭建与使用"
                         >
@@ -1305,7 +1633,7 @@
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 199 篇文章
+                找到 210 篇文章
             </p>
         </div>
     </div>

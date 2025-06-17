@@ -1,0 +1,1196 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>Terraform 文件与目录 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"Terraform 文件与目录\n\n\n1.5.1. Terraform 文件与目录\n\n\n1.5.1.1. 文本编码\n\n\n1.5.1.2. 文件夹与模块\n\n\n1.5.1.3. 根模块\n\n\n\n1.5.1. Terraform 文件与目录\nTerraform 语言的代码存储在文件扩展名为 .tf 的纯文本文件中。该语言还有一种基于 JSON 的变体，以 .tf.json 文件扩展名命名（本书精力所限将不涉及这方面的内容）。 包含 Terraform 代码的文件通常称为配置文件。\n1.5.1.1. 文本编码\n配置文件必须始终使用 UTF-8 编码，并且按照惯例通常使用 Unix 样式行结束符 (LF)，而不是 Windows 样式行结束符 (CRLF)，尽管两者都被接受。\n1.5.1.2. 文件夹与模块\n同一个文件夹中一起保存的一组 .tf 以及 .tf.json 文件组成一个模块。\nTerraform 模块仅由直接隶属于该目录的配置文件组成；子目录被视为完全独立的模块，并且不会自动包含在配置中。\nTerraform 执行模块中的所有配置文件，最终将整个模块视为单个代码文件。将各个块分成不同的文件纯粹是为了方便读者和维护者，对模块的行为没有影响。\nTerraform 模块可以使用模块调用将其他模块显式包含到配置中。这些子模块可以来自本地目录（嵌套在父模块的目录中，或磁盘上的任意其他位置），也可以来自 Terraform 注册表等外部源。\n1.5.1.3. 根模块\nTerraform 始终在单一的根模块的上下文中运行。完整的 Terraform 配置由根模块和子模块树组成（其中包括根模块调用的模块、以及由这些模块调用的任何模块等）。\n\n\n在 Terraform 命令行 中，根模块是执行 Terraform 命令的工作目录。 （我们可以使用命令行参数来指定不同于当前工作目录的根模块，但实际上这种情况很少见。）\n\n\n在 HCP Terraform 和 Terraform Enterprise 中，工作区的根模块默认为配置目录的顶层（通过版本控制存储库或直接上传提供），但工作区设置可以指定要使用的子目录。\n\n\n1.5.1.1. 重载(Override) 文件\n\n\n1.5.1.1.1. 示例\n\n\n1.5.1.1.2. 合并规则\n\n\n1.5.1.1.2.1. 合并 resource 和 data 块\n\n\n1.5.1.1.2.2. 合并 variable 块\n\n\n1.5.1.1.2.3. 合并 output 块\n\n\n1.5.1.1.2.4. 合并 locals 块\n\n\n1.5.1.1.2.5. 合并 terraform 块\n\n\n\n1.5.1.1. 重载(Override) 文件\nTerraform 通常会加载目录中的所有 .tf 和 .tf.json 文件，并假设每个文件中配置的对象是不同的。如果两个文件尝试定义同一对象，Terraform 将返回错误。\n在某些极少数情况下，能够很方便地重载某一文件中声明配置的对象的指定部分。例如，可以使用 JSON 语法以编程方式生成的文件部分重载那些使用 HCL 语法人工编辑的 Terraform 配置文件。\n对于这些不常见的场景，Terraform 对名称以 _override.tf 或 _override.tf.json 结尾的配置文件进行特殊处理。这种特殊处理也适用于字面名称为 override.tf 或 override.tf.json 的文件。\nTerraform 最初在加载配置时跳过这些重载文件，然后依次处理每个文件（按字典顺序）。对于重载文件中定义的每个顶级块，Terraform 尝试查找与该块对应的已定义对象，然后将重载块的内容合并到现有对象中。\n请确保仅在特殊情况下使用重载文件。过度使用重载文件会损害可读性，因为仅查看原始文件的读者无法在不查阅所有重载文件的情况下轻松地认识到这些文件的某些部分已被重载。使用重载文件时，请在原文件中对重载文件修改的每一个块添加注释警告。\n1.5.1.1.1. 示例\n假设我们有一个名为 example.tf 的文件中包含如下内容：\n1234resource &quot;aws_instance&quot; &quot;web&quot; &#123;  instance_type = &quot;t2.micro&quot;  ami           = &quot;ami-408c7f28&quot;&#125;\n同时，创建名为 override.tf 的文件:\n123resource &quot;aws_instance&quot; &quot;web&quot; &#123;  ami = &quot;foo&quot;&#125;\nTerraform 会将后者合并到前者中，其行为就好比我们一开始就写成这样：\n1234resource &quot;aws_instance&quot; &quot;web&quot; &#123;  instance_type = &quot;t2.micro&quot;  ami           = &quot;foo&quot;&#125;\n1.5.1.1.2. 合并规则\n不同的块类型所对应的合并行为略有不同，某些块内的一些特殊结构以特殊方式合并。\n适用于大多数情况的一般规则是：\n\n重载文件中的顶级块与具有相同块头的普通配置文件中的块合并。块头是块类型及其后面的所有标签。\n顶级块中的属性值将被替换为重载块中的同名属性值。\n顶级块中的内嵌块全部都会被重载块中相同类型的块替换。任何未出现在重载块中的块类型仍保留在原始块中。\n内嵌块的内容不会合并。\n合并后的块仍必须符合所有适用于该类型块的验证规则。\n\n如果多个重载文件定义相同的顶级块，则重载效果会叠加，后面的块优先于前面的块。重载首先按文件名（按字典顺序）然后按每个文件中的位置进行处理。\n以下部分描述了适用于某些顶级块类型中的特定参数的特殊合并行为。\n1.5.1.1.2.1. 合并 resource 和 data 块\n在 resource 块内，所有 lifecycle 块的内容都会按参数进行合并。例如，如果重载块仅设置了 create_before_destroy 参数，则原始块中 ignore_changes 参数会被保留。\n如果重载 resource 块包含一个或多个 provisioner 块，则原始块中的所有 provisioner 块都将被忽略。\n如果重载 resource 块包含 connection 块，则它完全取代原始块中存在的所有 connection 块。\n不允许在重载块中声明 depends_on 元参数，那将会返回错误。\n1.5.1.1.2.2. 合并 variable 块\nvariable 块内的参数按照上述的标准方式合并，但由于 type 和 default 参数之间存在相互作用，有一些特殊规则。\n如果原始块定义了 default 值并且重载块更改了变量的 type，Terraform 会尝试将默认值转换为重载的类型，如果无法进行这样的转换，则会产生错误。\n相反，如果原始块定义 type 并且重载块更改 default 值，则重载的默认值必须与原始块定义的类型兼容。\n1.5.1.1.2.3. 合并 output 块\n不允许在重载块中声明 depends_on 元参数，那将会返回错误。\n1.5.1.1.2.4. 合并 locals 块\n每个 locals 块定义了键值对。重载是在逐个值进行的，不论它们定义在哪个 locals 块中。\n1.5.1.1.2.5. 合并 terraform 块\nterraform 块内的配置在合并时会有不同的规则。\n如果设置了 required_providers 参数，则其值将以 Provider 的尺度进行合并，这允许重载块调整单个 Provider 的约束，而不影响其他 Provider 的约束。\n在 required_version 和 required_providers 设置中，所有重载的约束都会彻底替换原始块中同一组件的约束。如果原始块和重载块都设置了 required_version，则原始块中的约束将被彻底忽略。\n重载文件中定义 Backend（cloud或 backend）的块始终优先于原始配置中定义 Backend 的块。也就是说，如果在原始配置中设置了 cloud 块，并在重载文件中设置了 backend 块，则 Terraform 将在合并时使用重载文件中指定的 backend 块。同样，如果在原始配置中设置了 backend 块，并且在重载文件中设置了 cloud 块，则 Terraform 将在合并时使用重载文件中指定的 cloud 块。\n\n\n1.5.2.1. 依赖锁(Dependency Lock)文件\n\n\n1.5.2.1.1. 锁文件的位置\n\n\n1.5.2.1.2. 安装依赖的行为\n\n\n1.5.2.1.2.1. 验证校验和\n\n\n1.5.2.1.3. 理解锁文件的变更\n\n\n1.5.2.1.3.1. 新 Provider 的依赖\n\n\n1.5.2.1.3.2. 现存 Provider 的新版本\n\n\n1.5.2.1.3.3. 新 Provider 程序包校验和\n\n\n1.5.2.1.3.4. 那些不再被使用的 Provider\n\n\n\n1.5.2.1. 依赖锁(Dependency Lock)文件\n注意：该功能是自 Terraform 0.14 起引入的一项功能。 Terraform 的更早期版本不跟踪依赖项，因此本节与这些早期版本无关。\nTerraform 配置文件中可以引用来自其自身代码库之外的两种不同类型的外部依赖项：\n\nProviders，它们是 Terraform 的插件，用以与各种外部系统交互。\n模块，允许将一组 Terraform 配置（用 Terraform 语言编写）拆分为可重用的抽象组件。\n\n这两种类型的依赖都可以独立于 Terraform 本身以及依赖于它们的代码进行发布和更新。因此，Terraform 必须确定这些依赖项的哪些版本可能与当前配置兼容以及当前选择使用哪些版本。\n配置本身内的版本约束决定了哪些版本的依赖项可能与当前配置兼容，但在为每个依赖项选定的特定版本后，Terraform 会记住它在依赖锁文件中所做的决定，以便它可以（默认情况下）在将来再次做出相同的决定。\n目前，依赖锁文件仅追踪 Provider 的依赖项。 Terraform 不会保存远程模块的版本选择，因此 Terraform 将始终选择满足指定版本约束的最新可用模块版本。我们可以使用精确的版本约束来确保 Terraform 始终选择相同版本的模块。\n1.5.2.1.1. 锁文件的位置\n依赖锁文件是记录的是整个配置的依赖，而不是配置代码中使用每个单独的模块的依赖。因此，Terraform 在运行 Terraform 时的当前工作目录中创建该文件，并假设该文件存在于此，同时该目录也包含了配置根模块的 .tf 文件的。\n依赖锁文件的名字始终是 .terraform.lock.hcl，此名称旨在表示它是 Terraform 缓存在工作目录的 .terraform 子目录中的各种项目的锁定文件。\n每次运行 terraform init 命令时，Terraform 都会自动创建或更新依赖项锁定文件。我们应该将此文件包含在版本控制存储库中，以便我们可以在代码审查过程中对那些外部依赖项的更改进行审查，就像对配置本身的更改进行审查一样。\n依赖锁定文件使用与 Terraform 语言相同的语法，但依赖锁定文件本身并不是 Terraform 语言配置文件。它以后缀 .hcl 而不是 .tf 命名，以显示这种差异。\n1.5.2.1.2. 安装依赖的行为\n当 terraform init 正在安装配置所需的所有 Provider 程序时，Terraform 会同时参考配置中的版本约束以及锁定文件中记录的版本选择。\n如果某个 Provider 程序没有在锁文件中找到对应的记录，Terraform 将选择与给定版本约束匹配的最新可用版本，然后更新锁定文件以保存该选择。\n如果某个 Provider 程序已在锁文件中保存了一个版本选择记录，Terraform 将始终重新选择该版本进行安装，即使有更新的版本可用。我们可以通过在运行 terraform init 时添加 -upgrade 选项来重载该行为，在这种情况下，Terraform 将忽略现有选择并再次选择与版本约束匹配的最新可用版本。\n如果某次 terraform init 调用对锁文件进行了更改，Terraform 会在其输出中提到这一点：\n123Terraform has made some changes to the provider dependency selections recordedin the .terraform.lock.hcl file. Review those changes and commit them to yourversion control system if they represent changes you intended to make.\n当我们看到这样的消息时，我们可以使用版本控制系统来查看 Terraform 提到的那些在文件中的变更，如果变更的确是我们有意为之的，那我们可以将这些变更发送至团队的常规代码审核流程进行审查。\n1.5.2.1.2.1. 验证校验和\nTerraform 还将验证它安装的每个包是否与之前在锁定文件中记录的校验和至少一个相匹配（如果有），如果没有校验和匹配，则返回错误：\n12345Error: Failed to install providerError while installing hashicorp/azurerm v2.1.0: the current package forregistry.terraform.io/hashicorp/azurerm 2.1.0 doesn&#x27;t match any of thechecksums previously recorded in the dependency lock file.\n此校验和验证采用“初次使用时信任”原则。当我们第一次添加新的 Provider 程序时，我们可以通过各种方式或相关法规要求的所有方法对其进行验证，然后确信如果未来运行 terraform init 时，在安装相同 Provider 程序时遇到不匹配的包时 Terraform 会返回错误。\n“初次使用时”模型有两个特殊考虑因素：\n\n如果我们从源注册表安装 Provider 程序时，该 Provider 程序提供了使用加密签名算法签名的校验和，那么只要有一个校验和匹配，Terraform 就会将所有已签名的校验和视为有效。因此，锁文件将包含该 Provider 所适用的所有平台的所有不同包的校验和。\n\n在这种情况下，terraform init 的输出将包括对校验和进行签名的密钥的指纹，以及像这样的信息 (signed by a HashiCorp partner, key ID DC9FC6B1FCE47986)。在提交包含签名校验和的锁文件之前，最好先确认我们能够信任给该密钥的持有者，或者检索并验证指定 Provider 版本的所有可用包的集合。\n\n如果我们首次安装 Provider 时使用的是替代安装方法（例如文件系统或网络镜像），Terraform 将无法验证除运行 terraform init 的平台之外的其他所有平台的校验和，因此它不会记录其他平台的校验和，导致该配置将无法在任何其他平台上使用。\n\n为了避免此问题，您可以使用 terraform providers lock 命令在锁文件中预先记录各种不同平台的校验和，这样我们将来可以调用 terraform init 命令来验证我们选择的镜像中可用的包是否与该 Provider 源注册表提供的官方包相匹配。\n1.5.2.1.3. 理解锁文件的变更\n由于依赖锁文件主要由 Terraform 本身自动维护，而不是手动更新，因此我们的版本控制系统可能会向我们显示该文件已更改。\nTerraform 可能会对我们的锁文件进行几种不同类型的变更，我们可能需要了解这些更改才能查看建议的变更。以下各节将描述这些常见变更。\n1.5.2.1.3.1. 新 Provider 的依赖\n如果我们向配置中任意模块的 Provider 的声明配置节中添加新条目，或者添加了包含新 Provider 程序依赖项的外部模块，terraform init 将通过选择满足配置中所有版本约束的最新版本的 Provider 程序，并将这条决策保存为依赖锁文件中的一个新的 Provider 程序块。\n1234567891011121314151617181920212223242526272829--- .terraform.lock.hcl 2020-10-07 16:12:07.539570634 -0700+++ .terraform.lock.hcl 2020-10-07 16:12:15.267487237 -0700@@ -6,6 +6,26 @@   ] &#125;+provider &quot;registry.terraform.io/hashicorp/azurerm&quot; &#123;+  version     = &quot;2.30.0&quot;+  constraints = &quot;~&gt; 2.12&quot;+  hashes = [+    &quot;h1:FJwsuowaG5CIdZ0WQyFZH9r6kIJeRKts9+GcRsTz1+Y=&quot;,+    &quot;h1:c/ntSXrDYM1mUir2KufijYebPcwKqS9CRGd3duDSGfY=&quot;,+    &quot;h1:yre4Ph76g9H84MbuhZ2z5MuldjSA4FsrX6538O7PCcY=&quot;,+    &quot;zh:04f0a50bb2ba92f3bea6f0a9e549ace5a4c13ef0cbb6975494cac0ef7d4acb43&quot;,+    &quot;zh:2082e12548ebcdd6fd73580e83f626ed4ed13f8cdfd51205d8696ffe54f30734&quot;,+    &quot;zh:246bcc449e9a92679fb30f3c0a77f05513886565e2dcc66b16c4486f51533064&quot;,+    &quot;zh:24de3930625ac9014594d79bfa42d600eca65e9022b9668b54bfd0d924e21d14&quot;,+    &quot;zh:2a22893a576ff6f268d9bf81cf4a56406f7ba79f77826f6df51ee787f6d2840a&quot;,+    &quot;zh:2b27485e19c2aaa9f15f29c4cff46154a9720647610171e30fc6c18ddc42ec28&quot;,+    &quot;zh:435f24ce1fb2b63f7f02aa3c84ac29c5757cd29ec4d297ed0618423387fe7bd4&quot;,+    &quot;zh:7d99725923de5240ff8b34b5510569aa4ebdc0bdb27b7bac2aa911a8037a3893&quot;,+    &quot;zh:7e3b5d0af3b7411dd9dc65ec9ab6caee8c191aee0fa7f20fc4f51716e67f50c0&quot;,+    &quot;zh:da0af4552bef5a29b88f6a0718253f3bf71ce471c959816eb7602b0dadb469ca&quot;,+  ]+&#125;+ provider &quot;registry.terraform.io/newrelic/newrelic&quot; &#123;   version     = &quot;2.1.2&quot;   constraints = &quot;~&gt; 2.1.1&quot;\n新的锁文件条目记录了几条信息：\n\nversion：Terraform 根据配置中的版本约束所选择的版本。\nconstraints：Terraform 在进行此选择时所遵守的所有的版本约束。 （Terraform 实际上并不使用此信息来做出安装决策，而是保存该信息以帮助向人类读者解释之前的决策是如何做出的。）\nhashes：给定 Provider 程序在不同平台上有效的安装包所对应的一组校验和。这些哈希值的含义在下面的新 Provider 程序包校验和中有进一步的解释。\n\n1.5.2.1.3.2. 现存 Provider 的新版本\n如果我们运行 terraform init -upgrade 来命令 Terraform 在遵守配置的版本约束匹配的前提下将 Provider 升级到更新的版本，那么 Terraform 可能会为 Provider 程序选择较新的版本并更新其现有的 Provider 程序块，以体现该变更。\n123456789101112131415161718192021222324252627282930313233343536373839--- .terraform.lock.hcl 2020-10-07 16:44:25.819579509 -0700+++ .terraform.lock.hcl 2020-10-07 16:43:42.785665945 -0700@@ -7,22 +7,22 @@ &#125; provider &quot;registry.terraform.io/hashicorp/azurerm&quot; &#123;-  version     = &quot;2.1.0&quot;-  constraints = &quot;~&gt; 2.1.0&quot;+  version     = &quot;2.0.0&quot;+  constraints = &quot;2.0.0&quot;   hashes      = [-    &quot;h1:EOJImaEaVThWasdqnJjfYc6/P8N/MRAq1J7avx5ZbV4=&quot;,-    &quot;zh:0015b491cf9151235e57e35ea6b89381098e61bd923f56dffc86026d58748880&quot;,-    &quot;zh:4c5682ba1e0fc7e2e602d3f103af1638f868c31fe80cc1a884a97f6dad6e1c11&quot;,-    &quot;zh:57bac885b108c91ade4a41590062309c832c9ab6bf6a68046161636fcaef1499&quot;,-    &quot;zh:5810d48f574c0e363c969b3f45276369c8f0a35b34d6202fdfceb7b85b3ac597&quot;,-    &quot;zh:5c6e37a44462b8662cf9bdd29ce30523712a45c27c5d4711738705be0785db41&quot;,-    &quot;zh:64548940a3387aa3a752e709ee9eb9982fa820fe60eb60e5f212cc1d2c58549e&quot;,-    &quot;zh:7f46749163da17330bbb5293dc825333c86304baa0a7c6256650ac536b4567c8&quot;,-    &quot;zh:8f8970f2df75ac43ffdd112055ee069d8bd1030f7eb4367cc4cf494a1fa802c3&quot;,-    &quot;zh:9ad693d00dc5d7d455d06faba70e716bce727c6706f7293288e87fd7956b8fe0&quot;,-    &quot;zh:b6e3cb55e6aec62b47edd0d2bd5e14bd6a2bcfdac65930a6e9e819934734c57b&quot;,-    &quot;zh:d6a3f3b9b05c28ecf3919e9e7afa185805a6d7442fc4b3eedba749c2731d1f0e&quot;,-    &quot;zh:d81fb624a357c57c7ea457ce543d865b39b12f26c2edd58a2f7cd43326c91010&quot;,+    &quot;h1:bigGXBoRbp7dv79bEEn+aaju8575qEXHQ57XHVPJeB8=&quot;,+    &quot;zh:09c603c8904ca4a5bc19e82335afbc2837dcc4bee81e395f9daccef2f2cba1c8&quot;,+    &quot;zh:194a919d4836d6c6d4ce598d0c66cce00ddc0d0b5c40d01bb32789964d818b42&quot;,+    &quot;zh:1f269627df4e266c4e0ef9ee2486534caa3c8bea91a201feda4bca525005aa0a&quot;,+    &quot;zh:2bae3071bd5f8e553355c4b3a547d6efe1774a828142b762e9a4e85f79be7f63&quot;,+    &quot;zh:6c98dfa5c3468e8d02e2b3af7c4a8a14a5d469ce5a642909643b413a17ca338b&quot;,+    &quot;zh:7af78f61666fd45fbf428161c061ea2623162d601b79dc71d6a5158756853ffa&quot;,+    &quot;zh:883c2df86ae9ba2a5c167cf5c2c7deca0239171a224d6d335f0fd6dd9c283830&quot;,+    &quot;zh:a2028379078577d8ff5ecfca6e8a8b25a25ffb1686de0ee52a7fe8011783488b&quot;,+    &quot;zh:abe6ef399552fd3861a454a839cd978c1d15735658fdc00f9054435aff0f4620&quot;,+    &quot;zh:c30b1bf14077913c3cdf34979b1434dbb1353cb5995eb3956b191c50538b64a9&quot;,+    &quot;zh:ca64ae2ad9793e5631e3b0b9327f7cb22cb5d8e9de57be7d85821791b1d5a375&quot;,+    &quot;zh:fffe56904a38109bb8d613b02808a177c3ddfac19f03b3aac799281fea38f475&quot;,   ] &#125;\n选择新的 Provider 程序版本的对锁文件进行的修改主要是更改了 provider 块中 version 的值。如果升级伴随着对配置文件中声明的版本约束的变更，Terraform 还将在 constraints 中记录该变更。\n由于每个版本都有自己的一组分发包，因此切换到新版本也往往会替换 hashes 中的所有值，以体现新版本包的校验和。\n1.5.2.1.3.3. 新 Provider 程序包校验和\n我们可能在 provider 块中看到的一个很细微的变化是添加了以前未记录的新校验和，即使 provider 块中的所有其他内容都没有更改：\n12345678910--- .terraform.lock.hcl 2020-10-07 17:24:23.397892140 -0700+++ .terraform.lock.hcl 2020-10-07 17:24:57.423130253 -0700@@ -10,6 +10,7 @@   version     = &quot;2.1.0&quot;   constraints = &quot;~&gt; 2.1.0&quot;   hashes = [+    &quot;h1:1xvaS5D8B8t6J6XmXxX8spo97tAzjhacjedFX1B47Fk=&quot;,     &quot;h1:EOJImaEaVThWasdqnJjfYc6/P8N/MRAq1J7avx5ZbV4=&quot;,     &quot;zh:0015b491cf9151235e57e35ea6b89381098e61bd923f56dffc86026d58748880&quot;,     &quot;zh:4c5682ba1e0fc7e2e602d3f103af1638f868c31fe80cc1a884a97f6dad6e1c11&quot;,\n在 hashes 中添加的新的校验和代表 Terraform 在不同哈希方案之间逐渐过渡。这些值上的 h1: 和 zh: 前缀代表不同的哈希方案，每个方案都代表使用不同的算法计算校验和。如果现有方案存在某种局限性或者新方案提供了一些相当明显的收益，有时我们可能会引入新的哈希方案。\n目前支持两种哈希方案：\n\nzh:: 代表“zip hash”，这是一种遗留哈希格式，是 Terraform Provider 程序注册表协议的一部分，因此用于直接从源注册表安装的 Provider 程序。\n\n此哈希方案捕记录下注册表中索引的每个官方 .zip 包的 SHA256 哈希值。这是验证从注册表安装的官方发布包的有效方案，但它无法验证来自其他 Provider 程序安装方法的包，例如文件系统中指向解压后的安装包的镜像。\n\nh1:: 代表“hash schema 1”，它是当前首选的哈希方案。\n\nHash Schema 1 也是 SHA256 哈希，但它是根据提供 Provider 安装包内包含的内容计算得出的，而不是根据其包含的 .zip 文件的内容计算得出的。因此，该方案的优点是可以针对官方 .zip 文件、具有相同内容的解压目录或包含相同文件但可能具有不同元数据或压缩方案的重新压缩 .zip 文件计算出相同的校验和。\n由于 zh: 方案的局限性，Terraform 将在计算出相应的 h1: 校验和时适时添加它们，这就是导致在上面所示的示例更改中添加第二个 h1: 校验和的原因。\nTerraform 只会在安装包与已有哈希值之一相匹配时，才会把新计算出的哈希值添加到锁文件中。在上面的示例中，Terraform 在与生成原始 h1: 校验和的平台不同的平台安装了 hashcorp/azurerm 包，但能够匹配到之前记录的 zh: 校验和的其中之一，确认 zh: 校验和匹配后，Terraform 保存相应的 h1: 校验和，以便逐步从旧方案迁移到新方案。\n首次安装某个 Provider 程序时（没有已有的 provider 块），Terraform 将使用 Provider 插件开发人员的加密签名（通常涵盖所有可用包）所涵盖适用于所有受支持平台上的该 Provider 程序版本校验集合来预先填充 hashes。但是，由于 Provider 程序注册表协议仍然使用 zh: 方案，因此初始集将主要包含使用该方案的哈希值，然后当我们在不同平台上安装软件包时，Terraform 将适时升级该哈希值。\n如果我们希望避免在新目标平台上使用配置时不断添加新的 h1: 哈希值，或者如果因为我们是从镜像安装的 Provider 程序，因此无法提供官方签名的校验和，您可以使用 terraform providers lock 命令要求 Terraform 预填充一组选定平台的哈希值：\n12345terraform providers lock \\  -platform=linux_arm64 \\  -platform=linux_amd64 \\  -platform=darwin_amd64 \\  -platform=windows_amd64\n上述命令将下载并验证所有四个给定平台上所有我们指定的 Provider 程序的官方软件包，然后在锁文件中记录每个软件包的 zh: 和 h1: 校验和，从而避免 Terraform 在之后只能得到 h1: 校验和这种情况。有关此命令的更多信息，请参阅 terraform providers lock 命令。\n1.5.2.1.3.4. 那些不再被使用的 Provider\n为了确定是否仍然存在对某个 Provider 程序的依赖，Terraform 使用两个事实来源：配置代码和状态。如果我们从配置和状态中删除对某个 Provider 程序的最后一个依赖项，则 terraform init 将从锁文件中删除该 Provider 的现存记录。\n1234567891011121314151617181920212223242526272829--- .terraform.lock.hcl 2020-10-07 16:12:07.539570634 -0700+++ .terraform.lock.hcl 2020-10-07 16:12:15.267487237 -0700@@ -6,26 +6,6 @@   ] &#125;-provider &quot;registry.terraform.io/hashicorp/azurerm&quot; &#123;-  version     = &quot;2.30.0&quot;-  constraints = &quot;~&gt; 2.12&quot;-  hashes = [-    &quot;h1:FJwsuowaG5CIdZ0WQyFZH9r6kIJeRKts9+GcRsTz1+Y=&quot;,-    &quot;h1:c/ntSXrDYM1mUir2KufijYebPcwKqS9CRGd3duDSGfY=&quot;,-    &quot;h1:yre4Ph76g9H84MbuhZ2z5MuldjSA4FsrX6538O7PCcY=&quot;,-    &quot;zh:04f0a50bb2ba92f3bea6f0a9e549ace5a4c13ef0cbb6975494cac0ef7d4acb43&quot;,-    &quot;zh:2082e12548ebcdd6fd73580e83f626ed4ed13f8cdfd51205d8696ffe54f30734&quot;,-    &quot;zh:246bcc449e9a92679fb30f3c0a77f05513886565e2dcc66b16c4486f51533064&quot;,-    &quot;zh:24de3930625ac9014594d79bfa42d600eca65e9022b9668b54bfd0d924e21d14&quot;,-    &quot;zh:2a22893a576ff6f268d9bf81cf4a56406f7ba79f77826f6df51ee787f6d2840a&quot;,-    &quot;zh:2b27485e19c2aaa9f15f29c4cff46154a9720647610171e30fc6c18ddc42ec28&quot;,-    &quot;zh:435f24ce1fb2b63f7f02aa3c84ac29c5757cd29ec4d297ed0618423387fe7bd4&quot;,-    &quot;zh:7d99725923de5240ff8b34b5510569aa4ebdc0bdb27b7bac2aa911a8037a3893&quot;,-    &quot;zh:7e3b5d0af3b7411dd9dc65ec9ab6caee8c191aee0fa7f20fc4f51716e67f50c0&quot;,-    &quot;zh:da0af4552bef5a29b88f6a0718253f3bf71ce471c959816eb7602b0dadb469ca&quot;,-  ]-&#125;- provider &quot;registry.terraform.io/newrelic/newrelic&quot; &#123;   version     = &quot;2.1.2&quot;   constraints = &quot;~&gt; 2.1.1&quot;\n如果我们稍后为同一 Provider 程序添加新的引用并再次运行 terraform init，Terraform 会将其视为全新的 Provider 程序，因此不一定会选择之前选择的相同版本，并且无法验证校验和是否保持不变。\n注意：在 Terraform v1.0 及更早版本中，terraform init 不会自动从锁文件中删除现在不需要的 Provider 程序，而只是忽略它们。如果您之前使用早期版本的 Terraform 时删除了提供 Provider 依赖项，然后升级到 Terraform v1.1 或更高版本，那么您可能会看到错误“missing or corrupted provider plugins”，指向过时的锁文件条目。如果是这样，请使用新的 Terraform 版本运行 terraform init 以整理那些不需要的条目，然后重试之前的操作。\n\n\n1.5.3.1. 测试文件\n\n\n1.5.3.1.1. 文件扩展名\n\n\n1.5.3.1.2. 测试文件的位置\n\n\n\n1.5.3.1. 测试文件\n某些的 Terraform 命令（例如 test、init 和 validate）会针对配置代码加载 Terraform 测试文件。\n测试文件包含 Terraform 测试执行的代码。有关 Terraform 测试命令的更多信息，请参阅命令：test。有关语法和 Terraform 测试文件语言的更多信息，请参阅测试。\n1.5.3.1.1. 文件扩展名\n测试文件的扩展名是 .tftest.hcl 以及 .tftest.json。\n1.5.3.1.2. 测试文件的位置\nTerraform 加载根模块目录中的所有测试文件。\nTerraform 还会加载测试目录中的测试文件。我们可以通过在那些会加载测试文件的命令后添加 -test-directory 参数来修改测试目录的位置。默认测试目录是根模块目录下的 tests 目录。\n","dateCreated":"2023-01-21T17:43:45+08:00","dateModified":"2025-06-17T22:17:32+08:00","datePublished":"2023-01-21T17:43:45+08:00","description":"","headline":"Terraform 文件与目录","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/","keywords":"Terraform"}</script>
+    <meta name="description" content="Terraform 文件与目录   1.5.1. Terraform 文件与目录   1.5.1.1. 文本编码   1.5.1.2. 文件夹与模块   1.5.1.3. 根模块    1.5.1. Terraform 文件与目录 Terraform 语言的代码存储在文件扩展名为 .tf 的纯文本文件中。该语言还有一种基于 JSON 的变体，以 .tf.json 文件扩展名命名（本书精力所限将不涉">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="Terraform 文件与目录">
+<meta property="og:url" content="https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="Terraform 文件与目录   1.5.1. Terraform 文件与目录   1.5.1.1. 文本编码   1.5.1.2. 文件夹与模块   1.5.1.3. 根模块    1.5.1. Terraform 文件与目录 Terraform 语言的代码存储在文件扩展名为 .tf 的纯文本文件中。该语言还有一种基于 JSON 的变体，以 .tf.json 文件扩展名命名（本书精力所限将不涉">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2023-01-21T09:43:45.000Z">
+<meta property="article:modified_time" content="2025-06-17T14:17:32.134Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="Terraform">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            Terraform 文件与目录
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2023-01-21T17:43:45+08:00">
+	
+		    2023 年 1 月 21 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/devops/">devops</a>, <a class="category-link" href="../../../../../categories/devops/Terraform/">Terraform</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="Terraform-文件与目录"><a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/">Terraform 文件与目录</a></h2>
+<ul>
+<li>
+<p><a href="#terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95"><strong>1.5.1.</strong> Terraform 文件与目录</a></p>
+</li>
+<li>
+<p><a href="#%E6%96%87%E6%9C%AC%E7%BC%96%E7%A0%81"><strong>1.5.1.1.</strong> 文本编码</a></p>
+</li>
+<li>
+<p><a href="#%E6%96%87%E4%BB%B6%E5%A4%B9%E4%B8%8E%E6%A8%A1%E5%9D%97"><strong>1.5.1.2.</strong> 文件夹与模块</a></p>
+</li>
+<li>
+<p><a href="#%E6%A0%B9%E6%A8%A1%E5%9D%97"><strong>1.5.1.3.</strong> 根模块</a></p>
+</li>
+</ul>
+<p><a href="#terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95"></a></p>
+<h2 id="1-5-1-Terraform-文件与目录"><a href="#terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95"></a>1.5.1. Terraform 文件与目录</h2>
+<p>Terraform 语言的代码存储在文件扩展名为 <code>.tf</code> 的纯文本文件中。该语言还有一种基于 JSON 的变体，以 <code>.tf.json</code> 文件扩展名命名（本书精力所限将不涉及这方面的内容）。 包含 Terraform 代码的文件通常称为配置文件。</p>
+<h2 id="1-5-1-1-文本编码"><a href="#%E6%96%87%E6%9C%AC%E7%BC%96%E7%A0%81"></a>1.5.1.1. 文本编码</h2>
+<p>配置文件必须始终使用 UTF-8 编码，并且按照惯例通常使用 Unix 样式行结束符 (LF)，而不是 Windows 样式行结束符 (CRLF)，尽管两者都被接受。</p>
+<h2 id="1-5-1-2-文件夹与模块"><a href="#%E6%96%87%E4%BB%B6%E5%A4%B9%E4%B8%8E%E6%A8%A1%E5%9D%97"></a>1.5.1.2. 文件夹与模块</h2>
+<p>同一个文件夹中一起保存的一组 <code>.tf</code> 以及 <code>.tf.json</code> 文件组成一个<em>模块</em>。</p>
+<p>Terraform 模块仅由直接隶属于该目录的配置文件组成；子目录被视为完全独立的模块，并且不会自动包含在配置中。</p>
+<p>Terraform 执行模块中的所有配置文件，最终将整个模块视为单个代码文件。将各个块分成不同的文件纯粹是为了方便读者和维护者，对模块的行为没有影响。</p>
+<p>Terraform 模块可以使用<a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/5.Terraform%E6%A8%A1%E5%9D%97/2.%E4%BD%BF%E7%94%A8%E6%A8%A1%E5%9D%97.html">模块调用</a>将其他模块显式包含到配置中。这些子模块可以来自本地目录（嵌套在父模块的目录中，或磁盘上的任意其他位置），也可以来自 <a target="_blank" rel="noopener" href="https://registry.terraform.io/">Terraform 注册表</a>等外部源。</p>
+<h2 id="1-5-1-3-根模块"><a href="#%E6%A0%B9%E6%A8%A1%E5%9D%97"></a>1.5.1.3. 根模块</h2>
+<p>Terraform 始终在单一的根模块的上下文中运行。完整的 Terraform 配置由根模块和子模块树组成（其中包括根模块调用的模块、以及由这些模块调用的任何模块等）。</p>
+<ul>
+<li>
+<p>在 Terraform 命令行 中，根模块是执行 Terraform 命令的工作目录。 （我们可以使用命令行参数来指定不同于当前工作目录的根模块，但实际上这种情况很少见。）</p>
+</li>
+<li>
+<p>在 HCP Terraform 和 Terraform Enterprise 中，工作区的根模块默认为配置目录的顶层（通过版本控制存储库或直接上传提供），但工作区设置可以指定要使用的子目录。</p>
+</li>
+<li>
+<p><a href="#%E9%87%8D%E8%BD%BDoverride-%E6%96%87%E4%BB%B6"><strong>1.5.1.1.</strong> 重载(Override) 文件</a></p>
+</li>
+<li>
+<p><a href="#%E7%A4%BA%E4%BE%8B"><strong>1.5.1.1.1.</strong> 示例</a></p>
+</li>
+<li>
+<p><a href="#%E5%90%88%E5%B9%B6%E8%A7%84%E5%88%99"><strong>1.5.1.1.2.</strong> 合并规则</a></p>
+</li>
+<li>
+<p><a href="#%E5%90%88%E5%B9%B6-resource-%E5%92%8C-data-%E5%9D%97"><strong>1.5.1.1.2.1.</strong> 合并 resource 和 data 块</a></p>
+</li>
+<li>
+<p><a href="#%E5%90%88%E5%B9%B6-variable-%E5%9D%97"><strong>1.5.1.1.2.2.</strong> 合并 variable 块</a></p>
+</li>
+<li>
+<p><a href="#%E5%90%88%E5%B9%B6-output-%E5%9D%97"><strong>1.5.1.1.2.3.</strong> 合并 output 块</a></p>
+</li>
+<li>
+<p><a href="#%E5%90%88%E5%B9%B6-locals-%E5%9D%97"><strong>1.5.1.1.2.4.</strong> 合并 locals 块</a></p>
+</li>
+<li>
+<p><a href="#%E5%90%88%E5%B9%B6-terraform-%E5%9D%97"><strong>1.5.1.1.2.5.</strong> 合并 terraform 块</a></p>
+</li>
+</ul>
+<p><a href="#%E9%87%8D%E8%BD%BDoverride-%E6%96%87%E4%BB%B6"></a></p>
+<h2 id="1-5-1-1-重载-Override-文件"><a href="#%E9%87%8D%E8%BD%BDoverride-%E6%96%87%E4%BB%B6"></a>1.5.1.1. 重载(Override) 文件</h2>
+<p>Terraform 通常会加载目录中的所有 <code>.tf</code> 和 <code>.tf.json</code> 文件，并假设每个文件中配置的对象是不同的。如果两个文件尝试定义同一对象，Terraform 将返回错误。</p>
+<p>在某些极少数情况下，能够很方便地重载某一文件中声明配置的对象的指定部分。例如，可以使用 JSON 语法以编程方式生成的文件部分重载那些使用 HCL 语法人工编辑的 Terraform 配置文件。</p>
+<p>对于这些不常见的场景，Terraform 对名称以 <code>_override.tf</code> 或 <code>_override.tf.json</code> 结尾的配置文件进行特殊处理。这种特殊处理也适用于字面名称为 <code>override.tf</code> 或 <code>override.tf.json</code> 的文件。</p>
+<p>Terraform 最初在加载配置时跳过这些重载文件，然后依次处理每个文件（按字典顺序）。对于重载文件中定义的每个顶级块，Terraform 尝试查找与该块对应的已定义对象，然后将重载块的内容合并到现有对象中。</p>
+<p>请确保仅在特殊情况下使用重载文件。过度使用重载文件会损害可读性，因为仅查看原始文件的读者无法在不查阅所有重载文件的情况下轻松地认识到这些文件的某些部分已被重载。使用重载文件时，请在原文件中对重载文件修改的每一个块添加注释警告。</p>
+<h2 id="1-5-1-1-1-示例"><a href="#%E7%A4%BA%E4%BE%8B"></a>1.5.1.1.1. 示例</h2>
+<p>假设我们有一个名为 <code>example.tf</code> 的文件中包含如下内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">resource &quot;aws_instance&quot; &quot;web&quot; &#123;</span><br><span class="line">  instance_type = &quot;t2.micro&quot;</span><br><span class="line">  ami           = &quot;ami-408c7f28&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>同时，创建名为 <code>override.tf</code> 的文件:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">resource &quot;aws_instance&quot; &quot;web&quot; &#123;</span><br><span class="line">  ami = &quot;foo&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Terraform 会将后者合并到前者中，其行为就好比我们一开始就写成这样：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">resource &quot;aws_instance&quot; &quot;web&quot; &#123;</span><br><span class="line">  instance_type = &quot;t2.micro&quot;</span><br><span class="line">  ami           = &quot;foo&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="1-5-1-1-2-合并规则"><a href="#%E5%90%88%E5%B9%B6%E8%A7%84%E5%88%99"></a>1.5.1.1.2. 合并规则</h2>
+<p>不同的块类型所对应的合并行为略有不同，某些块内的一些特殊结构以特殊方式合并。</p>
+<p>适用于大多数情况的一般规则是：</p>
+<ul>
+<li>重载文件中的顶级块与具有相同<em>块头</em>的普通配置文件中的块合并。<em>块头</em>是块类型及其后面的所有标签。</li>
+<li>顶级块中的属性值将被替换为重载块中的同名属性值。</li>
+<li>顶级块中的内嵌块全部都会被重载块中相同类型的块替换。任何未出现在重载块中的块类型仍保留在原始块中。</li>
+<li>内嵌块的内容不会合并。</li>
+<li>合并后的块仍必须符合所有适用于该类型块的验证规则。</li>
+</ul>
+<p>如果多个重载文件定义相同的顶级块，则重载效果会叠加，后面的块优先于前面的块。重载首先按文件名（按字典顺序）然后按每个文件中的位置进行处理。</p>
+<p>以下部分描述了适用于某些顶级块类型中的特定参数的特殊合并行为。</p>
+<h3 id="1-5-1-1-2-1-合并-resource-和-data-块"><a href="#%E5%90%88%E5%B9%B6-resource-%E5%92%8C-data-%E5%9D%97"></a>1.5.1.1.2.1. 合并 resource 和 data 块</h3>
+<p>在 <code>resource</code> 块内，所有 <code>lifecycle</code> 块的内容都会按参数进行合并。例如，如果重载块仅设置了 <code>create_before_destroy</code> 参数，则原始块中 <code>ignore_changes</code> 参数会被保留。</p>
+<p>如果重载 <code>resource</code> 块包含一个或多个 <code>provisioner</code> 块，则原始块中的所有 <code>provisioner</code> 块都将被忽略。</p>
+<p>如果重载 <code>resource</code> 块包含 <code>connection</code> 块，则它完全取代原始块中存在的所有 <code>connection</code> 块。</p>
+<p>不允许在重载块中声明 <code>depends_on</code> 元参数，那将会返回错误。</p>
+<h3 id="1-5-1-1-2-2-合并-variable-块"><a href="#%E5%90%88%E5%B9%B6-variable-%E5%9D%97"></a>1.5.1.1.2.2. 合并 variable 块</h3>
+<p><code>variable</code> 块内的参数按照上述的标准方式合并，但由于 <code>type</code> 和 <code>default</code> 参数之间存在相互作用，有一些特殊规则。</p>
+<p>如果原始块定义了 <code>default</code> 值并且重载块更改了变量的 <code>type</code>，Terraform 会尝试将默认值转换为重载的类型，如果无法进行这样的转换，则会产生错误。</p>
+<p>相反，如果原始块定义 <code>type</code> 并且重载块更改 <code>default</code> 值，则重载的默认值必须与原始块定义的类型兼容。</p>
+<h3 id="1-5-1-1-2-3-合并-output-块"><a href="#%E5%90%88%E5%B9%B6-output-%E5%9D%97"></a>1.5.1.1.2.3. 合并 output 块</h3>
+<p>不允许在重载块中声明 <code>depends_on</code> 元参数，那将会返回错误。</p>
+<h3 id="1-5-1-1-2-4-合并-locals-块"><a href="#%E5%90%88%E5%B9%B6-locals-%E5%9D%97"></a>1.5.1.1.2.4. 合并 locals 块</h3>
+<p>每个 <code>locals</code> 块定义了键值对。重载是在逐个值进行的，不论它们定义在哪个 <code>locals</code> 块中。</p>
+<h3 id="1-5-1-1-2-5-合并-terraform-块"><a href="#%E5%90%88%E5%B9%B6-terraform-%E5%9D%97"></a>1.5.1.1.2.5. 合并 terraform 块</h3>
+<p><code>terraform</code> 块内的配置在合并时会有不同的规则。</p>
+<p>如果设置了 <code>required_providers</code> 参数，则其值将以 Provider 的尺度进行合并，这允许重载块调整单个 Provider 的约束，而不影响其他 Provider 的约束。</p>
+<p>在 <code>required_version</code> 和 <code>required_providers</code> 设置中，所有重载的约束都会彻底替换原始块中同一组件的约束。如果原始块和重载块都设置了 <code>required_version</code>，则原始块中的约束将被彻底忽略。</p>
+<p>重载文件中定义 Backend（<code>cloud</code>或 <code>backend</code>）的块始终优先于原始配置中定义 Backend 的块。也就是说，如果在原始配置中设置了 <code>cloud</code> 块，并在重载文件中设置了 <code>backend</code> 块，则 Terraform 将在合并时使用重载文件中指定的 <code>backend</code> 块。同样，如果在原始配置中设置了 <code>backend</code> 块，并且在重载文件中设置了 <code>cloud</code> 块，则 Terraform 将在合并时使用重载文件中指定的 <code>cloud</code> 块。</p>
+<ul>
+<li>
+<p><a href="#%E4%BE%9D%E8%B5%96%E9%94%81dependency-lock%E6%96%87%E4%BB%B6"><strong>1.5.2.1.</strong> 依赖锁(Dependency Lock)文件</a></p>
+</li>
+<li>
+<p><a href="#%E9%94%81%E6%96%87%E4%BB%B6%E7%9A%84%E4%BD%8D%E7%BD%AE"><strong>1.5.2.1.1.</strong> 锁文件的位置</a></p>
+</li>
+<li>
+<p><a href="#%E5%AE%89%E8%A3%85%E4%BE%9D%E8%B5%96%E7%9A%84%E8%A1%8C%E4%B8%BA"><strong>1.5.2.1.2.</strong> 安装依赖的行为</a></p>
+</li>
+<li>
+<p><a href="#%E9%AA%8C%E8%AF%81%E6%A0%A1%E9%AA%8C%E5%92%8C"><strong>1.5.2.1.2.1.</strong> 验证校验和</a></p>
+</li>
+<li>
+<p><a href="#%E7%90%86%E8%A7%A3%E9%94%81%E6%96%87%E4%BB%B6%E7%9A%84%E5%8F%98%E6%9B%B4"><strong>1.5.2.1.3.</strong> 理解锁文件的变更</a></p>
+</li>
+<li>
+<p><a href="#%E6%96%B0-provider-%E7%9A%84%E4%BE%9D%E8%B5%96"><strong>1.5.2.1.3.1.</strong> 新 Provider 的依赖</a></p>
+</li>
+<li>
+<p><a href="#%E7%8E%B0%E5%AD%98-provider-%E7%9A%84%E6%96%B0%E7%89%88%E6%9C%AC"><strong>1.5.2.1.3.2.</strong> 现存 Provider 的新版本</a></p>
+</li>
+<li>
+<p><a href="#%E6%96%B0-provider-%E7%A8%8B%E5%BA%8F%E5%8C%85%E6%A0%A1%E9%AA%8C%E5%92%8C"><strong>1.5.2.1.3.3.</strong> 新 Provider 程序包校验和</a></p>
+</li>
+<li>
+<p><a href="#%E9%82%A3%E4%BA%9B%E4%B8%8D%E5%86%8D%E8%A2%AB%E4%BD%BF%E7%94%A8%E7%9A%84-provider"><strong>1.5.2.1.3.4.</strong> 那些不再被使用的 Provider</a></p>
+</li>
+</ul>
+<p><a href="#%E4%BE%9D%E8%B5%96%E9%94%81dependency-lock%E6%96%87%E4%BB%B6"></a></p>
+<h2 id="1-5-2-1-依赖锁-Dependency-Lock-文件"><a href="#%E4%BE%9D%E8%B5%96%E9%94%81dependency-lock%E6%96%87%E4%BB%B6"></a>1.5.2.1. 依赖锁(Dependency Lock)文件</h2>
+<p><strong>注意</strong>：该功能是自 Terraform 0.14 起引入的一项功能。 Terraform 的更早期版本不跟踪依赖项，因此本节与这些早期版本无关。</p>
+<p>Terraform 配置文件中可以引用来自其自身代码库之外的两种不同类型的外部依赖项：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/2.Terraform%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5/1.Provider.html">Providers</a>，它们是 Terraform 的插件，用以与各种外部系统交互。</li>
+<li><a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/5.Terraform%E6%A8%A1%E5%9D%97/">模块</a>，允许将一组 Terraform 配置（用 Terraform 语言编写）拆分为可重用的抽象组件。</li>
+</ul>
+<p>这两种类型的依赖都可以独立于 Terraform 本身以及依赖于它们的代码进行发布和更新。因此，Terraform 必须确定这些依赖项的哪些版本可能与当前配置兼容以及当前选择使用哪些版本。</p>
+<p>配置本身内的版本约束决定了哪些版本的依赖项可能与当前配置兼容，但在为每个依赖项选定的特定版本后，Terraform 会记住它在依赖锁文件中所做的决定，以便它可以（默认情况下）在将来再次做出相同的决定。</p>
+<p>目前，依赖锁文件<strong>仅追踪</strong> Provider 的依赖项。 Terraform 不会保存远程模块的版本选择，因此 Terraform 将始终选择满足指定版本约束的最新可用模块版本。我们可以使用精确的版本约束来确保 Terraform 始终选择相同版本的模块。</p>
+<h2 id="1-5-2-1-1-锁文件的位置"><a href="#%E9%94%81%E6%96%87%E4%BB%B6%E7%9A%84%E4%BD%8D%E7%BD%AE"></a>1.5.2.1.1. 锁文件的位置</h2>
+<p>依赖锁文件是记录的是整个配置的依赖，而不是配置代码中使用每个单独的模块的依赖。因此，Terraform 在运行 Terraform 时的当前工作目录中创建该文件，并假设该文件存在于此，同时该目录也包含了配置根模块的 <code>.tf</code> 文件的。</p>
+<p>依赖锁文件的名字始终是 <code>.terraform.lock.hcl</code>，此名称旨在表示它是 Terraform 缓存在工作目录的 <code>.terraform</code> 子目录中的各种项目的锁定文件。</p>
+<p>每次运行 <a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/6.Terraform%E5%91%BD%E4%BB%A4%E8%A1%8C/12.init.html"><code>terraform init</code> 命令</a>时，Terraform 都会自动创建或更新依赖项锁定文件。我们应该将此文件包含在版本控制存储库中，以便我们可以在代码审查过程中对那些外部依赖项的更改进行审查，就像对配置本身的更改进行审查一样。</p>
+<p>依赖锁定文件使用与 Terraform 语言相同的语法，但依赖锁定文件本身并不是 Terraform 语言配置文件。它以后缀 <code>.hcl</code> 而不是 <code>.tf</code> 命名，以显示这种差异。</p>
+<h2 id="1-5-2-1-2-安装依赖的行为"><a href="#%E5%AE%89%E8%A3%85%E4%BE%9D%E8%B5%96%E7%9A%84%E8%A1%8C%E4%B8%BA"></a>1.5.2.1.2. 安装依赖的行为</h2>
+<p>当 <code>terraform init</code> 正在安装配置所需的所有 Provider 程序时，Terraform 会同时参考配置中的版本约束以及锁定文件中记录的版本选择。</p>
+<p>如果某个 Provider 程序没有在锁文件中找到对应的记录，Terraform 将选择与给定版本约束匹配的最新可用版本，然后更新锁定文件以保存该选择。</p>
+<p>如果某个 Provider 程序已在锁文件中保存了一个版本选择记录，Terraform 将始终重新选择该版本进行安装，即使有更新的版本可用。我们可以通过在运行 <code>terraform init</code> 时添加 <code>-upgrade</code> 选项来重载该行为，在这种情况下，Terraform 将忽略现有选择并再次选择与版本约束匹配的最新可用版本。</p>
+<p>如果某次 <code>terraform init</code> 调用对锁文件进行了更改，Terraform 会在其输出中提到这一点：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Terraform has made some changes to the provider dependency selections recorded</span><br><span class="line">in the .terraform.lock.hcl file. Review those changes and commit them to your</span><br><span class="line">version control system if they represent changes you intended to make.</span><br></pre></td></tr></table></figure>
+<p>当我们看到这样的消息时，我们可以使用版本控制系统来<a href="#%E7%90%86%E8%A7%A3%E9%94%81%E6%96%87%E4%BB%B6%E7%9A%84%E5%8F%98%E6%9B%B4">查看 Terraform 提到的那些在文件中的变更</a>，如果变更的确是我们有意为之的，那我们可以将这些变更发送至团队的常规代码审核流程进行审查。</p>
+<h3 id="1-5-2-1-2-1-验证校验和"><a href="#%E9%AA%8C%E8%AF%81%E6%A0%A1%E9%AA%8C%E5%92%8C"></a>1.5.2.1.2.1. 验证校验和</h3>
+<p>Terraform 还将验证它安装的每个包是否与之前在锁定文件中记录的校验和至少一个相匹配（如果有），如果没有校验和匹配，则返回错误：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Error: Failed to install provider</span><br><span class="line"></span><br><span class="line">Error while installing hashicorp/azurerm v2.1.0: the current package for</span><br><span class="line">registry.terraform.io/hashicorp/azurerm 2.1.0 doesn&#x27;t match any of the</span><br><span class="line">checksums previously recorded in the dependency lock file.</span><br></pre></td></tr></table></figure>
+<p>此校验和验证采用<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Trust_on_first_use">“<em>初次使用时信任</em>”</a>原则。当我们第一次添加新的 Provider 程序时，我们可以通过各种方式或相关法规要求的所有方法对其进行验证，然后确信如果未来运行 <code>terraform init</code> 时，在安装相同 Provider 程序时遇到不匹配的包时 Terraform 会返回错误。</p>
+<p>“初次使用时”模型有两个特殊考虑因素：</p>
+<ul>
+<li>如果我们从源注册表安装 Provider 程序时，该 Provider 程序提供了使用加密签名算法签名的校验和，那么只要有一个校验和匹配，Terraform 就会将所有已签名的校验和视为有效。因此，锁文件将包含该 Provider 所适用的所有平台的所有不同包的校验和。</li>
+</ul>
+<p>在这种情况下，<code>terraform init</code> 的输出将包括对校验和进行签名的密钥的指纹，以及像这样的信息 <code>(signed by a HashiCorp partner, key ID DC9FC6B1FCE47986)</code>。在提交包含签名校验和的锁文件之前，最好先确认我们能够信任给该密钥的持有者，或者检索并验证指定 Provider 版本的所有可用包的集合。</p>
+<ul>
+<li>如果我们首次安装 Provider 时使用的是替代安装方法（例如文件系统或网络镜像），Terraform 将无法验证除运行 <code>terraform init</code> 的平台之外的其他所有平台的校验和，因此它不会记录其他平台的校验和，导致该配置将无法在任何其他平台上使用。</li>
+</ul>
+<p>为了避免此问题，您可以使用 <a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/6.Terraform%E5%91%BD%E4%BB%A4%E8%A1%8C/15.providers/3.lock.html"><code>terraform providers lock</code> 命令</a>在锁文件中预先记录各种不同平台的校验和，这样我们将来可以调用 <code>terraform init</code> 命令来验证我们选择的镜像中可用的包是否与该 Provider 源注册表提供的官方包相匹配。</p>
+<h2 id="1-5-2-1-3-理解锁文件的变更"><a href="#%E7%90%86%E8%A7%A3%E9%94%81%E6%96%87%E4%BB%B6%E7%9A%84%E5%8F%98%E6%9B%B4"></a>1.5.2.1.3. 理解锁文件的变更</h2>
+<p>由于依赖锁文件主要由 Terraform 本身自动维护，而不是手动更新，因此我们的版本控制系统可能会向我们显示该文件已更改。</p>
+<p>Terraform 可能会对我们的锁文件进行几种不同类型的变更，我们可能需要了解这些更改才能查看建议的变更。以下各节将描述这些常见变更。</p>
+<h3 id="1-5-2-1-3-1-新-Provider-的依赖"><a href="#%E6%96%B0-provider-%E7%9A%84%E4%BE%9D%E8%B5%96"></a>1.5.2.1.3.1. 新 Provider 的依赖</h3>
+<p>如果我们向配置中任意模块的 <a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/2.Terraform%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5/1.Provider.html#provider-%E7%9A%84%E5%A3%B0%E6%98%8E">Provider 的声明</a>配置节中添加新条目，或者添加了包含新 Provider 程序依赖项的外部模块，<code>terraform init</code> 将通过选择满足配置中所有版本约束的最新版本的 Provider 程序，并将这条决策保存为依赖锁文件中的一个新的 Provider 程序块。</p>
+<figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--- .terraform.lock.hcl 2020-10-07 16:12:07.539570634 -0700</span></span><br><span class="line"><span class="comment">+++ .terraform.lock.hcl 2020-10-07 16:12:15.267487237 -0700</span></span><br><span class="line"><span class="meta">@@ -6,6 +6,26 @@</span></span><br><span class="line">   ]</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"><span class="addition">+provider &quot;registry.terraform.io/hashicorp/azurerm&quot; &#123;</span></span><br><span class="line"><span class="addition">+  version     = &quot;2.30.0&quot;</span></span><br><span class="line"><span class="addition">+  constraints = &quot;~&gt; 2.12&quot;</span></span><br><span class="line"><span class="addition">+  hashes = [</span></span><br><span class="line"><span class="addition">+    &quot;h1:FJwsuowaG5CIdZ0WQyFZH9r6kIJeRKts9+GcRsTz1+Y=&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;h1:c/ntSXrDYM1mUir2KufijYebPcwKqS9CRGd3duDSGfY=&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;h1:yre4Ph76g9H84MbuhZ2z5MuldjSA4FsrX6538O7PCcY=&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:04f0a50bb2ba92f3bea6f0a9e549ace5a4c13ef0cbb6975494cac0ef7d4acb43&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:2082e12548ebcdd6fd73580e83f626ed4ed13f8cdfd51205d8696ffe54f30734&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:246bcc449e9a92679fb30f3c0a77f05513886565e2dcc66b16c4486f51533064&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:24de3930625ac9014594d79bfa42d600eca65e9022b9668b54bfd0d924e21d14&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:2a22893a576ff6f268d9bf81cf4a56406f7ba79f77826f6df51ee787f6d2840a&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:2b27485e19c2aaa9f15f29c4cff46154a9720647610171e30fc6c18ddc42ec28&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:435f24ce1fb2b63f7f02aa3c84ac29c5757cd29ec4d297ed0618423387fe7bd4&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:7d99725923de5240ff8b34b5510569aa4ebdc0bdb27b7bac2aa911a8037a3893&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:7e3b5d0af3b7411dd9dc65ec9ab6caee8c191aee0fa7f20fc4f51716e67f50c0&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:da0af4552bef5a29b88f6a0718253f3bf71ce471c959816eb7602b0dadb469ca&quot;,</span></span><br><span class="line"><span class="addition">+  ]</span></span><br><span class="line"><span class="addition">+&#125;</span></span><br><span class="line"><span class="addition">+</span></span><br><span class="line"> provider &quot;registry.terraform.io/newrelic/newrelic&quot; &#123;</span><br><span class="line">   version     = &quot;2.1.2&quot;</span><br><span class="line">   constraints = &quot;~&gt; 2.1.1&quot;</span><br></pre></td></tr></table></figure>
+<p>新的锁文件条目记录了几条信息：</p>
+<ul>
+<li><code>version</code>：Terraform 根据配置中的版本约束所选择的版本。</li>
+<li><code>constraints</code>：Terraform 在进行此选择时所遵守的所有的版本约束。 （Terraform 实际上并不使用此信息来做出安装决策，而是保存该信息以帮助向人类读者解释之前的决策是如何做出的。）</li>
+<li><code>hashes</code>：给定 Provider 程序在不同平台上有效的安装包所对应的一组校验和。这些哈希值的含义在下面的<a href="#%E6%96%B0-provider-%E7%A8%8B%E5%BA%8F%E5%8C%85%E6%A0%A1%E9%AA%8C%E5%92%8C">新 Provider 程序包校验和</a>中有进一步的解释。</li>
+</ul>
+<h3 id="1-5-2-1-3-2-现存-Provider-的新版本"><a href="#%E7%8E%B0%E5%AD%98-provider-%E7%9A%84%E6%96%B0%E7%89%88%E6%9C%AC"></a>1.5.2.1.3.2. 现存 Provider 的新版本</h3>
+<p>如果我们运行 <code>terraform init -upgrade</code> 来命令 Terraform 在遵守配置的版本约束匹配的前提下将 Provider 升级到更新的版本，那么 Terraform 可能会为 Provider 程序选择较新的版本并更新其现有的 Provider 程序块，以体现该变更。</p>
+<figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--- .terraform.lock.hcl 2020-10-07 16:44:25.819579509 -0700</span></span><br><span class="line"><span class="comment">+++ .terraform.lock.hcl 2020-10-07 16:43:42.785665945 -0700</span></span><br><span class="line"><span class="meta">@@ -7,22 +7,22 @@</span></span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"> provider &quot;registry.terraform.io/hashicorp/azurerm&quot; &#123;</span><br><span class="line"><span class="deletion">-  version     = &quot;2.1.0&quot;</span></span><br><span class="line"><span class="deletion">-  constraints = &quot;~&gt; 2.1.0&quot;</span></span><br><span class="line"><span class="addition">+  version     = &quot;2.0.0&quot;</span></span><br><span class="line"><span class="addition">+  constraints = &quot;2.0.0&quot;</span></span><br><span class="line">   hashes      = [</span><br><span class="line"><span class="deletion">-    &quot;h1:EOJImaEaVThWasdqnJjfYc6/P8N/MRAq1J7avx5ZbV4=&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:0015b491cf9151235e57e35ea6b89381098e61bd923f56dffc86026d58748880&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:4c5682ba1e0fc7e2e602d3f103af1638f868c31fe80cc1a884a97f6dad6e1c11&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:57bac885b108c91ade4a41590062309c832c9ab6bf6a68046161636fcaef1499&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:5810d48f574c0e363c969b3f45276369c8f0a35b34d6202fdfceb7b85b3ac597&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:5c6e37a44462b8662cf9bdd29ce30523712a45c27c5d4711738705be0785db41&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:64548940a3387aa3a752e709ee9eb9982fa820fe60eb60e5f212cc1d2c58549e&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:7f46749163da17330bbb5293dc825333c86304baa0a7c6256650ac536b4567c8&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:8f8970f2df75ac43ffdd112055ee069d8bd1030f7eb4367cc4cf494a1fa802c3&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:9ad693d00dc5d7d455d06faba70e716bce727c6706f7293288e87fd7956b8fe0&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:b6e3cb55e6aec62b47edd0d2bd5e14bd6a2bcfdac65930a6e9e819934734c57b&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:d6a3f3b9b05c28ecf3919e9e7afa185805a6d7442fc4b3eedba749c2731d1f0e&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:d81fb624a357c57c7ea457ce543d865b39b12f26c2edd58a2f7cd43326c91010&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;h1:bigGXBoRbp7dv79bEEn+aaju8575qEXHQ57XHVPJeB8=&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:09c603c8904ca4a5bc19e82335afbc2837dcc4bee81e395f9daccef2f2cba1c8&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:194a919d4836d6c6d4ce598d0c66cce00ddc0d0b5c40d01bb32789964d818b42&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:1f269627df4e266c4e0ef9ee2486534caa3c8bea91a201feda4bca525005aa0a&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:2bae3071bd5f8e553355c4b3a547d6efe1774a828142b762e9a4e85f79be7f63&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:6c98dfa5c3468e8d02e2b3af7c4a8a14a5d469ce5a642909643b413a17ca338b&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:7af78f61666fd45fbf428161c061ea2623162d601b79dc71d6a5158756853ffa&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:883c2df86ae9ba2a5c167cf5c2c7deca0239171a224d6d335f0fd6dd9c283830&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:a2028379078577d8ff5ecfca6e8a8b25a25ffb1686de0ee52a7fe8011783488b&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:abe6ef399552fd3861a454a839cd978c1d15735658fdc00f9054435aff0f4620&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:c30b1bf14077913c3cdf34979b1434dbb1353cb5995eb3956b191c50538b64a9&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:ca64ae2ad9793e5631e3b0b9327f7cb22cb5d8e9de57be7d85821791b1d5a375&quot;,</span></span><br><span class="line"><span class="addition">+    &quot;zh:fffe56904a38109bb8d613b02808a177c3ddfac19f03b3aac799281fea38f475&quot;,</span></span><br><span class="line">   ]</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<p>选择新的 Provider 程序版本的对锁文件进行的修改主要是更改了 <code>provider</code> 块中 <code>version</code> 的值。如果升级伴随着对配置文件中声明的版本约束的变更，Terraform 还将在 <code>constraints</code> 中记录该变更。</p>
+<p>由于每个版本都有自己的一组分发包，因此切换到新版本也往往会替换 <code>hashes</code> 中的所有值，以体现新版本包的校验和。</p>
+<h3 id="1-5-2-1-3-3-新-Provider-程序包校验和"><a href="#%E6%96%B0-provider-%E7%A8%8B%E5%BA%8F%E5%8C%85%E6%A0%A1%E9%AA%8C%E5%92%8C"></a>1.5.2.1.3.3. 新 Provider 程序包校验和</h3>
+<p>我们可能在 <code>provider</code> 块中看到的一个很细微的变化是添加了以前未记录的新校验和，即使 <code>provider</code> 块中的所有其他内容都没有更改：</p>
+<figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--- .terraform.lock.hcl 2020-10-07 17:24:23.397892140 -0700</span></span><br><span class="line"><span class="comment">+++ .terraform.lock.hcl 2020-10-07 17:24:57.423130253 -0700</span></span><br><span class="line"><span class="meta">@@ -10,6 +10,7 @@</span></span><br><span class="line">   version     = &quot;2.1.0&quot;</span><br><span class="line">   constraints = &quot;~&gt; 2.1.0&quot;</span><br><span class="line">   hashes = [</span><br><span class="line"><span class="addition">+    &quot;h1:1xvaS5D8B8t6J6XmXxX8spo97tAzjhacjedFX1B47Fk=&quot;,</span></span><br><span class="line">     &quot;h1:EOJImaEaVThWasdqnJjfYc6/P8N/MRAq1J7avx5ZbV4=&quot;,</span><br><span class="line">     &quot;zh:0015b491cf9151235e57e35ea6b89381098e61bd923f56dffc86026d58748880&quot;,</span><br><span class="line">     &quot;zh:4c5682ba1e0fc7e2e602d3f103af1638f868c31fe80cc1a884a97f6dad6e1c11&quot;,</span><br></pre></td></tr></table></figure>
+<p>在 <code>hashes</code> 中添加的新的校验和代表 Terraform 在不同哈希方案之间逐渐过渡。这些值上的 <code>h1:</code> 和 <code>zh:</code> 前缀代表不同的哈希方案，每个方案都代表使用不同的算法计算校验和。如果现有方案存在某种局限性或者新方案提供了一些相当明显的收益，有时我们可能会引入新的哈希方案。</p>
+<p>目前支持两种哈希方案：</p>
+<ul>
+<li><code>zh:</code>: 代表“zip hash”，这是一种遗留哈希格式，是 Terraform Provider 程序注册表协议的一部分，因此用于直接从源注册表安装的 Provider 程序。</li>
+</ul>
+<p>此哈希方案捕记录下注册表中索引的每个官方 <code>.zip</code> 包的 SHA256 哈希值。这是验证从注册表安装的官方发布包的有效方案，但它无法验证来自<a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/6.Terraform%E5%91%BD%E4%BB%A4%E8%A1%8C/1.%E5%91%BD%E4%BB%A4%E8%A1%8C%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6.html#provider-%E7%9A%84%E5%AE%89%E8%A3%85">其他 Provider 程序安装方法</a>的包，例如文件系统中指向解压后的安装包的镜像。</p>
+<ul>
+<li><code>h1:</code>: 代表“hash schema 1”，它是当前首选的哈希方案。</li>
+</ul>
+<p>Hash Schema 1 也是 SHA256 哈希，但它是根据提供 Provider 安装包内包含的内容计算得出的，而不是根据其包含的 <code>.zip</code> 文件的内容计算得出的。因此，该方案的优点是可以针对官方 <code>.zip</code> 文件、具有相同内容的解压目录或包含相同文件但可能具有不同元数据或压缩方案的重新压缩 <code>.zip</code> 文件计算出相同的校验和。</p>
+<p>由于 <code>zh:</code> 方案的局限性，Terraform 将在计算出相应的 <code>h1:</code> 校验和时适时添加它们，这就是导致在上面所示的示例更改中添加第二个 <code>h1:</code> 校验和的原因。</p>
+<p>Terraform 只会在安装包与已有哈希值之一相匹配时，才会把新计算出的哈希值添加到锁文件中。在上面的示例中，Terraform 在与生成原始 <code>h1:</code> 校验和的平台不同的平台安装了 <code>hashcorp/azurerm</code> 包，但能够匹配到之前记录的 <code>zh:</code> 校验和的其中之一，确认 <code>zh:</code> 校验和匹配后，Terraform 保存相应的 <code>h1:</code> 校验和，以便逐步从旧方案迁移到新方案。</p>
+<p>首次安装某个 Provider 程序时（没有已有的 <code>provider</code> 块），Terraform 将使用 Provider 插件开发人员的加密签名（通常涵盖所有可用包）所涵盖适用于所有受支持平台上的该 Provider 程序版本校验集合来预先填充 <code>hashes</code>。但是，由于 Provider 程序注册表协议仍然使用 <code>zh:</code> 方案，因此初始集将主要包含使用该方案的哈希值，然后当我们在不同平台上安装软件包时，Terraform 将适时升级该哈希值。</p>
+<p>如果我们希望避免在新目标平台上使用配置时不断添加新的 <code>h1:</code> 哈希值，或者如果因为我们是从镜像安装的 Provider 程序，因此无法提供官方签名的校验和，您可以使用 <a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/6.Terraform%E5%91%BD%E4%BB%A4%E8%A1%8C/15.providers/3.lock.html"><code>terraform providers lock</code></a> 命令要求 Terraform 预填充一组选定平台的哈希值：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">terraform providers lock \</span><br><span class="line">  -platform=linux_arm64 \</span><br><span class="line">  -platform=linux_amd64 \</span><br><span class="line">  -platform=darwin_amd64 \</span><br><span class="line">  -platform=windows_amd64</span><br></pre></td></tr></table></figure>
+<p>上述命令将下载并验证所有四个给定平台上所有我们指定的 Provider 程序的官方软件包，然后在锁文件中记录每个软件包的 <code>zh:</code> 和 <code>h1:</code> 校验和，从而避免 Terraform 在之后只能得到 <code>h1:</code> 校验和这种情况。有关此命令的更多信息，请参阅 <code>terraform providers lock</code> 命令。</p>
+<h3 id="1-5-2-1-3-4-那些不再被使用的-Provider"><a href="#%E9%82%A3%E4%BA%9B%E4%B8%8D%E5%86%8D%E8%A2%AB%E4%BD%BF%E7%94%A8%E7%9A%84-provider"></a>1.5.2.1.3.4. 那些不再被使用的 Provider</h3>
+<p>为了确定是否仍然存在对某个 Provider 程序的依赖，Terraform 使用两个事实来源：配置代码和状态。如果我们从配置和状态中删除对某个 Provider 程序的最后一个依赖项，则 <code>terraform init</code> 将从锁文件中删除该 Provider 的现存记录。</p>
+<figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--- .terraform.lock.hcl 2020-10-07 16:12:07.539570634 -0700</span></span><br><span class="line"><span class="comment">+++ .terraform.lock.hcl 2020-10-07 16:12:15.267487237 -0700</span></span><br><span class="line"><span class="meta">@@ -6,26 +6,6 @@</span></span><br><span class="line">   ]</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"><span class="deletion">-provider &quot;registry.terraform.io/hashicorp/azurerm&quot; &#123;</span></span><br><span class="line"><span class="deletion">-  version     = &quot;2.30.0&quot;</span></span><br><span class="line"><span class="deletion">-  constraints = &quot;~&gt; 2.12&quot;</span></span><br><span class="line"><span class="deletion">-  hashes = [</span></span><br><span class="line"><span class="deletion">-    &quot;h1:FJwsuowaG5CIdZ0WQyFZH9r6kIJeRKts9+GcRsTz1+Y=&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;h1:c/ntSXrDYM1mUir2KufijYebPcwKqS9CRGd3duDSGfY=&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;h1:yre4Ph76g9H84MbuhZ2z5MuldjSA4FsrX6538O7PCcY=&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:04f0a50bb2ba92f3bea6f0a9e549ace5a4c13ef0cbb6975494cac0ef7d4acb43&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:2082e12548ebcdd6fd73580e83f626ed4ed13f8cdfd51205d8696ffe54f30734&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:246bcc449e9a92679fb30f3c0a77f05513886565e2dcc66b16c4486f51533064&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:24de3930625ac9014594d79bfa42d600eca65e9022b9668b54bfd0d924e21d14&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:2a22893a576ff6f268d9bf81cf4a56406f7ba79f77826f6df51ee787f6d2840a&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:2b27485e19c2aaa9f15f29c4cff46154a9720647610171e30fc6c18ddc42ec28&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:435f24ce1fb2b63f7f02aa3c84ac29c5757cd29ec4d297ed0618423387fe7bd4&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:7d99725923de5240ff8b34b5510569aa4ebdc0bdb27b7bac2aa911a8037a3893&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:7e3b5d0af3b7411dd9dc65ec9ab6caee8c191aee0fa7f20fc4f51716e67f50c0&quot;,</span></span><br><span class="line"><span class="deletion">-    &quot;zh:da0af4552bef5a29b88f6a0718253f3bf71ce471c959816eb7602b0dadb469ca&quot;,</span></span><br><span class="line"><span class="deletion">-  ]</span></span><br><span class="line"><span class="deletion">-&#125;</span></span><br><span class="line"><span class="deletion">-</span></span><br><span class="line"> provider &quot;registry.terraform.io/newrelic/newrelic&quot; &#123;</span><br><span class="line">   version     = &quot;2.1.2&quot;</span><br><span class="line">   constraints = &quot;~&gt; 2.1.1&quot;</span><br></pre></td></tr></table></figure>
+<p>如果我们稍后为同一 Provider 程序添加新的引用并再次运行 <code>terraform init</code>，Terraform 会将其视为全新的 Provider 程序，因此不一定会选择之前选择的相同版本，并且无法验证校验和是否保持不变。</p>
+<p><strong>注意</strong>：在 Terraform v1.0 及更早版本中，<code>terraform init</code> 不会自动从锁文件中删除现在不需要的 Provider 程序，而只是忽略它们。如果您之前使用早期版本的 Terraform 时删除了提供 Provider 依赖项，然后升级到 Terraform v1.1 或更高版本，那么您可能会看到错误“missing or corrupted provider plugins”，指向过时的锁文件条目。如果是这样，请使用新的 Terraform 版本运行 <code>terraform init</code> 以整理那些不需要的条目，然后重试之前的操作。</p>
+<ul>
+<li>
+<p><a href="#%E6%B5%8B%E8%AF%95%E6%96%87%E4%BB%B6"><strong>1.5.3.1.</strong> 测试文件</a></p>
+</li>
+<li>
+<p><a href="#%E6%96%87%E4%BB%B6%E6%89%A9%E5%B1%95%E5%90%8D"><strong>1.5.3.1.1.</strong> 文件扩展名</a></p>
+</li>
+<li>
+<p><a href="#%E6%B5%8B%E8%AF%95%E6%96%87%E4%BB%B6%E7%9A%84%E4%BD%8D%E7%BD%AE"><strong>1.5.3.1.2.</strong> 测试文件的位置</a></p>
+</li>
+</ul>
+<p><a href="#%E6%B5%8B%E8%AF%95%E6%96%87%E4%BB%B6"></a></p>
+<h2 id="1-5-3-1-测试文件"><a href="#%E6%B5%8B%E8%AF%95%E6%96%87%E4%BB%B6"></a>1.5.3.1. 测试文件</h2>
+<p>某些的 Terraform 命令（例如 <code>test</code>、<code>init</code> 和 <code>validate</code>）会针对配置代码加载 Terraform 测试文件。</p>
+<p>测试文件包含 Terraform 测试执行的代码。有关 Terraform 测试命令的更多信息，请参阅<a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/6.Terraform%E5%91%BD%E4%BB%A4%E8%A1%8C/23.test.html">命令：<code>test</code></a>。有关语法和 Terraform 测试文件语言的更多信息，请参阅<a target="_blank" rel="noopener" href="https://lonegunmanb.github.io/introduction-terraform/7.test/">测试</a>。</p>
+<h2 id="1-5-3-1-1-文件扩展名"><a href="#%E6%96%87%E4%BB%B6%E6%89%A9%E5%B1%95%E5%90%8D"></a>1.5.3.1.1. 文件扩展名</h2>
+<p>测试文件的扩展名是 <code>.tftest.hcl</code> 以及 <code>.tftest.json</code>。</p>
+<h2 id="1-5-3-1-2-测试文件的位置"><a href="#%E6%B5%8B%E8%AF%95%E6%96%87%E4%BB%B6%E7%9A%84%E4%BD%8D%E7%BD%AE"></a>1.5.3.1.2. 测试文件的位置</h2>
+<p>Terraform 加载根模块目录中的所有测试文件。</p>
+<p>Terraform 还会加载测试目录中的测试文件。我们可以通过在那些会加载测试文件的命令后添加 <code>-test-directory</code> 参数来修改测试目录的位置。默认测试目录是根模块目录下的 <code>tests</code> 目录。</p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/Terraform/" rel="tag">Terraform</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../23/Teraform/Terraform-%E6%A8%A1%E5%9D%97/"
+                    data-tooltip="Terraform-模块"
+                    aria-label="上一篇: Terraform-模块"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../19/Teraform/Terraform-%E4%BB%A3%E7%A0%81/"
+                    data-tooltip="Terraform-代码-类型"
+                    aria-label="下一篇: Terraform-代码-类型"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../23/Teraform/Terraform-%E6%A8%A1%E5%9D%97/"
+                    data-tooltip="Terraform-模块"
+                    aria-label="上一篇: Terraform-模块"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../19/Teraform/Terraform-%E4%BB%A3%E7%A0%81/"
+                    data-tooltip="Terraform-代码-类型"
+                    aria-label="下一篇: Terraform-代码-类型"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/01/21/Teraform/Terraform-%E6%96%87%E4%BB%B6%E4%B8%8E%E7%9B%AE%E5%BD%95/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 210 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>
