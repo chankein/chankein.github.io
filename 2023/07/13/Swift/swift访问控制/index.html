@@ -1,0 +1,1129 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>swift访问控制 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"访问控制\n访问控制可以限定其它源文件或模块中的代码对你的代码的访问级别。这个特性可以让我们隐藏代码的一些实现细节，并且可以为其他人可以访问和使用的代码提供接口。\n你可以明确地给单个类型（类、结构体、枚举）设置访问级别，也可以给这些类型的属性、方法、构造器、下标等设置访问级别。协议也可以被限定在一定的范围内使用，包括协议里的全局常量、变量和函数。\nSwift 不仅提供了多种不同的访问级别，还为某些典型场景提供了默认的访问级别，这样就不需要我们在每段代码中都申明显式访问级别。其实，如果只是开发一个单一 target 的应用程序，我们完全可以不用显式声明代码的访问级别。\n\n注意\n为了简单起见，对于代码中可以设置访问级别的特性（属性、基本类型、函数等），在下面的章节中我们会称之为“实体”。\n\n模块和源文件\nSwift 中的访问控制模型基于模块和源文件这两个概念。\n模块指的是独立的代码单元，框架或应用程序会作为一个独立的模块来构建和发布。在 Swift 中，一个模块可以使用 import 关键字导入另外一个模块。\n在 Swift 中，Xcode 的每个 target（例如框架或应用程序）都被当作独立的模块处理。如果你是为了实现某个通用的功能，或者是为了封装一些常用方法而将代码打包成独立的框架，这个框架就是 Swift 中的一个模块。当它被导入到某个应用程序或者其他框架时，框架内容都将属于这个独立的模块。\n源文件就是 Swift 中的源代码文件，它通常属于一个模块，即一个应用程序或者框架。尽管我们一般会将不同的类型分别定义在不同的源文件中，但是同一个源文件也可以包含多个类型、函数之类的定义。\n访问级别\nSwift 为代码中的实体提供了五种不同的访问级别。这些访问级别不仅与源文件中定义的实体相关，同时也与源文件所属的模块相关。\n\nOpen 和 Public 级别可以让实体被同一模块源文件中的所有实体访问，在模块外也可以通过导入该模块来访问源文件里的所有实体。通常情况下，你会使用 Open 或 Public 级别来指定框架的外部接口。Open 和 Public 的区别在后面会提到。\nInternal 级别让实体被同一模块源文件中的任何实体访问，但是不能被模块外的实体访问。通常情况下，如果某个接口只在应用程序或框架内部使用，就可以将其设置为 Internal 级别。\nFile-private 限制实体只能在其定义的文件内部访问。如果功能的部分细节只需要在文件内使用时，可以使用 File-private 来将其隐藏。\nPrivate 限制实体只能在其定义的作用域，以及同一文件内的 extension 访问。如果功能的部分细节只需要在当前作用域内使用时，可以使用 Private 来将其隐藏。\n\nOpen 为最高访问级别（限制最少），Private 为最低访问级别（限制最多）。\nOpen 只能作用于类和类的成员，它和 Public 的区别如下：\n\nPublic 或者其它更严访问级别的类，只能在其定义的模块内部被继承。\nPublic 或者其它更严访问级别的类成员，只能在其定义的模块内部的子类中重写。\nOpen 的类，可以在其定义的模块中被继承，也可以在引用它的模块中被继承。\nOpen 的类成员，可以在其定义的模块中子类中重写，也可以在引用它的模块中的子类重写。\n\n把一个类标记为 open，明确的表示你已经充分考虑过外部模块使用此类作为父类的影响，并且设计好了你的类的代码了。\n访问级别基本原则\nSwift 中的访问级别遵循一个基本原则：实体不能定义在具有更低访问级别（更严格）的实体中。\n例如：\n\n一个 Public 的变量，其类型的访问级别不能是 Internal，File-private 或是 Private。因为无法保证变量的类型在使用变量的地方也具有访问权限。\n函数的访问级别不能高于它的参数类型和返回类型的访问级别。因为这样就会出现函数可以在任何地方被访问，但是它的参数类型和返回类型却不可以的情况。\n\n关于此原则在各种情况下的具体表现，将在下文有所体现。\n默认访问级别\n如果你没有为代码中的实体显式指定访问级别，那么它们默认为 internal 级别（有一些例外情况，稍后会进行说明）。因此，在大多数情况下，我们不需要显式指定实体的访问级别。\n单 target 应用程序的访问级别\n当你编写一个单目标应用程序时，应用的所有功能都是为该应用服务，而不需要提供给其他应用或者模块使用，所以我们不需要明确设置访问级别，使用默认的访问级别 Internal 即可。但是，你也可以使用 fileprivate 访问或 private 访问级别，用于隐藏一些功能的实现细节。\n框架的访问级别\n当你开发框架时，就需要把一些对外的接口定义为 Open 或 Public，以便使用者导入该框架后可以正常使用其功能。这些被你定义为对外的接口，就是这个框架的 API。\n\n注意\n框架的内部实现仍然可以使用默认的访问级别 internal，当你需要对框架内部其它部分隐藏细节时可以使用 private 或 fileprivate。对于框架的对外 API 部分，你就需要将它们设置为 open 或 public 了。\n\n单元测试 target 的访问级别\n当你的应用程序包含单元测试 target 时，为了测试，测试模块需要访问应用程序模块中的代码。默认情况下只有 open 或 public 级别的实体才可以被其他模块访问。然而，如果在导入应用程序模块的语句前使用 @testable 特性，然后在允许测试的编译设置（Build Options -&gt; Enable Testability）下编译这个应用程序模块，单元测试目标就可以访问应用程序模块中所有内部级别的实体。\n访问控制语法\n通过修饰符 open、public、internal、fileprivate、private 来声明实体的访问级别：\n123456789public class SomePublicClass &#123;&#125;internal class SomeInternalClass &#123;&#125;fileprivate class SomeFilePrivateClass &#123;&#125;private class SomePrivateClass &#123;&#125;public var somePublicVariable = 0internal let someInternalConstant = 0fileprivate func someFilePrivateFunction() &#123;&#125;private func somePrivateFunction() &#123;&#125;\n除非专门指定，否则实体默认的访问级别为 internal，可以查阅 默认访问级别 这一节。这意味着在不使用修饰符显式声明访问级别的情况下，SomeInternalClass 和 someInternalConstant 仍然拥有隐式的 internal：\n12class SomeInternalClass &#123;&#125;   // 隐式 internalvar someInternalConstant = 0 // 隐式 internal\n自定义类型\n如果想为一个自定义类型指定访问级别，在定义类型时进行指定即可。新类型只能在它的访问级别限制范围内使用。例如，你定义了一个 fileprivate 级别的类，那这个类就只能在定义它的源文件中使用，可以作为属性类型、函数参数类型或者返回类型，等等。\n一个类型的访问级别也会影响到类型成员（属性、方法、构造器、下标）的默认访问级别。如果你将类型指定为 private 或者 fileprivate 级别，那么该类型的所有成员的默认访问级别也会变成 private 或者 fileprivate 级别。如果你将类型指定为 internal 或 public（或者不明确指定访问级别，而使用默认的 internal ），那么该类型的所有成员的默认访问级别将是 internal。\n\n重点\n上面提到，一个 public 类型的所有成员的访问级别默认为 internal 级别，而不是 public 级别。如果你想将某个成员指定为 public 级别，那么你必须显式指定。这样做的好处是，在你定义公共接口的时候，可以明确地选择哪些接口是需要公开的，哪些是内部使用的，避免不小心将内部使用的接口公开。\n\n123456789101112131415161718192021public class SomePublicClass &#123;                  // 显式 public 类    public var somePublicProperty = 0            // 显式 public 类成员    var someInternalProperty = 0                 // 隐式 internal 类成员    fileprivate func someFilePrivateMethod() &#123;&#125;  // 显式 fileprivate 类成员    private func somePrivateMethod() &#123;&#125;          // 显式 private 类成员&#125;class SomeInternalClass &#123;                       // 隐式 internal 类    var someInternalProperty = 0                 // 隐式 internal 类成员    fileprivate func someFilePrivateMethod() &#123;&#125;  // 显式 fileprivate 类成员    private func somePrivateMethod() &#123;&#125;          // 显式 private 类成员&#125;fileprivate class SomeFilePrivateClass &#123;        // 显式 fileprivate 类    func someFilePrivateMethod() &#123;&#125;              // 隐式 fileprivate 类成员    private func somePrivateMethod() &#123;&#125;          // 显式 private 类成员&#125;private class SomePrivateClass &#123;                // 显式 private 类    func somePrivateMethod() &#123;&#125;                  // 隐式 private 类成员&#125;\n元组类型\n元组的访问级别将由元组中访问级别最严格的类型来决定。例如，如果你构建了一个包含两种不同类型的元组，其中一个类型为 internal，另一个类型为 private，那么这个元组的访问级别为 private。\n\n注意\n元组不同于类、结构体、枚举、函数那样有单独的定义。元组的访问级别是在它被使用时自动推断出的，而无法明确指定。\n\n函数类型\n函数的访问级别根据访问级别最严格的参数类型或返回类型的访问级别来决定。但是，如果这种访问级别不符合函数定义所在环境的默认访问级别，那么就需要明确地指定该函数的访问级别。\n下面的例子定义了一个名为 someFunction() 的全局函数，并且没有明确地指定其访问级别。也许你会认为该函数应该拥有默认的访问级别 internal，但事实并非如此。事实上，如果按下面这种写法，代码将无法通过编译：\n123func someFunction() -&gt; (SomeInternalClass, SomePrivateClass) &#123;    // 此处是函数实现部分&#125;\n我们可以看到，这个函数的返回类型是一个元组，该元组中包含两个自定义的类（可查阅 自定义类型）。其中一个类的访问级别是 internal，另一个的访问级别是 private，所以根据元组访问级别的原则，该元组的访问级别是 private（元组的访问级别与元组中访问级别最低的类型一致）。\n因为该函数返回类型的访问级别是 private，所以你必须使用 private 修饰符，明确指定该函数的访问级别：\n123private func someFunction() -&gt; (SomeInternalClass, SomePrivateClass) &#123;    // 此处是函数实现部分&#125;\n将该函数指定为 public 或 internal，或者使用默认的访问级别 internal 都是错误的，因为如果把该函数当做 public 或 internal 级别来使用的话，可能会无法访问 private 级别的返回值。\n枚举类型\n枚举成员的访问级别和该枚举类型相同，你不能为枚举成员单独指定不同的访问级别。\n比如下面的例子，枚举 CompassPoint 被明确指定为 public，那么它的成员 North、South、East、West 的访问级别同样也是 public：\n123456public enum CompassPoint &#123;    case north    case south    case east    case west&#125;\n原始值和关联值\n枚举定义中的任何原始值或关联值的类型的访问级别至少不能低于枚举类型的访问级别。例如，你不能在一个 internal 的枚举中定义 private 的原始值类型。\n嵌套类型\n如果在 private 的类型中定义嵌套类型，那么该嵌套类型就自动拥有 private 访问级别。如果在 public 或者 internal 级别的类型中定义嵌套类型，那么该嵌套类型自动拥有 internal 访问级别。如果想让嵌套类型拥有 public 访问级别，那么需要明确指定该嵌套类型的访问级别。\n子类\n子类的访问级别不得高于父类的访问级别。例如，父类的访问级别是 internal，子类的访问级别就不能是 public。\n此外，你可以在符合当前访问级别的条件下重写任意类成员（方法、属性、构造器、下标等）。\n可以通过重写为继承来的类成员提供更高的访问级别。下面的例子中，类 A 的访问级别是 public，它包含一个方法 someMethod()，访问级别为 private。类 B 继承自类 A，访问级别为 internal，但是在类 B 中重写了类 A 中访问级别为 private 的方法 someMethod()，并重新指定为 internal 级别。通过这种方式，我们就可以将某类中 private 级别的类成员重新指定为更高的访问级别，以便其他人使用：\n1234567public class A &#123;    fileprivate func someMethod() &#123;&#125;&#125;internal class B: A &#123;    override internal func someMethod() &#123;&#125;&#125;\n我们甚至可以在子类中，用子类成员去访问访问级别更低的父类成员，只要这一操作在相应访问级别的限制范围内（也就是说，在同一源文件中访问父类 private 级别的成员，在同一模块内访问父类 internal 级别的成员）：\n123456789public class A &#123;    fileprivate func someMethod() &#123;&#125;&#125;internal class B: A &#123;    override internal func someMethod() &#123;        super.someMethod()    &#125;&#125;\n因为父类 A 和子类 B 定义在同一个源文件中，所以在子类 B 可以在重写的 someMethod() 方法中调用 super.someMethod()。\n常量、变量、属性、下标\n常量、变量、属性不能拥有比它们的类型更高的访问级别。例如，你不能定义一个 public 级别的属性，但是它的类型却是 private 级别的。同样，下标也不能拥有比索引类型或返回类型更高的访问级别。\n如果常量、变量、属性、下标的类型是 private 级别的，那么它们必须明确指定访问级别为 private：\n1private var privateInstance = SomePrivateClass()\nGetter 和 Setter\n常量、变量、属性、下标的 Getters 和 Setters 的访问级别和它们所属类型的访问级别相同。\nSetter 的访问级别可以低于对应的 Getter 的访问级别，这样就可以控制变量、属性或下标的读写权限。在 var 或 subscript 关键字之前，你可以通过 fileprivate(set)，private(set) 或 internal(set) 为它们的写入权限指定更低的访问级别。\n\n注意\n这个规则同时适用于存储型属性和计算型属性。即使你不明确指定存储型属性的 Getter 和 Setter，Swift 也会隐式地为其创建 Getter 和 Setter，用于访问该属性的后备存储。使用 fileprivate(set)，private(set) 和 internal(set) 可以改变 Setter 的访问级别，这对计算型属性也同样适用。\n\n下面的例子中定义了一个名为 TrackedString 的结构体，它记录了 value 属性被修改的次数：\n12345678struct TrackedString &#123;    private(set) var numberOfEdits = 0    var value: String = &quot;&quot; &#123;        didSet &#123;            numberOfEdits += 1        &#125;    &#125;&#125;\nTrackedString 结构体定义了一个用于存储 String 值的属性 value，并将初始值设为 &quot;&quot;（一个空字符串）。该结构体还定义了另一个用于存储 Int 值的属性 numberOfEdits，它用于记录属性 value 被修改的次数。这个功能通过属性 value 的 didSet 观察器实现，每当给 value 赋新值时就会调用 didSet 方法，然后将 numberOfEdits 的值加一。\n结构体 TrackedString 和它的属性 value 都没有显式地指定访问级别，所以它们都是用默认的访问级别 internal。但是该结构体的 numberOfEdits 属性使用了 private(set) 修饰符，这意味着 numberOfEdits 属性只能在结构体的定义中进行赋值。numberOfEdits 属性的 Getter 依然是默认的访问级别 internal，但是 Setter 的访问级别是 private，这表示该属性只能在内部修改，而在结构体的外部则表现为一个只读属性。\n如果你实例化 TrackedString 结构体，并多次对 value 属性的值进行修改，你就会看到 numberOfEdits 的值会随着修改次数而变化：\n123456var stringToEdit = TrackedString()stringToEdit.value = &quot;This string will be tracked.&quot;stringToEdit.value += &quot; This edit will increment numberOfEdits.&quot;stringToEdit.value += &quot; So will this one.&quot;print(&quot;The number of edits is \\(stringToEdit.numberOfEdits)&quot;)// 打印“The number of edits is 3”\n虽然你可以在其他的源文件中实例化该结构体并且获取到 numberOfEdits 属性的值，但是你不能对其进行赋值。这一限制保护了该记录功能的实现细节，同时还提供了方便的访问方式。\n你可以在必要时为 Getter 和 Setter 显式指定访问级别。下面的例子将 TrackedString 结构体明确指定为了 public 访问级别。结构体的成员（包括 numberOfEdits 属性）拥有默认的访问级别 internal。你可以结合 public 和 private(set) 修饰符把结构体中的 numberOfEdits 属性的 Getter 的访问级别设置为 public，而 Setter 的访问级别设置为 private：\n123456789public struct TrackedString &#123;    public private(set) var numberOfEdits = 0    public var value: String = &quot;&quot; &#123;        didSet &#123;            numberOfEdits += 1        &#125;    &#125;    public init() &#123;&#125;&#125;\n构造器\n自定义构造器的访问级别可以低于或等于其所属类型的访问级别。唯一的例外是 必要构造器，它的访问级别必须和所属类型的访问级别相同。\n如同函数或方法的参数，构造器参数的访问级别也不能低于构造器本身的访问级别。\n默认构造器\n如 默认构造器 所述，Swift 会为结构体和类提供一个默认的无参数的构造器，只要它们为所有存储型属性设置了默认初始值，并且未提供自定义的构造器。\n默认构造器的访问级别与所属类型的访问级别相同，除非类型的访问级别是 public。如果一个类型被指定为 public 级别，那么默认构造器的访问级别将为 internal。如果你希望一个 public 级别的类型也能在其他模块中使用这种无参数的默认构造器，你只能自己提供一个 public 访问级别的无参数构造器。\n结构体默认的成员逐一构造器\n如果结构体中任意存储型属性的访问级别为 private，那么该结构体默认的成员逐一构造器的访问级别就是 private。否则，这种构造器的访问级别依然是 internal。\n如同前面提到的默认构造器，如果你希望一个 public 级别的结构体也能在其他模块中使用其默认的成员逐一构造器，你依然只能自己提供一个 public 访问级别的成员逐一构造器。\n协议\n如果想为一个协议类型明确地指定访问级别，在定义协议时指定即可。这将限制该协议只能在适当的访问级别范围内被遵循。\n协议中的每一个要求都具有和该协议相同的访问级别。你不能将协议中的要求设置为其他访问级别。这样才能确保该协议的所有要求对于任意遵循者都将可用。\n\n注意\n如果你定义了一个 public 访问级别的协议，那么该协议的所有实现也会是 public 访问级别。这一点不同于其他类型，例如，当类型是 public 访问级别时，其成员的访问级别却只是 internal。\n\n协议继承\n如果定义了一个继承自其他协议的新协议，那么新协议拥有的访问级别最高也只能和被继承协议的访问级别相同。例如，你不能将继承自 internal 协议的新协议定义为 public 协议。\n协议遵循\n一个类型可以遵循比它级别更低的协议。例如，你可以定义一个 public 级别类型，它能在别的模块中使用，但是如果它遵循一个 internal 协议，这个遵循的部分就只能在这个 internal 协议所在的模块中使用。\n遵循协议时的上下文级别是类型和协议中级别最小的那个。如果一个类型是 public 级别，但它要遵循的协议是 internal 级别，那么这个类型对该协议的遵循上下文就是 internal 级别。\n当你编写或扩展一个类型让它遵循一个协议时，你必须确保该类型对协议的每一个要求的实现，至少与遵循协议的上下文级别一致。例如，一个 public 类型遵循一个 internal 协议，这个类型对协议的所有实现至少都应是 internal 级别的。\n\n注意\nSwift 和 Objective-C 一样，协议遵循是全局的，也就是说，在同一程序中，一个类型不可能用两种不同的方式实现同一个协议。\n\nExtension\nExtension 可以在访问级别允许的情况下对类、结构体、枚举进行扩展。Extension 的成员具有和原始类型成员一致的访问级别。例如，你使用 extension 扩展了一个 public 或者 internal 类型，extension 中的成员就默认使用 internal 访问级别，和原始类型中的成员一致。如果你使用 extension 扩展了一个 private 类型，则 extension 的成员默认使用 private 访问级别。\n或者，你可以明确指定 extension 的访问级别（例如，private extension），从而给该 extension 中的所有成员指定一个新的默认访问级别。这个新的默认访问级别仍然可以被单独指定的访问级别所覆盖。\n如果你使用 extension 来遵循协议的话，就不能显式地声明 extension 的访问级别。extension 每个 protocol 要求的实现都默认使用 protocol 的访问级别。\nExtension 的私有成员\n扩展同一文件内的类，结构体或者枚举，extension 里的代码会表现得跟声明在原类型里的一模一样。也就是说你可以这样：\n\n在类型的声明里声明一个私有成员，在同一文件的 extension 里访问。\n在 extension 里声明一个私有成员，在同一文件的另一个 extension 里访问。\n在 extension 里声明一个私有成员，在同一文件的类型声明里访问。\n\n这意味着你可以像组织的代码去使用 extension，而且不受私有成员的影响。例如，给定下面这样一个简单的协议：\n123protocol SomeProtocol &#123;    func doSomething()&#125;\n你可以使用 extension 来遵循协议，就像这样：\n123456789struct SomeStruct &#123;    private var privateVariable = 12&#125;extension SomeStruct: SomeProtocol &#123;    func doSomething() &#123;        print(privateVariable)    &#125;&#125;\n泛型\n泛型类型或泛型函数的访问级别取决于泛型类型或泛型函数本身的访问级别，还需结合类型参数的类型约束的访问级别，根据这些访问级别中的最低访问级别来确定。\n类型别名\n你定义的任何类型别名都会被当作不同的类型，以便于进行访问控制。类型别名的访问级别不可高于其表示的类型的访问级别。例如，private 级别的类型别名可以作为 private、file-private、internal、public 或者 open 类型的别名，但是 public 级别的类型别名只能作为 public 类型的别名，不能作为 internal、file-private 或 private 类型的别名。\n\n注意\n这条规则也适用于为满足协议遵循而将类型别名用于关联类型的情况。\n\n","dateCreated":"2023-07-13T10:13:17+08:00","dateModified":"2025-06-18T12:34:16+08:00","datePublished":"2023-07-13T10:13:17+08:00","description":"","headline":"swift访问控制","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/","keywords":"swift"}</script>
+    <meta name="description" content="访问控制 访问控制可以限定其它源文件或模块中的代码对你的代码的访问级别。这个特性可以让我们隐藏代码的一些实现细节，并且可以为其他人可以访问和使用的代码提供接口。 你可以明确地给单个类型（类、结构体、枚举）设置访问级别，也可以给这些类型的属性、方法、构造器、下标等设置访问级别。协议也可以被限定在一定的范围内使用，包括协议里的全局常量、变量和函数。 Swift 不仅提供了多种不同的访问级别，还为某些典">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="swift访问控制">
+<meta property="og:url" content="https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="访问控制 访问控制可以限定其它源文件或模块中的代码对你的代码的访问级别。这个特性可以让我们隐藏代码的一些实现细节，并且可以为其他人可以访问和使用的代码提供接口。 你可以明确地给单个类型（类、结构体、枚举）设置访问级别，也可以给这些类型的属性、方法、构造器、下标等设置访问级别。协议也可以被限定在一定的范围内使用，包括协议里的全局常量、变量和函数。 Swift 不仅提供了多种不同的访问级别，还为某些典">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2023-07-13T02:13:17.000Z">
+<meta property="article:modified_time" content="2025-06-18T04:34:16.913Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="swift">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            swift访问控制
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2023-07-13T10:13:17+08:00">
+	
+		    2023 年 7 月 13 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/swift/">swift</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="访问控制">访问控制</h2>
+<p><em>访问控制</em>可以限定其它源文件或模块中的代码对你的代码的访问级别。这个特性可以让我们隐藏代码的一些实现细节，并且可以为其他人可以访问和使用的代码提供接口。</p>
+<p>你可以明确地给单个类型（类、结构体、枚举）设置访问级别，也可以给这些类型的属性、方法、构造器、下标等设置访问级别。协议也可以被限定在一定的范围内使用，包括协议里的全局常量、变量和函数。</p>
+<p>Swift 不仅提供了多种不同的访问级别，还为某些典型场景提供了默认的访问级别，这样就不需要我们在每段代码中都申明显式访问级别。其实，如果只是开发一个单一 target 的应用程序，我们完全可以不用显式声明代码的访问级别。</p>
+<blockquote>
+<p>注意</p>
+<p>为了简单起见，对于代码中可以设置访问级别的特性（属性、基本类型、函数等），在下面的章节中我们会称之为“实体”。</p>
+</blockquote>
+<h2 id="模块和源文件">模块和源文件</h2>
+<p>Swift 中的访问控制模型基于模块和源文件这两个概念。</p>
+<p><em>模块</em>指的是独立的代码单元，框架或应用程序会作为一个独立的模块来构建和发布。在 Swift 中，一个模块可以使用 <code>import</code> 关键字导入另外一个模块。</p>
+<p>在 Swift 中，Xcode 的每个 target（例如框架或应用程序）都被当作独立的模块处理。如果你是为了实现某个通用的功能，或者是为了封装一些常用方法而将代码打包成独立的框架，这个框架就是 Swift 中的一个模块。当它被导入到某个应用程序或者其他框架时，框架内容都将属于这个独立的模块。</p>
+<p><em>源文件</em>就是 Swift 中的源代码文件，它通常属于一个模块，即一个应用程序或者框架。尽管我们一般会将不同的类型分别定义在不同的源文件中，但是同一个源文件也可以包含多个类型、函数之类的定义。</p>
+<h2 id="访问级别">访问级别</h2>
+<p>Swift 为代码中的实体提供了五种不同的<em>访问级别</em>。这些访问级别不仅与源文件中定义的实体相关，同时也与源文件所属的模块相关。</p>
+<ul>
+<li><em>Open</em> 和 <em>Public</em> 级别可以让实体被同一模块源文件中的所有实体访问，在模块外也可以通过导入该模块来访问源文件里的所有实体。通常情况下，你会使用 Open 或 Public 级别来指定框架的外部接口。Open 和 Public 的区别在后面会提到。</li>
+<li><em>Internal</em> 级别让实体被同一模块源文件中的任何实体访问，但是不能被模块外的实体访问。通常情况下，如果某个接口只在应用程序或框架内部使用，就可以将其设置为 Internal 级别。</li>
+<li><em>File-private</em> 限制实体只能在其定义的文件内部访问。如果功能的部分细节只需要在文件内使用时，可以使用 File-private 来将其隐藏。</li>
+<li><em>Private</em> 限制实体只能在其定义的作用域，以及同一文件内的 extension 访问。如果功能的部分细节只需要在当前作用域内使用时，可以使用 Private 来将其隐藏。</li>
+</ul>
+<p>Open 为最高访问级别（限制最少），Private 为最低访问级别（限制最多）。</p>
+<p>Open 只能作用于类和类的成员，它和 Public 的区别如下：</p>
+<ul>
+<li>Public 或者其它更严访问级别的类，只能在其定义的模块内部被继承。</li>
+<li>Public 或者其它更严访问级别的类成员，只能在其定义的模块内部的子类中重写。</li>
+<li>Open 的类，可以在其定义的模块中被继承，也可以在引用它的模块中被继承。</li>
+<li>Open 的类成员，可以在其定义的模块中子类中重写，也可以在引用它的模块中的子类重写。</li>
+</ul>
+<p>把一个类标记为 <code>open</code>，明确的表示你已经充分考虑过外部模块使用此类作为父类的影响，并且设计好了你的类的代码了。</p>
+<h3 id="访问级别基本原则">访问级别基本原则</h3>
+<p>Swift 中的访问级别遵循一个基本原则：<em>实体不能定义在具有更低访问级别（更严格）的实体中</em>。</p>
+<p>例如：</p>
+<ul>
+<li>一个 Public 的变量，其类型的访问级别不能是 Internal，File-private 或是 Private。因为无法保证变量的类型在使用变量的地方也具有访问权限。</li>
+<li>函数的访问级别不能高于它的参数类型和返回类型的访问级别。因为这样就会出现函数可以在任何地方被访问，但是它的参数类型和返回类型却不可以的情况。</li>
+</ul>
+<p>关于此原则在各种情况下的具体表现，将在下文有所体现。</p>
+<h3 id="默认访问级别">默认访问级别</h3>
+<p>如果你没有为代码中的实体显式指定访问级别，那么它们默认为 <code>internal</code> 级别（有一些例外情况，稍后会进行说明）。因此，在大多数情况下，我们不需要显式指定实体的访问级别。</p>
+<h3 id="单-target-应用程序的访问级别">单 target 应用程序的访问级别</h3>
+<p>当你编写一个单目标应用程序时，应用的所有功能都是为该应用服务，而不需要提供给其他应用或者模块使用，所以我们不需要明确设置访问级别，使用默认的访问级别 Internal 即可。但是，你也可以使用 <code>fileprivate</code> 访问或 <code>private</code> 访问级别，用于隐藏一些功能的实现细节。</p>
+<h3 id="框架的访问级别">框架的访问级别</h3>
+<p>当你开发框架时，就需要把一些对外的接口定义为 Open 或 Public，以便使用者导入该框架后可以正常使用其功能。这些被你定义为对外的接口，就是这个框架的 API。</p>
+<blockquote>
+<p>注意</p>
+<p>框架的内部实现仍然可以使用默认的访问级别 <code>internal</code>，当你需要对框架内部其它部分隐藏细节时可以使用 <code>private</code> 或 <code>fileprivate</code>。对于框架的对外 API 部分，你就需要将它们设置为 <code>open</code> 或 <code>public</code> 了。</p>
+</blockquote>
+<h3 id="单元测试-target-的访问级别">单元测试 target 的访问级别</h3>
+<p>当你的应用程序包含单元测试 target 时，为了测试，测试模块需要访问应用程序模块中的代码。默认情况下只有 <code>open</code> 或 <code>public</code> 级别的实体才可以被其他模块访问。然而，如果在导入应用程序模块的语句前使用 <code>@testable</code> 特性，然后在允许测试的编译设置（<code>Build Options -&gt; Enable Testability</code>）下编译这个应用程序模块，单元测试目标就可以访问应用程序模块中所有内部级别的实体。</p>
+<h2 id="访问控制语法">访问控制语法</h2>
+<p>通过修饰符 <code>open</code>、<code>public</code>、<code>internal</code>、<code>fileprivate</code>、<code>private</code> 来声明实体的访问级别：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SomePublicClass</span> &#123;&#125;</span><br><span class="line"><span class="keyword">internal</span> <span class="keyword">class</span> <span class="title class_">SomeInternalClass</span> &#123;&#125;</span><br><span class="line"><span class="keyword">fileprivate</span> <span class="keyword">class</span> <span class="title class_">SomeFilePrivateClass</span> &#123;&#125;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">class</span> <span class="title class_">SomePrivateClass</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">var</span> somePublicVariable <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">internal</span> <span class="keyword">let</span> someInternalConstant <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">fileprivate</span> <span class="keyword">func</span> <span class="title function_">someFilePrivateFunction</span>() &#123;&#125;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">func</span> <span class="title function_">somePrivateFunction</span>() &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>除非专门指定，否则实体默认的访问级别为 <code>internal</code>，可以查阅 <a href="#default_access_levels">默认访问级别</a> 这一节。这意味着在不使用修饰符显式声明访问级别的情况下，<code>SomeInternalClass</code> 和 <code>someInternalConstant</code> 仍然拥有隐式的 <code>internal</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">SomeInternalClass</span> &#123;&#125;   <span class="comment">// 隐式 internal</span></span><br><span class="line"><span class="keyword">var</span> someInternalConstant <span class="operator">=</span> <span class="number">0</span> <span class="comment">// 隐式 internal</span></span><br></pre></td></tr></table></figure>
+<h2 id="自定义类型">自定义类型</h2>
+<p>如果想为一个自定义类型指定访问级别，在定义类型时进行指定即可。新类型只能在它的访问级别限制范围内使用。例如，你定义了一个 <code>fileprivate</code> 级别的类，那这个类就只能在定义它的源文件中使用，可以作为属性类型、函数参数类型或者返回类型，等等。</p>
+<p>一个类型的访问级别也会影响到类型<em>成员</em>（属性、方法、构造器、下标）的默认访问级别。如果你将类型指定为 <code>private</code> 或者 <code>fileprivate</code> 级别，那么该类型的所有成员的默认访问级别也会变成 <code>private</code> 或者 <code>fileprivate</code> 级别。如果你将类型指定为 <code>internal</code> 或 <code>public</code>（或者不明确指定访问级别，而使用默认的 <code>internal</code> ），那么该类型的所有成员的默认访问级别将是 <code>internal</code>。</p>
+<blockquote>
+<p>重点</p>
+<p>上面提到，一个 <code>public</code> 类型的所有成员的访问级别默认为 <code>internal</code> 级别，而不是 <code>public</code> 级别。如果你想将某个成员指定为 <code>public</code> 级别，那么你必须显式指定。这样做的好处是，在你定义公共接口的时候，可以明确地选择哪些接口是需要公开的，哪些是内部使用的，避免不小心将内部使用的接口公开。</p>
+</blockquote>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SomePublicClass</span> &#123;                  <span class="comment">// 显式 public 类</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">var</span> somePublicProperty <span class="operator">=</span> <span class="number">0</span>            <span class="comment">// 显式 public 类成员</span></span><br><span class="line">    <span class="keyword">var</span> someInternalProperty <span class="operator">=</span> <span class="number">0</span>                 <span class="comment">// 隐式 internal 类成员</span></span><br><span class="line">    <span class="keyword">fileprivate</span> <span class="keyword">func</span> <span class="title function_">someFilePrivateMethod</span>() &#123;&#125;  <span class="comment">// 显式 fileprivate 类成员</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">func</span> <span class="title function_">somePrivateMethod</span>() &#123;&#125;          <span class="comment">// 显式 private 类成员</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">SomeInternalClass</span> &#123;                       <span class="comment">// 隐式 internal 类</span></span><br><span class="line">    <span class="keyword">var</span> someInternalProperty <span class="operator">=</span> <span class="number">0</span>                 <span class="comment">// 隐式 internal 类成员</span></span><br><span class="line">    <span class="keyword">fileprivate</span> <span class="keyword">func</span> <span class="title function_">someFilePrivateMethod</span>() &#123;&#125;  <span class="comment">// 显式 fileprivate 类成员</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">func</span> <span class="title function_">somePrivateMethod</span>() &#123;&#125;          <span class="comment">// 显式 private 类成员</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fileprivate</span> <span class="keyword">class</span> <span class="title class_">SomeFilePrivateClass</span> &#123;        <span class="comment">// 显式 fileprivate 类</span></span><br><span class="line">    <span class="keyword">func</span> <span class="title function_">someFilePrivateMethod</span>() &#123;&#125;              <span class="comment">// 隐式 fileprivate 类成员</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">func</span> <span class="title function_">somePrivateMethod</span>() &#123;&#125;          <span class="comment">// 显式 private 类成员</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">class</span> <span class="title class_">SomePrivateClass</span> &#123;                <span class="comment">// 显式 private 类</span></span><br><span class="line">    <span class="keyword">func</span> <span class="title function_">somePrivateMethod</span>() &#123;&#125;                  <span class="comment">// 隐式 private 类成员</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="元组类型">元组类型</h3>
+<p>元组的访问级别将由元组中访问级别最严格的类型来决定。例如，如果你构建了一个包含两种不同类型的元组，其中一个类型为 <code>internal</code>，另一个类型为 <code>private</code>，那么这个元组的访问级别为 <code>private</code>。</p>
+<blockquote>
+<p>注意</p>
+<p>元组不同于类、结构体、枚举、函数那样有单独的定义。元组的访问级别是在它被使用时自动推断出的，而无法明确指定。</p>
+</blockquote>
+<h3 id="函数类型">函数类型</h3>
+<p>函数的访问级别根据访问级别最严格的参数类型或返回类型的访问级别来决定。但是，如果这种访问级别不符合函数定义所在环境的默认访问级别，那么就需要明确地指定该函数的访问级别。</p>
+<p>下面的例子定义了一个名为 <code>someFunction()</code> 的全局函数，并且没有明确地指定其访问级别。也许你会认为该函数应该拥有默认的访问级别 <code>internal</code>，但事实并非如此。事实上，如果按下面这种写法，代码将无法通过编译：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">someFunction</span>() -&gt; (<span class="type">SomeInternalClass</span>, <span class="type">SomePrivateClass</span>) &#123;</span><br><span class="line">    <span class="comment">// 此处是函数实现部分</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们可以看到，这个函数的返回类型是一个元组，该元组中包含两个自定义的类（可查阅 <a href="#custom_types">自定义类型</a>）。其中一个类的访问级别是 <code>internal</code>，另一个的访问级别是 <code>private</code>，所以根据元组访问级别的原则，该元组的访问级别是 <code>private</code>（元组的访问级别与元组中访问级别最低的类型一致）。</p>
+<p>因为该函数返回类型的访问级别是 <code>private</code>，所以你必须使用 <code>private</code> 修饰符，明确指定该函数的访问级别：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">func</span> <span class="title function_">someFunction</span>() -&gt; (<span class="type">SomeInternalClass</span>, <span class="type">SomePrivateClass</span>) &#123;</span><br><span class="line">    <span class="comment">// 此处是函数实现部分</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>将该函数指定为 <code>public</code> 或 <code>internal</code>，或者使用默认的访问级别 <code>internal</code> 都是错误的，因为如果把该函数当做 <code>public</code> 或 <code>internal</code> 级别来使用的话，可能会无法访问 <code>private</code> 级别的返回值。</p>
+<h3 id="枚举类型">枚举类型</h3>
+<p>枚举成员的访问级别和该枚举类型相同，你不能为枚举成员单独指定不同的访问级别。</p>
+<p>比如下面的例子，枚举 <code>CompassPoint</code> 被明确指定为 <code>public</code>，那么它的成员 <code>North</code>、<code>South</code>、<code>East</code>、<code>West</code> 的访问级别同样也是 <code>public</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">enum</span> <span class="title class_">CompassPoint</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> north</span><br><span class="line">    <span class="keyword">case</span> south</span><br><span class="line">    <span class="keyword">case</span> east</span><br><span class="line">    <span class="keyword">case</span> west</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="原始值和关联值">原始值和关联值</h4>
+<p>枚举定义中的任何原始值或关联值的类型的访问级别至少不能低于枚举类型的访问级别。例如，你不能在一个 <code>internal</code> 的枚举中定义 <code>private</code> 的原始值类型。</p>
+<h3 id="嵌套类型">嵌套类型</h3>
+<p>如果在 <code>private</code> 的类型中定义嵌套类型，那么该嵌套类型就自动拥有 <code>private</code> 访问级别。如果在 <code>public</code> 或者 <code>internal</code> 级别的类型中定义嵌套类型，那么该嵌套类型自动拥有 <code>internal</code> 访问级别。如果想让嵌套类型拥有 <code>public</code> 访问级别，那么需要明确指定该嵌套类型的访问级别。</p>
+<h2 id="子类">子类</h2>
+<p>子类的访问级别不得高于父类的访问级别。例如，父类的访问级别是 <code>internal</code>，子类的访问级别就不能是 <code>public</code>。</p>
+<p>此外，你可以在符合当前访问级别的条件下重写任意类成员（方法、属性、构造器、下标等）。</p>
+<p>可以通过重写为继承来的类成员提供更高的访问级别。下面的例子中，类 <code>A</code> 的访问级别是 <code>public</code>，它包含一个方法 <code>someMethod()</code>，访问级别为 <code>private</code>。类 <code>B</code> 继承自类 <code>A</code>，访问级别为 <code>internal</code>，但是在类 <code>B</code> 中重写了类 <code>A</code> 中访问级别为 <code>private</code> 的方法 <code>someMethod()</code>，并重新指定为 <code>internal</code> 级别。通过这种方式，我们就可以将某类中 <code>private</code> 级别的类成员重新指定为更高的访问级别，以便其他人使用：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line">    <span class="keyword">fileprivate</span> <span class="keyword">func</span> <span class="title function_">someMethod</span>() &#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">internal</span> <span class="keyword">class</span> <span class="title class_">B</span>: <span class="title class_ inherited__">A</span> &#123;</span><br><span class="line">    <span class="keyword">override</span> <span class="keyword">internal</span> <span class="keyword">func</span> <span class="title function_">someMethod</span>() &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们甚至可以在子类中，用子类成员去访问访问级别更低的父类成员，只要这一操作在相应访问级别的限制范围内（也就是说，在同一源文件中访问父类 <code>private</code> 级别的成员，在同一模块内访问父类 <code>internal</code> 级别的成员）：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">A</span> &#123;</span><br><span class="line">    <span class="keyword">fileprivate</span> <span class="keyword">func</span> <span class="title function_">someMethod</span>() &#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">internal</span> <span class="keyword">class</span> <span class="title class_">B</span>: <span class="title class_ inherited__">A</span> &#123;</span><br><span class="line">    <span class="keyword">override</span> <span class="keyword">internal</span> <span class="keyword">func</span> <span class="title function_">someMethod</span>() &#123;</span><br><span class="line">        <span class="keyword">super</span>.someMethod()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因为父类 <code>A</code> 和子类 <code>B</code> 定义在同一个源文件中，所以在子类 <code>B</code> 可以在重写的 <code>someMethod()</code> 方法中调用 <code>super.someMethod()</code>。</p>
+<h2 id="常量、变量、属性、下标">常量、变量、属性、下标</h2>
+<p>常量、变量、属性不能拥有比它们的类型更高的访问级别。例如，你不能定义一个 <code>public</code> 级别的属性，但是它的类型却是 <code>private</code> 级别的。同样，下标也不能拥有比索引类型或返回类型更高的访问级别。</p>
+<p>如果常量、变量、属性、下标的类型是 <code>private</code> 级别的，那么它们必须明确指定访问级别为 <code>private</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">var</span> privateInstance <span class="operator">=</span> <span class="type">SomePrivateClass</span>()</span><br></pre></td></tr></table></figure>
+<h3 id="Getter-和-Setter">Getter 和 Setter</h3>
+<p>常量、变量、属性、下标的 <code>Getters</code> 和 <code>Setters</code> 的访问级别和它们所属类型的访问级别相同。</p>
+<p><code>Setter</code> 的访问级别可以低于对应的 <code>Getter</code> 的访问级别，这样就可以控制变量、属性或下标的读写权限。在 <code>var</code> 或 <code>subscript</code> 关键字之前，你可以通过 <code>fileprivate(set)</code>，<code>private(set)</code> 或 <code>internal(set)</code> 为它们的写入权限指定更低的访问级别。</p>
+<blockquote>
+<p>注意</p>
+<p>这个规则同时适用于存储型属性和计算型属性。即使你不明确指定存储型属性的 <code>Getter</code> 和 <code>Setter</code>，Swift 也会隐式地为其创建 <code>Getter</code> 和 <code>Setter</code>，用于访问该属性的后备存储。使用 <code>fileprivate(set)</code>，<code>private(set)</code> 和 <code>internal(set)</code> 可以改变 <code>Setter</code> 的访问级别，这对计算型属性也同样适用。</p>
+</blockquote>
+<p>下面的例子中定义了一个名为 <code>TrackedString</code> 的结构体，它记录了 <code>value</code> 属性被修改的次数：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">TrackedString</span> &#123;</span><br><span class="line">    <span class="keyword">private(set)</span> <span class="keyword">var</span> numberOfEdits <span class="operator">=</span> <span class="number">0</span></span><br><span class="line">    <span class="keyword">var</span> value: <span class="type">String</span> <span class="operator">=</span> <span class="string">&quot;&quot;</span> &#123;</span><br><span class="line">        <span class="keyword">didSet</span> &#123;</span><br><span class="line">            numberOfEdits <span class="operator">+=</span> <span class="number">1</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>TrackedString</code> 结构体定义了一个用于存储 <code>String</code> 值的属性 <code>value</code>，并将初始值设为 <code>&quot;&quot;</code>（一个空字符串）。该结构体还定义了另一个用于存储 <code>Int</code> 值的属性 <code>numberOfEdits</code>，它用于记录属性 <code>value</code> 被修改的次数。这个功能通过属性 <code>value</code> 的 <code>didSet</code> 观察器实现，每当给 <code>value</code> 赋新值时就会调用 <code>didSet</code> 方法，然后将 <code>numberOfEdits</code> 的值加一。</p>
+<p>结构体 <code>TrackedString</code> 和它的属性 <code>value</code> 都没有显式地指定访问级别，所以它们都是用默认的访问级别 <code>internal</code>。但是该结构体的 <code>numberOfEdits</code> 属性使用了 <code>private(set)</code> 修饰符，这意味着 <code>numberOfEdits</code> 属性只能在结构体的定义中进行赋值。<code>numberOfEdits</code> 属性的 <code>Getter</code> 依然是默认的访问级别 <code>internal</code>，但是 <code>Setter</code> 的访问级别是 <code>private</code>，这表示该属性只能在内部修改，而在结构体的外部则表现为一个只读属性。</p>
+<p>如果你实例化 <code>TrackedString</code> 结构体，并多次对 <code>value</code> 属性的值进行修改，你就会看到 <code>numberOfEdits</code> 的值会随着修改次数而变化：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> stringToEdit <span class="operator">=</span> <span class="type">TrackedString</span>()</span><br><span class="line">stringToEdit.value <span class="operator">=</span> <span class="string">&quot;This string will be tracked.&quot;</span></span><br><span class="line">stringToEdit.value <span class="operator">+=</span> <span class="string">&quot; This edit will increment numberOfEdits.&quot;</span></span><br><span class="line">stringToEdit.value <span class="operator">+=</span> <span class="string">&quot; So will this one.&quot;</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;The number of edits is <span class="subst">\(stringToEdit.numberOfEdits)</span>&quot;</span>)</span><br><span class="line"><span class="comment">// 打印“The number of edits is 3”</span></span><br></pre></td></tr></table></figure>
+<p>虽然你可以在其他的源文件中实例化该结构体并且获取到 <code>numberOfEdits</code> 属性的值，但是你不能对其进行赋值。这一限制保护了该记录功能的实现细节，同时还提供了方便的访问方式。</p>
+<p>你可以在必要时为 <code>Getter</code> 和 <code>Setter</code> 显式指定访问级别。下面的例子将 <code>TrackedString</code> 结构体明确指定为了 <code>public</code> 访问级别。结构体的成员（包括 <code>numberOfEdits</code> 属性）拥有默认的访问级别 <code>internal</code>。你可以结合 <code>public</code> 和 <code>private(set)</code> 修饰符把结构体中的 <code>numberOfEdits</code> 属性的 <code>Getter</code> 的访问级别设置为 <code>public</code>，而 <code>Setter</code> 的访问级别设置为 <code>private</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">struct</span> <span class="title class_">TrackedString</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">private(set)</span> <span class="keyword">var</span> numberOfEdits <span class="operator">=</span> <span class="number">0</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">var</span> value: <span class="type">String</span> <span class="operator">=</span> <span class="string">&quot;&quot;</span> &#123;</span><br><span class="line">        <span class="keyword">didSet</span> &#123;</span><br><span class="line">            numberOfEdits <span class="operator">+=</span> <span class="number">1</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">init</span>() &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="构造器">构造器</h2>
+<p>自定义构造器的访问级别可以低于或等于其所属类型的访问级别。唯一的例外是 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/14_Initialization.html#required_initializers">必要构造器</a>，它的访问级别必须和所属类型的访问级别相同。</p>
+<p>如同函数或方法的参数，构造器参数的访问级别也不能低于构造器本身的访问级别。</p>
+<h3 id="默认构造器">默认构造器</h3>
+<p>如 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/14_Initialization.html#default_initializers">默认构造器</a> 所述，Swift 会为结构体和类提供一个默认的无参数的构造器，只要它们为所有存储型属性设置了默认初始值，并且未提供自定义的构造器。</p>
+<p>默认构造器的访问级别与所属类型的访问级别相同，除非类型的访问级别是 <code>public</code>。如果一个类型被指定为 <code>public</code> 级别，那么默认构造器的访问级别将为 <code>internal</code>。如果你希望一个 <code>public</code> 级别的类型也能在其他模块中使用这种无参数的默认构造器，你只能自己提供一个 <code>public</code> 访问级别的无参数构造器。</p>
+<h3 id="结构体默认的成员逐一构造器">结构体默认的成员逐一构造器</h3>
+<p>如果结构体中任意存储型属性的访问级别为 <code>private</code>，那么该结构体默认的成员逐一构造器的访问级别就是 <code>private</code>。否则，这种构造器的访问级别依然是 <code>internal</code>。</p>
+<p>如同前面提到的默认构造器，如果你希望一个 <code>public</code> 级别的结构体也能在其他模块中使用其默认的成员逐一构造器，你依然只能自己提供一个 <code>public</code> 访问级别的成员逐一构造器。</p>
+<h2 id="协议">协议</h2>
+<p>如果想为一个协议类型明确地指定访问级别，在定义协议时指定即可。这将限制该协议只能在适当的访问级别范围内被遵循。</p>
+<p>协议中的每一个要求都具有和该协议相同的访问级别。你不能将协议中的要求设置为其他访问级别。这样才能确保该协议的所有要求对于任意遵循者都将可用。</p>
+<blockquote>
+<p>注意</p>
+<p>如果你定义了一个 <code>public</code> 访问级别的协议，那么该协议的所有实现也会是 <code>public</code> 访问级别。这一点不同于其他类型，例如，当类型是 <code>public</code> 访问级别时，其成员的访问级别却只是 <code>internal</code>。</p>
+</blockquote>
+<h3 id="协议继承">协议继承</h3>
+<p>如果定义了一个继承自其他协议的新协议，那么新协议拥有的访问级别最高也只能和被继承协议的访问级别相同。例如，你不能将继承自 <code>internal</code> 协议的新协议定义为 <code>public</code> 协议。</p>
+<h3 id="协议遵循">协议遵循</h3>
+<p>一个类型可以遵循比它级别更低的协议。例如，你可以定义一个 <code>public</code> 级别类型，它能在别的模块中使用，但是如果它遵循一个 <code>internal</code> 协议，这个遵循的部分就只能在这个 <code>internal</code> 协议所在的模块中使用。</p>
+<p>遵循协议时的上下文级别是类型和协议中级别最小的那个。如果一个类型是 <code>public</code> 级别，但它要遵循的协议是 <code>internal</code> 级别，那么这个类型对该协议的遵循上下文就是 <code>internal</code> 级别。</p>
+<p>当你编写或扩展一个类型让它遵循一个协议时，你必须确保该类型对协议的每一个要求的实现，至少与遵循协议的上下文级别一致。例如，一个 <code>public</code> 类型遵循一个 <code>internal</code> 协议，这个类型对协议的所有实现至少都应是 <code>internal</code> 级别的。</p>
+<blockquote>
+<p>注意</p>
+<p>Swift 和 Objective-C 一样，协议遵循是全局的，也就是说，在同一程序中，一个类型不可能用两种不同的方式实现同一个协议。</p>
+</blockquote>
+<h2 id="Extension">Extension</h2>
+<p>Extension 可以在访问级别允许的情况下对类、结构体、枚举进行扩展。Extension 的成员具有和原始类型成员一致的访问级别。例如，你使用 extension 扩展了一个 <code>public</code> 或者 <code>internal</code> 类型，extension 中的成员就默认使用 <code>internal</code> 访问级别，和原始类型中的成员一致。如果你使用 extension 扩展了一个 <code>private</code> 类型，则 extension 的成员默认使用 <code>private</code> 访问级别。</p>
+<p>或者，你可以明确指定 extension 的访问级别（例如，<code>private extension</code>），从而给该 extension 中的所有成员指定一个新的默认访问级别。这个新的默认访问级别仍然可以被单独指定的访问级别所覆盖。</p>
+<p>如果你使用 extension 来遵循协议的话，就不能显式地声明 extension 的访问级别。extension 每个 protocol 要求的实现都默认使用 protocol 的访问级别。</p>
+<h3 id="Extension-的私有成员">Extension 的私有成员</h3>
+<p>扩展同一文件内的类，结构体或者枚举，extension 里的代码会表现得跟声明在原类型里的一模一样。也就是说你可以这样：</p>
+<ul>
+<li>在类型的声明里声明一个私有成员，在同一文件的 extension 里访问。</li>
+<li>在 extension 里声明一个私有成员，在同一文件的另一个 extension 里访问。</li>
+<li>在 extension 里声明一个私有成员，在同一文件的类型声明里访问。</li>
+</ul>
+<p>这意味着你可以像组织的代码去使用 extension，而且不受私有成员的影响。例如，给定下面这样一个简单的协议：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protocol</span> <span class="title class_">SomeProtocol</span> &#123;</span><br><span class="line">    <span class="keyword">func</span> <span class="title function_">doSomething</span>()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>你可以使用 extension 来遵循协议，就像这样：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">SomeStruct</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">var</span> privateVariable <span class="operator">=</span> <span class="number">12</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">extension</span> <span class="title class_">SomeStruct</span>: <span class="title class_ inherited__">SomeProtocol</span> &#123;</span><br><span class="line">    <span class="keyword">func</span> <span class="title function_">doSomething</span>() &#123;</span><br><span class="line">        <span class="built_in">print</span>(privateVariable)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="泛型">泛型</h2>
+<p>泛型类型或泛型函数的访问级别取决于泛型类型或泛型函数本身的访问级别，还需结合类型参数的类型约束的访问级别，根据这些访问级别中的最低访问级别来确定。</p>
+<h2 id="类型别名">类型别名</h2>
+<p>你定义的任何类型别名都会被当作不同的类型，以便于进行访问控制。类型别名的访问级别不可高于其表示的类型的访问级别。例如，<code>private</code> 级别的类型别名可以作为 <code>private</code>、<code>file-private</code>、<code>internal</code>、<code>public</code> 或者 <code>open</code> 类型的别名，但是 <code>public</code> 级别的类型别名只能作为 <code>public</code> 类型的别名，不能作为 <code>internal</code>、<code>file-private</code> 或 <code>private</code> 类型的别名。</p>
+<blockquote>
+<p>注意</p>
+<p>这条规则也适用于为满足协议遵循而将类型别名用于关联类型的情况。</p>
+</blockquote>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/swift/" rel="tag">swift</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../14/Swift/swift%E9%AB%98%E7%BA%A7%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                    data-tooltip="swift高级运算符"
+                    aria-label="上一篇: swift高级运算符"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../12/Swift/swift%E5%86%85%E5%AD%98%E5%AE%89%E5%85%A8/"
+                    data-tooltip="swift内存安全"
+                    aria-label="下一篇: swift内存安全"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../14/Swift/swift%E9%AB%98%E7%BA%A7%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                    data-tooltip="swift高级运算符"
+                    aria-label="上一篇: swift高级运算符"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../12/Swift/swift%E5%86%85%E5%AD%98%E5%AE%89%E5%85%A8/"
+                    data-tooltip="swift内存安全"
+                    aria-label="下一篇: swift内存安全"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/13/Swift/swift%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 235 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

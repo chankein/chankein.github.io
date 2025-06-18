@@ -1,0 +1,1149 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>swift基础运算符 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"基本运算符\n运算符是检查、改变、合并值的特殊符号或短语。例如，加号（+）将两个数相加（如 let i = 1 + 2）。更复杂的运算例子包括逻辑与运算符 &amp;&amp;（如 if enteredDoorCode &amp;&amp; passedRetinaScan）。\nSwift 支持大部分标准 C 语言的运算符，且为了减少常见编码错误做了部分改进。如：赋值符（=）不再有返回值，这样就消除了手误将判等运算符（==）写成赋值符导致代码错误的缺陷。算术运算符（+，-，*，/，% 等）的结果会被检测并禁止值溢出，以此来避免保存变量时由于变量大于或小于其类型所能承载的范围时导致的异常结果。当然允许你使用 Swift 的溢出运算符来实现溢出。详情参见 溢出运算符。\nSwift 还提供了 C 语言没有的区间运算符，例如 a..&lt;b 或 a...b，这方便我们表达一个区间内的数值。\n本章节只描述了 Swift 中的基本运算符，高级运算符 这章会包含 Swift 中的高级运算符，及如何自定义运算符，及如何进行自定义类型的运算符重载。\n术语\n运算符分为一元、二元和三元运算符:\n\n一元运算符对单一操作对象操作（如 -a）。一元运算符分前置运算符和后置运算符，前置运算符需紧跟在操作对象之前（如 !b），后置运算符需紧跟在操作对象之后（如 c!）。\n二元运算符操作两个操作对象（如 2 + 3），是中置的，因为它们出现在两个操作对象之间。\n三元运算符操作三个操作对象，和 C 语言一样，Swift 只有一个三元运算符，就是三目运算符（a ? b : c）。\n\n受运算符影响的值叫操作数，在表达式 1 + 2 中，加号 + 是二元运算符，它的两个操作数是值 1 和 2。\n赋值运算符\n赋值运算符（a = b），表示用 b 的值来初始化或更新 a 的值：\n1234let b = 10var a = 5a = b// a 现在等于 10\n如果赋值的右边是一个多元组，它的元素可以马上被分解成多个常量或变量：\n12let (x, y) = (1, 2)// 现在 x 等于 1，y 等于 2\n与 C 语言和 Objective-C 不同，Swift 的赋值操作并不返回任何值。所以下面语句是无效的：\n123if x = y &#123;    // 此句错误，因为 x = y 并不返回任何值&#125;\n通过将 if x = y 标记为无效语句，Swift 能帮你避免把 （==）错写成（=）这类错误的出现。\n算术运算符\nSwift 中所有数值类型都支持了基本的四则算术运算符：\n\n加法（+）\n减法（-）\n乘法（*）\n除法（/）\n\n12341 + 2       // 等于 35 - 3       // 等于 22 * 3       // 等于 610.0 / 2.5  // 等于 4.0\n与 C 语言和 Objective-C 不同的是，Swift 默认情况下不允许在数值运算中出现溢出情况。但是你可以使用 Swift 的溢出运算符来实现溢出运算（如 a &amp;+ b）。详情参见 溢出运算符。\n加法运算符也可用于 String 的拼接：\n1&quot;hello, &quot; + &quot;world&quot;  // 等于 &quot;hello, world&quot;\n求余运算符\n求余运算符（a % b）是计算 b 的多少倍刚刚好可以容入 a，返回多出来的那部分（余数）。\n\n注意\n求余运算符（%）在其他语言也叫取模运算符。但是严格说来，我们看该运算符对负数的操作结果，「求余」比「取模」更合适些。\n\n我们来谈谈取余是怎么回事，计算 9 % 4，你先计算出 4 的多少倍会刚好可以容入 9 中：\n\n你可以在 9 中放入两个 4，那余数是 1（用橙色标出）。\n在 Swift 中可以表达为：\n19 % 4    // 等于 1\n为了得到 a % b 的结果，% 计算了以下等式，并输出 余数作为结果：\n1a = (b × 倍数) + 余数\n当 倍数取最大值的时候，就会刚好可以容入 a 中。\n把 9 和 4 代入等式中，我们得 1：\n19 = (4 × 2) + 1\n同样的方法，我们来计算 -9 % 4：\n1-9 % 4   // 等于 -1\n把 -9 和 4 代入等式，-2 是取到的最大整数：\n1-9 = (4 × -2) + -1\n余数是 -1。\n在对负数 b 求余时，b 的符号会被忽略。这意味着 a % b 和 a % -b 的结果是相同的。\n一元负号运算符\n数值的正负号可以使用前缀 -（即一元负号符）来切换：\n123let three = 3let minusThree = -three       // minusThree 等于 -3let plusThree = -minusThree   // plusThree 等于 3, 或 &quot;负负3&quot;\n一元负号符（-）写在操作数之前，中间没有空格。\n一元正号运算符\n一元正号符（+）不做任何改变地返回操作数的值：\n12let minusSix = -6let alsoMinusSix = +minusSix  // alsoMinusSix 等于 -6\n虽然一元正号符什么都不会改变，但当你在使用一元负号来表达负数时，你可以使用一元正号来表达正数，如此你的代码会具有对称美。\n组合赋值运算符\n如同 C 语言，Swift 也提供把其他运算符和赋值运算（=）组合的组合赋值运算符，组合加运算（+=）是其中一个例子：\n123var a = 1a += 2// a 现在是 3\n表达式 a += 2 是 a = a + 2 的简写，一个组合加运算就是把加法运算和赋值运算组合成进一个运算符里，同时完成两个运算任务。\n\n注意\n复合赋值运算没有返回值，let b = a += 2 这类代码是错误。这不同于上面提到的自增和自减运算符。\n\n更多 Swift 标准库运算符的信息，请看 运算符声明。 ‌\n比较运算符（Comparison Operators）\n所有标准 C 语言中的比较运算符都可以在 Swift 中使用：\n\n等于（a == b）\n不等于（a != b）\n大于（a &gt; b）\n小于（a &lt; b）\n大于等于（a &gt;= b）\n小于等于（a &lt;= b）\n\n\n注意\nSwift 也提供恒等（===）和不恒等（!==）这两个比较符来判断两个对象是否引用同一个对象实例。更多细节在 类与结构 章节的 Identity Operators 部分。\n\n每个比较运算都返回了一个标识表达式是否成立的布尔值：\n1234561 == 1   // true, 因为 1 等于 12 != 1   // true, 因为 2 不等于 12 &gt; 1    // true, 因为 2 大于 11 &lt; 2    // true, 因为 1 小于21 &gt;= 1   // true, 因为 1 大于等于 12 &lt;= 1   // false, 因为 2 并不小于等于 1\n比较运算多用于条件语句，如 if 条件：\n1234567let name = &quot;world&quot;if name == &quot;world&quot; &#123;    print(&quot;hello, world&quot;)&#125; else &#123;    print(&quot;I&#x27;m sorry \\(name), but I don&#x27;t recognize you&quot;)&#125;// 输出“hello, world&quot;, 因为 `name` 就是等于 &quot;world”\n关于 if 语句，请看 控制流。\n如果两个元组的元素相同，且长度相同的话，元组就可以被比较。比较元组大小会按照从左到右、逐值比较的方式，直到发现有两个值不等时停止。如果所有的值都相等，那么这一对元组我们就称它们是相等的。例如：\n123(1, &quot;zebra&quot;) &lt; (2, &quot;apple&quot;)   // true，因为 1 小于 2(3, &quot;apple&quot;) &lt; (3, &quot;bird&quot;)    // true，因为 3 等于 3，但是 apple 小于 bird(4, &quot;dog&quot;) == (4, &quot;dog&quot;)      // true，因为 4 等于 4，dog 等于 dog\n在上面的例子中，你可以看到，在第一行中从左到右的比较行为。因为 1 小于 2，所以 (1, &quot;zebra&quot;) 小于 (2, &quot;apple&quot;)，不管元组剩下的值如何。所以 &quot;zebra&quot; 大于 &quot;apple&quot; 对结果没有任何影响，因为元组的比较结果已经被第一个元素决定了。不过，当元组的第一个元素相同时候，第二个元素将会用作比较-第二行和第三行代码就发生了这样的比较。\n当元组中的元素都可以被比较时，你也可以使用这些运算符来比较它们的大小。例如，像下面展示的代码，你可以比较两个类型为 (String, Int) 的元组，因为 Int 和 String 类型的值可以比较。相反，Bool 不能被比较，也意味着存有布尔类型的元组不能被比较。\n12(&quot;blue&quot;, -1) &lt; (&quot;purple&quot;, 1)       // 正常，比较的结果为 true(&quot;blue&quot;, false) &lt; (&quot;purple&quot;, true) // 错误，因为 &lt; 不能比较布尔类型\n\n注意\nSwift 标准库只能比较七个以内元素的元组比较函数。如果你的元组元素超过七个时，你需要自己实现比较运算符。\n\n三元运算符（Ternary Conditional Operator）\n三元运算符的特殊在于它是有三个操作数的运算符，它的形式是 问题 ? 答案 1 : 答案 2。它简洁地表达根据 问题成立与否作出二选一的操作。如果 问题 成立，返回 答案 1 的结果；反之返回 答案 2 的结果。\n三元运算符是以下代码的缩写形式：\n12345if question &#123;    answer1&#125; else &#123;    answer2&#125;\n这里有个计算表格行高的例子。如果有表头，那行高应比内容高度要高出 50 点；如果没有表头，只需高出 20 点：\n1234let contentHeight = 40let hasHeader = truelet rowHeight = contentHeight + (hasHeader ? 50 : 20)// rowHeight 现在是 90\n上面的写法比下面的代码更简洁：\n123456789let contentHeight = 40let hasHeader = truevar rowHeight = contentHeightif hasHeader &#123;    rowHeight = rowHeight + 50&#125; else &#123;    rowHeight = rowHeight + 20&#125;// rowHeight 现在是 90\n第一段代码例子使用了三元运算，所以一行代码就能让我们得到正确答案。这比第二段代码简洁得多，无需将 rowHeight 定义成变量，因为它的值无需在 if 语句中改变。\n三元运算为二选一场景提供了一个非常便捷的表达形式。不过需要注意的是，滥用三元运算符会降低代码可读性。所以我们应避免在一个复合语句中使用多个三元运算符。\n空合运算符（Nil Coalescing Operator）\n空合运算符（a ?? b）将对可选类型 a 进行空判断，如果 a 包含一个值就进行解包，否则就返回一个默认值 b。表达式 a 必须是 Optional 类型。默认值 b 的类型必须要和 a 存储值的类型保持一致。\n空合运算符是对以下代码的简短表达方法：\n1a != nil ? a! : b\n上述代码使用了三元运算符。当可选类型 a 的值不为空时，进行强制解封（a!），访问 a 中的值；反之返回默认值 b。无疑空合运算符（??）提供了一种更为优雅的方式去封装条件判断和解封两种行为，显得简洁以及更具可读性。\n\n注意\n如果 a 为非空值（non-nil），那么值 b 将不会被计算。这也就是所谓的短路求值。\n\n下文例子采用空合运算符，实现了在默认颜色名和可选自定义颜色名之间抉择：\n12345let defaultColorName = &quot;red&quot;var userDefinedColorName: String?   //默认值为 nilvar colorNameToUse = userDefinedColorName ?? defaultColorName// userDefinedColorName 的值为空，所以 colorNameToUse 的值为 &quot;red&quot;\nuserDefinedColorName 变量被定义为一个可选的 String 类型，默认值为 nil。由于 userDefinedColorName 是一个可选类型，我们可以使用空合运算符去判断其值。在上一个例子中，通过空合运算符为一个名为 colorNameToUse 的变量赋予一个字符串类型初始值。 由于 userDefinedColorName 值为空，因此表达式 userDefinedColorName ?? defaultColorName 返回 defaultColorName 的值，即 red。\n如果你分配一个非空值（non-nil）给 userDefinedColorName，再次执行空合运算，运算结果为封包在 userDefaultColorName 中的值，而非默认值。\n123userDefinedColorName = &quot;green&quot;colorNameToUse = userDefinedColorName ?? defaultColorName// userDefinedColorName 非空，因此 colorNameToUse 的值为 &quot;green&quot;\n区间运算符（Range Operators）\nSwift 提供了几种方便表达一个区间的值的区间运算符。\n闭区间运算符\n闭区间运算符（a...b）定义一个包含从 a 到 b（包括 a 和 b）的所有值的区间。a 的值不能超过 b。\n闭区间运算符在迭代一个区间的所有值时是非常有用的，如在 for-in 循环中：\n12345678for index in 1...5 &#123;    print(&quot;\\(index) * 5 = \\(index * 5)&quot;)&#125;// 1 * 5 = 5// 2 * 5 = 10// 3 * 5 = 15// 4 * 5 = 20// 5 * 5 = 25\n关于 for-in 循环，请看 控制流。\n半开区间运算符\n半开区间运算符（a..&lt;b）定义一个从 a 到 b 但不包括 b 的区间。 之所以称为半开区间，是因为该区间包含第一个值而不包括最后的值。\n半开区间的实用性在于当你使用一个从 0 开始的列表（如数组）时，非常方便地从0数到列表的长度。\n123456789let names = [&quot;Anna&quot;, &quot;Alex&quot;, &quot;Brian&quot;, &quot;Jack&quot;]let count = names.countfor i in 0..&lt;count &#123;    print(&quot;第 \\(i + 1) 个人叫 \\(names[i])&quot;)&#125;// 第 1 个人叫 Anna// 第 2 个人叫 Alex// 第 3 个人叫 Brian// 第 4 个人叫 Jack\n数组有 4 个元素，但 0..&lt;count 只数到3（最后一个元素的下标），因为它是半开区间。关于数组，请查阅 数组。\n单侧区间\n闭区间操作符有另一个表达形式，可以表达往一侧无限延伸的区间 —— 例如，一个包含了数组从索引 2 到结尾的所有值的区间。在这些情况下，你可以省略掉区间操作符一侧的值。这种区间叫做单侧区间，因为操作符只有一侧有值。例如：\n123456789101112for name in names[2...] &#123;    print(name)&#125;// Brian// Jackfor name in names[...2] &#123;    print(name)&#125;// Anna// Alex// Brian\n半开区间操作符也有单侧表达形式，附带上它的最终值。就像你使用区间去包含一个值，最终值并不会落在区间内。例如：\n12345for name in names[..&lt;2] &#123;    print(name)&#125;// Anna// Alex\n单侧区间不止可以在下标里使用，也可以在别的情境下使用。你不能遍历省略了初始值的单侧区间，因为遍历的开端并不明显。你可以遍历一个省略最终值的单侧区间；然而，由于这种区间无限延伸的特性，请保证你在循环里有一个结束循环的分支。你也可以查看一个单侧区间是否包含某个特定的值，就像下面展示的那样。\n1234let range = ...5range.contains(7)   // falserange.contains(4)   // truerange.contains(-1)  // true\n逻辑运算符（Logical Operators）\n逻辑运算符的操作对象是逻辑布尔值。Swift 支持基于 C 语言的三个标准逻辑运算。\n\n逻辑非（!a）\n逻辑与（a &amp;&amp; b）\n逻辑或（a || b）\n\n逻辑非运算符\n逻辑非运算符（!a）对一个布尔值取反，使得 true 变 false，false 变 true。\n它是一个前置运算符，需紧跟在操作数之前，且不加空格。读作 非 a ，例子如下：\n12345let allowedEntry = falseif !allowedEntry &#123;    print(&quot;ACCESS DENIED&quot;)&#125;// 输出“ACCESS DENIED”\nif !allowedEntry 语句可以读作「如果非 allowedEntry」，接下一行代码只有在「非 allowedEntry」为 true，即 allowEntry 为 false 时被执行。\n在示例代码中，小心地选择布尔常量或变量有助于代码的可读性，并且避免使用双重逻辑非运算，或混乱的逻辑语句。\n逻辑与运算符 #{logical_and_operator}\n逻辑与运算符（a &amp;&amp; b）表达了只有 a 和 b 的值都为 true 时，整个表达式的值才会是 true。\n只要任意一个值为 false，整个表达式的值就为 false。事实上，如果第一个值为 false，那么是不去计算第二个值的，因为它已经不可能影响整个表达式的结果了。这被称做短路计算（short-circuit evaluation）。\n以下例子，只有两个 Bool 值都为 true 的时候才允许进入 if：\n12345678let enteredDoorCode = truelet passedRetinaScan = falseif enteredDoorCode &amp;&amp; passedRetinaScan &#123;    print(&quot;Welcome!&quot;)&#125; else &#123;    print(&quot;ACCESS DENIED&quot;)&#125;// 输出“ACCESS DENIED”\n逻辑或运算符 #{logical_or_operator}\n逻辑或运算符（a || b）是一个由两个连续的 | 组成的中置运算符。它表示了两个逻辑表达式的其中一个为 true，整个表达式就为 true。\n同逻辑与运算符类似，逻辑或也是「短路计算」的，当左端的表达式为 true 时，将不计算右边的表达式了，因为它不可能改变整个表达式的值了。\n以下示例代码中，第一个布尔值（hasDoorKey）为 false，但第二个值（knowsOverridePassword）为 true，所以整个表达是 true，于是允许进入：\n12345678let hasDoorKey = falselet knowsOverridePassword = trueif hasDoorKey || knowsOverridePassword &#123;    print(&quot;Welcome!&quot;)&#125; else &#123;    print(&quot;ACCESS DENIED&quot;)&#125;// 输出“Welcome!”\n逻辑运算符组合计算\n我们可以组合多个逻辑运算符来表达一个复合逻辑：\n123456if enteredDoorCode &amp;&amp; passedRetinaScan || hasDoorKey || knowsOverridePassword &#123;    print(&quot;Welcome!&quot;)&#125; else &#123;    print(&quot;ACCESS DENIED&quot;)&#125;// 输出“Welcome!”\n这个例子使用了含多个 &amp;&amp; 和 || 的复合逻辑。但无论怎样，&amp;&amp; 和 || 始终只能操作两个值。所以这实际是三个简单逻辑连续操作的结果。我们来解读一下：\n如果我们输入了正确的密码并通过了视网膜扫描，或者我们有一把有效的钥匙，又或者我们知道紧急情况下重置的密码，我们就能把门打开进入。\n前两种情况，我们都不满足，所以前两个简单逻辑的结果是 false，但是我们是知道紧急情况下重置的密码的，所以整个复杂表达式的值还是 true。\n\n注意\nSwift 逻辑操作符 &amp;&amp; 和 || 是左结合的，这意味着拥有多元逻辑操作符的复合表达式优先计算最左边的子表达式。\n\n使用括号来明确优先级\n为了一个复杂表达式更容易读懂，在合适的地方使用括号来明确优先级是很有效的，虽然它并非必要的。在上个关于门的权限的例子中，我们给第一个部分加个括号，使它看起来逻辑更明确：\n123456if (enteredDoorCode &amp;&amp; passedRetinaScan) || hasDoorKey || knowsOverridePassword &#123;    print(&quot;Welcome!&quot;)&#125; else &#123;    print(&quot;ACCESS DENIED&quot;)&#125;// 输出“Welcome!”\n这括号使得前两个值被看成整个逻辑表达中独立的一个部分。虽然有括号和没括号的输出结果是一样的，但对于读代码的人来说有括号的代码更清晰。可读性比简洁性更重要，请在可以让你代码变清晰的地方加个括号吧！\n","dateCreated":"2023-06-19T10:13:17+08:00","dateModified":"2025-06-18T10:40:50+08:00","datePublished":"2023-06-19T10:13:17+08:00","description":"","headline":"swift基础运算符","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/","keywords":"swift"}</script>
+    <meta name="description" content="基本运算符 运算符是检查、改变、合并值的特殊符号或短语。例如，加号（+）将两个数相加（如 let i &#x3D; 1 + 2）。更复杂的运算例子包括逻辑与运算符 &amp;&amp;（如 if enteredDoorCode &amp;&amp; passedRetinaScan）。 Swift 支持大部分标准 C 语言的运算符，且为了减少常见编码错误做了部分改进。如：赋值符（&#x3D;）不再有返回值，这样就消除">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="swift基础运算符">
+<meta property="og:url" content="https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="基本运算符 运算符是检查、改变、合并值的特殊符号或短语。例如，加号（+）将两个数相加（如 let i &#x3D; 1 + 2）。更复杂的运算例子包括逻辑与运算符 &amp;&amp;（如 if enteredDoorCode &amp;&amp; passedRetinaScan）。 Swift 支持大部分标准 C 语言的运算符，且为了减少常见编码错误做了部分改进。如：赋值符（&#x3D;）不再有返回值，这样就消除">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://docs.swift.org/swift-book/_images/remainderInteger_2x.png">
+<meta property="article:published_time" content="2023-06-19T02:13:17.000Z">
+<meta property="article:modified_time" content="2025-06-18T02:40:50.222Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="swift">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://docs.swift.org/swift-book/_images/remainderInteger_2x.png">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            swift基础运算符
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2023-06-19T10:13:17+08:00">
+	
+		    2023 年 6 月 19 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/swift/">swift</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="基本运算符">基本运算符</h2>
+<p><em>运算符</em>是检查、改变、合并值的特殊符号或短语。例如，加号（<code>+</code>）将两个数相加（如 <code>let i = 1 + 2</code>）。更复杂的运算例子包括逻辑与运算符 <code>&amp;&amp;</code>（如 <code>if enteredDoorCode &amp;&amp; passedRetinaScan</code>）。</p>
+<p>Swift 支持大部分标准 C 语言的运算符，且为了减少常见编码错误做了部分改进。如：赋值符（<code>=</code>）不再有返回值，这样就消除了手误将判等运算符（<code>==</code>）写成赋值符导致代码错误的缺陷。算术运算符（<code>+</code>，<code>-</code>，<code>*</code>，<code>/</code>，<code>%</code> 等）的结果会被检测并禁止值溢出，以此来避免保存变量时由于变量大于或小于其类型所能承载的范围时导致的异常结果。当然允许你使用 Swift 的溢出运算符来实现溢出。详情参见 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/26_Advanced_Operators.html#overflow_operators">溢出运算符</a>。</p>
+<p>Swift 还提供了 C 语言没有的区间运算符，例如 <code>a..&lt;b</code> 或 <code>a...b</code>，这方便我们表达一个区间内的数值。</p>
+<p>本章节只描述了 Swift 中的基本运算符，<a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/26_Advanced_Operators.html">高级运算符</a> 这章会包含 Swift 中的高级运算符，及如何自定义运算符，及如何进行自定义类型的运算符重载。</p>
+<h2 id="术语">术语</h2>
+<p>运算符分为一元、二元和三元运算符:</p>
+<ul>
+<li><em>一元</em>运算符对单一操作对象操作（如 <code>-a</code>）。一元运算符分前置运算符和后置运算符，<em>前置运算符</em>需紧跟在操作对象之前（如 <code>!b</code>），<em>后置运算符</em>需紧跟在操作对象之后（如 <code>c!</code>）。</li>
+<li><em>二元</em>运算符操作两个操作对象（如 <code>2 + 3</code>），是<em>中置</em>的，因为它们出现在两个操作对象之间。</li>
+<li><em>三元</em>运算符操作三个操作对象，和 C 语言一样，Swift 只有一个三元运算符，就是三目运算符（<code>a ? b : c</code>）。</li>
+</ul>
+<p>受运算符影响的值叫<em>操作数</em>，在表达式 <code>1 + 2</code> 中，加号 <code>+</code> 是二元运算符，它的两个操作数是值 <code>1</code> 和 <code>2</code>。</p>
+<h2 id="赋值运算符">赋值运算符</h2>
+<p><em>赋值运算符</em>（<code>a = b</code>），表示用 <code>b</code> 的值来初始化或更新 <code>a</code> 的值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> b <span class="operator">=</span> <span class="number">10</span></span><br><span class="line"><span class="keyword">var</span> a <span class="operator">=</span> <span class="number">5</span></span><br><span class="line">a <span class="operator">=</span> b</span><br><span class="line"><span class="comment">// a 现在等于 10</span></span><br></pre></td></tr></table></figure>
+<p>如果赋值的右边是一个多元组，它的元素可以马上被分解成多个常量或变量：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> (x, y) <span class="operator">=</span> (<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line"><span class="comment">// 现在 x 等于 1，y 等于 2</span></span><br></pre></td></tr></table></figure>
+<p>与 C 语言和 Objective-C 不同，Swift 的赋值操作并不返回任何值。所以下面语句是无效的：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> x <span class="operator">=</span> y &#123;</span><br><span class="line">    <span class="comment">// 此句错误，因为 x = y 并不返回任何值</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过将 <code>if x = y</code> 标记为无效语句，Swift 能帮你避免把 （<code>==</code>）错写成（<code>=</code>）这类错误的出现。</p>
+<h2 id="算术运算符">算术运算符</h2>
+<p>Swift 中所有数值类型都支持了基本的四则<em>算术运算符</em>：</p>
+<ul>
+<li>加法（<code>+</code>）</li>
+<li>减法（<code>-</code>）</li>
+<li>乘法（<code>*</code>）</li>
+<li>除法（<code>/</code>）</li>
+</ul>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> <span class="operator">+</span> <span class="number">2</span>       <span class="comment">// 等于 3</span></span><br><span class="line"><span class="number">5</span> <span class="operator">-</span> <span class="number">3</span>       <span class="comment">// 等于 2</span></span><br><span class="line"><span class="number">2</span> <span class="operator">*</span> <span class="number">3</span>       <span class="comment">// 等于 6</span></span><br><span class="line"><span class="number">10.0</span> <span class="operator">/</span> <span class="number">2.5</span>  <span class="comment">// 等于 4.0</span></span><br></pre></td></tr></table></figure>
+<p>与 C 语言和 Objective-C 不同的是，Swift 默认情况下不允许在数值运算中出现溢出情况。但是你可以使用 Swift 的溢出运算符来实现溢出运算（如 <code>a &amp;+ b</code>）。详情参见 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/26_Advanced_Operators.html#overflow_operators">溢出运算符</a>。</p>
+<p>加法运算符也可用于 <code>String</code> 的拼接：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;hello, &quot;</span> <span class="operator">+</span> <span class="string">&quot;world&quot;</span>  <span class="comment">// 等于 &quot;hello, world&quot;</span></span><br></pre></td></tr></table></figure>
+<h3 id="求余运算符">求余运算符</h3>
+<p><em>求余运算符</em>（<code>a % b</code>）是计算 <code>b</code> 的多少倍刚刚好可以容入 <code>a</code>，返回多出来的那部分（余数）。</p>
+<blockquote>
+<p>注意</p>
+<p>求余运算符（<code>%</code>）在其他语言也叫<em>取模运算符</em>。但是严格说来，我们看该运算符对负数的操作结果，「求余」比「取模」更合适些。</p>
+</blockquote>
+<p>我们来谈谈取余是怎么回事，计算 <code>9 % 4</code>，你先计算出 <code>4</code> 的多少倍会刚好可以容入 <code>9</code> 中：</p>
+<p><img src="https://docs.swift.org/swift-book/_images/remainderInteger_2x.png" alt="Art/remainderInteger_2x.png" title="Art/remainderInteger_2x.png"></p>
+<p>你可以在 <code>9</code> 中放入两个 <code>4</code>，那余数是 1（用橙色标出）。</p>
+<p>在 Swift 中可以表达为：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">9</span> <span class="operator">%</span> <span class="number">4</span>    <span class="comment">// 等于 1</span></span><br></pre></td></tr></table></figure>
+<p>为了得到 <code>a % b</code> 的结果，<code>%</code> 计算了以下等式，并输出 <code>余数</code>作为结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">a = (b × 倍数) + 余数</span><br></pre></td></tr></table></figure>
+<p>当 <code>倍数</code>取最大值的时候，就会刚好可以容入 <code>a</code> 中。</p>
+<p>把 <code>9</code> 和 <code>4</code> 代入等式中，我们得 <code>1</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">9 = (4 × 2) + 1</span><br></pre></td></tr></table></figure>
+<p>同样的方法，我们来计算 <code>-9 % 4</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">-</span><span class="number">9</span> <span class="operator">%</span> <span class="number">4</span>   <span class="comment">// 等于 -1</span></span><br></pre></td></tr></table></figure>
+<p>把 <code>-9</code> 和 <code>4</code> 代入等式，<code>-2</code> 是取到的最大整数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-9 = (4 × -2) + -1</span><br></pre></td></tr></table></figure>
+<p>余数是 <code>-1</code>。</p>
+<p>在对负数 <code>b</code> 求余时，<code>b</code> 的符号会被忽略。这意味着 <code>a % b</code> 和 <code>a % -b</code> 的结果是相同的。</p>
+<h3 id="一元负号运算符">一元负号运算符</h3>
+<p>数值的正负号可以使用前缀 <code>-</code>（即<em>一元负号符</em>）来切换：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> three <span class="operator">=</span> <span class="number">3</span></span><br><span class="line"><span class="keyword">let</span> minusThree <span class="operator">=</span> <span class="operator">-</span>three       <span class="comment">// minusThree 等于 -3</span></span><br><span class="line"><span class="keyword">let</span> plusThree <span class="operator">=</span> <span class="operator">-</span>minusThree   <span class="comment">// plusThree 等于 3, 或 &quot;负负3&quot;</span></span><br></pre></td></tr></table></figure>
+<p>一元负号符（<code>-</code>）写在操作数之前，中间没有空格。</p>
+<h3 id="一元正号运算符">一元正号运算符</h3>
+<p><em>一元正号符</em>（<code>+</code>）不做任何改变地返回操作数的值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> minusSix <span class="operator">=</span> <span class="operator">-</span><span class="number">6</span></span><br><span class="line"><span class="keyword">let</span> alsoMinusSix <span class="operator">=</span> <span class="operator">+</span>minusSix  <span class="comment">// alsoMinusSix 等于 -6</span></span><br></pre></td></tr></table></figure>
+<p>虽然一元正号符什么都不会改变，但当你在使用一元负号来表达负数时，你可以使用一元正号来表达正数，如此你的代码会具有对称美。</p>
+<h2 id="组合赋值运算符">组合赋值运算符</h2>
+<p>如同 C 语言，Swift 也提供把其他运算符和赋值运算（<code>=</code>）组合的<em>组合赋值运算符</em>，组合加运算（<code>+=</code>）是其中一个例子：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> a <span class="operator">=</span> <span class="number">1</span></span><br><span class="line">a <span class="operator">+=</span> <span class="number">2</span></span><br><span class="line"><span class="comment">// a 现在是 3</span></span><br></pre></td></tr></table></figure>
+<p>表达式 <code>a += 2</code> 是 <code>a = a + 2</code> 的简写，一个组合加运算就是把加法运算和赋值运算组合成进一个运算符里，同时完成两个运算任务。</p>
+<blockquote>
+<p>注意</p>
+<p>复合赋值运算没有返回值，<code>let b = a += 2</code> 这类代码是错误。这不同于上面提到的自增和自减运算符。</p>
+</blockquote>
+<p>更多 Swift 标准库运算符的信息，请看 <a target="_blank" rel="noopener" href="https://developer.apple.com/documentation/swift/operator_declarations">运算符声明</a>。 ‌</p>
+<h2 id="比较运算符（Comparison-Operators）">比较运算符（Comparison Operators）</h2>
+<p>所有标准 C 语言中的<em>比较运算符</em>都可以在 Swift 中使用：</p>
+<ul>
+<li>等于（<code>a == b</code>）</li>
+<li>不等于（<code>a != b</code>）</li>
+<li>大于（<code>a &gt; b</code>）</li>
+<li>小于（<code>a &lt; b</code>）</li>
+<li>大于等于（<code>a &gt;= b</code>）</li>
+<li>小于等于（<code>a &lt;= b</code>）</li>
+</ul>
+<blockquote>
+<p>注意</p>
+<p>Swift 也提供恒等（<code>===</code>）和不恒等（<code>!==</code>）这两个比较符来判断两个对象是否引用同一个对象实例。更多细节在 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/09_Classes_and_Structures.md">类与结构</a> 章节的 <strong>Identity Operators</strong> 部分。</p>
+</blockquote>
+<p>每个比较运算都返回了一个标识表达式是否成立的布尔值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> <span class="operator">==</span> <span class="number">1</span>   <span class="comment">// true, 因为 1 等于 1</span></span><br><span class="line"><span class="number">2</span> <span class="operator">!=</span> <span class="number">1</span>   <span class="comment">// true, 因为 2 不等于 1</span></span><br><span class="line"><span class="number">2</span> <span class="operator">&gt;</span> <span class="number">1</span>    <span class="comment">// true, 因为 2 大于 1</span></span><br><span class="line"><span class="number">1</span> <span class="operator">&lt;</span> <span class="number">2</span>    <span class="comment">// true, 因为 1 小于2</span></span><br><span class="line"><span class="number">1</span> <span class="operator">&gt;=</span> <span class="number">1</span>   <span class="comment">// true, 因为 1 大于等于 1</span></span><br><span class="line"><span class="number">2</span> <span class="operator">&lt;=</span> <span class="number">1</span>   <span class="comment">// false, 因为 2 并不小于等于 1</span></span><br></pre></td></tr></table></figure>
+<p>比较运算多用于条件语句，如 <code>if</code> 条件：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> name <span class="operator">=</span> <span class="string">&quot;world&quot;</span></span><br><span class="line"><span class="keyword">if</span> name <span class="operator">==</span> <span class="string">&quot;world&quot;</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;hello, world&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;I&#x27;m sorry <span class="subst">\(name)</span>, but I don&#x27;t recognize you&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“hello, world&quot;, 因为 `name` 就是等于 &quot;world”</span></span><br></pre></td></tr></table></figure>
+<p>关于 <code>if</code> 语句，请看 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/05_Control_Flow.html">控制流</a>。</p>
+<p>如果两个元组的元素相同，且长度相同的话，元组就可以被比较。比较元组大小会按照从左到右、逐值比较的方式，直到发现有两个值不等时停止。如果所有的值都相等，那么这一对元组我们就称它们是相等的。例如：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(<span class="number">1</span>, <span class="string">&quot;zebra&quot;</span>) <span class="operator">&lt;</span> (<span class="number">2</span>, <span class="string">&quot;apple&quot;</span>)   <span class="comment">// true，因为 1 小于 2</span></span><br><span class="line">(<span class="number">3</span>, <span class="string">&quot;apple&quot;</span>) <span class="operator">&lt;</span> (<span class="number">3</span>, <span class="string">&quot;bird&quot;</span>)    <span class="comment">// true，因为 3 等于 3，但是 apple 小于 bird</span></span><br><span class="line">(<span class="number">4</span>, <span class="string">&quot;dog&quot;</span>) <span class="operator">==</span> (<span class="number">4</span>, <span class="string">&quot;dog&quot;</span>)      <span class="comment">// true，因为 4 等于 4，dog 等于 dog</span></span><br></pre></td></tr></table></figure>
+<p>在上面的例子中，你可以看到，在第一行中从左到右的比较行为。因为 <code>1</code> 小于 <code>2</code>，所以 <code>(1, &quot;zebra&quot;)</code> 小于 <code>(2, &quot;apple&quot;)</code>，不管元组剩下的值如何。所以 <code>&quot;zebra&quot;</code> 大于 <code>&quot;apple&quot;</code> 对结果没有任何影响，因为元组的比较结果已经被第一个元素决定了。不过，当元组的第一个元素相同时候，第二个元素将会用作比较-第二行和第三行代码就发生了这样的比较。</p>
+<p>当元组中的元素都可以被比较时，你也可以使用这些运算符来比较它们的大小。例如，像下面展示的代码，你可以比较两个类型为 <code>(String, Int)</code> 的元组，因为 <code>Int</code> 和 <code>String</code> 类型的值可以比较。相反，<code>Bool</code> 不能被比较，也意味着存有布尔类型的元组不能被比较。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(<span class="string">&quot;blue&quot;</span>, <span class="operator">-</span><span class="number">1</span>) <span class="operator">&lt;</span> (<span class="string">&quot;purple&quot;</span>, <span class="number">1</span>)       <span class="comment">// 正常，比较的结果为 true</span></span><br><span class="line">(<span class="string">&quot;blue&quot;</span>, <span class="literal">false</span>) <span class="operator">&lt;</span> (<span class="string">&quot;purple&quot;</span>, <span class="literal">true</span>) <span class="comment">// 错误，因为 &lt; 不能比较布尔类型</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意</p>
+<p>Swift 标准库只能比较七个以内元素的元组比较函数。如果你的元组元素超过七个时，你需要自己实现比较运算符。</p>
+</blockquote>
+<h2 id="三元运算符（Ternary-Conditional-Operator）">三元运算符（Ternary Conditional Operator）</h2>
+<p><em>三元运算符</em>的特殊在于它是有三个操作数的运算符，它的形式是 <code>问题 ? 答案 1 : 答案 2</code>。它简洁地表达根据 <code>问题</code>成立与否作出二选一的操作。如果 <code>问题</code> 成立，返回 <code>答案 1</code> 的结果；反之返回 <code>答案 2</code> 的结果。</p>
+<p>三元运算符是以下代码的缩写形式：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> question &#123;</span><br><span class="line">    answer1</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    answer2</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里有个计算表格行高的例子。如果有表头，那行高应比内容高度要高出 50 点；如果没有表头，只需高出 20 点：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> contentHeight <span class="operator">=</span> <span class="number">40</span></span><br><span class="line"><span class="keyword">let</span> hasHeader <span class="operator">=</span> <span class="literal">true</span></span><br><span class="line"><span class="keyword">let</span> rowHeight <span class="operator">=</span> contentHeight <span class="operator">+</span> (hasHeader <span class="operator">?</span> <span class="number">50</span> : <span class="number">20</span>)</span><br><span class="line"><span class="comment">// rowHeight 现在是 90</span></span><br></pre></td></tr></table></figure>
+<p>上面的写法比下面的代码更简洁：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> contentHeight <span class="operator">=</span> <span class="number">40</span></span><br><span class="line"><span class="keyword">let</span> hasHeader <span class="operator">=</span> <span class="literal">true</span></span><br><span class="line"><span class="keyword">var</span> rowHeight <span class="operator">=</span> contentHeight</span><br><span class="line"><span class="keyword">if</span> hasHeader &#123;</span><br><span class="line">    rowHeight <span class="operator">=</span> rowHeight <span class="operator">+</span> <span class="number">50</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    rowHeight <span class="operator">=</span> rowHeight <span class="operator">+</span> <span class="number">20</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// rowHeight 现在是 90</span></span><br></pre></td></tr></table></figure>
+<p>第一段代码例子使用了三元运算，所以一行代码就能让我们得到正确答案。这比第二段代码简洁得多，无需将 <code>rowHeight</code> 定义成变量，因为它的值无需在 <code>if</code> 语句中改变。</p>
+<p>三元运算为二选一场景提供了一个非常便捷的表达形式。不过需要注意的是，滥用三元运算符会降低代码可读性。所以我们应避免在一个复合语句中使用多个三元运算符。</p>
+<h2 id="空合运算符（Nil-Coalescing-Operator）">空合运算符（Nil Coalescing Operator）</h2>
+<p><em>空合运算符</em>（<code>a ?? b</code>）将对可选类型 <code>a</code> 进行空判断，如果 <code>a</code> 包含一个值就进行解包，否则就返回一个默认值 <code>b</code>。表达式 <code>a</code> 必须是 Optional 类型。默认值 <code>b</code> 的类型必须要和 <code>a</code> 存储值的类型保持一致。</p>
+<p>空合运算符是对以下代码的简短表达方法：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">a <span class="operator">!=</span> <span class="literal">nil</span> <span class="operator">?</span> a<span class="operator">!</span> : b</span><br></pre></td></tr></table></figure>
+<p>上述代码使用了三元运算符。当可选类型 <code>a</code> 的值不为空时，进行强制解封（<code>a!</code>），访问 <code>a</code> 中的值；反之返回默认值 <code>b</code>。无疑空合运算符（<code>??</code>）提供了一种更为优雅的方式去封装条件判断和解封两种行为，显得简洁以及更具可读性。</p>
+<blockquote>
+<p>注意</p>
+<p>如果 <code>a</code> 为非空值（<code>non-nil</code>），那么值 <code>b</code> 将不会被计算。这也就是所谓的<em>短路求值</em>。</p>
+</blockquote>
+<p>下文例子采用空合运算符，实现了在默认颜色名和可选自定义颜色名之间抉择：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> defaultColorName <span class="operator">=</span> <span class="string">&quot;red&quot;</span></span><br><span class="line"><span class="keyword">var</span> userDefinedColorName: <span class="type">String</span>?   <span class="comment">//默认值为 nil</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> colorNameToUse <span class="operator">=</span> userDefinedColorName <span class="operator">??</span> defaultColorName</span><br><span class="line"><span class="comment">// userDefinedColorName 的值为空，所以 colorNameToUse 的值为 &quot;red&quot;</span></span><br></pre></td></tr></table></figure>
+<p><code>userDefinedColorName</code> 变量被定义为一个可选的 <code>String</code> 类型，默认值为 <code>nil</code>。由于 <code>userDefinedColorName</code> 是一个可选类型，我们可以使用空合运算符去判断其值。在上一个例子中，通过空合运算符为一个名为 <code>colorNameToUse</code> 的变量赋予一个字符串类型初始值。 由于 <code>userDefinedColorName</code> 值为空，因此表达式 <code>userDefinedColorName ?? defaultColorName</code> 返回 <code>defaultColorName</code> 的值，即 <code>red</code>。</p>
+<p>如果你分配一个非空值（<code>non-nil</code>）给 <code>userDefinedColorName</code>，再次执行空合运算，运算结果为封包在 <code>userDefaultColorName</code> 中的值，而非默认值。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">userDefinedColorName <span class="operator">=</span> <span class="string">&quot;green&quot;</span></span><br><span class="line">colorNameToUse <span class="operator">=</span> userDefinedColorName <span class="operator">??</span> defaultColorName</span><br><span class="line"><span class="comment">// userDefinedColorName 非空，因此 colorNameToUse 的值为 &quot;green&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="区间运算符（Range-Operators）">区间运算符（Range Operators）</h2>
+<p>Swift 提供了几种方便表达一个区间的值的<em>区间运算符</em>。</p>
+<h3 id="闭区间运算符">闭区间运算符</h3>
+<p><em>闭区间运算符</em>（<code>a...b</code>）定义一个包含从 <code>a</code> 到 <code>b</code>（包括 <code>a</code> 和 <code>b</code>）的所有值的区间。<code>a</code> 的值不能超过 <code>b</code>。</p>
+<p>闭区间运算符在迭代一个区间的所有值时是非常有用的，如在 <code>for-in</code> 循环中：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> index <span class="keyword">in</span> <span class="number">1</span><span class="operator">...</span><span class="number">5</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(index)</span> * 5 = <span class="subst">\(index <span class="operator">*</span> <span class="number">5</span>)</span>&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 1 * 5 = 5</span></span><br><span class="line"><span class="comment">// 2 * 5 = 10</span></span><br><span class="line"><span class="comment">// 3 * 5 = 15</span></span><br><span class="line"><span class="comment">// 4 * 5 = 20</span></span><br><span class="line"><span class="comment">// 5 * 5 = 25</span></span><br></pre></td></tr></table></figure>
+<p>关于 <code>for-in</code> 循环，请看 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/05_Control_Flow.html">控制流</a>。</p>
+<h3 id="半开区间运算符">半开区间运算符</h3>
+<p><em>半开区间运算符</em>（<code>a..&lt;b</code>）定义一个从 <code>a</code> 到 <code>b</code> 但不包括 <code>b</code> 的区间。 之所以称为<em>半开区间</em>，是因为该区间包含第一个值而不包括最后的值。</p>
+<p>半开区间的实用性在于当你使用一个从 0 开始的列表（如数组）时，非常方便地从0数到列表的长度。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> names <span class="operator">=</span> [<span class="string">&quot;Anna&quot;</span>, <span class="string">&quot;Alex&quot;</span>, <span class="string">&quot;Brian&quot;</span>, <span class="string">&quot;Jack&quot;</span>]</span><br><span class="line"><span class="keyword">let</span> count <span class="operator">=</span> names.count</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="number">0</span><span class="operator">..&lt;</span>count &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;第 <span class="subst">\(i <span class="operator">+</span> <span class="number">1</span>)</span> 个人叫 <span class="subst">\(names[i])</span>&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 第 1 个人叫 Anna</span></span><br><span class="line"><span class="comment">// 第 2 个人叫 Alex</span></span><br><span class="line"><span class="comment">// 第 3 个人叫 Brian</span></span><br><span class="line"><span class="comment">// 第 4 个人叫 Jack</span></span><br></pre></td></tr></table></figure>
+<p>数组有 4 个元素，但 <code>0..&lt;count</code> 只数到3（最后一个元素的下标），因为它是半开区间。关于数组，请查阅 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/04_Collection_Types.html#arrays">数组</a>。</p>
+<h3 id="单侧区间">单侧区间</h3>
+<p>闭区间操作符有另一个表达形式，可以表达往一侧无限延伸的区间 —— 例如，一个包含了数组从索引 2 到结尾的所有值的区间。在这些情况下，你可以省略掉区间操作符一侧的值。这种区间叫做单侧区间，因为操作符只有一侧有值。例如：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> name <span class="keyword">in</span> names[<span class="number">2</span><span class="operator">...</span>] &#123;</span><br><span class="line">    <span class="built_in">print</span>(name)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Brian</span></span><br><span class="line"><span class="comment">// Jack</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> name <span class="keyword">in</span> names[<span class="operator">...</span><span class="number">2</span>] &#123;</span><br><span class="line">    <span class="built_in">print</span>(name)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Anna</span></span><br><span class="line"><span class="comment">// Alex</span></span><br><span class="line"><span class="comment">// Brian</span></span><br></pre></td></tr></table></figure>
+<p>半开区间操作符也有单侧表达形式，附带上它的最终值。就像你使用区间去包含一个值，最终值并不会落在区间内。例如：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> name <span class="keyword">in</span> names[<span class="operator">..&lt;</span><span class="number">2</span>] &#123;</span><br><span class="line">    <span class="built_in">print</span>(name)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Anna</span></span><br><span class="line"><span class="comment">// Alex</span></span><br></pre></td></tr></table></figure>
+<p>单侧区间不止可以在下标里使用，也可以在别的情境下使用。你不能遍历省略了初始值的单侧区间，因为遍历的开端并不明显。你可以遍历一个省略最终值的单侧区间；然而，由于这种区间无限延伸的特性，请保证你在循环里有一个结束循环的分支。你也可以查看一个单侧区间是否包含某个特定的值，就像下面展示的那样。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> range <span class="operator">=</span> <span class="operator">...</span><span class="number">5</span></span><br><span class="line">range.contains(<span class="number">7</span>)   <span class="comment">// false</span></span><br><span class="line">range.contains(<span class="number">4</span>)   <span class="comment">// true</span></span><br><span class="line">range.contains(<span class="operator">-</span><span class="number">1</span>)  <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+<h2 id="逻辑运算符（Logical-Operators）">逻辑运算符（Logical Operators）</h2>
+<p><em>逻辑运算符</em>的操作对象是逻辑布尔值。Swift 支持基于 C 语言的三个标准逻辑运算。</p>
+<ul>
+<li>逻辑非（<code>!a</code>）</li>
+<li>逻辑与（<code>a &amp;&amp; b</code>）</li>
+<li>逻辑或（<code>a || b</code>）</li>
+</ul>
+<h3 id="逻辑非运算符">逻辑非运算符</h3>
+<p><em>逻辑非运算符</em>（<code>!a</code>）对一个布尔值取反，使得 <code>true</code> 变 <code>false</code>，<code>false</code> 变 <code>true</code>。</p>
+<p>它是一个前置运算符，需紧跟在操作数之前，且不加空格。读作 <code>非 a</code> ，例子如下：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> allowedEntry <span class="operator">=</span> <span class="literal">false</span></span><br><span class="line"><span class="keyword">if</span> <span class="operator">!</span>allowedEntry &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;ACCESS DENIED&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“ACCESS DENIED”</span></span><br></pre></td></tr></table></figure>
+<p><code>if !allowedEntry</code> 语句可以读作「如果非 allowedEntry」，接下一行代码只有在「非 allowedEntry」为 <code>true</code>，即 <code>allowEntry</code> 为 <code>false</code> 时被执行。</p>
+<p>在示例代码中，小心地选择布尔常量或变量有助于代码的可读性，并且避免使用双重逻辑非运算，或混乱的逻辑语句。</p>
+<h3 id="逻辑与运算符-logical-and-operator">逻辑与运算符 #{logical_and_operator}</h3>
+<p><em>逻辑与运算符</em>（<code>a &amp;&amp; b</code>）表达了只有 <code>a</code> 和 <code>b</code> 的值都为 <code>true</code> 时，整个表达式的值才会是 <code>true</code>。</p>
+<p>只要任意一个值为 <code>false</code>，整个表达式的值就为 <code>false</code>。事实上，如果第一个值为 <code>false</code>，那么是不去计算第二个值的，因为它已经不可能影响整个表达式的结果了。这被称做<em>短路计算（short-circuit evaluation）</em>。</p>
+<p>以下例子，只有两个 <code>Bool</code> 值都为 <code>true</code> 的时候才允许进入 if：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> enteredDoorCode <span class="operator">=</span> <span class="literal">true</span></span><br><span class="line"><span class="keyword">let</span> passedRetinaScan <span class="operator">=</span> <span class="literal">false</span></span><br><span class="line"><span class="keyword">if</span> enteredDoorCode <span class="operator">&amp;&amp;</span> passedRetinaScan &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Welcome!&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;ACCESS DENIED&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“ACCESS DENIED”</span></span><br></pre></td></tr></table></figure>
+<h3 id="逻辑或运算符-logical-or-operator">逻辑或运算符 #{logical_or_operator}</h3>
+<p>逻辑或运算符（<code>a || b</code>）是一个由两个连续的 <code>|</code> 组成的中置运算符。它表示了两个逻辑表达式的其中一个为 <code>true</code>，整个表达式就为 <code>true</code>。</p>
+<p>同逻辑与运算符类似，逻辑或也是「短路计算」的，当左端的表达式为 <code>true</code> 时，将不计算右边的表达式了，因为它不可能改变整个表达式的值了。</p>
+<p>以下示例代码中，第一个布尔值（<code>hasDoorKey</code>）为 <code>false</code>，但第二个值（<code>knowsOverridePassword</code>）为 <code>true</code>，所以整个表达是 <code>true</code>，于是允许进入：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> hasDoorKey <span class="operator">=</span> <span class="literal">false</span></span><br><span class="line"><span class="keyword">let</span> knowsOverridePassword <span class="operator">=</span> <span class="literal">true</span></span><br><span class="line"><span class="keyword">if</span> hasDoorKey <span class="operator">||</span> knowsOverridePassword &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Welcome!&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;ACCESS DENIED&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“Welcome!”</span></span><br></pre></td></tr></table></figure>
+<h3 id="逻辑运算符组合计算">逻辑运算符组合计算</h3>
+<p>我们可以组合多个逻辑运算符来表达一个复合逻辑：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> enteredDoorCode <span class="operator">&amp;&amp;</span> passedRetinaScan <span class="operator">||</span> hasDoorKey <span class="operator">||</span> knowsOverridePassword &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Welcome!&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;ACCESS DENIED&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“Welcome!”</span></span><br></pre></td></tr></table></figure>
+<p>这个例子使用了含多个 <code>&amp;&amp;</code> 和 <code>||</code> 的复合逻辑。但无论怎样，<code>&amp;&amp;</code> 和 <code>||</code> 始终只能操作两个值。所以这实际是三个简单逻辑连续操作的结果。我们来解读一下：</p>
+<p>如果我们输入了正确的密码并通过了视网膜扫描，或者我们有一把有效的钥匙，又或者我们知道紧急情况下重置的密码，我们就能把门打开进入。</p>
+<p>前两种情况，我们都不满足，所以前两个简单逻辑的结果是 <code>false</code>，但是我们是知道紧急情况下重置的密码的，所以整个复杂表达式的值还是 <code>true</code>。</p>
+<blockquote>
+<p>注意</p>
+<p>Swift 逻辑操作符 <code>&amp;&amp;</code> 和 <code>||</code> 是左结合的，这意味着拥有多元逻辑操作符的复合表达式优先计算最左边的子表达式。</p>
+</blockquote>
+<h3 id="使用括号来明确优先级">使用括号来明确优先级</h3>
+<p>为了一个复杂表达式更容易读懂，在合适的地方使用括号来明确优先级是很有效的，虽然它并非必要的。在上个关于门的权限的例子中，我们给第一个部分加个括号，使它看起来逻辑更明确：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (enteredDoorCode <span class="operator">&amp;&amp;</span> passedRetinaScan) <span class="operator">||</span> hasDoorKey <span class="operator">||</span> knowsOverridePassword &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Welcome!&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;ACCESS DENIED&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“Welcome!”</span></span><br></pre></td></tr></table></figure>
+<p>这括号使得前两个值被看成整个逻辑表达中独立的一个部分。虽然有括号和没括号的输出结果是一样的，但对于读代码的人来说有括号的代码更清晰。可读性比简洁性更重要，请在可以让你代码变清晰的地方加个括号吧！</p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/swift/" rel="tag">swift</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../20/Swift/swift%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%92%8C%E5%AD%97%E7%AC%A6/"
+                    data-tooltip="swift字符串和字符"
+                    aria-label="上一篇: swift字符串和字符"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../18/Swift/swift%E5%9F%BA%E7%A1%80/"
+                    data-tooltip="swift基础"
+                    aria-label="下一篇: swift基础"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../20/Swift/swift%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%92%8C%E5%AD%97%E7%AC%A6/"
+                    data-tooltip="swift字符串和字符"
+                    aria-label="上一篇: swift字符串和字符"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../18/Swift/swift%E5%9F%BA%E7%A1%80/"
+                    data-tooltip="swift基础"
+                    aria-label="下一篇: swift基础"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/19/Swift/swift%E5%9F%BA%E7%A1%80%E8%BF%90%E7%AE%97%E7%AC%A6/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 235 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

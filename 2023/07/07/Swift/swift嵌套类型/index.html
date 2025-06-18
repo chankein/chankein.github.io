@@ -1,0 +1,990 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>swift嵌套类型 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"嵌套类型\n枚举常被用于为特定类或结构体实现某些功能。类似地，枚举可以方便的定义工具类或结构体，从而为某个复杂的类型所使用。为了实现这种功能，Swift 允许你定义嵌套类型，可以在支持的类型中定义嵌套的枚举、类和结构体。\n要在一个类型中嵌套另一个类型，将嵌套类型的定义写在其外部类型的 &#123;&#125; 内，而且可以根据需要定义多级嵌套。\n嵌套类型实践\n下面这个例子定义了一个结构体 BlackjackCard（二十一点），用来模拟 BlackjackCard 中的扑克牌点数。BlackjackCard 结构体包含两个嵌套定义的枚举类型 Suit 和 Rank。\n在 BlackjackCard 中，Ace 牌可以表示 1 或者 11，Ace 牌的这一特征通过一个嵌套在 Rank 枚举中的结构体 Values 来表示：\n12345678910111213141516171819202122232425262728293031323334353637struct BlackjackCard &#123;    // 嵌套的 Suit 枚举    enum Suit: Character &#123;        case spades = &quot;♠&quot;, hearts = &quot;♡&quot;, diamonds = &quot;♢&quot;, clubs = &quot;♣&quot;    &#125;    // 嵌套的 Rank 枚举    enum Rank: Int &#123;        case two = 2, three, four, five, six, seven, eight, nine, ten        case jack, queen, king, ace        struct Values &#123;            let first: Int, second: Int?        &#125;        var values: Values &#123;            switch self &#123;            case .ace:                return Values(first: 1, second: 11)            case .jack, .queen, .king:                return Values(first: 10, second: nil)            default:                return Values(first: self.rawValue, second: nil)            &#125;        &#125;    &#125;    // BlackjackCard 的属性和方法    let rank: Rank, suit: Suit    var description: String &#123;        var output = &quot;suit is \\(suit.rawValue),&quot;        output += &quot; value is \\(rank.values.first)&quot;        if let second = rank.values.second &#123;            output += &quot; or \\(second)&quot;        &#125;        return output    &#125;&#125;\nSuit 枚举用来描述扑克牌的四种花色，并用一个 Character 类型的原始值表示花色符号。\nRank 枚举用来描述扑克牌从 Ace~10，以及 J、Q、K，这 13 种牌，并用一个 Int 类型的原始值表示牌的面值。（这个 Int 类型的原始值未用于 Ace、J、Q、K 这 4 种牌。）\n如上所述，Rank 枚举在内部定义了一个嵌套结构体 Values。结构体 Values 中定义了两个属性，用于反映只有 Ace 有两个数值，其余牌都只有一个数值：\n\nfirst 的类型为 Int\nsecond 的类型为 Int?，或者说“可选 Int”\n\nRank 还定义了一个计算型属性 values，它将会返回一个 Values 结构体的实例。这个计算型属性会根据牌的面值，用适当的数值去初始化 Values 实例。对于 J、Q、K、Ace 这四种牌，会使用特殊数值。对于数字面值的牌，使用枚举实例的 Int 类型的原始值。\nBlackjackCard 结构体拥有两个属性——rank 与 suit。它也同样定义了一个计算型属性 description，description 属性用 rank 和 suit 中的内容来构建对扑克牌名字和数值的描述。该属性使用可选绑定来检查可选类型 second 是否有值，若有值，则在原有的描述中增加对 second 的描述。\n因为 BlackjackCard 是一个没有自定义构造器的结构体，在 结构体的逐一成员构造器 中可知，结构体有默认的成员构造器，所以你可以用默认的构造器去初始化新常量 theAceOfSpades：\n123let theAceOfSpades = BlackjackCard(rank: .ace, suit: .spades)print(&quot;theAceOfSpades: \\(theAceOfSpades.description)&quot;)// 打印“theAceOfSpades: suit is ♠, value is 1 or 11”\n尽管 Rank 和 Suit 嵌套在 BlackjackCard 中，但它们的类型仍可从上下文中推断出来，所以在初始化实例时能够单独通过成员名称（.ace 和 .spades）引用枚举实例。在上面的例子中，description 属性正确地反映了黑桃 A 牌具有 1 和 11 两个值。\n引用嵌套类型\n在外部引用嵌套类型时，在嵌套类型的类型名前加上其外部类型的类型名作为前缀：\n12let heartsSymbol = BlackjackCard.Suit.hearts.rawValue// 红心符号为“♡”\n对于上面这个例子，这样可以使 Suit、Rank 和 Values 的名字尽可能的短，因为它们的名字可以由定义它们的上下文来限定。\n","dateCreated":"2023-07-07T10:13:17+08:00","dateModified":"2025-06-18T12:27:38+08:00","datePublished":"2023-07-07T10:13:17+08:00","description":"","headline":"swift嵌套类型","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/","keywords":"swift"}</script>
+    <meta name="description" content="嵌套类型 枚举常被用于为特定类或结构体实现某些功能。类似地，枚举可以方便的定义工具类或结构体，从而为某个复杂的类型所使用。为了实现这种功能，Swift 允许你定义嵌套类型，可以在支持的类型中定义嵌套的枚举、类和结构体。 要在一个类型中嵌套另一个类型，将嵌套类型的定义写在其外部类型的 &#123;&#125; 内，而且可以根据需要定义多级嵌套。 嵌套类型实践 下面这个例子定义了一个结构体 Black">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="swift嵌套类型">
+<meta property="og:url" content="https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="嵌套类型 枚举常被用于为特定类或结构体实现某些功能。类似地，枚举可以方便的定义工具类或结构体，从而为某个复杂的类型所使用。为了实现这种功能，Swift 允许你定义嵌套类型，可以在支持的类型中定义嵌套的枚举、类和结构体。 要在一个类型中嵌套另一个类型，将嵌套类型的定义写在其外部类型的 &#123;&#125; 内，而且可以根据需要定义多级嵌套。 嵌套类型实践 下面这个例子定义了一个结构体 Black">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2023-07-07T02:13:17.000Z">
+<meta property="article:modified_time" content="2025-06-18T04:27:38.889Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="swift">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            swift嵌套类型
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2023-07-07T10:13:17+08:00">
+	
+		    2023 年 7 月 7 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/swift/">swift</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="嵌套类型">嵌套类型</h2>
+<p>枚举常被用于为特定类或结构体实现某些功能。类似地，枚举可以方便的定义工具类或结构体，从而为某个复杂的类型所使用。为了实现这种功能，Swift 允许你定义<em>嵌套类型</em>，可以在支持的类型中定义嵌套的枚举、类和结构体。</p>
+<p>要在一个类型中嵌套另一个类型，将嵌套类型的定义写在其外部类型的 <code>&#123;&#125;</code> 内，而且可以根据需要定义多级嵌套。</p>
+<h2 id="嵌套类型实践">嵌套类型实践</h2>
+<p>下面这个例子定义了一个结构体 <code>BlackjackCard</code>（二十一点），用来模拟 <code>BlackjackCard</code> 中的扑克牌点数。<code>BlackjackCard</code> 结构体包含两个嵌套定义的枚举类型 <code>Suit</code> 和 <code>Rank</code>。</p>
+<p>在 <code>BlackjackCard</code> 中，<code>Ace</code> 牌可以表示 <code>1</code> 或者 <code>11</code>，<code>Ace</code> 牌的这一特征通过一个嵌套在 <code>Rank</code> 枚举中的结构体 <code>Values</code> 来表示：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">BlackjackCard</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 嵌套的 Suit 枚举</span></span><br><span class="line">    <span class="keyword">enum</span> <span class="title class_">Suit</span>: <span class="title class_ inherited__">Character</span> &#123;</span><br><span class="line">        <span class="keyword">case</span> spades <span class="operator">=</span> <span class="string">&quot;♠&quot;</span>, hearts <span class="operator">=</span> <span class="string">&quot;♡&quot;</span>, diamonds <span class="operator">=</span> <span class="string">&quot;♢&quot;</span>, clubs <span class="operator">=</span> <span class="string">&quot;♣&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 嵌套的 Rank 枚举</span></span><br><span class="line">    <span class="keyword">enum</span> <span class="title class_">Rank</span>: <span class="title class_ inherited__">Int</span> &#123;</span><br><span class="line">        <span class="keyword">case</span> two <span class="operator">=</span> <span class="number">2</span>, three, four, five, six, seven, eight, nine, ten</span><br><span class="line">        <span class="keyword">case</span> jack, queen, king, ace</span><br><span class="line">        <span class="keyword">struct</span> <span class="title class_">Values</span> &#123;</span><br><span class="line">            <span class="keyword">let</span> first: <span class="type">Int</span>, second: <span class="type">Int</span>?</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">var</span> values: <span class="type">Values</span> &#123;</span><br><span class="line">            <span class="keyword">switch</span> <span class="keyword">self</span> &#123;</span><br><span class="line">            <span class="keyword">case</span> .ace:</span><br><span class="line">                <span class="keyword">return</span> <span class="type">Values</span>(first: <span class="number">1</span>, second: <span class="number">11</span>)</span><br><span class="line">            <span class="keyword">case</span> .jack, .queen, .king:</span><br><span class="line">                <span class="keyword">return</span> <span class="type">Values</span>(first: <span class="number">10</span>, second: <span class="literal">nil</span>)</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">return</span> <span class="type">Values</span>(first: <span class="keyword">self</span>.rawValue, second: <span class="literal">nil</span>)</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// BlackjackCard 的属性和方法</span></span><br><span class="line">    <span class="keyword">let</span> rank: <span class="type">Rank</span>, suit: <span class="type">Suit</span></span><br><span class="line">    <span class="keyword">var</span> description: <span class="type">String</span> &#123;</span><br><span class="line">        <span class="keyword">var</span> output <span class="operator">=</span> <span class="string">&quot;suit is <span class="subst">\(suit.rawValue)</span>,&quot;</span></span><br><span class="line">        output <span class="operator">+=</span> <span class="string">&quot; value is <span class="subst">\(rank.values.first)</span>&quot;</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">let</span> second <span class="operator">=</span> rank.values.second &#123;</span><br><span class="line">            output <span class="operator">+=</span> <span class="string">&quot; or <span class="subst">\(second)</span>&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> output</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Suit</code> 枚举用来描述扑克牌的四种花色，并用一个 <code>Character</code> 类型的原始值表示花色符号。</p>
+<p><code>Rank</code> 枚举用来描述扑克牌从 <code>Ace</code>~<code>10</code>，以及 <code>J</code>、<code>Q</code>、<code>K</code>，这 <code>13</code> 种牌，并用一个 <code>Int</code> 类型的原始值表示牌的面值。（这个 <code>Int</code> 类型的原始值未用于 <code>Ace</code>、<code>J</code>、<code>Q</code>、<code>K</code> 这 <code>4</code> 种牌。）</p>
+<p>如上所述，<code>Rank</code> 枚举在内部定义了一个嵌套结构体 <code>Values</code>。结构体 <code>Values</code> 中定义了两个属性，用于反映只有 <code>Ace</code> 有两个数值，其余牌都只有一个数值：</p>
+<ul>
+<li><code>first</code> 的类型为 <code>Int</code></li>
+<li><code>second</code> 的类型为 <code>Int?</code>，或者说“可选 <code>Int</code>”</li>
+</ul>
+<p><code>Rank</code> 还定义了一个计算型属性 <code>values</code>，它将会返回一个 <code>Values</code> 结构体的实例。这个计算型属性会根据牌的面值，用适当的数值去初始化 <code>Values</code> 实例。对于 <code>J</code>、<code>Q</code>、<code>K</code>、<code>Ace</code> 这四种牌，会使用特殊数值。对于数字面值的牌，使用枚举实例的 <code>Int</code> 类型的原始值。</p>
+<p><code>BlackjackCard</code> 结构体拥有两个属性——<code>rank</code> 与 <code>suit</code>。它也同样定义了一个计算型属性 <code>description</code>，<code>description</code> 属性用 <code>rank</code> 和 <code>suit</code> 中的内容来构建对扑克牌名字和数值的描述。该属性使用可选绑定来检查可选类型 <code>second</code> 是否有值，若有值，则在原有的描述中增加对 <code>second</code> 的描述。</p>
+<p>因为 <code>BlackjackCard</code> 是一个没有自定义构造器的结构体，在 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/14_Initialization.html#memberwise_initializers_for_structure_types">结构体的逐一成员构造器</a> 中可知，结构体有默认的成员构造器，所以你可以用默认的构造器去初始化新常量 <code>theAceOfSpades</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> theAceOfSpades <span class="operator">=</span> <span class="type">BlackjackCard</span>(rank: .ace, suit: .spades)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;theAceOfSpades: <span class="subst">\(theAceOfSpades.description)</span>&quot;</span>)</span><br><span class="line"><span class="comment">// 打印“theAceOfSpades: suit is ♠, value is 1 or 11”</span></span><br></pre></td></tr></table></figure>
+<p>尽管 <code>Rank</code> 和 <code>Suit</code> 嵌套在 <code>BlackjackCard</code> 中，但它们的类型仍可从上下文中推断出来，所以在初始化实例时能够单独通过成员名称（<code>.ace</code> 和 <code>.spades</code>）引用枚举实例。在上面的例子中，<code>description</code> 属性正确地反映了黑桃 A 牌具有 <code>1</code> 和 <code>11</code> 两个值。</p>
+<h2 id="引用嵌套类型">引用嵌套类型</h2>
+<p>在外部引用嵌套类型时，在嵌套类型的类型名前加上其外部类型的类型名作为前缀：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> heartsSymbol <span class="operator">=</span> <span class="type">BlackjackCard</span>.<span class="type">Suit</span>.hearts.rawValue</span><br><span class="line"><span class="comment">// 红心符号为“♡”</span></span><br></pre></td></tr></table></figure>
+<p>对于上面这个例子，这样可以使 <code>Suit</code>、<code>Rank</code> 和 <code>Values</code> 的名字尽可能的短，因为它们的名字可以由定义它们的上下文来限定。</p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/swift/" rel="tag">swift</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../08/Swift/swift%E6%89%A9%E5%B1%95/"
+                    data-tooltip="swift扩展"
+                    aria-label="上一篇: swift扩展"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    data-tooltip="swift类型转换"
+                    aria-label="下一篇: swift类型转换"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../08/Swift/swift%E6%89%A9%E5%B1%95/"
+                    data-tooltip="swift扩展"
+                    aria-label="上一篇: swift扩展"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    data-tooltip="swift类型转换"
+                    aria-label="下一篇: swift类型转换"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 235 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

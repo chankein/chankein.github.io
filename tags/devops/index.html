@@ -302,7 +302,255 @@
                     
                         <a
                             class="link-unstyled"
-                            href="../../2025/05/23/makefile%E6%95%99%E7%A8%8B/"
+                            href="../../2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                            aria-label=": 持续集成服务Travis CI教程"
+                        >
+                            持续集成服务Travis CI教程
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2022-12-15T15:15:55+08:00">
+	
+		    2022 年 12 月 15 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/devops/">devops</a>, <a class="category-link" href="../../categories/devops/CI-CD/">CI/CD</a>, <a class="category-link" href="../../categories/devops/CI-CD/TravisCI/">TravisCI</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <p>编写代码只是软件开发的一小部分，更多的时间往往花在构建（build）和测试（test）。</p>
+<p>为了提高软件开发的效率，构建和测试的自动化工具层出不穷。<a target="_blank" rel="noopener" href="https://travis-ci.org/">Travis CI</a> 就是这类工具之中，<a target="_blank" rel="noopener" href="https://github.com/blog/2463-github-welcomes-all-ci-tools">市场份额</a>最大的一个。</p>
+<p><img src="https://www.ruanyifeng.com/blogimg/asset/2017/bg2017121901.png" alt=""></p>
+<p>本文介绍 Travis CI 的基本用法。用好这个工具不仅可以提高效率，还能使开发流程更可靠和专业化，从而提高软件的价值。而且，它对于开源项目是免费的，不花一分钱，就能帮你做掉很多事情。</p>
+<h2 id="一、什么是持续集成？">一、什么是持续集成？</h2>
+<p>Travis CI 提供的是持续集成服务（Continuous Integration，简称 CI）。它绑定 Github 上面的项目，只要有新的代码，就会自动抓取。然后，提供一个运行环境，执行测试，完成构建，还能部署到服务器。</p>
+<p>持续集成指的是只要代码有变更，就自动运行构建和测试，反馈运行结果。确保符合预期以后，再将新代码&quot;集成&quot;到主干。</p>
+<p>持续集成的好处在于，每次代码的小幅变更，就能看到运行结果，从而不断累积小的变更，而不是在开发周期结束时，一下子合并一大块代码。</p>
+<h2 id="二、使用准备">二、使用准备</h2>
+<p>Travis CI 只支持 Github，不支持其他代码托管服务。这意味着，你必须满足以下条件，才能使用 Travis CI。</p>
+<blockquote>
+<ul>
+<li>拥有 GitHub 帐号</li>
+<li>该帐号下面有一个项目</li>
+<li>该项目里面有可运行的代码</li>
+<li>该项目还包含构建或测试脚本</li>
+</ul>
+</blockquote>
+<p>如果这些条件都没问题，就可以开始使用 Travis CI 了。</p>
+<p>首先，访问官方网站 <a target="_blank" rel="noopener" href="https://travis-ci.org/">travis-ci.org</a>，点击右上角的个人头像，使用 Github 账户登入 Travis CI。</p>
+<p>Travis 会列出 Github 上面你的所有仓库，以及你所属于的组织。此时，选择你需要 Travis 帮你构建的仓库，打开仓库旁边的开关。一旦激活了一个仓库，Travis 会监听这个仓库的所有变化。</p>
+<p><img src="https://www.ruanyifeng.com/blogimg/asset/2017/bg2017121902.png" alt=""></p>
+<h2 id="三、-travis-yml">三、.travis.yml</h2>
+<p>Travis 要求项目的根目录下面，必须有一个<code>.travis.yml</code>文件。这是配置文件，指定了 Travis 的行为。该文件必须保存在 Github 仓库里面，一旦代码仓库有新的 Commit，Travis 就会去找这个文件，执行里面的命令。</p>
+<p>这个文件采用 <a target="_blank" rel="noopener" href="https://www.ruanyifeng.com/blog/2016/07/yaml.html">YAML</a> 格式。下面是一个最简单的 Python 项目的<code>.travis.yml</code>文件。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">language</span>: python</span><br><span class="line"><span class="attr">script</span>: <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码中，设置了两个字段。<code>language</code>字段指定了默认运行环境，这里设定使用 Python 环境。<code>script</code>字段指定要运行的脚本，<code>script: true</code>表示不执行任何脚本，状态直接设为成功。</p>
+<p>Travis 默认提供的运行环境，请参考<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/languages">官方文档</a> 。目前一共支持31种语言，以后还会不断增加。</p>
+<p>下面是一个稍微复杂一点的<code>.travis.yml</code>。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">language</span>: python</span><br><span class="line"><span class="attr">sudo</span>: required</span><br><span class="line"><span class="attr">before_install</span>: sudo pip install foo</span><br><span class="line"><span class="attr">script</span>: py.<span class="property">test</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码中，设置了四个字段：运行环境是 Python，需要<code>sudo</code>权限，在安装依赖之前需要安装<code>foo</code>模块，然后执行脚本<code>py.test</code>。</p>
+<h2 id="四、运行流程">四、运行流程</h2>
+<p>Travis 的运行流程很简单，任何项目都会经过两个阶段。</p>
+<blockquote>
+<ul>
+<li>install 阶段：安装依赖</li>
+<li>script 阶段：运行脚本</li>
+</ul>
+</blockquote>
+<h3 id="4-1-install-字段">4.1 install 字段</h3>
+<p><code>install</code>字段用来指定安装脚本。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">install</span>: ./install-dependencies.<span class="property">sh</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>如果有多个脚本，可以写成下面的形式。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">install</span>:</span><br><span class="line">  - command1</span><br><span class="line">  - command2</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码中，如果<code>command1</code>失败了，整个构建就会停下来，不再往下进行。</p>
+<p>如果不需要安装，即跳过安装阶段，就直接设为<code>true</code>。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">install</span>: <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="4-2、script-字段">4.2、script 字段</h3>
+<p><code>script</code>字段用来指定构建或测试脚本。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">script</span>: bundle exec thor build</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>如果有多个脚本，可以写成下面的形式。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">script</span>:</span><br><span class="line">  - command1</span><br><span class="line">  - command2</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>注意，<code>script</code>与<code>install</code>不一样，如果<code>command1</code>失败，<code>command2</code>会继续执行。但是，整个构建阶段的状态是失败。</p>
+<p>如果<code>command2</code>只有在<code>command1</code>成功后才能执行，就要写成下面这样。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">script</span>: command1 &amp;&amp; command2</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="4-3-实例：Node-项目">4.3 实例：Node 项目</h3>
+<p>Node 项目的环境需要写成下面这样。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">language</span>: node_js</span><br><span class="line"><span class="attr">node_js</span>:</span><br><span class="line">  - <span class="string">&quot;8&quot;</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码中，<code>node_js</code>字段用来指定 Node 版本。</p>
+<p>Node 项目的<code>install</code>和<code>script</code>阶段都有默认脚本，可以省略。</p>
+<blockquote>
+<ul>
+<li><code>install</code>默认值：npm install</li>
+<li><code>script</code>默认值：npm test</li>
+</ul>
+</blockquote>
+<p>更多设置请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/languages/javascript-with-nodejs/">官方文档</a>。</p>
+<h3 id="4-4-部署">4.4 部署</h3>
+<p><code>script</code>阶段结束以后，还可以设置<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/notifications/">通知步骤</a>（notification）和<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/deployment/">部署步骤</a>（deployment），它们不是必须的。</p>
+<p>部署的脚本可以在<code>script</code>阶段执行，也可以使用 Travis 为几十种常见服务提供的快捷部署功能。比如，要部署到 <a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/deployment/pages/">Github Pages</a>，可以写成下面这样。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">deploy</span>:</span><br><span class="line">  <span class="attr">provider</span>: pages</span><br><span class="line">  <span class="attr">skip_cleanup</span>: <span class="literal">true</span></span><br><span class="line">  <span class="attr">github_token</span>: $GITHUB_TOKEN # <span class="title class_">Set</span> <span class="keyword">in</span> travis-ci.<span class="property">org</span> dashboard</span><br><span class="line">  <span class="attr">on</span>:</span><br><span class="line">    <span class="attr">branch</span>: master</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>其他部署方式，请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/deployment/">官方文档</a>。</p>
+<h3 id="4-5-钩子方法">4.5 钩子方法</h3>
+<p>Travis 为上面这些阶段提供了7个钩子。</p>
+<blockquote>
+<ul>
+<li>before_install：install 阶段之前执行</li>
+<li>before_script：script 阶段之前执行</li>
+<li>after_failure：script 阶段失败时执行</li>
+<li>after_success：script 阶段成功时执行</li>
+<li>before_deploy：deploy 步骤之前执行</li>
+<li>after_deploy：deploy 步骤之后执行</li>
+<li>after_script：script 阶段之后执行</li>
+</ul>
+</blockquote>
+<p>完整的生命周期，从开始到结束是下面的流程。</p>
+<blockquote>
+<ol>
+<li>before_install</li>
+<li>install</li>
+<li>before_script</li>
+<li>script</li>
+<li>after<em>success or after</em>failure</li>
+<li>[OPTIONAL] before_deploy</li>
+<li>[OPTIONAL] deploy</li>
+<li>[OPTIONAL] after_deploy</li>
+<li>after_script</li>
+</ol>
+</blockquote>
+<p>下面是一个<code>before_install</code>钩子的例子。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">before_install</span>:</span><br><span class="line">  - sudo apt-get -qq update</span><br><span class="line">  - sudo apt-get install -y libxml2-dev</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码表示<code>before_install</code>阶段要做两件事，第一件事是要更新依赖，第二件事是安装<code>libxml2-dev</code>。用到的几个参数的含义如下：<code>-qq</code>表示减少中间步骤的输出，<code>-y</code>表示如果需要用户输入，总是输入<code>yes</code>。</p>
+<h3 id="4-6-运行状态">4.6 运行状态</h3>
+<p>最后，Travis 每次运行，可能会返回四种状态。</p>
+<blockquote>
+<ul>
+<li>passed：运行成功，所有步骤的退出码都是<code>0</code></li>
+<li>canceled：用户取消执行</li>
+<li>errored：<code>before_install</code>、<code>install</code>、<code>before_script</code>有非零退出码，运行会立即停止</li>
+<li>failed ：<code>script</code>有非零状态码 ，会继续运行</li>
+</ul>
+</blockquote>
+<h2 id="五、使用技巧">五、使用技巧</h2>
+<h3 id="5-1-环境变量">5.1 环境变量</h3>
+<p><code>.travis.yml</code>的<code>env</code>字段可以定义环境变量。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">env</span>:</span><br><span class="line">  - <span class="variable constant_">DB</span>=postgres</span><br><span class="line">  - <span class="variable constant_">SH</span>=bash</span><br><span class="line">  - <span class="variable constant_">PACKAGE_VERSION</span>=<span class="string">&quot;1.0.*&quot;</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>然后，脚本内部就使用这些变量了。</p>
+<p>有些环境变量（比如用户名和密码）不能公开，这时可以通过 Travis 网站，写在每个仓库的设置页里面，Travis 会自动把它们加入环境变量。这样一来，脚本内部依然可以使用这些环境变量，但是只有管理员才能看到变量的值。具体操作请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/environment-variables">官方文档</a>。</p>
+<p><img src="https://www.ruanyifeng.com/blogimg/asset/2017/bg2017121903.png" alt=""></p>
+<h3 id="5-2-加密信息">5.2 加密信息</h3>
+<p>如果不放心保密信息明文存在 Travis 的网站，可以使用 Travis 提供的加密功能。</p>
+<p>首先，安装 Ruby 的包<code>travis</code>。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ gem install travis</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>然后，就可以用<code>travis encrypt</code>命令加密信息。</p>
+<p>在项目的根目录下，执行下面的命令。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis encrypt SOMEVAR=secretvalue</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面命令中，<code>SOMEVAR</code>是要加密的变量名，<code>secretvalue</code>是要加密的变量值。执行以后，屏幕上会输出如下信息。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">secure: <span class="string">&quot;.... encrypted data ....&quot;</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>现在，就可以把这一行加入<code>.travis.yml</code>。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">env</span>:</span><br><span class="line">  <span class="attr">global</span>:</span><br><span class="line">    - <span class="attr">secure</span>: <span class="string">&quot;.... encrypted data ....&quot;</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>然后，脚本里面就可以使用环境变量<code>$SOMEVAR</code>了，Travis 会在运行时自动对它解密。</p>
+<p><code>travis encrypt</code>命令的<code>--add</code>参数会把输出自动写入<code>.travis.yml</code>，省掉了修改<code>env</code>字段的步骤。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis encrypt SOMEVAR=secretvalue --add</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>详细信息请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/encryption-keys/">官方文档</a>。</p>
+<h3 id="5-3-加密文件">5.3 加密文件</h3>
+<p>如果要加密的是文件（比如私钥），Travis 提供了加密文件功能。</p>
+<p>安装命令行客户端以后，使用下面的命令登入 Travis CI。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis login </span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>然后，进入项目的根目录，使用<code>travis encrypt-file</code>命令加密那些想要加密的文件。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis encrypt-file bacon.txt</span><br><span class="line"></span><br><span class="line">encrypting bacon.txt <span class="keyword">for</span> rkh/travis-encrypt-file-example</span><br><span class="line">storing result as bacon.txt.enc</span><br><span class="line">storing secure <span class="built_in">env</span> variables <span class="keyword">for</span> decryption</span><br><span class="line"></span><br><span class="line">Please add the following to your build script (before_install stage <span class="keyword">in</span> your .travis.yml, <span class="keyword">for</span> instance):</span><br><span class="line"></span><br><span class="line">    openssl aes-256-cbc -K <span class="variable">$encrypted_0a6446eb3ae3_key</span> -iv <span class="variable">$encrypted_0a6446eb3ae3_key</span> -<span class="keyword">in</span> bacon.txt.enc -out bacon.txt -d</span><br><span class="line"></span><br><span class="line">Pro Tip: You can add it automatically by running with --add.</span><br><span class="line"></span><br><span class="line">Make sure to add bacon.txt.enc to the git repository.</span><br><span class="line">Make sure not to add bacon.txt to the git repository.</span><br><span class="line">Commit all changes to your .travis.yml.</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面的代码对文件<code>bacon.txt</code>进行加密，加密后会生成<code>bacon.txt.enc</code>，该文件需要提交到代码库。此外，该命令还会生成一个环境变量<code>$encrypted_0a6446eb3ae3_key</code>，保存密钥，储存在 Travis CI，文件解密时需要这个环境变量。你需要把解密所需的<code>openssl</code>命令，写在<code>.travis.yml</code>的<code>before_install</code>字段里面。这些都写在上面的命令行提示里面。</p>
+<p><code>--add</code>参数可以自动把环境变量写入<code>.travis.yml</code>。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis encrypt-file bacon.txt --add</span><br><span class="line"></span><br><span class="line">encrypting bacon.txt <span class="keyword">for</span> rkh/travis-encrypt-file-example</span><br><span class="line">storing result as bacon.txt.enc</span><br><span class="line">storing secure <span class="built_in">env</span> variables <span class="keyword">for</span> decryption</span><br><span class="line"></span><br><span class="line">Make sure to add bacon.txt.enc to the git repository.</span><br><span class="line">Make sure not to add bacon.txt to the git repository.</span><br><span class="line">Commit all changes to your .travis.yml.</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>详细信息请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/encrypting-files/">官方文档</a>，实际的例子可以参考下面两篇文章。</p>
+<blockquote>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://gist.github.com/domenic/ec8b0fc8ab45f39403dd">Auto-deploying built products to gh-pages with Travis</a></li>
+<li><a target="_blank" rel="noopener" href="https://oncletom.io/2016/travis-ssh-deploy/">SSH deploys with Travis CI</a></li>
+</ul>
+</blockquote>
+<p>（完）</p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../2021/05/23/makefile%E6%95%99%E7%A8%8B/"
                             aria-label=": makefile教程"
                         >
                             makefile教程
@@ -310,9 +558,9 @@
                     
                 </h1>
                 <div class="postShorten-meta">
-    <time datetime="2025-05-23T12:48:01+08:00">
+    <time datetime="2021-05-23T12:48:01+08:00">
 	
-		    2025 年 5 月 23 日
+		    2021 年 5 月 23 日
     	
     </time>
     
@@ -332,7 +580,6 @@
 <p><code>make</code>能自动化完成这些工作，是因为项目提供了一个<code>Makefile</code>文件，它负责告诉<code>make</code>，应该如何编译和链接程序。</p>
 <p><code>Makefile</code>相当于Java项目的<code>pom.xml</code>，Node工程的<code>package.json</code>，Rust项目的<code>Cargo.toml</code>，不同之处在于，<code>make</code>虽然最初是针对C语言开发，但它实际上并不限定C语言，而是可以应用到任意项目，甚至不是编程语言。此外，<code>make</code>主要用于Unix/Linux环境的自动化开发，掌握<code>Makefile</code>的写法，可以更好地在Linux环境下做开发，也可以为后续开发Linux内核做好准备。</p>
 <p>在本教程中，我们将由浅入深，一步一步学习如何编写<code>Makefile</code>，完全针对零基础小白，只需要提前掌握如何使用Linux命令。</p>
-<hr>
 <hr>
 <p>在Linux环境下，当我们输入<code>make</code>命令时，它就在当前目录查找一个名为<code>Makefile</code>的文件，然后，根据这个文件定义的规则，自动化地执行任意命令，包括编译命令。</p>
 <p><code>Makefile</code>这个单词，顾名思义，就是指如何生成文件。</p>
@@ -598,7 +845,7 @@
                     
                         <p>
                             <a
-                                href="../../2025/05/23/makefile%E6%95%99%E7%A8%8B/#post-footer"
+                                href="../../2021/05/23/makefile%E6%95%99%E7%A8%8B/#post-footer"
                                 class="postShorten-excerpt_link link"
                                 aria-label=""
                             >
@@ -621,7 +868,7 @@
                     
                         <a
                             class="link-unstyled"
-                            href="../../2025/05/12/vim%E6%95%99%E7%A8%8B/"
+                            href="../../2021/03/12/vim%E6%95%99%E7%A8%8B/"
                             aria-label=": vim教程"
                         >
                             vim教程
@@ -629,9 +876,9 @@
                     
                 </h1>
                 <div class="postShorten-meta">
-    <time datetime="2025-05-12T16:01:20+08:00">
+    <time datetime="2021-03-12T16:01:20+08:00">
 	
-		    2025 年 5 月 12 日
+		    2021 年 3 月 12 日
     	
     </time>
     
@@ -1192,255 +1439,7 @@
                     
                         <p>
                             <a
-                                href="../../2025/05/12/vim%E6%95%99%E7%A8%8B/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
-                            aria-label=": 持续集成服务Travis CI教程"
-                        >
-                            持续集成服务Travis CI教程
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2022-12-15T15:15:55+08:00">
-	
-		    2022 年 12 月 15 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/devops/">devops</a>, <a class="category-link" href="../../categories/devops/CI-CD/">CI/CD</a>, <a class="category-link" href="../../categories/devops/CI-CD/TravisCI/">TravisCI</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <p>编写代码只是软件开发的一小部分，更多的时间往往花在构建（build）和测试（test）。</p>
-<p>为了提高软件开发的效率，构建和测试的自动化工具层出不穷。<a target="_blank" rel="noopener" href="https://travis-ci.org/">Travis CI</a> 就是这类工具之中，<a target="_blank" rel="noopener" href="https://github.com/blog/2463-github-welcomes-all-ci-tools">市场份额</a>最大的一个。</p>
-<p><img src="https://www.ruanyifeng.com/blogimg/asset/2017/bg2017121901.png" alt=""></p>
-<p>本文介绍 Travis CI 的基本用法。用好这个工具不仅可以提高效率，还能使开发流程更可靠和专业化，从而提高软件的价值。而且，它对于开源项目是免费的，不花一分钱，就能帮你做掉很多事情。</p>
-<h2 id="一、什么是持续集成？">一、什么是持续集成？</h2>
-<p>Travis CI 提供的是持续集成服务（Continuous Integration，简称 CI）。它绑定 Github 上面的项目，只要有新的代码，就会自动抓取。然后，提供一个运行环境，执行测试，完成构建，还能部署到服务器。</p>
-<p>持续集成指的是只要代码有变更，就自动运行构建和测试，反馈运行结果。确保符合预期以后，再将新代码&quot;集成&quot;到主干。</p>
-<p>持续集成的好处在于，每次代码的小幅变更，就能看到运行结果，从而不断累积小的变更，而不是在开发周期结束时，一下子合并一大块代码。</p>
-<h2 id="二、使用准备">二、使用准备</h2>
-<p>Travis CI 只支持 Github，不支持其他代码托管服务。这意味着，你必须满足以下条件，才能使用 Travis CI。</p>
-<blockquote>
-<ul>
-<li>拥有 GitHub 帐号</li>
-<li>该帐号下面有一个项目</li>
-<li>该项目里面有可运行的代码</li>
-<li>该项目还包含构建或测试脚本</li>
-</ul>
-</blockquote>
-<p>如果这些条件都没问题，就可以开始使用 Travis CI 了。</p>
-<p>首先，访问官方网站 <a target="_blank" rel="noopener" href="https://travis-ci.org/">travis-ci.org</a>，点击右上角的个人头像，使用 Github 账户登入 Travis CI。</p>
-<p>Travis 会列出 Github 上面你的所有仓库，以及你所属于的组织。此时，选择你需要 Travis 帮你构建的仓库，打开仓库旁边的开关。一旦激活了一个仓库，Travis 会监听这个仓库的所有变化。</p>
-<p><img src="https://www.ruanyifeng.com/blogimg/asset/2017/bg2017121902.png" alt=""></p>
-<h2 id="三、-travis-yml">三、.travis.yml</h2>
-<p>Travis 要求项目的根目录下面，必须有一个<code>.travis.yml</code>文件。这是配置文件，指定了 Travis 的行为。该文件必须保存在 Github 仓库里面，一旦代码仓库有新的 Commit，Travis 就会去找这个文件，执行里面的命令。</p>
-<p>这个文件采用 <a target="_blank" rel="noopener" href="https://www.ruanyifeng.com/blog/2016/07/yaml.html">YAML</a> 格式。下面是一个最简单的 Python 项目的<code>.travis.yml</code>文件。</p>
-<blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">language</span>: python</span><br><span class="line"><span class="attr">script</span>: <span class="literal">true</span></span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>上面代码中，设置了两个字段。<code>language</code>字段指定了默认运行环境，这里设定使用 Python 环境。<code>script</code>字段指定要运行的脚本，<code>script: true</code>表示不执行任何脚本，状态直接设为成功。</p>
-<p>Travis 默认提供的运行环境，请参考<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/languages">官方文档</a> 。目前一共支持31种语言，以后还会不断增加。</p>
-<p>下面是一个稍微复杂一点的<code>.travis.yml</code>。</p>
-<blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">language</span>: python</span><br><span class="line"><span class="attr">sudo</span>: required</span><br><span class="line"><span class="attr">before_install</span>: sudo pip install foo</span><br><span class="line"><span class="attr">script</span>: py.<span class="property">test</span></span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>上面代码中，设置了四个字段：运行环境是 Python，需要<code>sudo</code>权限，在安装依赖之前需要安装<code>foo</code>模块，然后执行脚本<code>py.test</code>。</p>
-<h2 id="四、运行流程">四、运行流程</h2>
-<p>Travis 的运行流程很简单，任何项目都会经过两个阶段。</p>
-<blockquote>
-<ul>
-<li>install 阶段：安装依赖</li>
-<li>script 阶段：运行脚本</li>
-</ul>
-</blockquote>
-<h3 id="4-1-install-字段">4.1 install 字段</h3>
-<p><code>install</code>字段用来指定安装脚本。</p>
-<blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">install</span>: ./install-dependencies.<span class="property">sh</span></span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>如果有多个脚本，可以写成下面的形式。</p>
-<blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">install</span>:</span><br><span class="line">  - command1</span><br><span class="line">  - command2</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>上面代码中，如果<code>command1</code>失败了，整个构建就会停下来，不再往下进行。</p>
-<p>如果不需要安装，即跳过安装阶段，就直接设为<code>true</code>。</p>
-<blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">install</span>: <span class="literal">true</span></span><br></pre></td></tr></table></figure>
-</blockquote>
-<h3 id="4-2、script-字段">4.2、script 字段</h3>
-<p><code>script</code>字段用来指定构建或测试脚本。</p>
-<blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">script</span>: bundle exec thor build</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>如果有多个脚本，可以写成下面的形式。</p>
-<blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">script</span>:</span><br><span class="line">  - command1</span><br><span class="line">  - command2</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>注意，<code>script</code>与<code>install</code>不一样，如果<code>command1</code>失败，<code>command2</code>会继续执行。但是，整个构建阶段的状态是失败。</p>
-<p>如果<code>command2</code>只有在<code>command1</code>成功后才能执行，就要写成下面这样。</p>
-<blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">script</span>: command1 &amp;&amp; command2</span><br></pre></td></tr></table></figure>
-</blockquote>
-<h3 id="4-3-实例：Node-项目">4.3 实例：Node 项目</h3>
-<p>Node 项目的环境需要写成下面这样。</p>
-<blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">language</span>: node_js</span><br><span class="line"><span class="attr">node_js</span>:</span><br><span class="line">  - <span class="string">&quot;8&quot;</span></span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>上面代码中，<code>node_js</code>字段用来指定 Node 版本。</p>
-<p>Node 项目的<code>install</code>和<code>script</code>阶段都有默认脚本，可以省略。</p>
-<blockquote>
-<ul>
-<li><code>install</code>默认值：npm install</li>
-<li><code>script</code>默认值：npm test</li>
-</ul>
-</blockquote>
-<p>更多设置请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/languages/javascript-with-nodejs/">官方文档</a>。</p>
-<h3 id="4-4-部署">4.4 部署</h3>
-<p><code>script</code>阶段结束以后，还可以设置<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/notifications/">通知步骤</a>（notification）和<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/deployment/">部署步骤</a>（deployment），它们不是必须的。</p>
-<p>部署的脚本可以在<code>script</code>阶段执行，也可以使用 Travis 为几十种常见服务提供的快捷部署功能。比如，要部署到 <a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/deployment/pages/">Github Pages</a>，可以写成下面这样。</p>
-<blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">deploy</span>:</span><br><span class="line">  <span class="attr">provider</span>: pages</span><br><span class="line">  <span class="attr">skip_cleanup</span>: <span class="literal">true</span></span><br><span class="line">  <span class="attr">github_token</span>: $GITHUB_TOKEN # <span class="title class_">Set</span> <span class="keyword">in</span> travis-ci.<span class="property">org</span> dashboard</span><br><span class="line">  <span class="attr">on</span>:</span><br><span class="line">    <span class="attr">branch</span>: master</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>其他部署方式，请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/deployment/">官方文档</a>。</p>
-<h3 id="4-5-钩子方法">4.5 钩子方法</h3>
-<p>Travis 为上面这些阶段提供了7个钩子。</p>
-<blockquote>
-<ul>
-<li>before_install：install 阶段之前执行</li>
-<li>before_script：script 阶段之前执行</li>
-<li>after_failure：script 阶段失败时执行</li>
-<li>after_success：script 阶段成功时执行</li>
-<li>before_deploy：deploy 步骤之前执行</li>
-<li>after_deploy：deploy 步骤之后执行</li>
-<li>after_script：script 阶段之后执行</li>
-</ul>
-</blockquote>
-<p>完整的生命周期，从开始到结束是下面的流程。</p>
-<blockquote>
-<ol>
-<li>before_install</li>
-<li>install</li>
-<li>before_script</li>
-<li>script</li>
-<li>after<em>success or after</em>failure</li>
-<li>[OPTIONAL] before_deploy</li>
-<li>[OPTIONAL] deploy</li>
-<li>[OPTIONAL] after_deploy</li>
-<li>after_script</li>
-</ol>
-</blockquote>
-<p>下面是一个<code>before_install</code>钩子的例子。</p>
-<blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">before_install</span>:</span><br><span class="line">  - sudo apt-get -qq update</span><br><span class="line">  - sudo apt-get install -y libxml2-dev</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>上面代码表示<code>before_install</code>阶段要做两件事，第一件事是要更新依赖，第二件事是安装<code>libxml2-dev</code>。用到的几个参数的含义如下：<code>-qq</code>表示减少中间步骤的输出，<code>-y</code>表示如果需要用户输入，总是输入<code>yes</code>。</p>
-<h3 id="4-6-运行状态">4.6 运行状态</h3>
-<p>最后，Travis 每次运行，可能会返回四种状态。</p>
-<blockquote>
-<ul>
-<li>passed：运行成功，所有步骤的退出码都是<code>0</code></li>
-<li>canceled：用户取消执行</li>
-<li>errored：<code>before_install</code>、<code>install</code>、<code>before_script</code>有非零退出码，运行会立即停止</li>
-<li>failed ：<code>script</code>有非零状态码 ，会继续运行</li>
-</ul>
-</blockquote>
-<h2 id="五、使用技巧">五、使用技巧</h2>
-<h3 id="5-1-环境变量">5.1 环境变量</h3>
-<p><code>.travis.yml</code>的<code>env</code>字段可以定义环境变量。</p>
-<blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">env</span>:</span><br><span class="line">  - <span class="variable constant_">DB</span>=postgres</span><br><span class="line">  - <span class="variable constant_">SH</span>=bash</span><br><span class="line">  - <span class="variable constant_">PACKAGE_VERSION</span>=<span class="string">&quot;1.0.*&quot;</span></span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>然后，脚本内部就使用这些变量了。</p>
-<p>有些环境变量（比如用户名和密码）不能公开，这时可以通过 Travis 网站，写在每个仓库的设置页里面，Travis 会自动把它们加入环境变量。这样一来，脚本内部依然可以使用这些环境变量，但是只有管理员才能看到变量的值。具体操作请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/environment-variables">官方文档</a>。</p>
-<p><img src="https://www.ruanyifeng.com/blogimg/asset/2017/bg2017121903.png" alt=""></p>
-<h3 id="5-2-加密信息">5.2 加密信息</h3>
-<p>如果不放心保密信息明文存在 Travis 的网站，可以使用 Travis 提供的加密功能。</p>
-<p>首先，安装 Ruby 的包<code>travis</code>。</p>
-<blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ gem install travis</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>然后，就可以用<code>travis encrypt</code>命令加密信息。</p>
-<p>在项目的根目录下，执行下面的命令。</p>
-<blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis encrypt SOMEVAR=secretvalue</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>上面命令中，<code>SOMEVAR</code>是要加密的变量名，<code>secretvalue</code>是要加密的变量值。执行以后，屏幕上会输出如下信息。</p>
-<blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">secure: <span class="string">&quot;.... encrypted data ....&quot;</span></span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>现在，就可以把这一行加入<code>.travis.yml</code>。</p>
-<blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">env</span>:</span><br><span class="line">  <span class="attr">global</span>:</span><br><span class="line">    - <span class="attr">secure</span>: <span class="string">&quot;.... encrypted data ....&quot;</span></span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>然后，脚本里面就可以使用环境变量<code>$SOMEVAR</code>了，Travis 会在运行时自动对它解密。</p>
-<p><code>travis encrypt</code>命令的<code>--add</code>参数会把输出自动写入<code>.travis.yml</code>，省掉了修改<code>env</code>字段的步骤。</p>
-<blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis encrypt SOMEVAR=secretvalue --add</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>详细信息请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/encryption-keys/">官方文档</a>。</p>
-<h3 id="5-3-加密文件">5.3 加密文件</h3>
-<p>如果要加密的是文件（比如私钥），Travis 提供了加密文件功能。</p>
-<p>安装命令行客户端以后，使用下面的命令登入 Travis CI。</p>
-<blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis login </span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>然后，进入项目的根目录，使用<code>travis encrypt-file</code>命令加密那些想要加密的文件。</p>
-<blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis encrypt-file bacon.txt</span><br><span class="line"></span><br><span class="line">encrypting bacon.txt <span class="keyword">for</span> rkh/travis-encrypt-file-example</span><br><span class="line">storing result as bacon.txt.enc</span><br><span class="line">storing secure <span class="built_in">env</span> variables <span class="keyword">for</span> decryption</span><br><span class="line"></span><br><span class="line">Please add the following to your build script (before_install stage <span class="keyword">in</span> your .travis.yml, <span class="keyword">for</span> instance):</span><br><span class="line"></span><br><span class="line">    openssl aes-256-cbc -K <span class="variable">$encrypted_0a6446eb3ae3_key</span> -iv <span class="variable">$encrypted_0a6446eb3ae3_key</span> -<span class="keyword">in</span> bacon.txt.enc -out bacon.txt -d</span><br><span class="line"></span><br><span class="line">Pro Tip: You can add it automatically by running with --add.</span><br><span class="line"></span><br><span class="line">Make sure to add bacon.txt.enc to the git repository.</span><br><span class="line">Make sure not to add bacon.txt to the git repository.</span><br><span class="line">Commit all changes to your .travis.yml.</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>上面的代码对文件<code>bacon.txt</code>进行加密，加密后会生成<code>bacon.txt.enc</code>，该文件需要提交到代码库。此外，该命令还会生成一个环境变量<code>$encrypted_0a6446eb3ae3_key</code>，保存密钥，储存在 Travis CI，文件解密时需要这个环境变量。你需要把解密所需的<code>openssl</code>命令，写在<code>.travis.yml</code>的<code>before_install</code>字段里面。这些都写在上面的命令行提示里面。</p>
-<p><code>--add</code>参数可以自动把环境变量写入<code>.travis.yml</code>。</p>
-<blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis encrypt-file bacon.txt --add</span><br><span class="line"></span><br><span class="line">encrypting bacon.txt <span class="keyword">for</span> rkh/travis-encrypt-file-example</span><br><span class="line">storing result as bacon.txt.enc</span><br><span class="line">storing secure <span class="built_in">env</span> variables <span class="keyword">for</span> decryption</span><br><span class="line"></span><br><span class="line">Make sure to add bacon.txt.enc to the git repository.</span><br><span class="line">Make sure not to add bacon.txt to the git repository.</span><br><span class="line">Commit all changes to your .travis.yml.</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>详细信息请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/encrypting-files/">官方文档</a>，实际的例子可以参考下面两篇文章。</p>
-<blockquote>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://gist.github.com/domenic/ec8b0fc8ab45f39403dd">Auto-deploying built products to gh-pages with Travis</a></li>
-<li><a target="_blank" rel="noopener" href="https://oncletom.io/2016/travis-ssh-deploy/">SSH deploys with Travis CI</a></li>
-</ul>
-</blockquote>
-<p>（完）</p>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/#post-footer"
+                                href="../../2021/03/12/vim%E6%95%99%E7%A8%8B/#post-footer"
                                 class="postShorten-excerpt_link link"
                                 aria-label=""
                             >
@@ -2044,7 +2043,7 @@
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 211 篇文章
+                找到 235 篇文章
             </p>
         </div>
     </div>

@@ -1,0 +1,1174 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>17.python访问数据库 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"程序运行的时候，数据都是在内存中的。当程序终止的时候，通常都需要将数据保存到磁盘上，无论是保存到本地磁盘，还是通过网络保存到服务器上，最终都会将数据写入磁盘文件。\n而如何定义数据的存储格式就是一个大问题。如果我们自己来定义存储格式，比如保存一个班级所有学生的成绩单：\n\n\n\n名字\n成绩\n\n\n\n\nMichael\n99\n\n\nBob\n85\n\n\nBart\n59\n\n\nLisa\n87\n\n\n\n我们可以用一个文本文件保存，一行保存一个学生，用,隔开：\n1234Michael,99Bob,85Bart,59Lisa,87\n还可以用JSON格式保存，也是文本文件：\n123456[    &#123;&quot;name&quot;:&quot;Michael&quot;,&quot;score&quot;:99&#125;,    &#123;&quot;name&quot;:&quot;Bob&quot;,&quot;score&quot;:85&#125;,    &#123;&quot;name&quot;:&quot;Bart&quot;,&quot;score&quot;:59&#125;,    &#123;&quot;name&quot;:&quot;Lisa&quot;,&quot;score&quot;:87&#125;]\n还可以定义各种保存格式，但是问题来了：\n存储和读取需要自己实现，JSON还是标准，自己定义的格式就各式各样了；\n不能做快速查询，只有把数据全部读到内存中才能自己遍历，但有时候数据的大小远远超过了内存，根本无法全部读入内存。\n为了便于程序保存和读取数据，而且，能直接通过条件快速查询到指定的数据，就出现了数据库（Database）这种专门用于集中存储和查询的软件。\n数据库软件诞生的历史非常久远，早在1950年数据库就诞生了。经历了网状数据库，层次数据库，我们现在广泛使用的关系数据库是20世纪70年代基于关系模型的基础上诞生的。\n关系模型有一套复杂的数学理论，但是从概念上是十分容易理解的。举个学校的例子：\n假设某个XX省YY市ZZ县第一实验小学有3个年级，要表示出这3个年级，可以在Excel中用一个表格画出来：\n\n每个年级又有若干个班级，要把所有班级表示出来，可以在Excel中再画一个表格：\n\n这两个表格有个映射关系，就是根据Grade_ID可以在班级表中查找到对应的所有班级：\n\n也就是Grade表的每一行对应Class表的多行，在关系数据库中，这种基于表（Table）的一对多的关系就是关系数据库的基础。\n根据某个年级的ID就可以查找所有班级的行，这种查询语句在关系数据库中称为SQL语句，可以写成：\n1SELECT * FROM classes WHERE grade_id = &#x27;1&#x27;;\n结果也是一个表：\n\n\n\ngrade_id\nclass_id\nname\n\n\n\n\n1\n11\n一年级一班\n\n\n1\n12\n一年级二班\n\n\n1\n13\n一年级三班\n\n\n\n类似的，Class表的一行记录又可以关联到Student表的多行记录：\n\n由于本教程不涉及到关系数据库的详细内容，如果你想从零学习关系数据库和基本的SQL语句，请参考SQL教程。\nNoSQL\n你也许还听说过NoSQL数据库，很多NoSQL宣传其速度和规模远远超过关系数据库，所以很多同学觉得有了NoSQL是否就不需要SQL了呢？千万不要被他们忽悠了，连SQL都不明白怎么可能搞明白NoSQL呢？\n数据库类别\n既然我们要使用关系数据库，就必须选择一个关系数据库。目前广泛使用的关系数据库也就这么几种：\n付费的商用数据库：\n\nOracle，典型的高富帅；\nSQL Server，微软自家产品，Windows定制专款；\nDB2，IBM的产品，听起来挺高端；\nSybase，曾经跟微软是好基友，后来关系破裂，现在家境惨淡。\n\n这些数据库都是不开源而且付费的，最大的好处是花了钱出了问题可以找厂家解决，不过在Web的世界里，常常需要部署成千上万的数据库服务器，当然不能把大把大把的银子扔给厂家，所以，无论是Google、Facebook，还是国内的BAT，无一例外都选择了免费的开源数据库：\n\nMySQL，大家都在用，一般错不了；\nPostgreSQL，学术气息有点重，其实挺不错，但知名度没有MySQL高；\nSQLite，嵌入式数据库，适合桌面和移动应用。\n\n作为一个Python工程师，选择哪个免费数据库呢？这里我们会介绍SQLite和MySQL，SQLite适合作为嵌入式数据库，优点是不用安装任何软件，直接能用。生产环境下，应当选择MySQL或者PostgreSQL。\nSQLite是一种嵌入式数据库，它的数据库就是一个文件。由于SQLite本身是C写的，而且体积很小，所以，经常被集成到各种应用程序中，甚至在iOS和Android的App中都可以集成。\nPython就内置了SQLite3，所以，在Python中使用SQLite，不需要安装任何东西，直接使用。\n在使用SQLite前，我们先要搞清楚几个概念：\n表是数据库中存放关系数据的集合，一个数据库里面通常都包含多个表，比如学生的表，班级的表，学校的表，等等。表和表之间通过外键关联。\n要操作关系数据库，首先需要连接到数据库，一个数据库连接称为Connection；\n连接到数据库后，需要打开游标，称之为Cursor，通过Cursor执行SQL语句，然后，获得执行结果。\nPython定义了一套操作数据库的API接口，任何数据库要连接到Python，只需要提供符合Python标准的数据库驱动即可。\n由于SQLite的驱动内置在Python标准库中，所以我们可以直接来操作SQLite数据库。\n我们在Python交互式命令行实践一下：\n1234567891011121314151617181920212223# 导入SQLite驱动:&gt;&gt;&gt; import sqlite3# 连接到SQLite数据库# 数据库文件是test.db# 如果文件不存在，会自动在当前目录创建:&gt;&gt;&gt; conn = sqlite3.connect(&#x27;test.db&#x27;)# 创建一个Cursor:&gt;&gt;&gt; cursor = conn.cursor()# 执行一条SQL语句，创建user表:&gt;&gt;&gt; cursor.execute(&#x27;create table user (id varchar(20) primary key, name varchar(20))&#x27;)&lt;sqlite3.Cursor object at 0x10f8aa260&gt;# 继续执行一条SQL语句，插入一条记录:&gt;&gt;&gt; cursor.execute(&#x27;insert into user (id, name) values (\\&#x27;1\\&#x27;, \\&#x27;Michael\\&#x27;)&#x27;)&lt;sqlite3.Cursor object at 0x10f8aa260&gt;# 通过rowcount获得插入的行数:&gt;&gt;&gt; cursor.rowcount1# 提交事务:&gt;&gt;&gt; conn.commit()# 关闭Cursor:&gt;&gt;&gt; cursor.close()# 关闭Connection:&gt;&gt;&gt; conn.close()\n我们再试试查询记录：\n1234567891011&gt;&gt;&gt; conn = sqlite3.connect(&#x27;test.db&#x27;)&gt;&gt;&gt; cursor = conn.cursor()# 执行查询语句:&gt;&gt;&gt; cursor.execute(&#x27;select * from user where id=?&#x27;, (&#x27;1&#x27;,))&lt;sqlite3.Cursor object at 0x10f8aa340&gt;# 获得查询结果集:&gt;&gt;&gt; values = cursor.fetchall()&gt;&gt;&gt; values[(&#x27;1&#x27;, &#x27;Michael&#x27;)]&gt;&gt;&gt; cursor.close()&gt;&gt;&gt; conn.close()\n使用Python的DB-API时，只要搞清楚Connection和Cursor对象，打开后一定记得关闭，就可以放心地使用。\n使用Cursor对象执行insert，update，delete语句时，执行结果由rowcount返回影响的行数，就可以拿到执行结果。\n使用Cursor对象执行select语句时，通过fetchall()可以拿到结果集。结果集是一个list，每个元素都是一个tuple，对应一行记录。\n如果SQL语句带有参数，那么需要把参数按照位置传递给execute()方法，有几个?占位符就必须对应几个参数，例如：\n1cursor.execute(&#x27;select * from user where name=? and pwd=?&#x27;, (&#x27;abc&#x27;, &#x27;password&#x27;))\nSQLite支持常见的标准SQL语句以及几种常见的数据类型。具体文档请参阅SQLite官方网站。\n小结\n在Python中操作数据库时，要先导入数据库对应的驱动，然后，通过Connection对象和Cursor对象操作数据。\n要确保打开的Connection对象和Cursor对象都正确地被关闭，否则，资源就会泄露。\n如何才能确保出错的情况下也关闭掉Connection对象和Cursor对象呢？请回忆try:...except:...finally:...的用法。\n练习\n请编写函数，在Sqlite中根据分数段查找指定的名字：\n123456789101112131415161718192021222324252627import os, sqlite3db_file = os.path.join(os.path.dirname(__file__), &#x27;test.db&#x27;)if os.path.isfile(db_file):    os.remove(db_file)# 初始数据:conn = sqlite3.connect(db_file)cursor = conn.cursor()cursor.execute(&#x27;create table user(id varchar(20) primary key, name varchar(20), score int)&#x27;)cursor.execute(r&quot;insert into user values (&#x27;A-001&#x27;, &#x27;Adam&#x27;, 95)&quot;)cursor.execute(r&quot;insert into user values (&#x27;A-002&#x27;, &#x27;Bart&#x27;, 62)&quot;)cursor.execute(r&quot;insert into user values (&#x27;A-003&#x27;, &#x27;Lisa&#x27;, 78)&quot;)conn.commit()cursor.close()conn.close()def get_score_in(low, high):    &#x27; 返回指定分数区间的名字，按分数从低到高排序 &#x27;    pass# 测试:assert get_score_in(80, 95) == [&#x27;Adam&#x27;], get_score_in(80, 95)assert get_score_in(60, 80) == [&#x27;Bart&#x27;, &#x27;Lisa&#x27;], get_score_in(60, 80)assert get_score_in(60, 100) == [&#x27;Bart&#x27;, &#x27;Lisa&#x27;, &#x27;Adam&#x27;], get_score_in(60, 100)print(&#x27;Pass&#x27;)\n参考源码\ndo_sqlite.py\nMySQL是Web世界中使用最广泛的数据库服务器。SQLite的特点是轻量级、可嵌入，但不能承受高并发访问，适合桌面和移动应用。而MySQL是为服务器端设计的数据库，能承受高并发访问，同时占用的内存也远远大于SQLite。\n此外，MySQL内部有多种数据库引擎，最常用的引擎是支持数据库事务的InnoDB。\n安装MySQL\n可以直接从MySQL官方网站下载最新的Community Server 8.x版本。MySQL是跨平台的，选择对应的平台下载安装文件，安装即可。\n安装时，MySQL会提示输入root用户的口令，请务必记清楚。如果怕记不住，就把口令设置为password。\n在Windows上，安装时请选择UTF-8编码，以便正确地处理中文。\n在Mac或Linux上，需要编辑MySQL的配置文件，把数据库默认的编码全部改为UTF-8。MySQL的配置文件默认存放在/etc/my.cnf或者/etc/mysql/my.cnf：\n1234567[client]default-character-set = utf8mb4[mysqld]default-storage-engine = INNODBcharacter-set-server = utf8mb4collation-server = utf8_general_ci\n重启MySQL后，可以通过MySQL的客户端命令行检查编码：\n12345678910111213141516171819$ mysql -u root -pEnter password: Welcome to the MySQL monitor......mysql&gt; show variables like &#x27;%char%&#x27;;+--------------------------+--------------------------------------+| Variable_name            | Value                                |+--------------------------+--------------------------------------+| character_set_client     | utf8mb4                              || character_set_connection | utf8mb4                              || character_set_database   | utf8mb4                              || character_set_filesystem | binary                               || character_set_results    | utf8mb4                              || character_set_server     | utf8mb4                              || character_set_system     | utf8mb3                              || character_sets_dir       | /usr/local/mysql-8.x/share/charsets/ |+--------------------------+--------------------------------------+8 rows in set (0.00 sec)\n看到utf8mb4字样就表示编码设置正确。\n注意\n如果MySQL的版本&lt;5.5.3，则只能把编码设置为utf8，utf8mb4支持最新的Unicode标准，可以显示emoji字符，但utf8无法显示emoji字符。\n用Docker启动MySQL\n如果不想安装MySQL，还可以以Docker的方式快速启动MySQL。\n首先安装Docker Desktop，然后在命令行输入：\n1$ docker run -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 --name mysql-8.4 -v ./mysql-data:/var/lib/mysql mysql:8.4 --mysql-native-password=ON --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci\n上述命令详细参数如下：\n\n-e MYSQL_ROOT_PASSWORD=password：传入root用户口令的环境变量，密码是password；\n-p 3306:3306：在本机3306端口监听；\n--name mysql-8.4：启动后容器的名称为mysql-8.4，可任意设置；\n-v ./mysql-data:/var/lib/mysql：把当前目录./mysql-data映射到容器目录/var/lib/mysql，此目录存放MySQL数据库文件，避免容器停止后数据丢失；\nmysql:8.4：启动镜像名称为mysql:8.4；\n--mysql-native-password=ON：表示启用明文口令；\n--character-set-server=utf8mb4：表示启用utf8mb4作为字符集；\n--collation-server=utf8mb4_unicode_ci：表示启用utf8mb4作为排序规则。\n\n运行命令后可看到如下输出：\n123456782024-07-11 02:44:05+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.4.1-1.el9 started....2024-07-11T02:44:16.874162Z 0 [System] [MY-015015] [Server] MySQL Server - start....2024-07-11T02:44:17.120017Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.2024-07-11T02:44:17.561242Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended....2024-07-11T02:44:17.868691Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: &#x27;8.4.1&#x27;  socket: &#x27;/var/run/mysqld/mysqld.sock&#x27;  port: 3306  MySQL Community Server - GPL.\n看到最后一行ready for connections表示启动成功。\n安装MySQL驱动\n由于MySQL服务器以独立的进程运行，并通过网络对外服务，所以，需要支持Python的MySQL驱动来连接到MySQL服务器。MySQL官方提供了mysql-connector-python驱动：\n1$ pip install mysql-connector-python \n我们演示如何连接到MySQL服务器的test数据库：\n123456789101112131415161718192021222324# 导入MySQL驱动:&gt;&gt;&gt; import mysql.connector# 注意把password设为你的root口令:&gt;&gt;&gt; conn = mysql.connector.connect(user=&#x27;root&#x27;, password=&#x27;password&#x27;, database=&#x27;test&#x27;)&gt;&gt;&gt; cursor = conn.cursor()# 创建user表:&gt;&gt;&gt; cursor.execute(&#x27;create table user (id varchar(20) primary key, name varchar(20))&#x27;)# 插入一行记录，注意MySQL的占位符是%s:&gt;&gt;&gt; cursor.execute(&#x27;insert into user (id, name) values (%s, %s)&#x27;, [&#x27;1&#x27;, &#x27;Michael&#x27;])&gt;&gt;&gt; cursor.rowcount1# 提交事务:&gt;&gt;&gt; conn.commit()&gt;&gt;&gt; cursor.close()# 运行查询:&gt;&gt;&gt; cursor = conn.cursor()&gt;&gt;&gt; cursor.execute(&#x27;select * from user where id = %s&#x27;, (&#x27;1&#x27;,))&gt;&gt;&gt; values = cursor.fetchall()&gt;&gt;&gt; values[(&#x27;1&#x27;, &#x27;Michael&#x27;)]# 关闭Cursor和Connection:&gt;&gt;&gt; cursor.close()True&gt;&gt;&gt; conn.close()\n由于Python的DB-API定义都是通用的，所以，操作MySQL的数据库代码和SQLite类似。\n小结\n\n执行INSERT等操作后要调用commit()提交事务；\nMySQL的SQL占位符是%s。\n\n参考源码\ndo_mysql.py\n数据库表是一个二维表，包含多行多列。把一个表的内容用Python的数据结构表示出来的话，可以用一个list表示多行，list的每一个元素是tuple，表示一行记录，比如，包含id和name的user表：\n12345[    (&#x27;1&#x27;, &#x27;Michael&#x27;),    (&#x27;2&#x27;, &#x27;Bob&#x27;),    (&#x27;3&#x27;, &#x27;Adam&#x27;)]\nPython的DB-API返回的数据结构就是像上面这样表示的。\n但是用tuple表示一行很难看出表的结构。如果把一个tuple用class实例来表示，就可以更容易地看出表的结构来：\n12345678910class User(object):    def __init__(self, id, name):        self.id = id        self.name = name[    User(&#x27;1&#x27;, &#x27;Michael&#x27;),    User(&#x27;2&#x27;, &#x27;Bob&#x27;),    User(&#x27;3&#x27;, &#x27;Adam&#x27;)]\n这就是传说中的ORM技术：Object-Relational Mapping，把关系数据库的表结构映射到对象上。是不是很简单？\n但是由谁来做这个转换呢？所以ORM框架应运而生。\n在Python中，最有名的ORM框架是SQLAlchemy。我们来看看SQLAlchemy的用法。\n首先通过pip安装SQLAlchemy：\n1$ pip install sqlalchemy\n然后，利用上次我们在MySQL的test数据库中创建的user表，用SQLAlchemy来试试：\n第一步，导入SQLAlchemy，并初始化DBSession：\n123456789101112131415161718192021# 导入:from sqlalchemy import Column, String, create_enginefrom sqlalchemy.orm import sessionmakerfrom sqlalchemy.orm import declarative_base# 创建对象的基类:Base = declarative_base()# 定义User对象:class User(Base):    # 表的名字:    __tablename__ = &#x27;user&#x27;    # 表的结构:    id = Column(String(20), primary_key=True)    name = Column(String(20))# 初始化数据库连接:engine = create_engine(&#x27;mysql+mysqlconnector://root:password@localhost:3306/test&#x27;)# 创建DBSession类型:DBSession = sessionmaker(bind=engine)\n以上代码完成SQLAlchemy的初始化和具体每个表的class定义。如果有多个表，就继续定义其他class，例如School：\n1234class School(Base):    __tablename__ = &#x27;school&#x27;    id = ...    name = ...\ncreate_engine()用来初始化数据库连接。SQLAlchemy用一个字符串表示连接信息：\n1&#x27;数据库类型+数据库驱动名称://用户名:口令@机器地址:端口号/数据库名&#x27;\n你只需要根据需要替换掉用户名、口令等信息即可。\n下面，我们看看如何向数据库表中添加一行记录。\n由于有了ORM，我们向数据库表中添加一行记录，可以视为添加一个User对象：\n12345678910# 创建session对象:session = DBSession()# 创建新User对象:new_user = User(id=&#x27;5&#x27;, name=&#x27;Bob&#x27;)# 添加到session:session.add(new_user)# 提交即保存到数据库:session.commit()# 关闭session:session.close()\n可见，关键是获取session，然后把对象添加到session，最后提交并关闭。DBSession对象可视为当前数据库连接。\n如何从数据库表中查询数据呢？有了ORM，查询出来的可以不再是tuple，而是User对象。SQLAlchemy提供的查询接口如下：\n123456789# 创建Session:session = DBSession()# 创建Query查询，filter是where条件，最后调用one()返回唯一行，如果调用all()则返回所有行:user = session.query(User).filter(User.id==&#x27;5&#x27;).one()# 打印类型和对象的name属性:print(&#x27;type:&#x27;, type(user))print(&#x27;name:&#x27;, user.name)# 关闭Session:session.close()\n运行结果如下：\n12type: &lt;class &#x27;__main__.User&#x27;&gt;name: Bob\n可见，ORM就是把数据库表的行与相应的对象建立关联，互相转换。\n由于关系数据库的多个表还可以用外键实现一对多、多对多等关联，相应地，ORM框架也可以提供两个对象之间的一对多、多对多等功能。\n例如，如果一个User拥有多个Book，就可以定义一对多关系如下：\n123456789101112131415class User(Base):    __tablename__ = &#x27;user&#x27;    id = Column(String(20), primary_key=True)    name = Column(String(20))    # 一对多:    books = relationship(&#x27;Book&#x27;)class Book(Base):    __tablename__ = &#x27;book&#x27;    id = Column(String(20), primary_key=True)    name = Column(String(20))    # “多”的一方的book表是通过外键关联到user表的:    user_id = Column(String(20), ForeignKey(&#x27;user.id&#x27;))\n当我们查询一个User对象时，该对象的books属性将返回一个包含若干个Book对象的list。\n小结\nORM框架的作用就是把数据库表的一行记录与一个对象互相做自动转换。\n正确使用ORM的前提是了解关系数据库的原理。\n参考源码\ndo_sqlalchemy.py\n","dateCreated":"2016-04-30T23:10:34+08:00","dateModified":"2025-06-18T11:30:52+08:00","datePublished":"2016-04-30T23:10:34+08:00","description":"","headline":"17.python访问数据库","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/","keywords":"python"}</script>
+    <meta name="description" content="程序运行的时候，数据都是在内存中的。当程序终止的时候，通常都需要将数据保存到磁盘上，无论是保存到本地磁盘，还是通过网络保存到服务器上，最终都会将数据写入磁盘文件。 而如何定义数据的存储格式就是一个大问题。如果我们自己来定义存储格式，比如保存一个班级所有学生的成绩单：    名字 成绩     Michael 99   Bob 85   Bart 59   Lisa 87    我们可以用一个文本文">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="17.python访问数据库">
+<meta property="og:url" content="https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="程序运行的时候，数据都是在内存中的。当程序终止的时候，通常都需要将数据保存到磁盘上，无论是保存到本地磁盘，还是通过网络保存到服务器上，最终都会将数据写入磁盘文件。 而如何定义数据的存储格式就是一个大问题。如果我们自己来定义存储格式，比如保存一个班级所有学生的成绩单：    名字 成绩     Michael 99   Bob 85   Bart 59   Lisa 87    我们可以用一个文本文">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://liaoxuefeng.com/books/python/database/table_grade.jpg">
+<meta property="og:image" content="https://liaoxuefeng.com/books/python/database/table_class.jpg">
+<meta property="og:image" content="https://liaoxuefeng.com/books/python/database/table_relationship.jpg">
+<meta property="og:image" content="https://liaoxuefeng.com/books/python/database/table_relationship2.jpg">
+<meta property="article:published_time" content="2016-04-30T15:10:34.000Z">
+<meta property="article:modified_time" content="2025-06-18T03:30:52.867Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liaoxuefeng.com/books/python/database/table_grade.jpg">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            17.python访问数据库
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2016-04-30T23:10:34+08:00">
+	
+		    2016 年 4 月 30 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/python/">python</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <p>程序运行的时候，数据都是在内存中的。当程序终止的时候，通常都需要将数据保存到磁盘上，无论是保存到本地磁盘，还是通过网络保存到服务器上，最终都会将数据写入磁盘文件。</p>
+<p>而如何定义数据的存储格式就是一个大问题。如果我们自己来定义存储格式，比如保存一个班级所有学生的成绩单：</p>
+<table>
+<thead>
+<tr>
+<th>名字</th>
+<th>成绩</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Michael</td>
+<td>99</td>
+</tr>
+<tr>
+<td>Bob</td>
+<td>85</td>
+</tr>
+<tr>
+<td>Bart</td>
+<td>59</td>
+</tr>
+<tr>
+<td>Lisa</td>
+<td>87</td>
+</tr>
+</tbody>
+</table>
+<p>我们可以用一个文本文件保存，一行保存一个学生，用<code>,</code>隔开：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Michael,99</span><br><span class="line">Bob,85</span><br><span class="line">Bart,59</span><br><span class="line">Lisa,87</span><br></pre></td></tr></table></figure>
+<p>还可以用JSON格式保存，也是文本文件：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Michael&quot;</span><span class="punctuation">,</span><span class="attr">&quot;score&quot;</span><span class="punctuation">:</span><span class="number">99</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Bob&quot;</span><span class="punctuation">,</span><span class="attr">&quot;score&quot;</span><span class="punctuation">:</span><span class="number">85</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Bart&quot;</span><span class="punctuation">,</span><span class="attr">&quot;score&quot;</span><span class="punctuation">:</span><span class="number">59</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Lisa&quot;</span><span class="punctuation">,</span><span class="attr">&quot;score&quot;</span><span class="punctuation">:</span><span class="number">87</span><span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">]</span></span><br></pre></td></tr></table></figure>
+<p>还可以定义各种保存格式，但是问题来了：</p>
+<p>存储和读取需要自己实现，JSON还是标准，自己定义的格式就各式各样了；</p>
+<p>不能做快速查询，只有把数据全部读到内存中才能自己遍历，但有时候数据的大小远远超过了内存，根本无法全部读入内存。</p>
+<p>为了便于程序保存和读取数据，而且，能直接通过条件快速查询到指定的数据，就出现了数据库（Database）这种专门用于集中存储和查询的软件。</p>
+<p>数据库软件诞生的历史非常久远，早在1950年数据库就诞生了。经历了网状数据库，层次数据库，我们现在广泛使用的关系数据库是20世纪70年代基于关系模型的基础上诞生的。</p>
+<p>关系模型有一套复杂的数学理论，但是从概念上是十分容易理解的。举个学校的例子：</p>
+<p>假设某个XX省YY市ZZ县第一实验小学有3个年级，要表示出这3个年级，可以在Excel中用一个表格画出来：</p>
+<p><img src="https://liaoxuefeng.com/books/python/database/table_grade.jpg" alt="grade"></p>
+<p>每个年级又有若干个班级，要把所有班级表示出来，可以在Excel中再画一个表格：</p>
+<p><img src="https://liaoxuefeng.com/books/python/database/table_class.jpg" alt="class"></p>
+<p>这两个表格有个映射关系，就是根据Grade_ID可以在班级表中查找到对应的所有班级：</p>
+<p><img src="https://liaoxuefeng.com/books/python/database/table_relationship.jpg" alt="grade-classes"></p>
+<p>也就是Grade表的每一行对应Class表的多行，在关系数据库中，这种基于表（Table）的一对多的关系就是关系数据库的基础。</p>
+<p>根据某个年级的ID就可以查找所有班级的行，这种查询语句在关系数据库中称为SQL语句，可以写成：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> classes <span class="keyword">WHERE</span> grade_id <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span>;</span><br></pre></td></tr></table></figure>
+<p>结果也是一个表：</p>
+<table>
+<thead>
+<tr>
+<th>grade_id</th>
+<th>class_id</th>
+<th>name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>11</td>
+<td>一年级一班</td>
+</tr>
+<tr>
+<td>1</td>
+<td>12</td>
+<td>一年级二班</td>
+</tr>
+<tr>
+<td>1</td>
+<td>13</td>
+<td>一年级三班</td>
+</tr>
+</tbody>
+</table>
+<p>类似的，Class表的一行记录又可以关联到Student表的多行记录：</p>
+<p><img src="https://liaoxuefeng.com/books/python/database/table_relationship2.jpg" alt="class-students"></p>
+<p>由于本教程不涉及到关系数据库的详细内容，如果你想从零学习关系数据库和基本的SQL语句，请参考<a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/sql/index.html">SQL教程</a>。</p>
+<h3 id="NoSQL">NoSQL</h3>
+<p>你也许还听说过NoSQL数据库，很多NoSQL宣传其速度和规模远远超过关系数据库，所以很多同学觉得有了NoSQL是否就不需要SQL了呢？千万不要被他们忽悠了，连SQL都不明白怎么可能搞明白NoSQL呢？</p>
+<h3 id="数据库类别">数据库类别</h3>
+<p>既然我们要使用关系数据库，就必须选择一个关系数据库。目前广泛使用的关系数据库也就这么几种：</p>
+<p>付费的商用数据库：</p>
+<ul>
+<li>Oracle，典型的高富帅；</li>
+<li>SQL Server，微软自家产品，Windows定制专款；</li>
+<li>DB2，IBM的产品，听起来挺高端；</li>
+<li>Sybase，曾经跟微软是好基友，后来关系破裂，现在家境惨淡。</li>
+</ul>
+<p>这些数据库都是不开源而且付费的，最大的好处是花了钱出了问题可以找厂家解决，不过在Web的世界里，常常需要部署成千上万的数据库服务器，当然不能把大把大把的银子扔给厂家，所以，无论是Google、Facebook，还是国内的BAT，无一例外都选择了免费的开源数据库：</p>
+<ul>
+<li>MySQL，大家都在用，一般错不了；</li>
+<li>PostgreSQL，学术气息有点重，其实挺不错，但知名度没有MySQL高；</li>
+<li>SQLite，嵌入式数据库，适合桌面和移动应用。</li>
+</ul>
+<p>作为一个Python工程师，选择哪个免费数据库呢？这里我们会介绍SQLite和MySQL，SQLite适合作为嵌入式数据库，优点是不用安装任何软件，直接能用。生产环境下，应当选择MySQL或者PostgreSQL。</p>
+<p>SQLite是一种嵌入式数据库，它的数据库就是一个文件。由于SQLite本身是C写的，而且体积很小，所以，经常被集成到各种应用程序中，甚至在iOS和Android的App中都可以集成。</p>
+<p>Python就内置了SQLite3，所以，在Python中使用SQLite，不需要安装任何东西，直接使用。</p>
+<p>在使用SQLite前，我们先要搞清楚几个概念：</p>
+<p>表是数据库中存放关系数据的集合，一个数据库里面通常都包含多个表，比如学生的表，班级的表，学校的表，等等。表和表之间通过外键关联。</p>
+<p>要操作关系数据库，首先需要连接到数据库，一个数据库连接称为<code>Connection</code>；</p>
+<p>连接到数据库后，需要打开游标，称之为<code>Cursor</code>，通过<code>Cursor</code>执行SQL语句，然后，获得执行结果。</p>
+<p>Python定义了一套操作数据库的API接口，任何数据库要连接到Python，只需要提供符合Python标准的数据库驱动即可。</p>
+<p>由于SQLite的驱动内置在Python标准库中，所以我们可以直接来操作SQLite数据库。</p>
+<p>我们在Python交互式命令行实践一下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"># 导入SQLite驱动:</span><br><span class="line">&gt;&gt;&gt; import sqlite3</span><br><span class="line"># 连接到SQLite数据库</span><br><span class="line"># 数据库文件是test.db</span><br><span class="line"># 如果文件不存在，会自动在当前目录创建:</span><br><span class="line">&gt;&gt;&gt; conn = sqlite3.connect(&#x27;test.db&#x27;)</span><br><span class="line"># 创建一个Cursor:</span><br><span class="line">&gt;&gt;&gt; cursor = conn.cursor()</span><br><span class="line"># 执行一条SQL语句，创建user表:</span><br><span class="line">&gt;&gt;&gt; cursor.execute(&#x27;create table user (id varchar(20) primary key, name varchar(20))&#x27;)</span><br><span class="line">&lt;sqlite3.Cursor object at 0x10f8aa260&gt;</span><br><span class="line"># 继续执行一条SQL语句，插入一条记录:</span><br><span class="line">&gt;&gt;&gt; cursor.execute(&#x27;insert into user (id, name) values (\&#x27;1\&#x27;, \&#x27;Michael\&#x27;)&#x27;)</span><br><span class="line">&lt;sqlite3.Cursor object at 0x10f8aa260&gt;</span><br><span class="line"># 通过rowcount获得插入的行数:</span><br><span class="line">&gt;&gt;&gt; cursor.rowcount</span><br><span class="line">1</span><br><span class="line"># 提交事务:</span><br><span class="line">&gt;&gt;&gt; conn.commit()</span><br><span class="line"># 关闭Cursor:</span><br><span class="line">&gt;&gt;&gt; cursor.close()</span><br><span class="line"># 关闭Connection:</span><br><span class="line">&gt;&gt;&gt; conn.close()</span><br></pre></td></tr></table></figure>
+<p>我们再试试查询记录：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; conn = sqlite3.connect(&#x27;test.db&#x27;)</span><br><span class="line">&gt;&gt;&gt; cursor = conn.cursor()</span><br><span class="line"># 执行查询语句:</span><br><span class="line">&gt;&gt;&gt; cursor.execute(&#x27;select * from user where id=?&#x27;, (&#x27;1&#x27;,))</span><br><span class="line">&lt;sqlite3.Cursor object at 0x10f8aa340&gt;</span><br><span class="line"># 获得查询结果集:</span><br><span class="line">&gt;&gt;&gt; values = cursor.fetchall()</span><br><span class="line">&gt;&gt;&gt; values</span><br><span class="line">[(&#x27;1&#x27;, &#x27;Michael&#x27;)]</span><br><span class="line">&gt;&gt;&gt; cursor.close()</span><br><span class="line">&gt;&gt;&gt; conn.close()</span><br></pre></td></tr></table></figure>
+<p>使用Python的DB-API时，只要搞清楚<code>Connection</code>和<code>Cursor</code>对象，打开后一定记得关闭，就可以放心地使用。</p>
+<p>使用<code>Cursor</code>对象执行<code>insert</code>，<code>update</code>，<code>delete</code>语句时，执行结果由<code>rowcount</code>返回影响的行数，就可以拿到执行结果。</p>
+<p>使用<code>Cursor</code>对象执行<code>select</code>语句时，通过<code>fetchall()</code>可以拿到结果集。结果集是一个<code>list</code>，每个元素都是一个<code>tuple</code>，对应一行记录。</p>
+<p>如果SQL语句带有参数，那么需要把参数按照位置传递给<code>execute()</code>方法，有几个<code>?</code>占位符就必须对应几个参数，例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cursor.execute(&#x27;select * from user where name=? and pwd=?&#x27;, (&#x27;abc&#x27;, &#x27;password&#x27;))</span><br></pre></td></tr></table></figure>
+<p>SQLite支持常见的标准SQL语句以及几种常见的数据类型。具体文档请参阅SQLite官方网站。</p>
+<h3 id="小结">小结</h3>
+<p>在Python中操作数据库时，要先导入数据库对应的驱动，然后，通过<code>Connection</code>对象和<code>Cursor</code>对象操作数据。</p>
+<p>要确保打开的<code>Connection</code>对象和<code>Cursor</code>对象都正确地被关闭，否则，资源就会泄露。</p>
+<p>如何才能确保出错的情况下也关闭掉<code>Connection</code>对象和<code>Cursor</code>对象呢？请回忆<code>try:...except:...finally:...</code>的用法。</p>
+<h3 id="练习">练习</h3>
+<p>请编写函数，在Sqlite中根据分数段查找指定的名字：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os, sqlite3</span><br><span class="line"></span><br><span class="line">db_file = os.path.join(os.path.dirname(__file__), <span class="string">&#x27;test.db&#x27;</span>)</span><br><span class="line"><span class="keyword">if</span> os.path.isfile(db_file):</span><br><span class="line">    os.remove(db_file)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始数据:</span></span><br><span class="line">conn = sqlite3.connect(db_file)</span><br><span class="line">cursor = conn.cursor()</span><br><span class="line">cursor.execute(<span class="string">&#x27;create table user(id varchar(20) primary key, name varchar(20), score int)&#x27;</span>)</span><br><span class="line">cursor.execute(<span class="string">r&quot;insert into user values (&#x27;A-001&#x27;, &#x27;Adam&#x27;, 95)&quot;</span>)</span><br><span class="line">cursor.execute(<span class="string">r&quot;insert into user values (&#x27;A-002&#x27;, &#x27;Bart&#x27;, 62)&quot;</span>)</span><br><span class="line">cursor.execute(<span class="string">r&quot;insert into user values (&#x27;A-003&#x27;, &#x27;Lisa&#x27;, 78)&quot;</span>)</span><br><span class="line">conn.commit()</span><br><span class="line">cursor.close()</span><br><span class="line">conn.close()</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_score_in</span>(<span class="params">low, high</span>):</span><br><span class="line">    <span class="string">&#x27; 返回指定分数区间的名字，按分数从低到高排序 &#x27;</span></span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试:</span></span><br><span class="line"><span class="keyword">assert</span> get_score_in(<span class="number">80</span>, <span class="number">95</span>) == [<span class="string">&#x27;Adam&#x27;</span>], get_score_in(<span class="number">80</span>, <span class="number">95</span>)</span><br><span class="line"><span class="keyword">assert</span> get_score_in(<span class="number">60</span>, <span class="number">80</span>) == [<span class="string">&#x27;Bart&#x27;</span>, <span class="string">&#x27;Lisa&#x27;</span>], get_score_in(<span class="number">60</span>, <span class="number">80</span>)</span><br><span class="line"><span class="keyword">assert</span> get_score_in(<span class="number">60</span>, <span class="number">100</span>) == [<span class="string">&#x27;Bart&#x27;</span>, <span class="string">&#x27;Lisa&#x27;</span>, <span class="string">&#x27;Adam&#x27;</span>], get_score_in(<span class="number">60</span>, <span class="number">100</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;Pass&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="参考源码">参考源码</h3>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/python/database/sqlite/do_sqlite.py">do_sqlite.py</a></p>
+<p>MySQL是Web世界中使用最广泛的数据库服务器。SQLite的特点是轻量级、可嵌入，但不能承受高并发访问，适合桌面和移动应用。而MySQL是为服务器端设计的数据库，能承受高并发访问，同时占用的内存也远远大于SQLite。</p>
+<p>此外，MySQL内部有多种数据库引擎，最常用的引擎是支持数据库事务的InnoDB。</p>
+<h3 id="安装MySQL">安装MySQL</h3>
+<p>可以直接从MySQL官方网站下载最新的<a target="_blank" rel="noopener" href="https://dev.mysql.com/downloads/mysql/">Community Server 8.x</a>版本。MySQL是跨平台的，选择对应的平台下载安装文件，安装即可。</p>
+<p>安装时，MySQL会提示输入<code>root</code>用户的口令，请务必记清楚。如果怕记不住，就把口令设置为<code>password</code>。</p>
+<p>在Windows上，安装时请选择<code>UTF-8</code>编码，以便正确地处理中文。</p>
+<p>在Mac或Linux上，需要编辑MySQL的配置文件，把数据库默认的编码全部改为UTF-8。MySQL的配置文件默认存放在<code>/etc/my.cnf</code>或者<code>/etc/mysql/my.cnf</code>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[client]</span><br><span class="line">default-character-set = utf8mb4</span><br><span class="line"></span><br><span class="line">[mysqld]</span><br><span class="line">default-storage-engine = INNODB</span><br><span class="line">character-set-server = utf8mb4</span><br><span class="line">collation-server = utf8_general_ci</span><br></pre></td></tr></table></figure>
+<p>重启MySQL后，可以通过MySQL的客户端命令行检查编码：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">$ mysql -u root -p</span><br><span class="line">Enter password: </span><br><span class="line">Welcome to the MySQL monitor...</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">mysql&gt; show variables like &#x27;%char%&#x27;;</span><br><span class="line">+--------------------------+--------------------------------------+</span><br><span class="line">| Variable_name            | Value                                |</span><br><span class="line">+--------------------------+--------------------------------------+</span><br><span class="line">| character_set_client     | utf8mb4                              |</span><br><span class="line">| character_set_connection | utf8mb4                              |</span><br><span class="line">| character_set_database   | utf8mb4                              |</span><br><span class="line">| character_set_filesystem | binary                               |</span><br><span class="line">| character_set_results    | utf8mb4                              |</span><br><span class="line">| character_set_server     | utf8mb4                              |</span><br><span class="line">| character_set_system     | utf8mb3                              |</span><br><span class="line">| character_sets_dir       | /usr/local/mysql-8.x/share/charsets/ |</span><br><span class="line">+--------------------------+--------------------------------------+</span><br><span class="line">8 rows in set (0.00 sec)</span><br></pre></td></tr></table></figure>
+<p>看到<code>utf8mb4</code>字样就表示编码设置正确。</p>
+<p>注意</p>
+<p>如果MySQL的版本&lt;5.5.3，则只能把编码设置为<code>utf8</code>，<code>utf8mb4</code>支持最新的Unicode标准，可以显示emoji字符，但<code>utf8</code>无法显示emoji字符。</p>
+<h3 id="用Docker启动MySQL">用Docker启动MySQL</h3>
+<p>如果不想安装MySQL，还可以以Docker的方式快速启动MySQL。</p>
+<p>首先安装<a target="_blank" rel="noopener" href="https://www.docker.com/products/docker-desktop/">Docker Desktop</a>，然后在命令行输入：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker run -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 --name mysql-8.4 -v ./mysql-data:/var/lib/mysql mysql:8.4 --mysql-native-password=ON --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci</span><br></pre></td></tr></table></figure>
+<p>上述命令详细参数如下：</p>
+<ul>
+<li><code>-e MYSQL_ROOT_PASSWORD=password</code>：传入root用户口令的环境变量，密码是<code>password</code>；</li>
+<li><code>-p 3306:3306</code>：在本机<code>3306</code>端口监听；</li>
+<li><code>--name mysql-8.4</code>：启动后容器的名称为<code>mysql-8.4</code>，可任意设置；</li>
+<li><code>-v ./mysql-data:/var/lib/mysql</code>：把当前目录<code>./mysql-data</code>映射到容器目录<code>/var/lib/mysql</code>，此目录存放MySQL数据库文件，避免容器停止后数据丢失；</li>
+<li><code>mysql:8.4</code>：启动镜像名称为<code>mysql:8.4</code>；</li>
+<li><code>--mysql-native-password=ON</code>：表示启用明文口令；</li>
+<li><code>--character-set-server=utf8mb4</code>：表示启用<code>utf8mb4</code>作为字符集；</li>
+<li><code>--collation-server=utf8mb4_unicode_ci</code>：表示启用<code>utf8mb4</code>作为排序规则。</li>
+</ul>
+<p>运行命令后可看到如下输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">2024-07-11 02:44:05+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.4.1-1.el9 started.</span><br><span class="line">...</span><br><span class="line">2024-07-11T02:44:16.874162Z 0 [System] [MY-015015] [Server] MySQL Server - start.</span><br><span class="line">...</span><br><span class="line">2024-07-11T02:44:17.120017Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.</span><br><span class="line">2024-07-11T02:44:17.561242Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.</span><br><span class="line">...</span><br><span class="line">2024-07-11T02:44:17.868691Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: &#x27;8.4.1&#x27;  socket: &#x27;/var/run/mysqld/mysqld.sock&#x27;  port: 3306  MySQL Community Server - GPL.</span><br></pre></td></tr></table></figure>
+<p>看到最后一行<code>ready for connections</code>表示启动成功。</p>
+<h3 id="安装MySQL驱动">安装MySQL驱动</h3>
+<p>由于MySQL服务器以独立的进程运行，并通过网络对外服务，所以，需要支持Python的MySQL驱动来连接到MySQL服务器。MySQL官方提供了mysql-connector-python驱动：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ pip install mysql-connector-python </span><br></pre></td></tr></table></figure>
+<p>我们演示如何连接到MySQL服务器的test数据库：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"># 导入MySQL驱动:</span><br><span class="line">&gt;&gt;&gt; import mysql.connector</span><br><span class="line"># 注意把password设为你的root口令:</span><br><span class="line">&gt;&gt;&gt; conn = mysql.connector.connect(user=&#x27;root&#x27;, password=&#x27;password&#x27;, database=&#x27;test&#x27;)</span><br><span class="line">&gt;&gt;&gt; cursor = conn.cursor()</span><br><span class="line"># 创建user表:</span><br><span class="line">&gt;&gt;&gt; cursor.execute(&#x27;create table user (id varchar(20) primary key, name varchar(20))&#x27;)</span><br><span class="line"># 插入一行记录，注意MySQL的占位符是%s:</span><br><span class="line">&gt;&gt;&gt; cursor.execute(&#x27;insert into user (id, name) values (%s, %s)&#x27;, [&#x27;1&#x27;, &#x27;Michael&#x27;])</span><br><span class="line">&gt;&gt;&gt; cursor.rowcount</span><br><span class="line">1</span><br><span class="line"># 提交事务:</span><br><span class="line">&gt;&gt;&gt; conn.commit()</span><br><span class="line">&gt;&gt;&gt; cursor.close()</span><br><span class="line"># 运行查询:</span><br><span class="line">&gt;&gt;&gt; cursor = conn.cursor()</span><br><span class="line">&gt;&gt;&gt; cursor.execute(&#x27;select * from user where id = %s&#x27;, (&#x27;1&#x27;,))</span><br><span class="line">&gt;&gt;&gt; values = cursor.fetchall()</span><br><span class="line">&gt;&gt;&gt; values</span><br><span class="line">[(&#x27;1&#x27;, &#x27;Michael&#x27;)]</span><br><span class="line"># 关闭Cursor和Connection:</span><br><span class="line">&gt;&gt;&gt; cursor.close()</span><br><span class="line">True</span><br><span class="line">&gt;&gt;&gt; conn.close()</span><br></pre></td></tr></table></figure>
+<p>由于Python的DB-API定义都是通用的，所以，操作MySQL的数据库代码和SQLite类似。</p>
+<h3 id="小结-2">小结</h3>
+<ul>
+<li>执行INSERT等操作后要调用<code>commit()</code>提交事务；</li>
+<li>MySQL的SQL占位符是<code>%s</code>。</li>
+</ul>
+<h3 id="参考源码-2">参考源码</h3>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/python/database/mysql/do_mysql.py">do_mysql.py</a></p>
+<p>数据库表是一个二维表，包含多行多列。把一个表的内容用Python的数据结构表示出来的话，可以用一个<code>list</code>表示多行，<code>list</code>的每一个元素是<code>tuple</code>，表示一行记录，比如，包含<code>id</code>和<code>name</code>的<code>user</code>表：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[</span><br><span class="line">    (<span class="string">&#x27;1&#x27;</span>, <span class="string">&#x27;Michael&#x27;</span>),</span><br><span class="line">    (<span class="string">&#x27;2&#x27;</span>, <span class="string">&#x27;Bob&#x27;</span>),</span><br><span class="line">    (<span class="string">&#x27;3&#x27;</span>, <span class="string">&#x27;Adam&#x27;</span>)</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>Python的DB-API返回的数据结构就是像上面这样表示的。</p>
+<p>但是用<code>tuple</code>表示一行很难看出表的结构。如果把一个<code>tuple</code>用<code>class</code>实例来表示，就可以更容易地看出表的结构来：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(<span class="title class_ inherited__">object</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, <span class="built_in">id</span>, name</span>):</span><br><span class="line">        <span class="variable language_">self</span>.<span class="built_in">id</span> = <span class="built_in">id</span></span><br><span class="line">        <span class="variable language_">self</span>.name = name</span><br><span class="line"></span><br><span class="line">[</span><br><span class="line">    User(<span class="string">&#x27;1&#x27;</span>, <span class="string">&#x27;Michael&#x27;</span>),</span><br><span class="line">    User(<span class="string">&#x27;2&#x27;</span>, <span class="string">&#x27;Bob&#x27;</span>),</span><br><span class="line">    User(<span class="string">&#x27;3&#x27;</span>, <span class="string">&#x27;Adam&#x27;</span>)</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>这就是传说中的ORM技术：Object-Relational Mapping，把关系数据库的表结构映射到对象上。是不是很简单？</p>
+<p>但是由谁来做这个转换呢？所以ORM框架应运而生。</p>
+<p>在Python中，最有名的ORM框架是SQLAlchemy。我们来看看SQLAlchemy的用法。</p>
+<p>首先通过pip安装SQLAlchemy：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ pip install sqlalchemy</span><br></pre></td></tr></table></figure>
+<p>然后，利用上次我们在MySQL的test数据库中创建的<code>user</code>表，用SQLAlchemy来试试：</p>
+<p>第一步，导入SQLAlchemy，并初始化DBSession：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 导入:</span></span><br><span class="line"><span class="keyword">from</span> sqlalchemy <span class="keyword">import</span> Column, String, create_engine</span><br><span class="line"><span class="keyword">from</span> sqlalchemy.orm <span class="keyword">import</span> sessionmaker</span><br><span class="line"><span class="keyword">from</span> sqlalchemy.orm <span class="keyword">import</span> declarative_base</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建对象的基类:</span></span><br><span class="line">Base = declarative_base()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义User对象:</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(<span class="title class_ inherited__">Base</span>):</span><br><span class="line">    <span class="comment"># 表的名字:</span></span><br><span class="line">    __tablename__ = <span class="string">&#x27;user&#x27;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 表的结构:</span></span><br><span class="line">    <span class="built_in">id</span> = Column(String(<span class="number">20</span>), primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = Column(String(<span class="number">20</span>))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化数据库连接:</span></span><br><span class="line">engine = create_engine(<span class="string">&#x27;mysql+mysqlconnector://root:password@localhost:3306/test&#x27;</span>)</span><br><span class="line"><span class="comment"># 创建DBSession类型:</span></span><br><span class="line">DBSession = sessionmaker(bind=engine)</span><br></pre></td></tr></table></figure>
+<p>以上代码完成SQLAlchemy的初始化和具体每个表的<code>class</code>定义。如果有多个表，就继续定义其他<code>class</code>，例如School：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">School</span>(<span class="title class_ inherited__">Base</span>):</span><br><span class="line">    __tablename__ = <span class="string">&#x27;school&#x27;</span></span><br><span class="line">    <span class="built_in">id</span> = ...</span><br><span class="line">    name = ...</span><br></pre></td></tr></table></figure>
+<p><code>create_engine()</code>用来初始化数据库连接。SQLAlchemy用一个字符串表示连接信息：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#x27;数据库类型+数据库驱动名称://用户名:口令@机器地址:端口号/数据库名&#x27;</span><br></pre></td></tr></table></figure>
+<p>你只需要根据需要替换掉用户名、口令等信息即可。</p>
+<p>下面，我们看看如何向数据库表中添加一行记录。</p>
+<p>由于有了ORM，我们向数据库表中添加一行记录，可以视为添加一个<code>User</code>对象：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建session对象:</span></span><br><span class="line">session = DBSession()</span><br><span class="line"><span class="comment"># 创建新User对象:</span></span><br><span class="line">new_user = User(<span class="built_in">id</span>=<span class="string">&#x27;5&#x27;</span>, name=<span class="string">&#x27;Bob&#x27;</span>)</span><br><span class="line"><span class="comment"># 添加到session:</span></span><br><span class="line">session.add(new_user)</span><br><span class="line"><span class="comment"># 提交即保存到数据库:</span></span><br><span class="line">session.commit()</span><br><span class="line"><span class="comment"># 关闭session:</span></span><br><span class="line">session.close()</span><br></pre></td></tr></table></figure>
+<p>可见，关键是获取session，然后把对象添加到session，最后提交并关闭。<code>DBSession</code>对象可视为当前数据库连接。</p>
+<p>如何从数据库表中查询数据呢？有了ORM，查询出来的可以不再是<code>tuple</code>，而是<code>User</code>对象。SQLAlchemy提供的查询接口如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建Session:</span></span><br><span class="line">session = DBSession()</span><br><span class="line"><span class="comment"># 创建Query查询，filter是where条件，最后调用one()返回唯一行，如果调用all()则返回所有行:</span></span><br><span class="line">user = session.query(User).<span class="built_in">filter</span>(User.<span class="built_in">id</span>==<span class="string">&#x27;5&#x27;</span>).one()</span><br><span class="line"><span class="comment"># 打印类型和对象的name属性:</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;type:&#x27;</span>, <span class="built_in">type</span>(user))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;name:&#x27;</span>, user.name)</span><br><span class="line"><span class="comment"># 关闭Session:</span></span><br><span class="line">session.close()</span><br></pre></td></tr></table></figure>
+<p>运行结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">type: &lt;class &#x27;__main__.User&#x27;&gt;</span><br><span class="line">name: Bob</span><br></pre></td></tr></table></figure>
+<p>可见，ORM就是把数据库表的行与相应的对象建立关联，互相转换。</p>
+<p>由于关系数据库的多个表还可以用外键实现一对多、多对多等关联，相应地，ORM框架也可以提供两个对象之间的一对多、多对多等功能。</p>
+<p>例如，如果一个User拥有多个Book，就可以定义一对多关系如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(<span class="title class_ inherited__">Base</span>):</span><br><span class="line">    __tablename__ = <span class="string">&#x27;user&#x27;</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">id</span> = Column(String(<span class="number">20</span>), primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = Column(String(<span class="number">20</span>))</span><br><span class="line">    <span class="comment"># 一对多:</span></span><br><span class="line">    books = relationship(<span class="string">&#x27;Book&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Book</span>(<span class="title class_ inherited__">Base</span>):</span><br><span class="line">    __tablename__ = <span class="string">&#x27;book&#x27;</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">id</span> = Column(String(<span class="number">20</span>), primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = Column(String(<span class="number">20</span>))</span><br><span class="line">    <span class="comment"># “多”的一方的book表是通过外键关联到user表的:</span></span><br><span class="line">    user_id = Column(String(<span class="number">20</span>), ForeignKey(<span class="string">&#x27;user.id&#x27;</span>))</span><br></pre></td></tr></table></figure>
+<p>当我们查询一个User对象时，该对象的books属性将返回一个包含若干个Book对象的list。</p>
+<h3 id="小结-3">小结</h3>
+<p>ORM框架的作用就是把数据库表的一行记录与一个对象互相做自动转换。</p>
+<p>正确使用ORM的前提是了解关系数据库的原理。</p>
+<h3 id="参考源码-3">参考源码</h3>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/python/database/sqlalchemy/do_sqlalchemy.py">do_sqlalchemy.py</a></p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/python/" rel="tag">python</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../../05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                    data-tooltip="18.python(Web开发)"
+                    aria-label="上一篇: 18.python(Web开发)"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../29/python/16.python%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6/"
+                    data-tooltip="16.python电子邮件"
+                    aria-label="下一篇: 16.python电子邮件"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../../05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                    data-tooltip="18.python(Web开发)"
+                    aria-label="上一篇: 18.python(Web开发)"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../29/python/16.python%E7%94%B5%E5%AD%90%E9%82%AE%E4%BB%B6/"
+                    data-tooltip="16.python电子邮件"
+                    aria-label="下一篇: 16.python电子邮件"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 235 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

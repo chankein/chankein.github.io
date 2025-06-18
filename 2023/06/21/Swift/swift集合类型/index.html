@@ -1,0 +1,1211 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>swift集合类型 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"集合类型\nSwift 语言提供 Arrays、Sets 和 Dictionaries 三种基本的集合类型用来存储集合数据。数组（Arrays）是有序数据的集。集合（Sets）是无序无重复数据的集。字典（Dictionaries）是无序的键值对的集。\n\nSwift 语言中的 Arrays、Sets 和 Dictionaries 中存储的数据值类型必须明确。这意味着我们不能把错误的数据类型插入其中。同时这也说明你完全可以对取回值的类型非常放心。\n\n注意\nSwift 的 Arrays、Sets 和 Dictionaries 类型被实现为泛型集合。更多关于泛型类型和集合，参见 泛型 章节。\n\n集合的可变性\n如果创建一个 Arrays、Sets 或 Dictionaries 并且把它分配成一个变量，这个集合将会是可变的。这意味着你可以在创建之后添加更多或移除已存在的数据项，或者改变集合中的数据项。如果我们把 Arrays、Sets 或 Dictionaries 分配成常量，那么它就是不可变的，它的大小和内容都不能被改变。\n\n注意\n在我们不需要改变集合的时候创建不可变集合是很好的实践。如此 Swift 编译器可以优化我们创建的集合。\n\n数组（Arrays）\n数组使用有序列表存储同一类型的多个值。相同的值可以多次出现在一个数组的不同位置中。\n\n注意\nSwift 的 Array 类型被桥接到 Foundation 中的 NSArray 类。更多关于在 Foundation 和 Cocoa 中使用 Array 的信息，参见 Using Swift with Cocoa and Obejective-C(Swift 4.1) 中 使用 Cocoa 数据类型 部分。\n\n数组的简单语法\n写 Swift 数组应该遵循像 Array&lt;Element&gt; 这样的形式，其中 Element 是这个数组中唯一允许存在的数据类型。我们也可以使用像 [Element] 这样的简单语法。尽管两种形式在功能上是一样的，但是推荐较短的那种，而且在本文中都会使用这种形式来使用数组。\n创建一个空数组\n我们可以使用构造语法来创建一个由特定数据类型构成的空数组：\n123var someInts = [Int]()print(&quot;someInts is of type [Int] with \\(someInts.count) items.&quot;)// 打印“someInts is of type [Int] with 0 items.”\n注意，通过构造函数的类型，someInts 的值类型被推断为 [Int]。\n或者，如果代码上下文中已经提供了类型信息，例如一个函数参数或者一个已经定义好类型的常量或者变量，我们可以使用空数组语句创建一个空数组，它的写法很简单：[]（一对空方括号）：\n1234someInts.append(3)// someInts 现在包含一个 Int 值someInts = []// someInts 现在是空数组，但是仍然是 [Int] 类型的。\n创建一个带有默认值的数组\nSwift 中的 Array 类型还提供一个可以创建特定大小并且所有数据都被默认的构造方法。我们可以把准备加入新数组的数据项数量（count）和适当类型的初始值（repeating）传入数组构造函数：\n12var threeDoubles = Array(repeating: 0.0, count: 3)// threeDoubles 是一种 [Double] 数组，等价于 [0.0, 0.0, 0.0]\n通过两个数组相加创建一个数组\n我们可以使用加法操作符（+）来组合两种已存在的相同类型数组。新数组的数据类型会被从两个数组的数据类型中推断出来：\n12345var anotherThreeDoubles = Array(repeating: 2.5, count: 3)// anotherThreeDoubles 被推断为 [Double]，等价于 [2.5, 2.5, 2.5]var sixDoubles = threeDoubles + anotherThreeDoubles// sixDoubles 被推断为 [Double]，等价于 [0.0, 0.0, 0.0, 2.5, 2.5, 2.5]\n用数组字面量构造数组\n我们可以使用数组字面量来进行数组构造，这是一种用一个或者多个数值构造数组的简单方法。数组字面量是一系列由逗号分割并由方括号包含的数值：\n[value 1, value 2, value 3]。\n下面这个例子创建了一个叫做 shoppingList 并且存储 String 的数组：\n12var shoppingList: [String] = [&quot;Eggs&quot;, &quot;Milk&quot;]// shoppingList 已经被构造并且拥有两个初始项。\nshoppingList 变量被声明为“字符串值类型的数组“，记作 [String]。 因为这个数组被规定只有 String 一种数据结构，所以只有 String 类型可以在其中被存取。 在这里，shoppingList 数组由两个 String 值（&quot;Eggs&quot; 和 &quot;Milk&quot;）构造，并且由数组字面量定义。\n\n注意\nshoppingList 数组被声明为变量（var 关键字创建）而不是常量（let 创建）是因为以后可能会有更多的数据项被插入其中。\n\n在这个例子中，字面量仅仅包含两个 String 值。匹配了该数组的变量声明（只能包含 String 的数组），所以这个字面量的分配过程可以作为用两个初始项来构造 shoppingList 的一种方式。\n由于 Swift 的类型推断机制，当我们用字面量构造只拥有相同类型值数组的时候，我们不必把数组的类型定义清楚。shoppingList 的构造也可以这样写：\n1var shoppingList = [&quot;Eggs&quot;, &quot;Milk&quot;]\n因为所有数组字面量中的值都是相同的类型，Swift 可以推断出 [String] 是 shoppingList 中变量的正确类型。\n访问和修改数组\n我们可以通过数组的方法和属性来访问和修改数组，或者使用下标语法。\n可以使用数组的只读属性 count 来获取数组中的数据项数量：\n12print(&quot;The shopping list contains \\(shoppingList.count) items.&quot;)// 输出“The shopping list contains 2 items.”（这个数组有2个项）\n使用布尔属性 isEmpty 作为一个缩写形式去检查 count 属性是否为 0：\n123456if shoppingList.isEmpty &#123;    print(&quot;The shopping list is empty.&quot;)&#125; else &#123;    print(&quot;The shopping list is not empty.&quot;)&#125;// 打印“The shopping list is not empty.”（shoppinglist 不是空的）\n也可以使用 append(_:) 方法在数组后面添加新的数据项：\n12shoppingList.append(&quot;Flour&quot;)// shoppingList 现在有3个数据项，有人在摊煎饼\n除此之外，使用加法赋值运算符（+=）也可以直接在数组后面添加一个或多个拥有相同类型的数据项：\n1234shoppingList += [&quot;Baking Powder&quot;]// shoppingList 现在有四项了shoppingList += [&quot;Chocolate Spread&quot;, &quot;Cheese&quot;, &quot;Butter&quot;]// shoppingList 现在有七项了\n可以直接使用下标语法来获取数组中的数据项，把我们需要的数据项的索引值放在直接放在数组名称的方括号中：\n12var firstItem = shoppingList[0]// 第一项是“Eggs”\n\n注意\n第一项在数组中的索引值是 0 而不是 1。 Swift 中的数组索引总是从零开始。\n\n我们也可以用下标来改变某个已有索引值对应的数据值：\n12shoppingList[0] = &quot;Six eggs&quot;// 其中的第一项现在是“Six eggs”而不是“Eggs”\n还可以利用下标来一次改变一系列数据值，即使新数据和原有数据的数量是不一样的。下面的例子把 &quot;Chocolate Spread&quot;、&quot;Cheese&quot; 和 &quot;Butter&quot; 替换为 &quot;Bananas&quot; 和 &quot;Apples&quot;：\n12shoppingList[4...6] = [&quot;Bananas&quot;, &quot;Apples&quot;]// shoppingList 现在有6项\n\n注意\n不可以用下标访问的形式去在数组尾部添加新项。\n\n调用数组的 insert(_:at:) 方法来在某个具体索引值之前添加数据项：\n123shoppingList.insert(&quot;Maple Syrup&quot;, at: 0)// shoppingList 现在有7项// 现在是这个列表中的第一项是“Maple Syrup”\n这次 insert(_:at:) 方法调用把值为 &quot;Maple Syrup&quot; 的新数据项插入列表的最开始位置，并且使用 0 作为索引值。\n类似的我们可以使用 remove(at:) 方法来移除数组中的某一项。这个方法把数组在特定索引值中存储的数据项移除并且返回这个被移除的数据项（我们不需要的时候就可以无视它）：\n1234let mapleSyrup = shoppingList.remove(at: 0)// 索引值为0的数据项被移除// shoppingList 现在只有6项，而且不包括 Maple Syrup// mapleSyrup 常量的值等于被移除数据项“Maple Syrup”的值\n\n注意\n如果我们试着对索引越界的数据进行检索或者设置新值的操作，会引发一个运行期错误。我们可以使用索引值和数组的 count 属性进行比较来在使用某个索引之前先检验是否有效。除了当 count 等于 0 时（说明这是个空数组），最大索引值一直是 count - 1，因为数组都是零起索引。\n\n数据项被移除后数组中的空出项会被自动填补，所以现在索引值为 0 的数据项的值再次等于 &quot;Six eggs&quot;：\n12firstItem = shoppingList[0]// firstItem 现在等于“Six eggs”\n如果我们只想把数组中的最后一项移除，可以使用 removeLast() 方法而不是 remove(at:) 方法来避免我们需要获取数组的 count 属性。就像后者一样，前者也会返回被移除的数据项：\n1234let apples = shoppingList.removeLast()// 数组的最后一项被移除了// shoppingList 现在只有5项，不包括 Apples// apples 常量的值现在等于“Apples”字符串\n数组的遍历\n我们可以使用 for-in 循环来遍历所有数组中的数据项：\n12345678for item in shoppingList &#123;    print(item)&#125;// Six eggs// Milk// Flour// Baking Powder// Bananas\n如果我们同时需要每个数据项的值和索引值，可以使用 enumerated() 方法来进行数组遍历。enumerated() 返回一个由每一个数据项索引值和数据值组成的元组。我们可以把这个元组分解成临时常量或者变量来进行遍历：\n12345678for (index, value) in shoppingList.enumerated() &#123;    print(&quot;Item \\(String(index + 1)): \\(value)&quot;)&#125;// Item 1: Six eggs// Item 2: Milk// Item 3: Flour// Item 4: Baking Powder// Item 5: Bananas\n更多关于 for-in 循环的介绍请参见 For 循环。\n集合（Sets）\n*集合（Set）*用来存储相同类型并且没有确定顺序的值。当集合元素顺序不重要时或者希望确保每个元素只出现一次时可以使用集合而不是数组。\n\n注意 Swift 的 Set 类型被桥接到 Foundation 中的 NSSet 类。\n关于使用 Foundation 和 Cocoa 中 Set 的知识，参见 Using Swift with Cocoa and Obejective-C(Swift 4.1) 中使用 Cocoa 数据类型部分。\n\n集合类型的哈希值\n一个类型为了存储在集合中，该类型必须是可哈希化的——也就是说，该类型必须提供一个方法来计算它的哈希值。一个哈希值是 Int 类型的，相等的对象哈希值必须相同，比如 a==b,因此必须 a.hashValue == b.hashValue。\nSwift 的所有基本类型（比如 String、Int、Double 和 Bool）默认都是可哈希化的，可以作为集合的值的类型或者字典的键的类型。没有关联值的枚举成员值（在 枚举 有讲述）默认也是可哈希化的。\n\n注意\n你可以使用你自定义的类型作为集合的值的类型或者是字典的键的类型，但你需要使你的自定义类型遵循 Swift 标准库中的 Hashable 协议。遵循 Hashable 协议的类型需要提供一个类型为 Int 的可读属性 hashValue。由类型的 hashValue 属性返回的值不需要在同一程序的不同执行周期或者不同程序之间保持相同。\n因为 Hashable 协议遵循 Equatable 协议，所以遵循该协议的类型也必须提供一个“是否相等”运算符（==）的实现。这个 Equatable 协议要求任何遵循 == 实现的实例间都是一种相等的关系。也就是说，对于 a,b,c 三个值来说，== 的实现必须满足下面三种情况：\n\na == a(自反性)\na == b 意味着 b == a(对称性)\na == b &amp;&amp; b == c 意味着 a == c(传递性)\n\n\n关于遵循协议的更多信息，请看 协议。\n集合类型语法\nSwift 中的 Set 类型被写为 Set&lt;Element&gt;，这里的 Element 表示 Set 中允许存储的类型，和数组不同的是，集合没有等价的简化形式。\n创建和构造一个空的集合\n你可以通过构造器语法创建一个特定类型的空集合：\n123var letters = Set&lt;Character&gt;()print(&quot;letters is of type Set&lt;Character&gt; with \\(letters.count) items.&quot;)// 打印“letters is of type Set&lt;Character&gt; with 0 items.”\n\n注意\n通过构造器，这里的 letters 变量的类型被推断为 Set&lt;Character&gt;。\n\n此外，如果上下文提供了类型信息，比如作为函数的参数或者已知类型的变量或常量，我们可以通过一个空的数组字面量创建一个空的 Set：\n1234letters.insert(&quot;a&quot;)// letters 现在含有1个 Character 类型的值letters = []// letters 现在是一个空的 Set，但是它依然是 Set&lt;Character&gt; 类型\n用数组字面量创建集合\n你可以使用数组字面量来构造集合，并且可以使用简化形式写一个或者多个值作为集合元素。\n下面的例子创建一个称之为 favoriteGenres 的集合来存储 String 类型的值：\n12var favoriteGenres: Set&lt;String&gt; = [&quot;Rock&quot;, &quot;Classical&quot;, &quot;Hip hop&quot;]// favoriteGenres 被构造成含有三个初始值的集合\n这个 favoriteGenres 变量被声明为“一个 String 值的集合”，写为 Set&lt;String&gt;。由于这个特定的集合含有指定 String 类型的值，所以它只允许存储 String 类型值。这里的 favoriteGenres 变量有三个 String 类型的初始值（&quot;Rock&quot;，&quot;Classical&quot; 和 &quot;Hip hop&quot;），并以数组字面量的方式出现。\n\n注意\nfavoriteGenres 被声明为一个变量（拥有 var 标示符）而不是一个常量（拥有 let 标示符）,因为它里面的元素将会在下面的例子中被增加或者移除。\n\n一个 Set 类型不能从数组字面量中被单独推断出来，因此 Set 类型必须显式声明。然而，由于 Swift 的类型推断功能，如果你想使用一个数组字面量构造一个 Set 并且该数组字面量中的所有元素类型相同，那么你无须写出 Set 的具体类型。favoriteGenres 的构造形式可以采用简化的方式代替：\n1var favoriteGenres: Set = [&quot;Rock&quot;, &quot;Classical&quot;, &quot;Hip hop&quot;]\n由于数组字面量中的所有元素类型相同，Swift 可以推断出 Set&lt;String&gt; 作为 favoriteGenres 变量的正确类型。\n访问和修改一个集合\n你可以通过 Set 的属性和方法来访问和修改一个 Set。\n为了找出一个 Set 中元素的数量，可以使用其只读属性 count：\n12print(&quot;I have \\(favoriteGenres.count) favorite music genres.&quot;)// 打印“I have 3 favorite music genres.”\n使用布尔属性 isEmpty 作为一个缩写形式去检查 count 属性是否为 0：\n123456if favoriteGenres.isEmpty &#123;    print(&quot;As far as music goes, I&#x27;m not picky.&quot;)&#125; else &#123;    print(&quot;I have particular music preferences.&quot;)&#125;// 打印“I have particular music preferences.”\n你可以通过调用 Set 的 insert(_:) 方法来添加一个新元素：\n12favoriteGenres.insert(&quot;Jazz&quot;)// favoriteGenres 现在包含4个元素\n你可以通过调用 Set 的 remove(_:) 方法去删除一个元素，如果该值是该 Set 的一个元素则删除该元素并且返回被删除的元素值，否则如果该 Set 不包含该值，则返回 nil。另外，Set 中的所有元素可以通过它的 removeAll() 方法删除。\n123456if let removedGenre = favoriteGenres.remove(&quot;Rock&quot;) &#123;    print(&quot;\\(removedGenre)? I&#x27;m over it.&quot;)&#125; else &#123;    print(&quot;I never much cared for that.&quot;)&#125;// 打印“Rock? I&#x27;m over it.”\n使用 contains(_:) 方法去检查 Set 中是否包含一个特定的值：\n123456if favoriteGenres.contains(&quot;Funk&quot;) &#123;    print(&quot;I get up on the good foot.&quot;)&#125; else &#123;    print(&quot;It&#x27;s too funky in here.&quot;)&#125;// 打印“It&#x27;s too funky in here.”\n遍历一个集合\n你可以在一个 for-in 循环中遍历一个 Set 中的所有值。\n123456for genre in favoriteGenres &#123;    print(&quot;\\(genre)&quot;)&#125;// Classical// Jazz// Hip hop\n更多关于 for-in 循环的信息，参见 For 循环。\nSwift 的 Set 类型没有确定的顺序，为了按照特定顺序来遍历一个 Set 中的值可以使用 sorted() 方法，它将返回一个有序数组，这个数组的元素排列顺序由操作符’&lt;'对元素进行比较的结果来确定。\n123456for genre in favoriteGenres.sorted() &#123;    print(&quot;\\(genre)&quot;)&#125;// Classical// Hip hop// Jazz\n集合操作\n你可以高效地完成 Set 的一些基本操作，比如把两个集合组合到一起，判断两个集合共有元素，或者判断两个集合是否全包含，部分包含或者不相交。\n基本集合操作\n下面的插图描述了两个集合 a 和 b，以及通过阴影部分的区域显示集合各种操作的结果。\n\n\n使用 intersection(_:) 方法根据两个集合中都包含的值创建的一个新的集合。\n使用 symmetricDifference(_:) 方法根据在一个集合中但不在两个集合中的值创建一个新的集合。\n使用 union(_:) 方法根据两个集合的值创建一个新的集合。\n使用 subtracting(_:) 方法根据不在该集合中的值创建一个新的集合。\n\n123456789101112let oddDigits: Set = [1, 3, 5, 7, 9]let evenDigits: Set = [0, 2, 4, 6, 8]let singleDigitPrimeNumbers: Set = [2, 3, 5, 7]oddDigits.union(evenDigits).sorted()// [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]oddDigits.intersection(evenDigits).sorted()// []oddDigits.subtracting(singleDigitPrimeNumbers).sorted()// [1, 9]oddDigits.symmetricDifference(singleDigitPrimeNumbers).sorted()// [1, 2, 9]\n集合成员关系和相等\n下面的插图描述了三个集合 a、b 和 c,以及通过重叠区域表述集合间共享的元素。集合 a 是集合 b 的父集合，因为 a 包含了 b 中所有的元素，相反的，集合 b 是集合 a 的子集合，因为属于 b 的元素也被 a 包含。集合 b 和集合 c 彼此不关联，因为它们之间没有共同的元素。\n\n\n使用“是否相等”运算符（==）来判断两个集合是否包含全部相同的值。\n使用 isSubset(of:) 方法来判断一个集合中的值是否也被包含在另外一个集合中。\n使用 isSuperset(of:) 方法来判断一个集合中包含另一个集合中所有的值。\n使用 isStrictSubset(of:) 或者 isStrictSuperset(of:) 方法来判断一个集合是否是另外一个集合的子集合或者父集合并且两个集合并不相等。\n使用 isDisjoint(with:) 方法来判断两个集合是否不含有相同的值（是否没有交集）。\n\n12345678910let houseAnimals: Set = [&quot;🐶&quot;, &quot;🐱&quot;]let farmAnimals: Set = [&quot;🐮&quot;, &quot;🐔&quot;, &quot;🐑&quot;, &quot;🐶&quot;, &quot;🐱&quot;]let cityAnimals: Set = [&quot;🐦&quot;, &quot;🐭&quot;]houseAnimals.isSubset(of: farmAnimals)// truefarmAnimals.isSuperset(of: houseAnimals)// truefarmAnimals.isDisjoint(with: cityAnimals)// true\n字典\n字典是一种存储多个相同类型的值的容器。每个值（value）都关联唯一的键（key），键作为字典中的这个值数据的标识符。和数组中的数据项不同，字典中的数据项并没有具体顺序。我们在需要通过标识符（键）访问数据的时候使用字典，这种方法很大程度上和我们在现实世界中使用字典查字义的方法一样。\n\n注意\nSwift 的 Dictionary 类型被桥接到 Foundation 的 NSDictionary 类。\n更多关于在 Foundation 和 Cocoa 中使用 Dictionary 类型的信息，参见 Using Swift with Cocoa and Obejective-C(Swift 4.1) 中 使用 Cocoa 数据类型 部分。\n\n字典类型简化语法\nSwift 的字典使用 Dictionary&lt;Key, Value&gt; 定义，其中 Key 是字典中键的数据类型，Value 是字典中对应于这些键所存储值的数据类型。\n\n注意\n一个字典的 Key 类型必须遵循 Hashable 协议，就像 Set 的值类型。\n\n我们也可以用 [Key: Value] 这样简化的形式去创建一个字典类型。虽然这两种形式功能上相同，但是后者是首选，并且这本指导书涉及到字典类型时通篇采用后者。\n创建一个空字典\n我们可以像数组一样使用构造语法创建一个拥有确定类型的空字典：\n12var namesOfIntegers = [Int: String]()// namesOfIntegers 是一个空的 [Int: String] 字典\n这个例子创建了一个 [Int: String] 类型的空字典来储存整数的英语命名。它的键是 Int 型，值是 String 型。\n如果上下文已经提供了类型信息，我们可以使用空字典字面量来创建一个空字典，记作 [:]（中括号中放一个冒号）：\n1234namesOfIntegers[16] = &quot;sixteen&quot;// namesOfIntegers 现在包含一个键值对namesOfIntegers = [:]// namesOfIntegers 又成为了一个 [Int: String] 类型的空字典\n用字典字面量创建字典\n我们可以使用字典字面量来构造字典，这和我们刚才介绍过的数组字面量拥有相似语法。字典字面量是一种将一个或多个键值对写作 Dictionary 集合的快捷途径。\n一个键值对是一个 key 和一个 value 的结合体。在字典字面量中，每一个键值对的键和值都由冒号分割。这些键值对构成一个列表，其中这些键值对由方括号包含、由逗号分割：\n1[key 1: value 1, key 2: value 2, key 3: value 3]\n下面的例子创建了一个存储国际机场名称的字典。在这个字典中键是三个字母的国际航空运输相关代码，值是机场名称：\n1var airports: [String: String] = [&quot;YYZ&quot;: &quot;Toronto Pearson&quot;, &quot;DUB&quot;: &quot;Dublin&quot;]\nairports 字典被声明为一种 [String: String] 类型，这意味着这个字典的键和值都是 String 类型。\n\n注意\nairports 字典被声明为变量（用 var 关键字）而不是常量（let 关键字）因为后来更多的机场信息会被添加到这个示例字典中。\n\nairports 字典使用字典字面量初始化，包含两个键值对。第一对的键是 YYZ，值是 Toronto Pearson。第二对的键是 DUB，值是 Dublin。\n这个字典语句包含了两个 String: String 类型的键值对。它们对应 airports 变量声明的类型（一个只有 String 键和 String 值的字典）所以这个字典字面量的任务是构造拥有两个初始数据项的 airport 字典。\n和数组一样，我们在用字典字面量构造字典时，如果它的键和值都有各自一致的类型，那么就不必写出字典的类型。 airports 字典也可以用这种简短方式定义：\n1var airports = [&quot;YYZ&quot;: &quot;Toronto Pearson&quot;, &quot;DUB&quot;: &quot;Dublin&quot;]\n因为这个语句中所有的键和值都各自拥有相同的数据类型，Swift 可以推断出 Dictionary&lt;String, String&gt; 是 airports 字典的正确类型。\n访问和修改字典\n我们可以通过字典的方法和属性来访问和修改字典，或者通过使用下标语法。\n和数组一样，我们可以通过字典的只读属性 count 来获取某个字典的数据项数量：\n12print(&quot;The dictionary of airports contains \\(airports.count) items.&quot;)// 打印“The dictionary of airports contains 2 items.”（这个字典有两个数据项）\n使用布尔属性 isEmpty 作为一个缩写形式去检查 count 属性是否为 0：\n123456if airports.isEmpty &#123;    print(&quot;The airports dictionary is empty.&quot;)&#125; else &#123;    print(&quot;The airports dictionary is not empty.&quot;)&#125;// 打印“The airports dictionary is not empty.”\n我们也可以在字典中使用下标语法来添加新的数据项。可以使用一个恰当类型的键作为下标索引，并且分配恰当类型的新值：\n12airports[&quot;LHR&quot;] = &quot;London&quot;// airports 字典现在有三个数据项\n我们也可以使用下标语法来改变特定键对应的值：\n12airports[&quot;LHR&quot;] = &quot;London Heathrow&quot;// “LHR”对应的值被改为“London Heathrow”\n作为另一种下标方法，字典的 updateValue(_:forKey:) 方法可以设置或者更新特定键对应的值。就像上面所示的下标示例，updateValue(_:forKey:) 方法在这个键不存在对应值的时候会设置新值或者在存在时更新已存在的值。和上面的下标方法不同的，updateValue(_:forKey:) 这个方法返回更新值之前的原值。这样使得我们可以检查更新是否成功。\nupdateValue(_:forKey:) 方法会返回对应值的类型的可选值。举例来说：对于存储 String 值的字典，这个函数会返回一个 String? 或者“可选 String”类型的值。\n如果有值存在于更新前，则这个可选值包含了旧值，否则它将会是 nil。\n1234if let oldValue = airports.updateValue(&quot;Dublin Airport&quot;, forKey: &quot;DUB&quot;) &#123;    print(&quot;The old value for DUB was \\(oldValue).&quot;)&#125;// 输出“The old value for DUB was Dublin.”\n我们也可以使用下标语法来在字典中检索特定键对应的值。因为有可能请求的键没有对应的值存在，字典的下标访问会返回对应值的类型的可选值。如果这个字典包含请求键所对应的值，下标会返回一个包含这个存在值的可选值，否则将返回 nil：\n123456if let airportName = airports[&quot;DUB&quot;] &#123;    print(&quot;The name of the airport is \\(airportName).&quot;)&#125; else &#123;    print(&quot;That airport is not in the airports dictionary.&quot;)&#125;// 打印“The name of the airport is Dublin Airport.”\n我们还可以使用下标语法来通过给某个键的对应值赋值为 nil 来从字典里移除一个键值对：\n1234airports[&quot;APL&quot;] = &quot;Apple Internation&quot;// “Apple Internation”不是真的 APL 机场，删除它airports[&quot;APL&quot;] = nil// APL 现在被移除了\n此外，removeValue(forKey:) 方法也可以用来在字典中移除键值对。这个方法在键值对存在的情况下会移除该键值对并且返回被移除的值或者在没有值的情况下返回 nil：\n123456if let removedValue = airports.removeValue(forKey: &quot;DUB&quot;) &#123;    print(&quot;The removed airport&#x27;s name is \\(removedValue).&quot;)&#125; else &#123;    print(&quot;The airports dictionary does not contain a value for DUB.&quot;)&#125;// 打印“The removed airport&#x27;s name is Dublin Airport.”\n字典遍历\n我们可以使用 for-in 循环来遍历某个字典中的键值对。每一个字典中的数据项都以 (key, value) 元组形式返回，并且我们可以使用临时常量或者变量来分解这些元组：\n12345for (airportCode, airportName) in airports &#123;    print(&quot;\\(airportCode): \\(airportName)&quot;)&#125;// YYZ: Toronto Pearson// LHR: London Heathrow\n更多关于 for-in 循环的信息，参见 For 循环。\n通过访问 keys 或者 values 属性，我们也可以遍历字典的键或者值：\n1234567891011for airportCode in airports.keys &#123;    print(&quot;Airport code: \\(airportCode)&quot;)&#125;// Airport code: YYZ// Airport code: LHRfor airportName in airports.values &#123;    print(&quot;Airport name: \\(airportName)&quot;)&#125;// Airport name: Toronto Pearson// Airport name: London Heathrow\n如果我们只是需要使用某个字典的键集合或者值集合来作为某个接受 Array 实例的 API 的参数，可以直接使用 keys 或者 values 属性构造一个新数组：\n12345let airportCodes = [String](airports.keys)// airportCodes 是 [&quot;YYZ&quot;, &quot;LHR&quot;]let airportNames = [String](airports.values)// airportNames 是 [&quot;Toronto Pearson&quot;, &quot;London Heathrow&quot;]\nSwift 的字典类型是无序集合类型。为了以特定的顺序遍历字典的键或值，可以对字典的 keys 或 values 属性使用 sorted() 方法。\n","dateCreated":"2023-06-21T10:13:17+08:00","dateModified":"2025-06-18T11:49:23+08:00","datePublished":"2023-06-21T10:13:17+08:00","description":"","headline":"swift集合类型","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/","keywords":"swift"}</script>
+    <meta name="description" content="集合类型 Swift 语言提供 Arrays、Sets 和 Dictionaries 三种基本的集合类型用来存储集合数据。数组（Arrays）是有序数据的集。集合（Sets）是无序无重复数据的集。字典（Dictionaries）是无序的键值对的集。  Swift 语言中的 Arrays、Sets 和 Dictionaries 中存储的数据值类型必须明确。这意味着我们不能把错误的数据类型插入其中。同">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="swift集合类型">
+<meta property="og:url" content="https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="集合类型 Swift 语言提供 Arrays、Sets 和 Dictionaries 三种基本的集合类型用来存储集合数据。数组（Arrays）是有序数据的集。集合（Sets）是无序无重复数据的集。字典（Dictionaries）是无序的键值对的集。  Swift 语言中的 Arrays、Sets 和 Dictionaries 中存储的数据值类型必须明确。这意味着我们不能把错误的数据类型插入其中。同">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://docs.swift.org/swift-book/_images/CollectionTypes_intro_2x.png">
+<meta property="og:image" content="https://docs.swift.org/swift-book/_images/setVennDiagram_2x.png">
+<meta property="og:image" content="https://docs.swift.org/swift-book/_images/setEulerDiagram_2x.png">
+<meta property="article:published_time" content="2023-06-21T02:13:17.000Z">
+<meta property="article:modified_time" content="2025-06-18T03:49:23.533Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="swift">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://docs.swift.org/swift-book/_images/CollectionTypes_intro_2x.png">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            swift集合类型
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2023-06-21T10:13:17+08:00">
+	
+		    2023 年 6 月 21 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/swift/">swift</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="集合类型">集合类型</h2>
+<p>Swift 语言提供 <code>Arrays</code>、<code>Sets</code> 和 <code>Dictionaries</code> 三种基本的<em>集合类型</em>用来存储集合数据。数组（Arrays）是有序数据的集。集合（Sets）是无序无重复数据的集。字典（Dictionaries）是无序的键值对的集。</p>
+<p><img src="https://docs.swift.org/swift-book/_images/CollectionTypes_intro_2x.png" alt=""></p>
+<p>Swift 语言中的 <code>Arrays</code>、<code>Sets</code> 和 <code>Dictionaries</code> 中存储的数据值类型必须明确。这意味着我们不能把错误的数据类型插入其中。同时这也说明你完全可以对取回值的类型非常放心。</p>
+<blockquote>
+<p>注意</p>
+<p>Swift 的 <code>Arrays</code>、<code>Sets</code> 和 <code>Dictionaries</code> 类型被实现为<em>泛型集合</em>。更多关于泛型类型和集合，参见 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/23_Generics.md">泛型</a> 章节。</p>
+</blockquote>
+<h2 id="集合的可变性">集合的可变性</h2>
+<p>如果创建一个 <code>Arrays</code>、<code>Sets</code> 或 <code>Dictionaries</code> 并且把它分配成一个变量，这个集合将会是<em>可变的</em>。这意味着你可以在创建之后添加更多或移除已存在的数据项，或者改变集合中的数据项。如果我们把 <code>Arrays</code>、<code>Sets</code> 或 <code>Dictionaries</code> 分配成常量，那么它就是<em>不可变的</em>，它的大小和内容都不能被改变。</p>
+<blockquote>
+<p>注意</p>
+<p>在我们不需要改变集合的时候创建不可变集合是很好的实践。如此 Swift 编译器可以优化我们创建的集合。</p>
+</blockquote>
+<h2 id="数组（Arrays）">数组（Arrays）</h2>
+<p><em>数组</em>使用有序列表存储同一类型的多个值。相同的值可以多次出现在一个数组的不同位置中。</p>
+<blockquote>
+<p>注意</p>
+<p>Swift 的 <code>Array</code> 类型被桥接到 <code>Foundation</code> 中的 <code>NSArray</code> 类。更多关于在 <code>Foundation</code> 和 <code>Cocoa</code> 中使用 <code>Array</code> 的信息，参见 <a target="_blank" rel="noopener" href="https://developer.apple.com/library/content/documentation/Swift/Conceptual/BuildingCocoaApps/index.html#//apple_ref/doc/uid/TP40014216"><em>Using Swift with Cocoa and Obejective-C(Swift 4.1)</em></a> 中 <a target="_blank" rel="noopener" href="https://developer.apple.com/library/content/documentation/Swift/Conceptual/BuildingCocoaApps/WorkingWithCocoaDataTypes.html#//apple_ref/doc/uid/TP40014216-CH6">使用 Cocoa 数据类型</a> 部分。</p>
+</blockquote>
+<h3 id="数组的简单语法">数组的简单语法</h3>
+<p>写 Swift 数组应该遵循像 <code>Array&lt;Element&gt;</code> 这样的形式，其中 <code>Element</code> 是这个数组中唯一允许存在的数据类型。我们也可以使用像 <code>[Element]</code> 这样的简单语法。尽管两种形式在功能上是一样的，但是推荐较短的那种，而且在本文中都会使用这种形式来使用数组。</p>
+<h3 id="创建一个空数组">创建一个空数组</h3>
+<p>我们可以使用构造语法来创建一个由特定数据类型构成的空数组：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> someInts <span class="operator">=</span> [<span class="type">Int</span>]()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;someInts is of type [Int] with <span class="subst">\(someInts.count)</span> items.&quot;</span>)</span><br><span class="line"><span class="comment">// 打印“someInts is of type [Int] with 0 items.”</span></span><br></pre></td></tr></table></figure>
+<p>注意，通过构造函数的类型，<code>someInts</code> 的值类型被推断为 <code>[Int]</code>。</p>
+<p>或者，如果代码上下文中已经提供了类型信息，例如一个函数参数或者一个已经定义好类型的常量或者变量，我们可以使用空数组语句创建一个空数组，它的写法很简单：<code>[]</code>（一对空方括号）：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">someInts.append(<span class="number">3</span>)</span><br><span class="line"><span class="comment">// someInts 现在包含一个 Int 值</span></span><br><span class="line">someInts <span class="operator">=</span> []</span><br><span class="line"><span class="comment">// someInts 现在是空数组，但是仍然是 [Int] 类型的。</span></span><br></pre></td></tr></table></figure>
+<h3 id="创建一个带有默认值的数组">创建一个带有默认值的数组</h3>
+<p>Swift 中的 <code>Array</code> 类型还提供一个可以创建特定大小并且所有数据都被默认的构造方法。我们可以把准备加入新数组的数据项数量（<code>count</code>）和适当类型的初始值（<code>repeating</code>）传入数组构造函数：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> threeDoubles <span class="operator">=</span> <span class="type">Array</span>(repeating: <span class="number">0.0</span>, count: <span class="number">3</span>)</span><br><span class="line"><span class="comment">// threeDoubles 是一种 [Double] 数组，等价于 [0.0, 0.0, 0.0]</span></span><br></pre></td></tr></table></figure>
+<h3 id="通过两个数组相加创建一个数组">通过两个数组相加创建一个数组</h3>
+<p>我们可以使用加法操作符（<code>+</code>）来组合两种已存在的相同类型数组。新数组的数据类型会被从两个数组的数据类型中推断出来：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> anotherThreeDoubles <span class="operator">=</span> <span class="type">Array</span>(repeating: <span class="number">2.5</span>, count: <span class="number">3</span>)</span><br><span class="line"><span class="comment">// anotherThreeDoubles 被推断为 [Double]，等价于 [2.5, 2.5, 2.5]</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> sixDoubles <span class="operator">=</span> threeDoubles <span class="operator">+</span> anotherThreeDoubles</span><br><span class="line"><span class="comment">// sixDoubles 被推断为 [Double]，等价于 [0.0, 0.0, 0.0, 2.5, 2.5, 2.5]</span></span><br></pre></td></tr></table></figure>
+<h3 id="用数组字面量构造数组">用数组字面量构造数组</h3>
+<p>我们可以使用<em>数组字面量</em>来进行数组构造，这是一种用一个或者多个数值构造数组的简单方法。数组字面量是一系列由逗号分割并由方括号包含的数值：</p>
+<p><code>[value 1, value 2, value 3]</code>。</p>
+<p>下面这个例子创建了一个叫做 <code>shoppingList</code> 并且存储 <code>String</code> 的数组：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> shoppingList: [<span class="type">String</span>] <span class="operator">=</span> [<span class="string">&quot;Eggs&quot;</span>, <span class="string">&quot;Milk&quot;</span>]</span><br><span class="line"><span class="comment">// shoppingList 已经被构造并且拥有两个初始项。</span></span><br></pre></td></tr></table></figure>
+<p><code>shoppingList</code> 变量被声明为“字符串值类型的数组“，记作 <code>[String]</code>。 因为这个数组被规定只有 <code>String</code> 一种数据结构，所以只有 <code>String</code> 类型可以在其中被存取。 在这里，<code>shoppingList</code> 数组由两个 <code>String</code> 值（<code>&quot;Eggs&quot;</code> 和 <code>&quot;Milk&quot;</code>）构造，并且由数组字面量定义。</p>
+<blockquote>
+<p>注意</p>
+<p><code>shoppingList</code> 数组被声明为变量（<code>var</code> 关键字创建）而不是常量（<code>let</code> 创建）是因为以后可能会有更多的数据项被插入其中。</p>
+</blockquote>
+<p>在这个例子中，字面量仅仅包含两个 <code>String</code> 值。匹配了该数组的变量声明（只能包含 <code>String</code> 的数组），所以这个字面量的分配过程可以作为用两个初始项来构造 <code>shoppingList</code> 的一种方式。</p>
+<p>由于 Swift 的类型推断机制，当我们用字面量构造只拥有相同类型值数组的时候，我们不必把数组的类型定义清楚。<code>shoppingList</code> 的构造也可以这样写：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> shoppingList <span class="operator">=</span> [<span class="string">&quot;Eggs&quot;</span>, <span class="string">&quot;Milk&quot;</span>]</span><br></pre></td></tr></table></figure>
+<p>因为所有数组字面量中的值都是相同的类型，Swift 可以推断出 <code>[String]</code> 是 <code>shoppingList</code> 中变量的正确类型。</p>
+<h3 id="访问和修改数组">访问和修改数组</h3>
+<p>我们可以通过数组的方法和属性来访问和修改数组，或者使用下标语法。</p>
+<p>可以使用数组的只读属性 <code>count</code> 来获取数组中的数据项数量：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(<span class="string">&quot;The shopping list contains <span class="subst">\(shoppingList.count)</span> items.&quot;</span>)</span><br><span class="line"><span class="comment">// 输出“The shopping list contains 2 items.”（这个数组有2个项）</span></span><br></pre></td></tr></table></figure>
+<p>使用布尔属性 <code>isEmpty</code> 作为一个缩写形式去检查 <code>count</code> 属性是否为 <code>0</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> shoppingList.isEmpty &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;The shopping list is empty.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;The shopping list is not empty.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 打印“The shopping list is not empty.”（shoppinglist 不是空的）</span></span><br></pre></td></tr></table></figure>
+<p>也可以使用 <code>append(_:)</code> 方法在数组后面添加新的数据项：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">shoppingList.append(<span class="string">&quot;Flour&quot;</span>)</span><br><span class="line"><span class="comment">// shoppingList 现在有3个数据项，有人在摊煎饼</span></span><br></pre></td></tr></table></figure>
+<p>除此之外，使用加法赋值运算符（<code>+=</code>）也可以直接在数组后面添加一个或多个拥有相同类型的数据项：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">shoppingList <span class="operator">+=</span> [<span class="string">&quot;Baking Powder&quot;</span>]</span><br><span class="line"><span class="comment">// shoppingList 现在有四项了</span></span><br><span class="line">shoppingList <span class="operator">+=</span> [<span class="string">&quot;Chocolate Spread&quot;</span>, <span class="string">&quot;Cheese&quot;</span>, <span class="string">&quot;Butter&quot;</span>]</span><br><span class="line"><span class="comment">// shoppingList 现在有七项了</span></span><br></pre></td></tr></table></figure>
+<p>可以直接使用下标语法来获取数组中的数据项，把我们需要的数据项的索引值放在直接放在数组名称的方括号中：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> firstItem <span class="operator">=</span> shoppingList[<span class="number">0</span>]</span><br><span class="line"><span class="comment">// 第一项是“Eggs”</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意</p>
+<p>第一项在数组中的索引值是 <code>0</code> 而不是 <code>1</code>。 Swift 中的数组索引总是从零开始。</p>
+</blockquote>
+<p>我们也可以用下标来改变某个已有索引值对应的数据值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">shoppingList[<span class="number">0</span>] <span class="operator">=</span> <span class="string">&quot;Six eggs&quot;</span></span><br><span class="line"><span class="comment">// 其中的第一项现在是“Six eggs”而不是“Eggs”</span></span><br></pre></td></tr></table></figure>
+<p>还可以利用下标来一次改变一系列数据值，即使新数据和原有数据的数量是不一样的。下面的例子把 <code>&quot;Chocolate Spread&quot;</code>、<code>&quot;Cheese&quot;</code> 和 <code>&quot;Butter&quot;</code> 替换为 <code>&quot;Bananas&quot;</code> 和 <code>&quot;Apples&quot;</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">shoppingList[<span class="number">4</span><span class="operator">...</span><span class="number">6</span>] <span class="operator">=</span> [<span class="string">&quot;Bananas&quot;</span>, <span class="string">&quot;Apples&quot;</span>]</span><br><span class="line"><span class="comment">// shoppingList 现在有6项</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意</p>
+<p>不可以用下标访问的形式去在数组尾部添加新项。</p>
+</blockquote>
+<p>调用数组的 <code>insert(_:at:)</code> 方法来在某个具体索引值之前添加数据项：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">shoppingList.insert(<span class="string">&quot;Maple Syrup&quot;</span>, at: <span class="number">0</span>)</span><br><span class="line"><span class="comment">// shoppingList 现在有7项</span></span><br><span class="line"><span class="comment">// 现在是这个列表中的第一项是“Maple Syrup”</span></span><br></pre></td></tr></table></figure>
+<p>这次 <code>insert(_:at:)</code> 方法调用把值为 <code>&quot;Maple Syrup&quot;</code> 的新数据项插入列表的最开始位置，并且使用 <code>0</code> 作为索引值。</p>
+<p>类似的我们可以使用 <code>remove(at:)</code> 方法来移除数组中的某一项。这个方法把数组在特定索引值中存储的数据项移除并且返回这个被移除的数据项（我们不需要的时候就可以无视它）：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> mapleSyrup <span class="operator">=</span> shoppingList.remove(at: <span class="number">0</span>)</span><br><span class="line"><span class="comment">// 索引值为0的数据项被移除</span></span><br><span class="line"><span class="comment">// shoppingList 现在只有6项，而且不包括 Maple Syrup</span></span><br><span class="line"><span class="comment">// mapleSyrup 常量的值等于被移除数据项“Maple Syrup”的值</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意</p>
+<p>如果我们试着对索引越界的数据进行检索或者设置新值的操作，会引发一个运行期错误。我们可以使用索引值和数组的 <code>count</code> 属性进行比较来在使用某个索引之前先检验是否有效。除了当 <code>count</code> 等于 0 时（说明这是个空数组），最大索引值一直是 <code>count - 1</code>，因为数组都是零起索引。</p>
+</blockquote>
+<p>数据项被移除后数组中的空出项会被自动填补，所以现在索引值为 <code>0</code> 的数据项的值再次等于 <code>&quot;Six eggs&quot;</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">firstItem <span class="operator">=</span> shoppingList[<span class="number">0</span>]</span><br><span class="line"><span class="comment">// firstItem 现在等于“Six eggs”</span></span><br></pre></td></tr></table></figure>
+<p>如果我们只想把数组中的最后一项移除，可以使用 <code>removeLast()</code> 方法而不是 <code>remove(at:)</code> 方法来避免我们需要获取数组的 <code>count</code> 属性。就像后者一样，前者也会返回被移除的数据项：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> apples <span class="operator">=</span> shoppingList.removeLast()</span><br><span class="line"><span class="comment">// 数组的最后一项被移除了</span></span><br><span class="line"><span class="comment">// shoppingList 现在只有5项，不包括 Apples</span></span><br><span class="line"><span class="comment">// apples 常量的值现在等于“Apples”字符串</span></span><br></pre></td></tr></table></figure>
+<h3 id="数组的遍历">数组的遍历</h3>
+<p>我们可以使用 <code>for-in</code> 循环来遍历所有数组中的数据项：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> item <span class="keyword">in</span> shoppingList &#123;</span><br><span class="line">    <span class="built_in">print</span>(item)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Six eggs</span></span><br><span class="line"><span class="comment">// Milk</span></span><br><span class="line"><span class="comment">// Flour</span></span><br><span class="line"><span class="comment">// Baking Powder</span></span><br><span class="line"><span class="comment">// Bananas</span></span><br></pre></td></tr></table></figure>
+<p>如果我们同时需要每个数据项的值和索引值，可以使用 <code>enumerated()</code> 方法来进行数组遍历。<code>enumerated()</code> 返回一个由每一个数据项索引值和数据值组成的元组。我们可以把这个元组分解成临时常量或者变量来进行遍历：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (index, value) <span class="keyword">in</span> shoppingList.enumerated() &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Item <span class="subst">\(String(index <span class="operator">+</span> <span class="number">1</span>))</span>: <span class="subst">\(value)</span>&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Item 1: Six eggs</span></span><br><span class="line"><span class="comment">// Item 2: Milk</span></span><br><span class="line"><span class="comment">// Item 3: Flour</span></span><br><span class="line"><span class="comment">// Item 4: Baking Powder</span></span><br><span class="line"><span class="comment">// Item 5: Bananas</span></span><br></pre></td></tr></table></figure>
+<p>更多关于 <code>for-in</code> 循环的介绍请参见 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/05_Control_Flow.html#for_loops">For 循环</a>。</p>
+<h2 id="集合（Sets）">集合（Sets）</h2>
+<p>*集合（Set）*用来存储相同类型并且没有确定顺序的值。当集合元素顺序不重要时或者希望确保每个元素只出现一次时可以使用集合而不是数组。</p>
+<blockquote>
+<p>注意 Swift 的 <code>Set</code> 类型被桥接到 <code>Foundation</code> 中的 <code>NSSet</code> 类。</p>
+<p>关于使用 <code>Foundation</code> 和 <code>Cocoa</code> 中 <code>Set</code> 的知识，参见 <a target="_blank" rel="noopener" href="https://developer.apple.com/library/prerelease/ios/documentation/Swift/Conceptual/BuildingCocoaApps/index.html#//apple_ref/doc/uid/TP40014216"><em>Using Swift with Cocoa and Obejective-C(Swift 4.1)</em></a> 中<a target="_blank" rel="noopener" href="https://developer.apple.com/library/content/documentation/Swift/Conceptual/BuildingCocoaApps/WorkingWithCocoaDataTypes.html#//apple_ref/doc/uid/TP40014216-CH6">使用 Cocoa 数据类型</a>部分。</p>
+</blockquote>
+<h3 id="集合类型的哈希值">集合类型的哈希值</h3>
+<p>一个类型为了存储在集合中，该类型必须是<em>可哈希化</em>的——也就是说，该类型必须提供一个方法来计算它的<em>哈希值</em>。一个哈希值是 <code>Int</code> 类型的，相等的对象哈希值必须相同，比如 <code>a==b</code>,因此必须 <code>a.hashValue == b.hashValue</code>。</p>
+<p>Swift 的所有基本类型（比如 <code>String</code>、<code>Int</code>、<code>Double</code> 和 <code>Bool</code>）默认都是可哈希化的，可以作为集合的值的类型或者字典的键的类型。没有关联值的枚举成员值（在 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/08_Enumerations.html">枚举</a> 有讲述）默认也是可哈希化的。</p>
+<blockquote>
+<p>注意</p>
+<p>你可以使用你自定义的类型作为集合的值的类型或者是字典的键的类型，但你需要使你的自定义类型遵循 Swift 标准库中的 <code>Hashable</code> 协议。遵循 <code>Hashable</code> 协议的类型需要提供一个类型为 <code>Int</code> 的可读属性 <code>hashValue</code>。由类型的 <code>hashValue</code> 属性返回的值不需要在同一程序的不同执行周期或者不同程序之间保持相同。</p>
+<p>因为 <code>Hashable</code> 协议遵循 <code>Equatable</code> 协议，所以遵循该协议的类型也必须提供一个“是否相等”运算符（<code>==</code>）的实现。这个 <code>Equatable</code> 协议要求任何遵循 <code>==</code> 实现的实例间都是一种相等的关系。也就是说，对于 <code>a,b,c</code> 三个值来说，<code>==</code> 的实现必须满足下面三种情况：</p>
+<ul>
+<li><code>a == a</code>(自反性)</li>
+<li><code>a == b</code> 意味着 <code>b == a</code>(对称性)</li>
+<li><code>a == b &amp;&amp; b == c</code> 意味着 <code>a == c</code>(传递性)</li>
+</ul>
+</blockquote>
+<p>关于遵循协议的更多信息，请看 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/22_Protocols.md">协议</a>。</p>
+<h3 id="集合类型语法">集合类型语法</h3>
+<p>Swift 中的 <code>Set</code> 类型被写为 <code>Set&lt;Element&gt;</code>，这里的 <code>Element</code> 表示 <code>Set</code> 中允许存储的类型，和数组不同的是，集合没有等价的简化形式。</p>
+<h3 id="创建和构造一个空的集合">创建和构造一个空的集合</h3>
+<p>你可以通过构造器语法创建一个特定类型的空集合：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> letters <span class="operator">=</span> <span class="type">Set</span>&lt;<span class="type">Character</span>&gt;()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;letters is of type Set&lt;Character&gt; with <span class="subst">\(letters.count)</span> items.&quot;</span>)</span><br><span class="line"><span class="comment">// 打印“letters is of type Set&lt;Character&gt; with 0 items.”</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意</p>
+<p>通过构造器，这里的 <code>letters</code> 变量的类型被推断为 <code>Set&lt;Character&gt;</code>。</p>
+</blockquote>
+<p>此外，如果上下文提供了类型信息，比如作为函数的参数或者已知类型的变量或常量，我们可以通过一个空的数组字面量创建一个空的 <code>Set</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">letters.insert(<span class="string">&quot;a&quot;</span>)</span><br><span class="line"><span class="comment">// letters 现在含有1个 Character 类型的值</span></span><br><span class="line">letters <span class="operator">=</span> []</span><br><span class="line"><span class="comment">// letters 现在是一个空的 Set，但是它依然是 Set&lt;Character&gt; 类型</span></span><br></pre></td></tr></table></figure>
+<h3 id="用数组字面量创建集合">用数组字面量创建集合</h3>
+<p>你可以使用数组字面量来构造集合，并且可以使用简化形式写一个或者多个值作为集合元素。</p>
+<p>下面的例子创建一个称之为 <code>favoriteGenres</code> 的集合来存储 <code>String</code> 类型的值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> favoriteGenres: <span class="type">Set</span>&lt;<span class="type">String</span>&gt; <span class="operator">=</span> [<span class="string">&quot;Rock&quot;</span>, <span class="string">&quot;Classical&quot;</span>, <span class="string">&quot;Hip hop&quot;</span>]</span><br><span class="line"><span class="comment">// favoriteGenres 被构造成含有三个初始值的集合</span></span><br></pre></td></tr></table></figure>
+<p>这个 <code>favoriteGenres</code> 变量被声明为“一个 <code>String</code> 值的集合”，写为 <code>Set&lt;String&gt;</code>。由于这个特定的集合含有指定 <code>String</code> 类型的值，所以它只允许存储 <code>String</code> 类型值。这里的 <code>favoriteGenres</code> 变量有三个 <code>String</code> 类型的初始值（<code>&quot;Rock&quot;</code>，<code>&quot;Classical&quot;</code> 和 <code>&quot;Hip hop&quot;</code>），并以数组字面量的方式出现。</p>
+<blockquote>
+<p>注意</p>
+<p><code>favoriteGenres</code> 被声明为一个变量（拥有 <code>var</code> 标示符）而不是一个常量（拥有 <code>let</code> 标示符）,因为它里面的元素将会在下面的例子中被增加或者移除。</p>
+</blockquote>
+<p>一个 <code>Set</code> 类型不能从数组字面量中被单独推断出来，因此 <code>Set</code> 类型必须显式声明。然而，由于 Swift 的类型推断功能，如果你想使用一个数组字面量构造一个 <code>Set</code> 并且该数组字面量中的所有元素类型相同，那么你无须写出 <code>Set</code> 的具体类型。<code>favoriteGenres</code> 的构造形式可以采用简化的方式代替：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> favoriteGenres: <span class="type">Set</span> <span class="operator">=</span> [<span class="string">&quot;Rock&quot;</span>, <span class="string">&quot;Classical&quot;</span>, <span class="string">&quot;Hip hop&quot;</span>]</span><br></pre></td></tr></table></figure>
+<p>由于数组字面量中的所有元素类型相同，Swift 可以推断出 <code>Set&lt;String&gt;</code> 作为 <code>favoriteGenres</code> 变量的正确类型。</p>
+<h3 id="访问和修改一个集合">访问和修改一个集合</h3>
+<p>你可以通过 <code>Set</code> 的属性和方法来访问和修改一个 <code>Set</code>。</p>
+<p>为了找出一个 <code>Set</code> 中元素的数量，可以使用其只读属性 <code>count</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(<span class="string">&quot;I have <span class="subst">\(favoriteGenres.count)</span> favorite music genres.&quot;</span>)</span><br><span class="line"><span class="comment">// 打印“I have 3 favorite music genres.”</span></span><br></pre></td></tr></table></figure>
+<p>使用布尔属性 <code>isEmpty</code> 作为一个缩写形式去检查 <code>count</code> 属性是否为 <code>0</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> favoriteGenres.isEmpty &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;As far as music goes, I&#x27;m not picky.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;I have particular music preferences.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 打印“I have particular music preferences.”</span></span><br></pre></td></tr></table></figure>
+<p>你可以通过调用 <code>Set</code> 的 <code>insert(_:)</code> 方法来添加一个新元素：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">favoriteGenres.insert(<span class="string">&quot;Jazz&quot;</span>)</span><br><span class="line"><span class="comment">// favoriteGenres 现在包含4个元素</span></span><br></pre></td></tr></table></figure>
+<p>你可以通过调用 <code>Set</code> 的 <code>remove(_:)</code> 方法去删除一个元素，如果该值是该 <code>Set</code> 的一个元素则删除该元素并且返回被删除的元素值，否则如果该 <code>Set</code> 不包含该值，则返回 <code>nil</code>。另外，<code>Set</code> 中的所有元素可以通过它的 <code>removeAll()</code> 方法删除。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="keyword">let</span> removedGenre <span class="operator">=</span> favoriteGenres.remove(<span class="string">&quot;Rock&quot;</span>) &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(removedGenre)</span>? I&#x27;m over it.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;I never much cared for that.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 打印“Rock? I&#x27;m over it.”</span></span><br></pre></td></tr></table></figure>
+<p>使用 <code>contains(_:)</code> 方法去检查 <code>Set</code> 中是否包含一个特定的值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> favoriteGenres.contains(<span class="string">&quot;Funk&quot;</span>) &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;I get up on the good foot.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;It&#x27;s too funky in here.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 打印“It&#x27;s too funky in here.”</span></span><br></pre></td></tr></table></figure>
+<h3 id="遍历一个集合">遍历一个集合</h3>
+<p>你可以在一个 <code>for-in</code> 循环中遍历一个 <code>Set</code> 中的所有值。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> genre <span class="keyword">in</span> favoriteGenres &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(genre)</span>&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Classical</span></span><br><span class="line"><span class="comment">// Jazz</span></span><br><span class="line"><span class="comment">// Hip hop</span></span><br></pre></td></tr></table></figure>
+<p>更多关于 <code>for-in</code> 循环的信息，参见 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/05_Control_Flow.html#for_loops">For 循环</a>。</p>
+<p>Swift 的 <code>Set</code> 类型没有确定的顺序，为了按照特定顺序来遍历一个 <code>Set</code> 中的值可以使用 <code>sorted()</code> 方法，它将返回一个有序数组，这个数组的元素排列顺序由操作符’&lt;'对元素进行比较的结果来确定。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> genre <span class="keyword">in</span> favoriteGenres.sorted() &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(genre)</span>&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Classical</span></span><br><span class="line"><span class="comment">// Hip hop</span></span><br><span class="line"><span class="comment">// Jazz</span></span><br></pre></td></tr></table></figure>
+<h2 id="集合操作">集合操作</h2>
+<p>你可以高效地完成 <code>Set</code> 的一些基本操作，比如把两个集合组合到一起，判断两个集合共有元素，或者判断两个集合是否全包含，部分包含或者不相交。</p>
+<h3 id="基本集合操作">基本集合操作</h3>
+<p>下面的插图描述了两个集合 <code>a</code> 和 <code>b</code>，以及通过阴影部分的区域显示集合各种操作的结果。</p>
+<p><img src="https://docs.swift.org/swift-book/_images/setVennDiagram_2x.png" alt=""></p>
+<ul>
+<li>使用 <code>intersection(_:)</code> 方法根据两个集合中都包含的值创建的一个新的集合。</li>
+<li>使用 <code>symmetricDifference(_:)</code> 方法根据在一个集合中但不在两个集合中的值创建一个新的集合。</li>
+<li>使用 <code>union(_:)</code> 方法根据两个集合的值创建一个新的集合。</li>
+<li>使用 <code>subtracting(_:)</code> 方法根据不在该集合中的值创建一个新的集合。</li>
+</ul>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> oddDigits: <span class="type">Set</span> <span class="operator">=</span> [<span class="number">1</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">9</span>]</span><br><span class="line"><span class="keyword">let</span> evenDigits: <span class="type">Set</span> <span class="operator">=</span> [<span class="number">0</span>, <span class="number">2</span>, <span class="number">4</span>, <span class="number">6</span>, <span class="number">8</span>]</span><br><span class="line"><span class="keyword">let</span> singleDigitPrimeNumbers: <span class="type">Set</span> <span class="operator">=</span> [<span class="number">2</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">7</span>]</span><br><span class="line"></span><br><span class="line">oddDigits.union(evenDigits).sorted()</span><br><span class="line"><span class="comment">// [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]</span></span><br><span class="line">oddDigits.intersection(evenDigits).sorted()</span><br><span class="line"><span class="comment">// []</span></span><br><span class="line">oddDigits.subtracting(singleDigitPrimeNumbers).sorted()</span><br><span class="line"><span class="comment">// [1, 9]</span></span><br><span class="line">oddDigits.symmetricDifference(singleDigitPrimeNumbers).sorted()</span><br><span class="line"><span class="comment">// [1, 2, 9]</span></span><br></pre></td></tr></table></figure>
+<h3 id="集合成员关系和相等">集合成员关系和相等</h3>
+<p>下面的插图描述了三个集合 <code>a</code>、<code>b</code> 和 <code>c</code>,以及通过重叠区域表述集合间共享的元素。集合 <code>a</code> 是集合 <code>b</code> 的父集合，因为 <code>a</code> 包含了 <code>b</code> 中所有的元素，相反的，集合 <code>b</code> 是集合 <code>a</code> 的子集合，因为属于 <code>b</code> 的元素也被 <code>a</code> 包含。集合 <code>b</code> 和集合 <code>c</code> 彼此不关联，因为它们之间没有共同的元素。</p>
+<p><img src="https://docs.swift.org/swift-book/_images/setEulerDiagram_2x.png" alt=""></p>
+<ul>
+<li>使用“是否相等”运算符（<code>==</code>）来判断两个集合是否包含全部相同的值。</li>
+<li>使用 <code>isSubset(of:)</code> 方法来判断一个集合中的值是否也被包含在另外一个集合中。</li>
+<li>使用 <code>isSuperset(of:)</code> 方法来判断一个集合中包含另一个集合中所有的值。</li>
+<li>使用 <code>isStrictSubset(of:)</code> 或者 <code>isStrictSuperset(of:)</code> 方法来判断一个集合是否是另外一个集合的子集合或者父集合并且两个集合并不相等。</li>
+<li>使用 <code>isDisjoint(with:)</code> 方法来判断两个集合是否不含有相同的值（是否没有交集）。</li>
+</ul>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> houseAnimals: <span class="type">Set</span> <span class="operator">=</span> [<span class="string">&quot;🐶&quot;</span>, <span class="string">&quot;🐱&quot;</span>]</span><br><span class="line"><span class="keyword">let</span> farmAnimals: <span class="type">Set</span> <span class="operator">=</span> [<span class="string">&quot;🐮&quot;</span>, <span class="string">&quot;🐔&quot;</span>, <span class="string">&quot;🐑&quot;</span>, <span class="string">&quot;🐶&quot;</span>, <span class="string">&quot;🐱&quot;</span>]</span><br><span class="line"><span class="keyword">let</span> cityAnimals: <span class="type">Set</span> <span class="operator">=</span> [<span class="string">&quot;🐦&quot;</span>, <span class="string">&quot;🐭&quot;</span>]</span><br><span class="line"></span><br><span class="line">houseAnimals.isSubset(of: farmAnimals)</span><br><span class="line"><span class="comment">// true</span></span><br><span class="line">farmAnimals.isSuperset(of: houseAnimals)</span><br><span class="line"><span class="comment">// true</span></span><br><span class="line">farmAnimals.isDisjoint(with: cityAnimals)</span><br><span class="line"><span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+<h2 id="字典">字典</h2>
+<p><em>字典</em>是一种存储多个相同类型的值的容器。每个值（value）都关联唯一的键（key），键作为字典中的这个值数据的标识符。和数组中的数据项不同，字典中的数据项并没有具体顺序。我们在需要通过标识符（键）访问数据的时候使用字典，这种方法很大程度上和我们在现实世界中使用字典查字义的方法一样。</p>
+<blockquote>
+<p>注意</p>
+<p>Swift 的 <code>Dictionary</code> 类型被桥接到 <code>Foundation</code> 的 <code>NSDictionary</code> 类。</p>
+<p>更多关于在 <code>Foundation</code> 和 <code>Cocoa</code> 中使用 <code>Dictionary</code> 类型的信息，参见 <a target="_blank" rel="noopener" href="https://developer.apple.com/library/prerelease/ios/documentation/Swift/Conceptual/BuildingCocoaApps/index.html#//apple_ref/doc/uid/TP40014216"><em>Using Swift with Cocoa and Obejective-C(Swift 4.1)</em></a> 中 <a target="_blank" rel="noopener" href="https://developer.apple.com/library/content/documentation/Swift/Conceptual/BuildingCocoaApps/WorkingWithCocoaDataTypes.html#//apple_ref/doc/uid/TP40014216-CH6">使用 Cocoa 数据类型</a> 部分。</p>
+</blockquote>
+<h3 id="字典类型简化语法">字典类型简化语法</h3>
+<p>Swift 的字典使用 <code>Dictionary&lt;Key, Value&gt;</code> 定义，其中 <code>Key</code> 是字典中键的数据类型，<code>Value</code> 是字典中对应于这些键所存储值的数据类型。</p>
+<blockquote>
+<p>注意</p>
+<p>一个字典的 <code>Key</code> 类型必须遵循 <code>Hashable</code> 协议，就像 <code>Set</code> 的值类型。</p>
+</blockquote>
+<p>我们也可以用 <code>[Key: Value]</code> 这样简化的形式去创建一个字典类型。虽然这两种形式功能上相同，但是后者是首选，并且这本指导书涉及到字典类型时通篇采用后者。</p>
+<h3 id="创建一个空字典">创建一个空字典</h3>
+<p>我们可以像数组一样使用构造语法创建一个拥有确定类型的空字典：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> namesOfIntegers <span class="operator">=</span> [<span class="type">Int</span>: <span class="type">String</span>]()</span><br><span class="line"><span class="comment">// namesOfIntegers 是一个空的 [Int: String] 字典</span></span><br></pre></td></tr></table></figure>
+<p>这个例子创建了一个 <code>[Int: String]</code> 类型的空字典来储存整数的英语命名。它的键是 <code>Int</code> 型，值是 <code>String</code> 型。</p>
+<p>如果上下文已经提供了类型信息，我们可以使用空字典字面量来创建一个空字典，记作 <code>[:]</code>（中括号中放一个冒号）：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">namesOfIntegers[<span class="number">16</span>] <span class="operator">=</span> <span class="string">&quot;sixteen&quot;</span></span><br><span class="line"><span class="comment">// namesOfIntegers 现在包含一个键值对</span></span><br><span class="line">namesOfIntegers <span class="operator">=</span> [:]</span><br><span class="line"><span class="comment">// namesOfIntegers 又成为了一个 [Int: String] 类型的空字典</span></span><br></pre></td></tr></table></figure>
+<h3 id="用字典字面量创建字典">用字典字面量创建字典</h3>
+<p>我们可以使用<em>字典字面量</em>来构造字典，这和我们刚才介绍过的数组字面量拥有相似语法。字典字面量是一种将一个或多个键值对写作 <code>Dictionary</code> 集合的快捷途径。</p>
+<p>一个键值对是一个 <code>key</code> 和一个 <code>value</code> 的结合体。在字典字面量中，每一个键值对的键和值都由冒号分割。这些键值对构成一个列表，其中这些键值对由方括号包含、由逗号分割：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[key <span class="number">1</span>: value <span class="number">1</span>, key <span class="number">2</span>: value <span class="number">2</span>, key <span class="number">3</span>: value <span class="number">3</span>]</span><br></pre></td></tr></table></figure>
+<p>下面的例子创建了一个存储国际机场名称的字典。在这个字典中键是三个字母的国际航空运输相关代码，值是机场名称：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> airports: [<span class="type">String</span>: <span class="type">String</span>] <span class="operator">=</span> [<span class="string">&quot;YYZ&quot;</span>: <span class="string">&quot;Toronto Pearson&quot;</span>, <span class="string">&quot;DUB&quot;</span>: <span class="string">&quot;Dublin&quot;</span>]</span><br></pre></td></tr></table></figure>
+<p><code>airports</code> 字典被声明为一种 <code>[String: String]</code> 类型，这意味着这个字典的键和值都是 <code>String</code> 类型。</p>
+<blockquote>
+<p>注意</p>
+<p><code>airports</code> 字典被声明为变量（用 <code>var</code> 关键字）而不是常量（<code>let</code> 关键字）因为后来更多的机场信息会被添加到这个示例字典中。</p>
+</blockquote>
+<p><code>airports</code> 字典使用字典字面量初始化，包含两个键值对。第一对的键是 <code>YYZ</code>，值是 <code>Toronto Pearson</code>。第二对的键是 <code>DUB</code>，值是 <code>Dublin</code>。</p>
+<p>这个字典语句包含了两个 <code>String: String</code> 类型的键值对。它们对应 <code>airports</code> 变量声明的类型（一个只有 <code>String</code> 键和 <code>String</code> 值的字典）所以这个字典字面量的任务是构造拥有两个初始数据项的 <code>airport</code> 字典。</p>
+<p>和数组一样，我们在用字典字面量构造字典时，如果它的键和值都有各自一致的类型，那么就不必写出字典的类型。 <code>airports</code> 字典也可以用这种简短方式定义：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> airports <span class="operator">=</span> [<span class="string">&quot;YYZ&quot;</span>: <span class="string">&quot;Toronto Pearson&quot;</span>, <span class="string">&quot;DUB&quot;</span>: <span class="string">&quot;Dublin&quot;</span>]</span><br></pre></td></tr></table></figure>
+<p>因为这个语句中所有的键和值都各自拥有相同的数据类型，Swift 可以推断出 <code>Dictionary&lt;String, String&gt;</code> 是 <code>airports</code> 字典的正确类型。</p>
+<h3 id="访问和修改字典">访问和修改字典</h3>
+<p>我们可以通过字典的方法和属性来访问和修改字典，或者通过使用下标语法。</p>
+<p>和数组一样，我们可以通过字典的只读属性 <code>count</code> 来获取某个字典的数据项数量：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(<span class="string">&quot;The dictionary of airports contains <span class="subst">\(airports.count)</span> items.&quot;</span>)</span><br><span class="line"><span class="comment">// 打印“The dictionary of airports contains 2 items.”（这个字典有两个数据项）</span></span><br></pre></td></tr></table></figure>
+<p>使用布尔属性 <code>isEmpty</code> 作为一个缩写形式去检查 <code>count</code> 属性是否为 <code>0</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> airports.isEmpty &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;The airports dictionary is empty.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;The airports dictionary is not empty.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 打印“The airports dictionary is not empty.”</span></span><br></pre></td></tr></table></figure>
+<p>我们也可以在字典中使用下标语法来添加新的数据项。可以使用一个恰当类型的键作为下标索引，并且分配恰当类型的新值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">airports[<span class="string">&quot;LHR&quot;</span>] <span class="operator">=</span> <span class="string">&quot;London&quot;</span></span><br><span class="line"><span class="comment">// airports 字典现在有三个数据项</span></span><br></pre></td></tr></table></figure>
+<p>我们也可以使用下标语法来改变特定键对应的值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">airports[<span class="string">&quot;LHR&quot;</span>] <span class="operator">=</span> <span class="string">&quot;London Heathrow&quot;</span></span><br><span class="line"><span class="comment">// “LHR”对应的值被改为“London Heathrow”</span></span><br></pre></td></tr></table></figure>
+<p>作为另一种下标方法，字典的 <code>updateValue(_:forKey:)</code> 方法可以设置或者更新特定键对应的值。就像上面所示的下标示例，<code>updateValue(_:forKey:)</code> 方法在这个键不存在对应值的时候会设置新值或者在存在时更新已存在的值。和上面的下标方法不同的，<code>updateValue(_:forKey:)</code> 这个方法返回更新值之前的原值。这样使得我们可以检查更新是否成功。</p>
+<p><code>updateValue(_:forKey:)</code> 方法会返回对应值的类型的可选值。举例来说：对于存储 <code>String</code> 值的字典，这个函数会返回一个 <code>String?</code> 或者“可选 <code>String</code>”类型的值。</p>
+<p>如果有值存在于更新前，则这个可选值包含了旧值，否则它将会是 <code>nil</code>。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="keyword">let</span> oldValue <span class="operator">=</span> airports.updateValue(<span class="string">&quot;Dublin Airport&quot;</span>, forKey: <span class="string">&quot;DUB&quot;</span>) &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;The old value for DUB was <span class="subst">\(oldValue)</span>.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“The old value for DUB was Dublin.”</span></span><br></pre></td></tr></table></figure>
+<p>我们也可以使用下标语法来在字典中检索特定键对应的值。因为有可能请求的键没有对应的值存在，字典的下标访问会返回对应值的类型的可选值。如果这个字典包含请求键所对应的值，下标会返回一个包含这个存在值的可选值，否则将返回 <code>nil</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="keyword">let</span> airportName <span class="operator">=</span> airports[<span class="string">&quot;DUB&quot;</span>] &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;The name of the airport is <span class="subst">\(airportName)</span>.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;That airport is not in the airports dictionary.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 打印“The name of the airport is Dublin Airport.”</span></span><br></pre></td></tr></table></figure>
+<p>我们还可以使用下标语法来通过给某个键的对应值赋值为 <code>nil</code> 来从字典里移除一个键值对：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">airports[<span class="string">&quot;APL&quot;</span>] <span class="operator">=</span> <span class="string">&quot;Apple Internation&quot;</span></span><br><span class="line"><span class="comment">// “Apple Internation”不是真的 APL 机场，删除它</span></span><br><span class="line">airports[<span class="string">&quot;APL&quot;</span>] <span class="operator">=</span> <span class="literal">nil</span></span><br><span class="line"><span class="comment">// APL 现在被移除了</span></span><br></pre></td></tr></table></figure>
+<p>此外，<code>removeValue(forKey:)</code> 方法也可以用来在字典中移除键值对。这个方法在键值对存在的情况下会移除该键值对并且返回被移除的值或者在没有值的情况下返回 <code>nil</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="keyword">let</span> removedValue <span class="operator">=</span> airports.removeValue(forKey: <span class="string">&quot;DUB&quot;</span>) &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;The removed airport&#x27;s name is <span class="subst">\(removedValue)</span>.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;The airports dictionary does not contain a value for DUB.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 打印“The removed airport&#x27;s name is Dublin Airport.”</span></span><br></pre></td></tr></table></figure>
+<h3 id="字典遍历">字典遍历</h3>
+<p>我们可以使用 <code>for-in</code> 循环来遍历某个字典中的键值对。每一个字典中的数据项都以 <code>(key, value)</code> 元组形式返回，并且我们可以使用临时常量或者变量来分解这些元组：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (airportCode, airportName) <span class="keyword">in</span> airports &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(airportCode)</span>: <span class="subst">\(airportName)</span>&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// YYZ: Toronto Pearson</span></span><br><span class="line"><span class="comment">// LHR: London Heathrow</span></span><br></pre></td></tr></table></figure>
+<p>更多关于 <code>for-in</code> 循环的信息，参见 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/05_Control_Flow.html#for_loops">For 循环</a>。</p>
+<p>通过访问 <code>keys</code> 或者 <code>values</code> 属性，我们也可以遍历字典的键或者值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> airportCode <span class="keyword">in</span> airports.keys &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Airport code: <span class="subst">\(airportCode)</span>&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Airport code: YYZ</span></span><br><span class="line"><span class="comment">// Airport code: LHR</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> airportName <span class="keyword">in</span> airports.values &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Airport name: <span class="subst">\(airportName)</span>&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Airport name: Toronto Pearson</span></span><br><span class="line"><span class="comment">// Airport name: London Heathrow</span></span><br></pre></td></tr></table></figure>
+<p>如果我们只是需要使用某个字典的键集合或者值集合来作为某个接受 <code>Array</code> 实例的 API 的参数，可以直接使用 <code>keys</code> 或者 <code>values</code> 属性构造一个新数组：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> airportCodes <span class="operator">=</span> [<span class="type">String</span>](airports.keys)</span><br><span class="line"><span class="comment">// airportCodes 是 [&quot;YYZ&quot;, &quot;LHR&quot;]</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> airportNames <span class="operator">=</span> [<span class="type">String</span>](airports.values)</span><br><span class="line"><span class="comment">// airportNames 是 [&quot;Toronto Pearson&quot;, &quot;London Heathrow&quot;]</span></span><br></pre></td></tr></table></figure>
+<p>Swift 的字典类型是无序集合类型。为了以特定的顺序遍历字典的键或值，可以对字典的 <code>keys</code> 或 <code>values</code> 属性使用 <code>sorted()</code> 方法。</p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/swift/" rel="tag">swift</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                    data-tooltip="swift控制流"
+                    aria-label="上一篇: swift控制流"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../20/Swift/swift%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%92%8C%E5%AD%97%E7%AC%A6/"
+                    data-tooltip="swift字符串和字符"
+                    aria-label="下一篇: swift字符串和字符"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                    data-tooltip="swift控制流"
+                    aria-label="上一篇: swift控制流"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../20/Swift/swift%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%92%8C%E5%AD%97%E7%AC%A6/"
+                    data-tooltip="swift字符串和字符"
+                    aria-label="下一篇: swift字符串和字符"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 235 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

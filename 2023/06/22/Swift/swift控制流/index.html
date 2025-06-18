@@ -1,0 +1,1207 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>swift控制流 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"控制流\nSwift 提供了多种流程控制结构，包括可以多次执行任务的 while 循环，基于特定条件选择执行不同代码分支的 if、guard 和 switch 语句，还有控制流程跳转到其他代码位置的 break 和 continue 语句。\nSwift 还提供了 for-in 循环，用来更简单地遍历数组（Array），字典（Dictionary），区间（Range），字符串（String）和其他序列类型。\nSwift 的 switch 语句比许多类 C 语言要更加强大。case 还可以匹配很多不同的模式，包括范围匹配，元组（tuple）和特定类型匹配。switch 语句的 case 中匹配的值可以声明为临时常量或变量，在 case 作用域内使用，也可以配合 where 来描述更复杂的匹配条件。\nFor-In 循环\n你可以使用 for-in 循环来遍历一个集合中的所有元素，例如数组中的元素、范围内的数字或者字符串中的字符。\n以下例子使用 for-in 遍历一个数组所有元素：\n12345678let names = [&quot;Anna&quot;, &quot;Alex&quot;, &quot;Brian&quot;, &quot;Jack&quot;]for name in names &#123;    print(&quot;Hello, \\(name)!&quot;)&#125;// Hello, Anna!// Hello, Alex!// Hello, Brian!// Hello, Jack!\n你也可以通过遍历一个字典来访问它的键值对。遍历字典时，字典的每项元素会以 (key, value) 元组的形式返回，你可以在 for-in 循环中使用显式的常量名称来解读 (key, value) 元组。下面的例子中，字典的键声明会为 animalName 常量，字典的值会声明为 legCount 常量：\n1234567let numberOfLegs = [&quot;spider&quot;: 8, &quot;ant&quot;: 6, &quot;cat&quot;: 4]for (animalName, legCount) in numberOfLegs &#123;    print(&quot;\\(animalName)s have \\(legCount) legs&quot;)&#125;// cats have 4 legs// ants have 6 legs// spiders have 8 legs\n字典的内容理论上是无序的，遍历元素时的顺序是无法确定的。将元素插入字典的顺序并不会决定它们被遍历的顺序。关于数组和字典的细节，参见 集合类型。\nfor-in 循环还可以使用数字范围。下面的例子用来输出乘法表的一部分内容：\n12345678for index in 1...5 &#123;    print(&quot;\\(index) times 5 is \\(index * 5)&quot;)&#125;// 1 times 5 is 5// 2 times 5 is 10// 3 times 5 is 15// 4 times 5 is 20// 5 times 5 is 25\n例子中用来进行遍历的元素是使用闭区间操作符（...）表示的从 1 到 5 的数字区间。index 被赋值为闭区间中的第一个数字（1），然后循环中的语句被执行一次。在本例中，这个循环只包含一个语句，用来输出当前 index 值所对应的乘 5 乘法表的结果。该语句执行后，index 的值被更新为闭区间中的第二个数字（2），之后 print(_:separator:terminator:) 函数会再执行一次。整个过程会进行到闭区间结尾为止。\n上面的例子中，index 是一个每次循环遍历开始时被自动赋值的常量。这种情况下，index 在使用前不需要声明，只需要将它包含在循环的声明中，就可以对其进行隐式声明，而无需使用 let 关键字声明。\n如果你不需要区间序列内每一项的值，你可以使用下划线（_）替代变量名来忽略这个值：\n12345678let base = 3let power = 10var answer = 1for _ in 1...power &#123;    answer *= base&#125;print(&quot;\\(base) to the power of \\(power) is \\(answer)&quot;)// 输出“3 to the power of 10 is 59049”\n这个例子计算 base 这个数的 power 次幂（本例中，是 3 的 10 次幂），从 1（3 的 0 次幂）开始做 3 的乘法， 进行 10 次，使用 1 到 10 的闭区间循环。这个计算并不需要知道每一次循环中计数器具体的值，只需要执行了正确的循环次数即可。下划线符号 _ （替代循环中的变量）能够忽略当前值，并且不提供循环遍历时对值的访问。\n在某些情况下，你可能不想使用包括两个端点的闭区间。想象一下，你在一个手表上绘制分钟的刻度线。总共 60 个刻度，从 0 分开始。使用半开区间运算符（..&lt;）来表示一个左闭右开的区间。有关区间的更多信息，请参阅 区间运算符。\n1234let minutes = 60for tickMark in 0..&lt;minutes &#123;    // 每一分钟都渲染一个刻度线（60次）&#125;\n一些用户可能在其 UI 中可能需要较少的刻度。他们可以每 5 分钟作为一个刻度。使用 stride(from:to:by:) 函数跳过不需要的标记。\n1234let minuteInterval = 5for tickMark in stride(from: 0, to: minutes, by: minuteInterval) &#123;    // 每5分钟渲染一个刻度线（0, 5, 10, 15 ... 45, 50, 55）&#125;\n可以在闭区间使用 stride(from:through:by:) 起到同样作用：\n12345let hours = 12let hourInterval = 3for tickMark in stride(from: 3, through: hours, by: hourInterval) &#123;    // 每3小时渲染一个刻度线（3, 6, 9, 12）&#125;\nWhile 循环\nwhile 循环会一直运行一段语句直到条件变成 false。这类循环适合使用在第一次迭代前，迭代次数未知的情况下。Swift 提供两种 while 循环形式：\n\nwhile 循环，每次在循环开始时计算条件是否符合；\nrepeat-while 循环，每次在循环结束时计算条件是否符合。\n\nWhile\nwhile 循环从计算一个条件开始。如果条件为 true，会重复运行一段语句，直到条件变为 false。\n下面是 while 循环的一般格式：\n123while condition &#123;    statements&#125;\n下面的例子来玩一个叫做蛇和梯子（也叫做滑道和梯子）的小游戏：\n\n游戏的规则如下：\n\n游戏盘面包括 25 个方格，游戏目标是达到或者超过第 25 个方格；\n每一轮，你通过掷一个六面体骰子来确定你移动方块的步数，移动的路线由上图中横向的虚线所示；\n如果在某轮结束，你移动到了梯子的底部，可以顺着梯子爬上去；\n如果在某轮结束，你移动到了蛇的头部，你会顺着蛇的身体滑下去。\n\n游戏盘面可以使用一个 Int 数组来表达。数组的长度由一个 finalSquare 常量储存，用来初始化数组和检测最终胜利条件。游戏盘面由 26 个 Int 0 值初始化，而不是 25 个（由 0 到 25，一共 26 个）：\n12let finalSquare = 25var board = [Int](repeating: 0, count: finalSquare + 1)\n一些方格被设置成特定的值来表示有蛇或者梯子。梯子底部的方格是一个正值，使你可以向上移动，蛇头处的方格是一个负值，会让你向下移动：\n12board[03] = +08; board[06] = +11; board[09] = +09; board[10] = +02board[14] = -10; board[19] = -11; board[22] = -02; board[24] = -08\n3 号方格是梯子的底部，会让你向上移动到 11 号方格，我们使用 board[03] 等于 +08（来表示 11 和 3 之间的差值）。为了对齐语句，这里使用了一元正运算符（+i）和一元负运算符（-i），并且小于 10 的数字都使用 0 补齐（这些语法的技巧不是必要的，只是为了让代码看起来更加整洁）。\n玩家由左下角空白处编号为 0 的方格开始游戏。玩家第一次掷骰子后才会进入游戏盘面：\n1234567891011121314var square = 0var diceRoll = 0while square &lt; finalSquare &#123;    // 掷骰子    diceRoll += 1    if diceRoll == 7 &#123; diceRoll = 1 &#125;    // 根据点数移动    square += diceRoll    if square &lt; board.count &#123;        // 如果玩家还在棋盘上，顺着梯子爬上去或者顺着蛇滑下去        square += board[square]    &#125;&#125;print(&quot;Game over!&quot;)\n本例中使用了最简单的方法来模拟掷骰子。diceRoll 的值并不是一个随机数，而是以 0 为初始值，之后每一次 while 循环，diceRoll 的值增加 1 ，然后检测是否超出了最大值。当 diceRoll 的值等于 7 时，就超过了骰子的最大值，会被重置为 1。所以 diceRoll 的取值顺序会一直是 1，2，3，4，5，6，1，2 等。\n掷完骰子后，玩家向前移动 diceRoll 个方格，如果玩家移动超过了第 25 个方格，这个时候游戏将会结束，为了应对这种情况，代码会首先判断 square 的值是否小于 board 的 count 属性，只有小于才会在 board[square] 上增加 square，来向前或向后移动（遇到了梯子或者蛇）。\n\n注意\n如果没有这个检测（square &lt; board.count），board[square] 可能会越界访问 board 数组，导致运行时错误。\n\n当本轮 while 循环运行完毕，会再检测循环条件是否需要再运行一次循环。如果玩家移动到或者超过第 25 个方格，循环条件结果为 false，此时游戏结束。\nwhile 循环比较适合本例中的这种情况，因为在 while 循环开始时，我们并不知道游戏要跑多久，只有在达成指定条件时循环才会结束。\nRepeat-While\nwhile 循环的另外一种形式是 repeat-while，它和 while 的区别是在判断循环条件之前，先执行一次循环的代码块。然后重复循环直到条件为 false。\n\n注意\nSwift 语言的 repeat-while 循环和其他语言中的 do-while 循环是类似的。\n\n下面是 repeat-while 循环的一般格式：\n123repeat &#123;    statements&#125; while condition\n还是蛇和梯子的游戏，使用 repeat-while 循环来替代 while 循环。finalSquare、board、square 和 diceRoll 的值初始化同 while 循环时一样：\n123456let finalSquare = 25var board = [Int](repeating: 0, count: finalSquare + 1)board[03] = +08; board[06] = +11; board[09] = +09; board[10] = +02board[14] = -10; board[19] = -11; board[22] = -02; board[24] = -08var square = 0var diceRoll = 0\nrepeat-while 的循环版本，循环中第一步就需要去检测是否在梯子或者蛇的方块上。没有梯子会让玩家直接上到第 25 个方格，所以玩家不会通过梯子直接赢得游戏。这样在循环开始时先检测是否踩在梯子或者蛇上是安全的。\n游戏开始时，玩家在第 0 个方格上，board[0] 一直等于 0， 不会有什么影响：\n12345678910repeat &#123;    // 顺着梯子爬上去或者顺着蛇滑下去    square += board[square]    // 掷骰子    diceRoll += 1    if diceRoll == 7 &#123; diceRoll = 1 &#125;    // 根据点数移动    square += diceRoll&#125; while square &lt; finalSquareprint(&quot;Game over!&quot;)\n检测完玩家是否踩在梯子或者蛇上之后，开始掷骰子，然后玩家向前移动 diceRoll 个方格，本轮循环结束。\n循环条件（while square &lt; finalSquare）和 while 方式相同，但是只会在循环结束后进行计算。在这个游戏中，repeat-while 表现得比 while 循环更好。repeat-while 方式会在条件判断 square 没有超出后直接运行 square += board[square]，这种方式可以比起前面 while 循环的版本，可以省去数组越界的检查。\n条件语句\n根据特定的条件执行特定的代码通常是十分有用的。当错误发生时，你可能想运行额外的代码；或者，当值太大或太小时，向用户显示一条消息。要实现这些功能，你就需要使用条件语句。\nSwift 提供两种类型的条件语句：if 语句和 switch 语句。通常，当条件较为简单且可能的情况很少时，使用 if 语句。而 switch 语句更适用于条件较复杂、有更多排列组合的时候。并且 switch 在需要用到模式匹配（pattern-matching）的情况下会更有用。\nIf\nif 语句最简单的形式就是只包含一个条件，只有该条件为 true 时，才执行相关代码：\n12345var temperatureInFahrenheit = 30if temperatureInFahrenheit &lt;= 32 &#123;    print(&quot;It&#x27;s very cold. Consider wearing a scarf.&quot;)&#125;// 输出“It&#x27;s very cold. Consider wearing a scarf.”\n上面的例子会判断温度是否小于等于 32 华氏度（水的冰点）。如果是，则打印一条消息；否则，不打印任何消息，继续执行 if 块后面的代码。\n当然，if 语句允许二选一执行，叫做 else 从句。也就是当条件为 false 时，执行 else 语句：\n1234567temperatureInFahrenheit = 40if temperatureInFahrenheit &lt;= 32 &#123;    print(&quot;It&#x27;s very cold. Consider wearing a scarf.&quot;)&#125; else &#123;    print(&quot;It&#x27;s not that cold. Wear a t-shirt.&quot;)&#125;// 输出“It&#x27;s not that cold. Wear a t-shirt.”\n显然，这两条分支中总有一条会被执行。由于温度已升至 40 华氏度，不算太冷，没必要再围围巾。因此，else 分支就被触发了。\n你可以把多个 if 语句链接在一起，来实现更多分支：\n123456789temperatureInFahrenheit = 90if temperatureInFahrenheit &lt;= 32 &#123;    print(&quot;It&#x27;s very cold. Consider wearing a scarf.&quot;)&#125; else if temperatureInFahrenheit &gt;= 86 &#123;    print(&quot;It&#x27;s really warm. Don&#x27;t forget to wear sunscreen.&quot;)&#125; else &#123;    print(&quot;It&#x27;s not that cold. Wear a t-shirt.&quot;)&#125;// 输出“It&#x27;s really warm. Don&#x27;t forget to wear sunscreen.”\n在上面的例子中，额外的 if 语句用于判断是不是特别热。而最后的 else 语句被保留了下来，用于打印既不冷也不热时的消息。\n实际上，当不需要完整判断情况的时候，最后的 else 语句是可选的：\n123456temperatureInFahrenheit = 72if temperatureInFahrenheit &lt;= 32 &#123;    print(&quot;It&#x27;s very cold. Consider wearing a scarf.&quot;)&#125; else if temperatureInFahrenheit &gt;= 86 &#123;    print(&quot;It&#x27;s really warm. Don&#x27;t forget to wear sunscreen.&quot;)&#125;\n在这个例子中，由于既不冷也不热，所以不会触发 if 或 else if 分支，也就不会打印任何消息。\nSwitch\nswitch 语句会尝试把某个值与若干个模式（pattern）进行匹配。根据第一个匹配成功的模式，switch 语句会执行对应的代码。当有可能的情况较多时，通常用 switch 语句替换 if 语句。\nswitch 语句最简单的形式就是把某个值与一个或若干个相同类型的值作比较：\n123456789switch some value to consider &#123;case value 1:    respond to value 1case value 2,    value 3:    respond to value 2 or 3default:    otherwise, do something else&#125;\nswitch 语句由多个 case 构成，每个由 case 关键字开始。为了匹配某些更特定的值，Swift 提供了几种方法来进行更复杂的模式匹配，这些模式将在本节的稍后部分提到。\n与 if 语句类似，每一个 case 都是代码执行的一条分支。switch 语句会决定哪一条分支应该被执行，这个流程被称作根据给定的值切换（switching）。\nswitch 语句必须是完备的。这就是说，每一个可能的值都必须至少有一个 case 分支与之对应。在某些不可能涵盖所有值的情况下，你可以使用默认（default）分支来涵盖其它所有没有对应的值，这个默认分支必须在 switch 语句的最后面。\n下面的例子使用 switch 语句来匹配一个名为 someCharacter 的小写字符：\n12345678910let someCharacter: Character = &quot;z&quot;switch someCharacter &#123;case &quot;a&quot;:    print(&quot;The first letter of the alphabet&quot;)case &quot;z&quot;:    print(&quot;The last letter of the alphabet&quot;)default:    print(&quot;Some other character&quot;)&#125;// 输出“The last letter of the alphabet”\n在这个例子中，第一个 case 分支用于匹配第一个英文字母 a，第二个 case 分支用于匹配最后一个字母 z。因为 switch 语句必须有一个 case 分支用于覆盖所有可能的字符，而不仅仅是所有的英文字母，所以 switch 语句使用 default 分支来匹配除了 a 和 z 外的所有值，这个分支保证了 swith 语句的完备性。\n不存在隐式的贯穿\n与 C 和 Objective-C 中的 switch 语句不同，在 Swift 中，当匹配的 case 分支中的代码执行完毕后，程序会终止 switch 语句，而不会继续执行下一个 case 分支。这也就是说，不需要在 case 分支中显式地使用 break 语句。这使得 switch 语句更安全、更易用，也避免了漏写 break 语句导致多个语言被执行的错误。\n\n注意\n虽然在 Swift 中 break 不是必须的，但你依然可以在 case 分支中的代码执行完毕前使用 break 跳出，详情请参见 Switch 语句中的 break。\n\n每一个 case 分支都必须包含至少一条语句。像下面这样书写代码是无效的，因为第一个 case 分支是空的：\n123456789let anotherCharacter: Character = &quot;a&quot;switch anotherCharacter &#123;case &quot;a&quot;: // 无效，这个分支下面没有语句case &quot;A&quot;:    print(&quot;The letter A&quot;)default:    print(&quot;Not the letter A&quot;)&#125;// 这段代码会报编译错误\n不像 C 语言里的 switch 语句，在 Swift 中，switch 语句不会一起匹配 &quot;a&quot; 和 &quot;A&quot;。相反的，上面的代码会引起编译期错误：case &quot;a&quot;: 不包含任何可执行语句——这就避免了意外地从一个 case 分支贯穿到另外一个，使得代码更安全、也更直观。\n为了让单个 case 同时匹配 a 和 A，可以将这个两个值组合成一个复合匹配，并且用逗号分开：\n12345678let anotherCharacter: Character = &quot;a&quot;switch anotherCharacter &#123;case &quot;a&quot;, &quot;A&quot;:    print(&quot;The letter A&quot;)default:    print(&quot;Not the letter A&quot;)&#125;// 输出“The letter A”\n为了可读性，符合匹配可以写成多行形式，详情请参考 复合匹配\n\n注意\n如果想要显式贯穿 case 分支，请使用 fallthrough 语句，详情请参考 贯穿。\n\n区间匹配\ncase 分支的模式也可以是一个值的区间。下面的例子展示了如何使用区间匹配来输出任意数字对应的自然语言格式：\n12345678910111213141516171819let approximateCount = 62let countedThings = &quot;moons orbiting Saturn&quot;let naturalCount: Stringswitch approximateCount &#123;case 0:    naturalCount = &quot;no&quot;case 1..&lt;5:    naturalCount = &quot;a few&quot;case 5..&lt;12:    naturalCount = &quot;several&quot;case 12..&lt;100:    naturalCount = &quot;dozens of&quot;case 100..&lt;1000:    naturalCount = &quot;hundreds of&quot;default:    naturalCount = &quot;many&quot;&#125;print(&quot;There are \\(naturalCount) \\(countedThings).&quot;)// 输出“There are dozens of moons orbiting Saturn.”\n在上例中，approximateCount 在一个 switch 声明中被评估。每一个 case 都与之进行比较。因为 approximateCount 落在了 12 到 100 的区间，所以 naturalCount 等于 &quot;dozens of&quot; 值，并且此后的执行跳出了 switch 语句。\n元组\n我们可以使用元组在同一个 switch 语句中测试多个值。元组中的元素可以是值，也可以是区间。另外，使用下划线（_）来匹配所有可能的值。\n下面的例子展示了如何使用一个 (Int, Int) 类型的元组来分类下图中的点 (x, y)：\n1234567891011121314let somePoint = (1, 1)switch somePoint &#123;case (0, 0):    print(&quot;\\(somePoint) is at the origin&quot;)case (_, 0):    print(&quot;\\(somePoint) is on the x-axis&quot;)case (0, _):    print(&quot;\\(somePoint) is on the y-axis&quot;)case (-2...2, -2...2):    print(&quot;\\(somePoint) is inside the box&quot;)default:    print(&quot;\\(somePoint) is outside of the box&quot;)&#125;// 输出“(1, 1) is inside the box”\n\n在上面的例子中，switch 语句会判断某个点是否是原点 (0, 0)，是否在红色的 x 轴上，是否在橘黄色的 y 轴上，是否在一个以原点为中心的4x4的蓝色矩形里，或者在这个矩形外面。\n不像 C 语言，Swift 允许多个 case 匹配同一个值。实际上，在这个例子中，点 (0, 0)可以匹配所有四个 case。但是，如果存在多个匹配，那么只会执行第一个被匹配到的 case 分支。考虑点 (0, 0)会首先匹配 case (0, 0)，因此剩下的能够匹配的分支都会被忽视掉。\n值绑定（Value Bindings）\ncase 分支允许将匹配的值声明为临时常量或变量，并且在 case 分支体内使用 —— 这种行为被称为值绑定（value binding），因为匹配的值在 case 分支体内，与临时的常量或变量绑定。\n下面的例子将下图中的点 (x, y)，使用 (Int, Int) 类型的元组表示，然后分类表示：\n12345678910let anotherPoint = (2, 0)switch anotherPoint &#123;case (let x, 0):    print(&quot;on the x-axis with an x value of \\(x)&quot;)case (0, let y):    print(&quot;on the y-axis with a y value of \\(y)&quot;)case let (x, y):    print(&quot;somewhere else at (\\(x), \\(y))&quot;)&#125;// 输出“on the x-axis with an x value of 2”\n\n在上面的例子中，switch 语句会判断某个点是否在红色的 x 轴上，是否在橘黄色的 y 轴上，或者不在坐标轴上。\n这三个 case 都声明了常量 x 和 y 的占位符，用于临时获取元组 anotherPoint 的一个或两个值。第一个 case ——case (let x, 0) 将匹配一个纵坐标为 0 的点，并把这个点的横坐标赋给临时的常量 x。类似的，第二个 case ——case (0, let y) 将匹配一个横坐标为 0 的点，并把这个点的纵坐标赋给临时的常量 y。\n一旦声明了这些临时的常量，它们就可以在其对应的 case 分支里使用。在这个例子中，它们用于打印给定点的类型。\n请注意，这个 switch 语句不包含默认分支。这是因为最后一个 case ——case let(x, y) 声明了一个可以匹配余下所有值的元组。这使得 switch 语句已经完备了，因此不需要再书写默认分支。\nWhere\ncase 分支的模式可以使用 where 语句来判断额外的条件。\n下面的例子把下图中的点 (x, y)进行了分类：\n12345678910let yetAnotherPoint = (1, -1)switch yetAnotherPoint &#123;case let (x, y) where x == y:    print(&quot;(\\(x), \\(y)) is on the line x == y&quot;)case let (x, y) where x == -y:    print(&quot;(\\(x), \\(y)) is on the line x == -y&quot;)case let (x, y):    print(&quot;(\\(x), \\(y)) is just some arbitrary point&quot;)&#125;// 输出“(1, -1) is on the line x == -y”\n\n在上面的例子中，switch 语句会判断某个点是否在绿色的对角线 x == y 上，是否在紫色的对角线 x == -y 上，或者不在对角线上。\n这三个 case 都声明了常量 x 和 y 的占位符，用于临时获取元组 yetAnotherPoint 的两个值。这两个常量被用作 where 语句的一部分，从而创建一个动态的过滤器（filter）。当且仅当 where 语句的条件为 true 时，匹配到的 case 分支才会被执行。\n就像是值绑定中的例子，由于最后一个 case 分支匹配了余下所有可能的值，switch 语句就已经完备了，因此不需要再书写默认分支。\n复合型 Cases\n当多个条件可以使用同一种方法来处理时，可以将这几种可能放在同一个 case 后面，并且用逗号隔开。当 case 后面的任意一种模式匹配的时候，这条分支就会被匹配。并且，如果匹配列表过长，还可以分行书写：\n1234567891011let someCharacter: Character = &quot;e&quot;switch someCharacter &#123;case &quot;a&quot;, &quot;e&quot;, &quot;i&quot;, &quot;o&quot;, &quot;u&quot;:    print(&quot;\\(someCharacter) is a vowel&quot;)case &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;f&quot;, &quot;g&quot;, &quot;h&quot;, &quot;j&quot;, &quot;k&quot;, &quot;l&quot;, &quot;m&quot;,     &quot;n&quot;, &quot;p&quot;, &quot;q&quot;, &quot;r&quot;, &quot;s&quot;, &quot;t&quot;, &quot;v&quot;, &quot;w&quot;, &quot;x&quot;, &quot;y&quot;, &quot;z&quot;:    print(&quot;\\(someCharacter) is a consonant&quot;)default:    print(&quot;\\(someCharacter) is not a vowel or a consonant&quot;)&#125;// 输出“e is a vowel”\n这个 switch 语句中的第一个 case，匹配了英语中的五个小写元音字母。相似的，第二个 case 匹配了英语中所有的小写辅音字母。最终，default 分支匹配了其它所有字符。\n复合匹配同样可以包含值绑定。复合匹配里所有的匹配模式，都必须包含相同的值绑定。并且每一个绑定都必须获取到相同类型的值。这保证了，无论复合匹配中的哪个模式发生了匹配，分支体内的代码，都能获取到绑定的值，并且绑定的值都有一样的类型。\n12345678let stillAnotherPoint = (9, 0)switch stillAnotherPoint &#123;case (let distance, 0), (0, let distance):    print(&quot;On an axis, \\(distance) from the origin&quot;)default:    print(&quot;Not on an axis&quot;)&#125;// 输出“On an axis, 9 from the origin”\n上面的 case 有两个模式：(let distance, 0) 匹配了在 x 轴上的值，(0, let distance) 匹配了在 y 轴上的值。两个模式都绑定了 distance，并且 distance 在两种模式下，都是整型——这意味着分支体内的代码，只要 case 匹配，都可以获取到 distance 值。\n控制转移语句\n控制转移语句改变你代码的执行顺序，通过它可以实现代码的跳转。Swift 有五种控制转移语句：\n\ncontinue\nbreak\nfallthrough\nreturn\nthrow\n\n我们将会在下面讨论 continue、break 和 fallthrough 语句。return 语句将会在 函数 章节讨论，throw 语句会在 错误抛出 章节讨论。\nContinue\ncontinue 语句告诉一个循环体立刻停止本次循环，重新开始下次循环。就好像在说“本次循环我已经执行完了”，但是并不会离开整个循环体。\n下面的例子把一个小写字符串中的元音字母和空格字符移除，生成了一个含义模糊的短句：\n123456789101112let puzzleInput = &quot;great minds think alike&quot;var puzzleOutput = &quot;&quot;for character in puzzleInput &#123;    switch character &#123;    case &quot;a&quot;, &quot;e&quot;, &quot;i&quot;, &quot;o&quot;, &quot;u&quot;, &quot; &quot;:        continue    default:        puzzleOutput.append(character)    &#125;&#125;print(puzzleOutput)    // 输出“grtmndsthnklk”\n在上面的代码中，只要匹配到元音字母或者空格字符，就调用 continue 语句，使本次循环结束，重新开始下次循环。这种行为使 switch 匹配到元音字母和空格字符时不做处理，而不是让每一个匹配到的字符都被打印。\nBreak\nbreak 语句会立刻结束整个控制流的执行。break 可以在 switch 或循环语句中使用，用来提前结束 switch 或循环语句。\n循环语句中的 break\n当在一个循环体中使用 break 时，会立刻中断该循环体的执行，然后跳转到表示循环体结束的大括号（&#125;）后的第一行代码。不会再有本次循环的代码被执行，也不会再有下次的循环产生。\nSwitch 语句中的 break\n当在一个 switch 代码块中使用 break 时，会立即中断该 switch 代码块的执行，并且跳转到表示 switch 代码块结束的大括号（&#125;）后的第一行代码。\n这种特性可以被用来匹配或者忽略一个或多个分支。因为 Swift 的 switch 需要包含所有的分支而且不允许有为空的分支，有时为了使你的意图更明显，需要特意匹配或者忽略某个分支。那么当你想忽略某个分支时，可以在该分支内写上 break 语句。当那个分支被匹配到时，分支内的 break 语句立即结束 switch 代码块。\n\n注意\n当一个 switch 分支仅仅包含注释时，会被报编译时错误。注释不是代码语句而且也不能让 switch 分支达到被忽略的效果。你应该使用 break 来忽略某个分支。\n\n下面的例子通过 switch 来判断一个 Character 值是否代表下面四种语言之一。为了简洁，多个值被包含在了同一个分支情况中。\n1234567891011121314151617181920let numberSymbol: Character = &quot;三&quot;  // 简体中文里的数字 3var possibleIntegerValue: Int?switch numberSymbol &#123;case &quot;1&quot;, &quot;١&quot;, &quot;一&quot;, &quot;๑&quot;:    possibleIntegerValue = 1case &quot;2&quot;, &quot;٢&quot;, &quot;二&quot;, &quot;๒&quot;:    possibleIntegerValue = 2case &quot;3&quot;, &quot;٣&quot;, &quot;三&quot;, &quot;๓&quot;:    possibleIntegerValue = 3case &quot;4&quot;, &quot;٤&quot;, &quot;四&quot;, &quot;๔&quot;:    possibleIntegerValue = 4default:    break&#125;if let integerValue = possibleIntegerValue &#123;    print(&quot;The integer value of \\(numberSymbol) is \\(integerValue).&quot;)&#125; else &#123;    print(&quot;An integer value could not be found for \\(numberSymbol).&quot;)&#125;// 输出“The integer value of 三 is 3.”\n这个例子检查 numberSymbol 是否是拉丁，阿拉伯，中文或者泰语中的 1 到 4 之一。如果被匹配到，该 switch 分支语句给 Int? 类型变量 possibleIntegerValue 设置一个整数值。\n当 switch 代码块执行完后，接下来的代码通过使用可选绑定来判断 possibleIntegerValue 是否曾经被设置过值。因为是可选类型的缘故，possibleIntegerValue 有一个隐式的初始值 nil，所以仅仅当 possibleIntegerValue 曾被 switch 代码块的前四个分支中的某个设置过一个值时，可选的绑定才会被判定为成功。\n在上面的例子中，想要把 Character 所有的的可能性都枚举出来是不现实的，所以使用 default 分支来包含所有上面没有匹配到字符的情况。由于这个 default 分支不需要执行任何动作，所以它只写了一条 break 语句。一旦落入到 default 分支中后，break 语句就完成了该分支的所有代码操作，代码继续向下，开始执行 if let 语句。\n贯穿（Fallthrough）\n在 Swift 里，switch 语句不会从上一个 case 分支跳转到下一个 case 分支中。相反，只要第一个匹配到的 case 分支完成了它需要执行的语句，整个 switch 代码块完成了它的执行。相比之下，C 语言要求你显式地插入 break 语句到每个 case 分支的末尾来阻止自动落入到下一个 case 分支中。Swift 的这种避免默认落入到下一个分支中的特性意味着它的 switch 功能要比 C 语言的更加清晰和可预测，可以避免无意识地执行多个 case 分支从而引发的错误。\n如果你确实需要 C 风格的贯穿的特性，你可以在每个需要该特性的 case 分支中使用 fallthrough 关键字。下面的例子使用 fallthrough 来创建一个数字的描述语句。\n1234567891011let integerToDescribe = 5var description = &quot;The number \\(integerToDescribe) is&quot;switch integerToDescribe &#123;case 2, 3, 5, 7, 11, 13, 17, 19:    description += &quot; a prime number, and also&quot;    fallthroughdefault:    description += &quot; an integer.&quot;&#125;print(description)// 输出“The number 5 is a prime number, and also an integer.”\n这个例子定义了一个 String 类型的变量 description 并且给它设置了一个初始值。函数使用 switch 逻辑来判断 integerToDescribe 变量的值。当 integerToDescribe 的值属于列表中的质数之一时，该函数在 description 后添加一段文字，来表明这个数字是一个质数。然后它使用 fallthrough 关键字来“贯穿”到 default 分支中。default 分支在 description 的最后添加一段额外的文字，至此 switch 代码块执行完了。\n如果 integerToDescribe 的值不属于列表中的任何质数，那么它不会匹配到第一个 switch 分支。而这里没有其他特别的分支情况，所以 integerToDescribe 匹配到 default 分支中。\n当 switch 代码块执行完后，使用 print(_:separator:terminator:) 函数打印该数字的描述。在这个例子中，数字 5 被准确的识别为了一个质数。\n\n注意\nfallthrough 关键字不会检查它下一个将会落入执行的 case 中的匹配条件。fallthrough 简单地使代码继续连接到下一个 case 中的代码，这和 C 语言标准中的 switch 语句特性是一样的。\n\n带标签的语句\n在 Swift 中，你可以在循环体和条件语句中嵌套循环体和条件语句来创造复杂的控制流结构。并且，循环体和条件语句都可以使用 break 语句来提前结束整个代码块。因此，显式地指明 break 语句想要终止的是哪个循环体或者条件语句，会很有用。类似地，如果你有许多嵌套的循环体，显式指明 continue 语句想要影响哪一个循环体也会非常有用。\n为了实现这个目的，你可以使用标签（statement label）来标记一个循环体或者条件语句，对于一个条件语句，你可以使用 break 加标签的方式，来结束这个被标记的语句。对于一个循环语句，你可以使用 break 或者 continue 加标签，来结束或者继续这条被标记语句的执行。\n声明一个带标签的语句是通过在该语句的关键词的同一行前面放置一个标签，作为这个语句的前导关键字（introducor keyword），并且该标签后面跟随一个冒号。下面是一个针对 while 循环体的标签语法，同样的规则适用于所有的循环体和条件语句。\n123label name: while condition &#123;    statements&#125;\n下面的例子是前面章节中蛇和梯子的适配版本，在此版本中，我们将使用一个带有标签的 while 循环体中调用 break 和 continue 语句。这次，游戏增加了一条额外的规则：\n\n为了获胜，你必须刚好落在第 25 个方块中。\n\n如果某次掷骰子使你的移动超出第 25 个方块，你必须重新掷骰子，直到你掷出的骰子数刚好使你能落在第 25 个方块中。\n游戏的棋盘和之前一样：\n\nfinalSquare、board、square 和 diceRoll 值被和之前一样的方式初始化：\n123456let finalSquare = 25var board = [Int](repeating: 0, count: finalSquare + 1)board[03] = +08; board[06] = +11; board[09] = +09; board[10] = +02board[14] = -10; board[19] = -11; board[22] = -02; board[24] = -08var square = 0var diceRoll = 0\n这个版本的游戏使用 while 循环和 switch 语句来实现游戏的逻辑。while 循环有一个标签名 gameLoop，来表明它是游戏的主循环。\n该 while 循环体的条件判断语句是 while square !=finalSquare，这表明你必须刚好落在方格25中。\n1234567891011121314151617gameLoop: while square != finalSquare &#123;    diceRoll += 1    if diceRoll == 7 &#123; diceRoll = 1 &#125;    switch square + diceRoll &#123;    case finalSquare:        // 骰子数刚好使玩家移动到最终的方格里，游戏结束。        break gameLoop    case let newSquare where newSquare &gt; finalSquare:        // 骰子数将会使玩家的移动超出最后的方格，那么这种移动是不合法的，玩家需要重新掷骰子        continue gameLoop    default:        // 合法移动，做正常的处理        square += diceRoll        square += board[square]    &#125;&#125;print(&quot;Game over!&quot;)\n每次循环迭代开始时掷骰子。与之前玩家掷完骰子就立即移动不同，这里使用了 switch 语句来考虑每次移动可能产生的结果，从而决定玩家本次是否能够移动。\n\n如果骰子数刚好使玩家移动到最终的方格里，游戏结束。break gameLoop 语句跳转控制去执行 while 循环体后的第一行代码，意味着游戏结束。\n如果骰子数将会使玩家的移动超出最后的方格，那么这种移动是不合法的，玩家需要重新掷骰子。continue gameLoop 语句结束本次 while 循环，开始下一次循环。\n在剩余的所有情况中，骰子数产生的都是合法的移动。玩家向前移动 diceRoll 个方格，然后游戏逻辑再处理玩家当前是否处于蛇头或者梯子的底部。接着本次循环结束，控制跳转到 while 循环体的条件判断语句处，再决定是否需要继续执行下次循环。\n\n\n注意\n如果上述的 break 语句没有使用 gameLoop 标签，那么它将会中断 switch 语句而不是 while 循环。使用 gameLoop 标签清晰的表明了 break 想要中断的是哪个代码块。\n同时请注意，当调用 continue gameLoop 去跳转到下一次循环迭代时，这里使用 gameLoop 标签并不是严格必须的。因为在这个游戏中，只有一个循环体，所以 continue 语句会影响到哪个循环体是没有歧义的。然而，continue 语句使用 gameLoop 标签也是没有危害的。这样做符合标签的使用规则，同时参照旁边的 break gameLoop，能够使游戏的逻辑更加清晰和易于理解。\n\n提前退出\n像 if 语句一样，guard 的执行取决于一个表达式的布尔值。我们可以使用 guard 语句来要求条件必须为真时，以执行 guard 语句后的代码。不同于 if 语句，一个 guard 语句总是有一个 else 从句，如果条件不为真则执行 else 从句中的代码。\n123456789101112131415161718192021func greet(person: [String: String]) &#123;    guard let name = person[&quot;name&quot;] else &#123;        return    &#125;    print(&quot;Hello \\(name)!&quot;)    guard let location = person[&quot;location&quot;] else &#123;        print(&quot;I hope the weather is nice near you.&quot;)        return    &#125;    print(&quot;I hope the weather is nice in \\(location).&quot;)&#125;greet(person: [&quot;name&quot;: &quot;John&quot;])// 输出“Hello John!”// 输出“I hope the weather is nice near you.”greet(person: [&quot;name&quot;: &quot;Jane&quot;, &quot;location&quot;: &quot;Cupertino&quot;])// 输出“Hello Jane!”// 输出“I hope the weather is nice in Cupertino.”\n如果 guard 语句的条件被满足，则继续执行 guard 语句大括号后的代码。将变量或者常量的可选绑定作为 guard 语句的条件，都可以保护 guard 语句后面的代码。\n如果条件不被满足，在 else 分支上的代码就会被执行。这个分支必须转移控制以退出 guard 语句出现的代码段。它可以用控制转移语句如 return、break、continue 或者 throw 做这件事，或者调用一个不返回的方法或函数，例如 fatalError()。\n相比于可以实现同样功能的 if 语句，按需使用 guard 语句会提升我们代码的可读性。它可以使你的代码连贯的被执行而不需要将它包在 else 块中，它可以使你在紧邻条件判断的地方，处理违规的情况。\n检测 API 可用性\nSwift 内置支持检查 API 可用性，这可以确保我们不会在当前部署机器上，不小心地使用了不可用的 API。\n编译器使用 SDK 中的可用信息来验证我们的代码中使用的所有 API 在项目指定的部署目标上是否可用。如果我们尝试使用一个不可用的 API，Swift 会在编译时报错。\n我们在 if 或 guard 语句中使用 可用性条件（availability condition)去有条件的执行一段代码，来在运行时判断调用的 API 是否可用。编译器使用从可用性条件语句中获取的信息去验证，在这个代码块中调用的 API 是否可用。\n12345if #available(iOS 10, macOS 10.12, *) &#123;    // 在 iOS 使用 iOS 10 的 API, 在 macOS 使用 macOS 10.12 的 API&#125; else &#123;    // 使用先前版本的 iOS 和 macOS 的 API&#125;\n以上可用性条件指定，if 语句的代码块仅仅在 iOS 10 或 macOS 10.12 及更高版本才运行。最后一个参数，*，是必须的，用于指定在所有其它平台中，如果版本号高于你的设备指定的最低版本，if 语句的代码块将会运行。\n在它一般的形式中，可用性条件使用了一个平台名字和版本的列表。平台名字可以是 iOS，macOS，watchOS 和 tvOS——请访问 声明属性 来获取完整列表。除了指定像 iOS 8 或 macOS 10.10 的大版本号，也可以指定像 iOS 11.2.6 以及 macOS 10.13.3 的小版本号。\n12345if #available(平台名称 版本号, ..., *) &#123;    APIs 可用，语句将执行&#125; else &#123;    APIs 不可用，语句将不执行&#125;\n","dateCreated":"2023-06-22T10:13:17+08:00","dateModified":"2025-06-18T11:49:27+08:00","datePublished":"2023-06-22T10:13:17+08:00","description":"","headline":"swift控制流","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/","keywords":"swift"}</script>
+    <meta name="description" content="控制流 Swift 提供了多种流程控制结构，包括可以多次执行任务的 while 循环，基于特定条件选择执行不同代码分支的 if、guard 和 switch 语句，还有控制流程跳转到其他代码位置的 break 和 continue 语句。 Swift 还提供了 for-in 循环，用来更简单地遍历数组（Array），字典（Dictionary），区间（Range），字符串（String）和其他序列">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="swift控制流">
+<meta property="og:url" content="https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="控制流 Swift 提供了多种流程控制结构，包括可以多次执行任务的 while 循环，基于特定条件选择执行不同代码分支的 if、guard 和 switch 语句，还有控制流程跳转到其他代码位置的 break 和 continue 语句。 Swift 还提供了 for-in 循环，用来更简单地遍历数组（Array），字典（Dictionary），区间（Range），字符串（String）和其他序列">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://docs.swift.org/swift-book/_images/snakesAndLadders_2x.png">
+<meta property="og:image" content="https://docs.swift.org/swift-book/_images/coordinateGraphSimple_2x.png">
+<meta property="og:image" content="https://docs.swift.org/swift-book/_images/coordinateGraphMedium_2x.png">
+<meta property="og:image" content="https://docs.swift.org/swift-book/_images/coordinateGraphComplex_2x.png">
+<meta property="og:image" content="https://docs.swift.org/swift-book/_images/snakesAndLadders_2x.png">
+<meta property="article:published_time" content="2023-06-22T02:13:17.000Z">
+<meta property="article:modified_time" content="2025-06-18T03:49:27.991Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="swift">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://docs.swift.org/swift-book/_images/snakesAndLadders_2x.png">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            swift控制流
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2023-06-22T10:13:17+08:00">
+	
+		    2023 年 6 月 22 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/swift/">swift</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="控制流">控制流</h2>
+<p>Swift 提供了多种流程控制结构，包括可以多次执行任务的 <code>while</code> 循环，基于特定条件选择执行不同代码分支的 <code>if</code>、<code>guard</code> 和 <code>switch</code> 语句，还有控制流程跳转到其他代码位置的 <code>break</code> 和 <code>continue</code> 语句。</p>
+<p>Swift 还提供了 <code>for-in</code> 循环，用来更简单地遍历数组（Array），字典（Dictionary），区间（Range），字符串（String）和其他序列类型。</p>
+<p>Swift 的 <code>switch</code> 语句比许多类 C 语言要更加强大。case 还可以匹配很多不同的模式，包括范围匹配，元组（tuple）和特定类型匹配。<code>switch</code> 语句的 case 中匹配的值可以声明为临时常量或变量，在 case 作用域内使用，也可以配合 <code>where</code> 来描述更复杂的匹配条件。</p>
+<h2 id="For-In-循环">For-In 循环</h2>
+<p>你可以使用 <code>for-in</code> 循环来遍历一个集合中的所有元素，例如数组中的元素、范围内的数字或者字符串中的字符。</p>
+<p>以下例子使用 <code>for-in</code> 遍历一个数组所有元素：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> names <span class="operator">=</span> [<span class="string">&quot;Anna&quot;</span>, <span class="string">&quot;Alex&quot;</span>, <span class="string">&quot;Brian&quot;</span>, <span class="string">&quot;Jack&quot;</span>]</span><br><span class="line"><span class="keyword">for</span> name <span class="keyword">in</span> names &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Hello, <span class="subst">\(name)</span>!&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// Hello, Anna!</span></span><br><span class="line"><span class="comment">// Hello, Alex!</span></span><br><span class="line"><span class="comment">// Hello, Brian!</span></span><br><span class="line"><span class="comment">// Hello, Jack!</span></span><br></pre></td></tr></table></figure>
+<p>你也可以通过遍历一个字典来访问它的键值对。遍历字典时，字典的每项元素会以 <code>(key, value)</code> 元组的形式返回，你可以在 <code>for-in</code> 循环中使用显式的常量名称来解读 <code>(key, value)</code> 元组。下面的例子中，字典的键声明会为 <code>animalName</code> 常量，字典的值会声明为 <code>legCount</code> 常量：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> numberOfLegs <span class="operator">=</span> [<span class="string">&quot;spider&quot;</span>: <span class="number">8</span>, <span class="string">&quot;ant&quot;</span>: <span class="number">6</span>, <span class="string">&quot;cat&quot;</span>: <span class="number">4</span>]</span><br><span class="line"><span class="keyword">for</span> (animalName, legCount) <span class="keyword">in</span> numberOfLegs &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(animalName)</span>s have <span class="subst">\(legCount)</span> legs&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// cats have 4 legs</span></span><br><span class="line"><span class="comment">// ants have 6 legs</span></span><br><span class="line"><span class="comment">// spiders have 8 legs</span></span><br></pre></td></tr></table></figure>
+<p>字典的内容理论上是无序的，遍历元素时的顺序是无法确定的。将元素插入字典的顺序并不会决定它们被遍历的顺序。关于数组和字典的细节，参见 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/04_Collection_Types.html">集合类型</a>。</p>
+<p><code>for-in</code> 循环还可以使用数字范围。下面的例子用来输出乘法表的一部分内容：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> index <span class="keyword">in</span> <span class="number">1</span><span class="operator">...</span><span class="number">5</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(index)</span> times 5 is <span class="subst">\(index <span class="operator">*</span> <span class="number">5</span>)</span>&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 1 times 5 is 5</span></span><br><span class="line"><span class="comment">// 2 times 5 is 10</span></span><br><span class="line"><span class="comment">// 3 times 5 is 15</span></span><br><span class="line"><span class="comment">// 4 times 5 is 20</span></span><br><span class="line"><span class="comment">// 5 times 5 is 25</span></span><br></pre></td></tr></table></figure>
+<p>例子中用来进行遍历的元素是使用闭区间操作符（<code>...</code>）表示的从 <code>1</code> 到 <code>5</code> 的数字区间。<code>index</code> 被赋值为闭区间中的第一个数字（<code>1</code>），然后循环中的语句被执行一次。在本例中，这个循环只包含一个语句，用来输出当前 <code>index</code> 值所对应的乘 5 乘法表的结果。该语句执行后，<code>index</code> 的值被更新为闭区间中的第二个数字（<code>2</code>），之后 <code>print(_:separator:terminator:)</code> 函数会再执行一次。整个过程会进行到闭区间结尾为止。</p>
+<p>上面的例子中，<code>index</code> 是一个每次循环遍历开始时被自动赋值的常量。这种情况下，<code>index</code> 在使用前不需要声明，只需要将它包含在循环的声明中，就可以对其进行隐式声明，而无需使用 <code>let</code> 关键字声明。</p>
+<p>如果你不需要区间序列内每一项的值，你可以使用下划线（<code>_</code>）替代变量名来忽略这个值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> base <span class="operator">=</span> <span class="number">3</span></span><br><span class="line"><span class="keyword">let</span> power <span class="operator">=</span> <span class="number">10</span></span><br><span class="line"><span class="keyword">var</span> answer <span class="operator">=</span> <span class="number">1</span></span><br><span class="line"><span class="keyword">for</span> <span class="keyword">_</span> <span class="keyword">in</span> <span class="number">1</span><span class="operator">...</span>power &#123;</span><br><span class="line">    answer <span class="operator">*=</span> base</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(base)</span> to the power of <span class="subst">\(power)</span> is <span class="subst">\(answer)</span>&quot;</span>)</span><br><span class="line"><span class="comment">// 输出“3 to the power of 10 is 59049”</span></span><br></pre></td></tr></table></figure>
+<p>这个例子计算 base 这个数的 power 次幂（本例中，是 <code>3</code> 的 <code>10</code> 次幂），从 <code>1</code>（<code>3</code> 的 <code>0</code> 次幂）开始做 <code>3</code> 的乘法， 进行 <code>10</code> 次，使用 <code>1</code> 到 <code>10</code> 的闭区间循环。这个计算并不需要知道每一次循环中计数器具体的值，只需要执行了正确的循环次数即可。下划线符号 <code>_</code> （替代循环中的变量）能够忽略当前值，并且不提供循环遍历时对值的访问。</p>
+<p>在某些情况下，你可能不想使用包括两个端点的闭区间。想象一下，你在一个手表上绘制分钟的刻度线。总共 <code>60</code> 个刻度，从 <code>0</code> 分开始。使用半开区间运算符（<code>..&lt;</code>）来表示一个左闭右开的区间。有关区间的更多信息，请参阅 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/02_Basic_Operators.html#range_operators">区间运算符</a>。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> minutes <span class="operator">=</span> <span class="number">60</span></span><br><span class="line"><span class="keyword">for</span> tickMark <span class="keyword">in</span> <span class="number">0</span><span class="operator">..&lt;</span>minutes &#123;</span><br><span class="line">    <span class="comment">// 每一分钟都渲染一个刻度线（60次）</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>一些用户可能在其 UI 中可能需要较少的刻度。他们可以每 5 分钟作为一个刻度。使用 <code>stride(from:to:by:)</code> 函数跳过不需要的标记。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> minuteInterval <span class="operator">=</span> <span class="number">5</span></span><br><span class="line"><span class="keyword">for</span> tickMark <span class="keyword">in</span> <span class="built_in">stride</span>(from: <span class="number">0</span>, to: minutes, by: minuteInterval) &#123;</span><br><span class="line">    <span class="comment">// 每5分钟渲染一个刻度线（0, 5, 10, 15 ... 45, 50, 55）</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以在闭区间使用 <code>stride(from:through:by:)</code> 起到同样作用：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> hours <span class="operator">=</span> <span class="number">12</span></span><br><span class="line"><span class="keyword">let</span> hourInterval <span class="operator">=</span> <span class="number">3</span></span><br><span class="line"><span class="keyword">for</span> tickMark <span class="keyword">in</span> <span class="built_in">stride</span>(from: <span class="number">3</span>, through: hours, by: hourInterval) &#123;</span><br><span class="line">    <span class="comment">// 每3小时渲染一个刻度线（3, 6, 9, 12）</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="While-循环">While 循环</h2>
+<p><code>while</code> 循环会一直运行一段语句直到条件变成 <code>false</code>。这类循环适合使用在第一次迭代前，迭代次数未知的情况下。Swift 提供两种 <code>while</code> 循环形式：</p>
+<ul>
+<li><code>while</code> 循环，每次在循环开始时计算条件是否符合；</li>
+<li><code>repeat-while</code> 循环，每次在循环结束时计算条件是否符合。</li>
+</ul>
+<h3 id="While">While</h3>
+<p><code>while</code> 循环从计算一个条件开始。如果条件为 <code>true</code>，会重复运行一段语句，直到条件变为 <code>false</code>。</p>
+<p>下面是 <code>while</code> 循环的一般格式：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> condition &#123;</span><br><span class="line">    statements</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面的例子来玩一个叫做<em>蛇和梯子</em>（也叫做<em>滑道和梯子</em>）的小游戏：</p>
+<p><img src="https://docs.swift.org/swift-book/_images/snakesAndLadders_2x.png" alt="image"></p>
+<p>游戏的规则如下：</p>
+<ul>
+<li>游戏盘面包括 25 个方格，游戏目标是达到或者超过第 25 个方格；</li>
+<li>每一轮，你通过掷一个六面体骰子来确定你移动方块的步数，移动的路线由上图中横向的虚线所示；</li>
+<li>如果在某轮结束，你移动到了梯子的底部，可以顺着梯子爬上去；</li>
+<li>如果在某轮结束，你移动到了蛇的头部，你会顺着蛇的身体滑下去。</li>
+</ul>
+<p>游戏盘面可以使用一个 <code>Int</code> 数组来表达。数组的长度由一个 <code>finalSquare</code> 常量储存，用来初始化数组和检测最终胜利条件。游戏盘面由 26 个 <code>Int</code> 0 值初始化，而不是 25 个（由 <code>0</code> 到 <code>25</code>，一共 26 个）：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> finalSquare <span class="operator">=</span> <span class="number">25</span></span><br><span class="line"><span class="keyword">var</span> board <span class="operator">=</span> [<span class="type">Int</span>](repeating: <span class="number">0</span>, count: finalSquare <span class="operator">+</span> <span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>一些方格被设置成特定的值来表示有蛇或者梯子。梯子底部的方格是一个正值，使你可以向上移动，蛇头处的方格是一个负值，会让你向下移动：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">board[<span class="number">03</span>] <span class="operator">=</span> <span class="operator">+</span><span class="number">08</span>; board[<span class="number">06</span>] <span class="operator">=</span> <span class="operator">+</span><span class="number">11</span>; board[<span class="number">09</span>] <span class="operator">=</span> <span class="operator">+</span><span class="number">09</span>; board[<span class="number">10</span>] <span class="operator">=</span> <span class="operator">+</span><span class="number">02</span></span><br><span class="line">board[<span class="number">14</span>] <span class="operator">=</span> <span class="operator">-</span><span class="number">10</span>; board[<span class="number">19</span>] <span class="operator">=</span> <span class="operator">-</span><span class="number">11</span>; board[<span class="number">22</span>] <span class="operator">=</span> <span class="operator">-</span><span class="number">02</span>; board[<span class="number">24</span>] <span class="operator">=</span> <span class="operator">-</span><span class="number">08</span></span><br></pre></td></tr></table></figure>
+<p>3 号方格是梯子的底部，会让你向上移动到 11 号方格，我们使用 <code>board[03]</code> 等于 <code>+08</code>（来表示 <code>11</code> 和 <code>3</code> 之间的差值）。为了对齐语句，这里使用了一元正运算符（<code>+i</code>）和一元负运算符（<code>-i</code>），并且小于 10 的数字都使用 0 补齐（这些语法的技巧不是必要的，只是为了让代码看起来更加整洁）。</p>
+<p>玩家由左下角空白处编号为 0 的方格开始游戏。玩家第一次掷骰子后才会进入游戏盘面：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> square <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">var</span> diceRoll <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> square <span class="operator">&lt;</span> finalSquare &#123;</span><br><span class="line">    <span class="comment">// 掷骰子</span></span><br><span class="line">    diceRoll <span class="operator">+=</span> <span class="number">1</span></span><br><span class="line">    <span class="keyword">if</span> diceRoll <span class="operator">==</span> <span class="number">7</span> &#123; diceRoll <span class="operator">=</span> <span class="number">1</span> &#125;</span><br><span class="line">    <span class="comment">// 根据点数移动</span></span><br><span class="line">    square <span class="operator">+=</span> diceRoll</span><br><span class="line">    <span class="keyword">if</span> square <span class="operator">&lt;</span> board.count &#123;</span><br><span class="line">        <span class="comment">// 如果玩家还在棋盘上，顺着梯子爬上去或者顺着蛇滑下去</span></span><br><span class="line">        square <span class="operator">+=</span> board[square]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Game over!&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>本例中使用了最简单的方法来模拟掷骰子。<code>diceRoll</code> 的值并不是一个随机数，而是以 <code>0</code> 为初始值，之后每一次 <code>while</code> 循环，<code>diceRoll</code> 的值增加 1 ，然后检测是否超出了最大值。当 <code>diceRoll</code> 的值等于 7 时，就超过了骰子的最大值，会被重置为 <code>1</code>。所以 <code>diceRoll</code> 的取值顺序会一直是 <code>1</code>，<code>2</code>，<code>3</code>，<code>4</code>，<code>5</code>，<code>6</code>，<code>1</code>，<code>2</code> 等。</p>
+<p>掷完骰子后，玩家向前移动 <code>diceRoll</code> 个方格，如果玩家移动超过了第 25 个方格，这个时候游戏将会结束，为了应对这种情况，代码会首先判断 <code>square</code> 的值是否小于 <code>board</code> 的 <code>count</code> 属性，只有小于才会在 <code>board[square]</code> 上增加 <code>square</code>，来向前或向后移动（遇到了梯子或者蛇）。</p>
+<blockquote>
+<p>注意</p>
+<p>如果没有这个检测（<code>square &lt; board.count</code>），<code>board[square]</code> 可能会越界访问 <code>board</code> 数组，导致运行时错误。</p>
+</blockquote>
+<p>当本轮 <code>while</code> 循环运行完毕，会再检测循环条件是否需要再运行一次循环。如果玩家移动到或者超过第 25 个方格，循环条件结果为 <code>false</code>，此时游戏结束。</p>
+<p><code>while</code> 循环比较适合本例中的这种情况，因为在 <code>while</code> 循环开始时，我们并不知道游戏要跑多久，只有在达成指定条件时循环才会结束。</p>
+<h3 id="Repeat-While">Repeat-While</h3>
+<p><code>while</code> 循环的另外一种形式是 <code>repeat-while</code>，它和 <code>while</code> 的区别是在判断循环条件之前，先执行一次循环的代码块。然后重复循环直到条件为 <code>false</code>。</p>
+<blockquote>
+<p>注意</p>
+<p>Swift 语言的 <code>repeat-while</code> 循环和其他语言中的 <code>do-while</code> 循环是类似的。</p>
+</blockquote>
+<p>下面是 <code>repeat-while</code> 循环的一般格式：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">repeat</span> &#123;</span><br><span class="line">    statements</span><br><span class="line">&#125; <span class="keyword">while</span> condition</span><br></pre></td></tr></table></figure>
+<p>还是<em>蛇和梯子</em>的游戏，使用 <code>repeat-while</code> 循环来替代 <code>while</code> 循环。<code>finalSquare</code>、<code>board</code>、<code>square</code> 和 <code>diceRoll</code> 的值初始化同 <code>while</code> 循环时一样：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> finalSquare <span class="operator">=</span> <span class="number">25</span></span><br><span class="line"><span class="keyword">var</span> board <span class="operator">=</span> [<span class="type">Int</span>](repeating: <span class="number">0</span>, count: finalSquare <span class="operator">+</span> <span class="number">1</span>)</span><br><span class="line">board[<span class="number">03</span>] <span class="operator">=</span> <span class="operator">+</span><span class="number">08</span>; board[<span class="number">06</span>] <span class="operator">=</span> <span class="operator">+</span><span class="number">11</span>; board[<span class="number">09</span>] <span class="operator">=</span> <span class="operator">+</span><span class="number">09</span>; board[<span class="number">10</span>] <span class="operator">=</span> <span class="operator">+</span><span class="number">02</span></span><br><span class="line">board[<span class="number">14</span>] <span class="operator">=</span> <span class="operator">-</span><span class="number">10</span>; board[<span class="number">19</span>] <span class="operator">=</span> <span class="operator">-</span><span class="number">11</span>; board[<span class="number">22</span>] <span class="operator">=</span> <span class="operator">-</span><span class="number">02</span>; board[<span class="number">24</span>] <span class="operator">=</span> <span class="operator">-</span><span class="number">08</span></span><br><span class="line"><span class="keyword">var</span> square <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">var</span> diceRoll <span class="operator">=</span> <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p><code>repeat-while</code> 的循环版本，循环中<em>第一步</em>就需要去检测是否在梯子或者蛇的方块上。没有梯子会让玩家直接上到第 25 个方格，所以玩家不会通过梯子直接赢得游戏。这样在循环开始时先检测是否踩在梯子或者蛇上是安全的。</p>
+<p>游戏开始时，玩家在第 0 个方格上，<code>board[0]</code> 一直等于 0， 不会有什么影响：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">repeat</span> &#123;</span><br><span class="line">    <span class="comment">// 顺着梯子爬上去或者顺着蛇滑下去</span></span><br><span class="line">    square <span class="operator">+=</span> board[square]</span><br><span class="line">    <span class="comment">// 掷骰子</span></span><br><span class="line">    diceRoll <span class="operator">+=</span> <span class="number">1</span></span><br><span class="line">    <span class="keyword">if</span> diceRoll <span class="operator">==</span> <span class="number">7</span> &#123; diceRoll <span class="operator">=</span> <span class="number">1</span> &#125;</span><br><span class="line">    <span class="comment">// 根据点数移动</span></span><br><span class="line">    square <span class="operator">+=</span> diceRoll</span><br><span class="line">&#125; <span class="keyword">while</span> square <span class="operator">&lt;</span> finalSquare</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Game over!&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>检测完玩家是否踩在梯子或者蛇上之后，开始掷骰子，然后玩家向前移动 <code>diceRoll</code> 个方格，本轮循环结束。</p>
+<p>循环条件（<code>while square &lt; finalSquare</code>）和 <code>while</code> 方式相同，但是只会在循环结束后进行计算。在这个游戏中，<code>repeat-while</code> 表现得比 <code>while</code> 循环更好。<code>repeat-while</code> 方式会在条件判断 <code>square</code> 没有超出后直接运行 <code>square += board[square]</code>，这种方式可以比起前面 <code>while</code> 循环的版本，可以省去数组越界的检查。</p>
+<h2 id="条件语句">条件语句</h2>
+<p>根据特定的条件执行特定的代码通常是十分有用的。当错误发生时，你可能想运行额外的代码；或者，当值太大或太小时，向用户显示一条消息。要实现这些功能，你就需要使用<em>条件语句</em>。</p>
+<p>Swift 提供两种类型的条件语句：<code>if</code> 语句和 <code>switch</code> 语句。通常，当条件较为简单且可能的情况很少时，使用 <code>if</code> 语句。而 <code>switch</code> 语句更适用于条件较复杂、有更多排列组合的时候。并且 <code>switch</code> 在需要用到模式匹配（pattern-matching）的情况下会更有用。</p>
+<h3 id="If">If</h3>
+<p><code>if</code> 语句最简单的形式就是只包含一个条件，只有该条件为 <code>true</code> 时，才执行相关代码：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> temperatureInFahrenheit <span class="operator">=</span> <span class="number">30</span></span><br><span class="line"><span class="keyword">if</span> temperatureInFahrenheit <span class="operator">&lt;=</span> <span class="number">32</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;It&#x27;s very cold. Consider wearing a scarf.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“It&#x27;s very cold. Consider wearing a scarf.”</span></span><br></pre></td></tr></table></figure>
+<p>上面的例子会判断温度是否小于等于 32 华氏度（水的冰点）。如果是，则打印一条消息；否则，不打印任何消息，继续执行 <code>if</code> 块后面的代码。</p>
+<p>当然，<code>if</code> 语句允许二选一执行，叫做 <code>else</code> 从句。也就是当条件为 <code>false</code> 时，执行 <em>else 语句</em>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">temperatureInFahrenheit <span class="operator">=</span> <span class="number">40</span></span><br><span class="line"><span class="keyword">if</span> temperatureInFahrenheit <span class="operator">&lt;=</span> <span class="number">32</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;It&#x27;s very cold. Consider wearing a scarf.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;It&#x27;s not that cold. Wear a t-shirt.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“It&#x27;s not that cold. Wear a t-shirt.”</span></span><br></pre></td></tr></table></figure>
+<p>显然，这两条分支中总有一条会被执行。由于温度已升至 40 华氏度，不算太冷，没必要再围围巾。因此，<code>else</code> 分支就被触发了。</p>
+<p>你可以把多个 <code>if</code> 语句链接在一起，来实现更多分支：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">temperatureInFahrenheit <span class="operator">=</span> <span class="number">90</span></span><br><span class="line"><span class="keyword">if</span> temperatureInFahrenheit <span class="operator">&lt;=</span> <span class="number">32</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;It&#x27;s very cold. Consider wearing a scarf.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> temperatureInFahrenheit <span class="operator">&gt;=</span> <span class="number">86</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;It&#x27;s really warm. Don&#x27;t forget to wear sunscreen.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;It&#x27;s not that cold. Wear a t-shirt.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“It&#x27;s really warm. Don&#x27;t forget to wear sunscreen.”</span></span><br></pre></td></tr></table></figure>
+<p>在上面的例子中，额外的 <code>if</code> 语句用于判断是不是特别热。而最后的 <code>else</code> 语句被保留了下来，用于打印既不冷也不热时的消息。</p>
+<p>实际上，当不需要完整判断情况的时候，最后的 <code>else</code> 语句是可选的：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">temperatureInFahrenheit <span class="operator">=</span> <span class="number">72</span></span><br><span class="line"><span class="keyword">if</span> temperatureInFahrenheit <span class="operator">&lt;=</span> <span class="number">32</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;It&#x27;s very cold. Consider wearing a scarf.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> temperatureInFahrenheit <span class="operator">&gt;=</span> <span class="number">86</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;It&#x27;s really warm. Don&#x27;t forget to wear sunscreen.&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这个例子中，由于既不冷也不热，所以不会触发 <code>if</code> 或 <code>else if</code> 分支，也就不会打印任何消息。</p>
+<h3 id="Switch">Switch</h3>
+<p><code>switch</code> 语句会尝试把某个值与若干个模式（pattern）进行匹配。根据第一个匹配成功的模式，<code>switch</code> 语句会执行对应的代码。当有可能的情况较多时，通常用 <code>switch</code> 语句替换 <code>if</code> 语句。</p>
+<p><code>switch</code> 语句最简单的形式就是把某个值与一个或若干个相同类型的值作比较：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">switch</span> <span class="keyword">some</span> value to consider &#123;</span><br><span class="line"><span class="keyword">case</span> value <span class="number">1</span>:</span><br><span class="line">    respond to value <span class="number">1</span></span><br><span class="line"><span class="keyword">case</span> value <span class="number">2</span>,</span><br><span class="line">    value <span class="number">3</span>:</span><br><span class="line">    respond to value <span class="number">2</span> or <span class="number">3</span></span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">    otherwise, <span class="keyword">do</span> something <span class="keyword">else</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>switch</code> 语句由<em>多个 case</em> 构成，每个由 <code>case</code> 关键字开始。为了匹配某些更特定的值，Swift 提供了几种方法来进行更复杂的模式匹配，这些模式将在本节的稍后部分提到。</p>
+<p>与 <code>if</code> 语句类似，每一个 case 都是代码执行的一条分支。<code>switch</code> 语句会决定哪一条分支应该被执行，这个流程被称作根据给定的值<em>切换（switching）</em>。</p>
+<p><code>switch</code> 语句必须是完备的。这就是说，每一个可能的值都必须至少有一个 case 分支与之对应。在某些不可能涵盖所有值的情况下，你可以使用默认（<code>default</code>）分支来涵盖其它所有没有对应的值，这个默认分支必须在 <code>switch</code> 语句的最后面。</p>
+<p>下面的例子使用 <code>switch</code> 语句来匹配一个名为 <code>someCharacter</code> 的小写字符：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> someCharacter: <span class="type">Character</span> <span class="operator">=</span> <span class="string">&quot;z&quot;</span></span><br><span class="line"><span class="keyword">switch</span> someCharacter &#123;</span><br><span class="line"><span class="keyword">case</span> <span class="string">&quot;a&quot;</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;The first letter of the alphabet&quot;</span>)</span><br><span class="line"><span class="keyword">case</span> <span class="string">&quot;z&quot;</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;The last letter of the alphabet&quot;</span>)</span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Some other character&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“The last letter of the alphabet”</span></span><br></pre></td></tr></table></figure>
+<p>在这个例子中，第一个 case 分支用于匹配第一个英文字母 <code>a</code>，第二个 case 分支用于匹配最后一个字母 <code>z</code>。因为 <code>switch</code> 语句必须有一个 case 分支用于覆盖所有可能的字符，而不仅仅是所有的英文字母，所以 switch 语句使用 <code>default</code> 分支来匹配除了 <code>a</code> 和 <code>z</code> 外的所有值，这个分支保证了 swith 语句的完备性。</p>
+<h4 id="不存在隐式的贯穿">不存在隐式的贯穿</h4>
+<p>与 C 和 Objective-C 中的 <code>switch</code> 语句不同，在 Swift 中，当匹配的 case 分支中的代码执行完毕后，程序会终止 <code>switch</code> 语句，而不会继续执行下一个 case 分支。这也就是说，不需要在 case 分支中显式地使用 <code>break</code> 语句。这使得 <code>switch</code> 语句更安全、更易用，也避免了漏写 <code>break</code> 语句导致多个语言被执行的错误。</p>
+<blockquote>
+<p>注意</p>
+<p>虽然在 Swift 中 <code>break</code> 不是必须的，但你依然可以在 case 分支中的代码执行完毕前使用 <code>break</code> 跳出，详情请参见 <a href="#break_in_a_switch_statement">Switch 语句中的 break</a>。</p>
+</blockquote>
+<p>每一个 case 分支都<em>必须</em>包含至少一条语句。像下面这样书写代码是无效的，因为第一个 case 分支是空的：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> anotherCharacter: <span class="type">Character</span> <span class="operator">=</span> <span class="string">&quot;a&quot;</span></span><br><span class="line"><span class="keyword">switch</span> anotherCharacter &#123;</span><br><span class="line"><span class="keyword">case</span> <span class="string">&quot;a&quot;</span>: <span class="comment">// 无效，这个分支下面没有语句</span></span><br><span class="line"><span class="keyword">case</span> <span class="string">&quot;A&quot;</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;The letter A&quot;</span>)</span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Not the letter A&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 这段代码会报编译错误</span></span><br></pre></td></tr></table></figure>
+<p>不像 C 语言里的 <code>switch</code> 语句，在 Swift 中，<code>switch</code> 语句不会一起匹配 <code>&quot;a&quot;</code> 和 <code>&quot;A&quot;</code>。相反的，上面的代码会引起编译期错误：<code>case &quot;a&quot;: 不包含任何可执行语句</code>——这就避免了意外地从一个 case 分支贯穿到另外一个，使得代码更安全、也更直观。</p>
+<p>为了让单个 case 同时匹配 <code>a</code> 和 <code>A</code>，可以将这个两个值组合成一个复合匹配，并且用逗号分开：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> anotherCharacter: <span class="type">Character</span> <span class="operator">=</span> <span class="string">&quot;a&quot;</span></span><br><span class="line"><span class="keyword">switch</span> anotherCharacter &#123;</span><br><span class="line"><span class="keyword">case</span> <span class="string">&quot;a&quot;</span>, <span class="string">&quot;A&quot;</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;The letter A&quot;</span>)</span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Not the letter A&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“The letter A”</span></span><br></pre></td></tr></table></figure>
+<p>为了可读性，符合匹配可以写成多行形式，详情请参考 <a href="#compound_cases">复合匹配</a></p>
+<blockquote>
+<p>注意</p>
+<p>如果想要显式贯穿 case 分支，请使用 <code>fallthrough</code> 语句，详情请参考 <a href="#fallthrough">贯穿</a>。</p>
+</blockquote>
+<h4 id="区间匹配">区间匹配</h4>
+<p>case 分支的模式也可以是一个值的区间。下面的例子展示了如何使用区间匹配来输出任意数字对应的自然语言格式：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> approximateCount <span class="operator">=</span> <span class="number">62</span></span><br><span class="line"><span class="keyword">let</span> countedThings <span class="operator">=</span> <span class="string">&quot;moons orbiting Saturn&quot;</span></span><br><span class="line"><span class="keyword">let</span> naturalCount: <span class="type">String</span></span><br><span class="line"><span class="keyword">switch</span> approximateCount &#123;</span><br><span class="line"><span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">    naturalCount <span class="operator">=</span> <span class="string">&quot;no&quot;</span></span><br><span class="line"><span class="keyword">case</span> <span class="number">1</span><span class="operator">..&lt;</span><span class="number">5</span>:</span><br><span class="line">    naturalCount <span class="operator">=</span> <span class="string">&quot;a few&quot;</span></span><br><span class="line"><span class="keyword">case</span> <span class="number">5</span><span class="operator">..&lt;</span><span class="number">12</span>:</span><br><span class="line">    naturalCount <span class="operator">=</span> <span class="string">&quot;several&quot;</span></span><br><span class="line"><span class="keyword">case</span> <span class="number">12</span><span class="operator">..&lt;</span><span class="number">100</span>:</span><br><span class="line">    naturalCount <span class="operator">=</span> <span class="string">&quot;dozens of&quot;</span></span><br><span class="line"><span class="keyword">case</span> <span class="number">100</span><span class="operator">..&lt;</span><span class="number">1000</span>:</span><br><span class="line">    naturalCount <span class="operator">=</span> <span class="string">&quot;hundreds of&quot;</span></span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">    naturalCount <span class="operator">=</span> <span class="string">&quot;many&quot;</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;There are <span class="subst">\(naturalCount)</span> <span class="subst">\(countedThings)</span>.&quot;</span>)</span><br><span class="line"><span class="comment">// 输出“There are dozens of moons orbiting Saturn.”</span></span><br></pre></td></tr></table></figure>
+<p>在上例中，<code>approximateCount</code> 在一个 <code>switch</code> 声明中被评估。每一个 <code>case</code> 都与之进行比较。因为 <code>approximateCount</code> 落在了 12 到 100 的区间，所以 <code>naturalCount</code> 等于 <code>&quot;dozens of&quot;</code> 值，并且此后的执行跳出了 <code>switch</code> 语句。</p>
+<h4 id="元组">元组</h4>
+<p>我们可以使用元组在同一个 <code>switch</code> 语句中测试多个值。元组中的元素可以是值，也可以是区间。另外，使用下划线（<code>_</code>）来匹配所有可能的值。</p>
+<p>下面的例子展示了如何使用一个 <code>(Int, Int)</code> 类型的元组来分类下图中的点 (x, y)：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> somePoint <span class="operator">=</span> (<span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line"><span class="keyword">switch</span> somePoint &#123;</span><br><span class="line"><span class="keyword">case</span> (<span class="number">0</span>, <span class="number">0</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(somePoint)</span> is at the origin&quot;</span>)</span><br><span class="line"><span class="keyword">case</span> (<span class="keyword">_</span>, <span class="number">0</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(somePoint)</span> is on the x-axis&quot;</span>)</span><br><span class="line"><span class="keyword">case</span> (<span class="number">0</span>, <span class="keyword">_</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(somePoint)</span> is on the y-axis&quot;</span>)</span><br><span class="line"><span class="keyword">case</span> (<span class="operator">-</span><span class="number">2</span><span class="operator">...</span><span class="number">2</span>, <span class="operator">-</span><span class="number">2</span><span class="operator">...</span><span class="number">2</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(somePoint)</span> is inside the box&quot;</span>)</span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(somePoint)</span> is outside of the box&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“(1, 1) is inside the box”</span></span><br></pre></td></tr></table></figure>
+<p><img src="https://docs.swift.org/swift-book/_images/coordinateGraphSimple_2x.png" alt="image"></p>
+<p>在上面的例子中，<code>switch</code> 语句会判断某个点是否是原点 (0, 0)，是否在红色的 x 轴上，是否在橘黄色的 y 轴上，是否在一个以原点为中心的4x4的蓝色矩形里，或者在这个矩形外面。</p>
+<p>不像 C 语言，Swift 允许多个 case 匹配同一个值。实际上，在这个例子中，点 (0, 0)可以匹配所有<em>四个 case</em>。但是，如果存在多个匹配，那么只会执行第一个被匹配到的 case 分支。考虑点 (0, 0)会首先匹配 <code>case (0, 0)</code>，因此剩下的能够匹配的分支都会被忽视掉。</p>
+<h4 id="值绑定（Value-Bindings）">值绑定（Value Bindings）</h4>
+<p>case 分支允许将匹配的值声明为临时常量或变量，并且在 case 分支体内使用 —— 这种行为被称为<em>值绑定</em>（value binding），因为匹配的值在 case 分支体内，与临时的常量或变量绑定。</p>
+<p>下面的例子将下图中的点 (x, y)，使用 <code>(Int, Int)</code> 类型的元组表示，然后分类表示：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> anotherPoint <span class="operator">=</span> (<span class="number">2</span>, <span class="number">0</span>)</span><br><span class="line"><span class="keyword">switch</span> anotherPoint &#123;</span><br><span class="line"><span class="keyword">case</span> (<span class="keyword">let</span> x, <span class="number">0</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;on the x-axis with an x value of <span class="subst">\(x)</span>&quot;</span>)</span><br><span class="line"><span class="keyword">case</span> (<span class="number">0</span>, <span class="keyword">let</span> y):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;on the y-axis with a y value of <span class="subst">\(y)</span>&quot;</span>)</span><br><span class="line"><span class="keyword">case</span> <span class="keyword">let</span> (x, y):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;somewhere else at (<span class="subst">\(x)</span>, <span class="subst">\(y)</span>)&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“on the x-axis with an x value of 2”</span></span><br></pre></td></tr></table></figure>
+<p><img src="https://docs.swift.org/swift-book/_images/coordinateGraphMedium_2x.png" alt="image"></p>
+<p>在上面的例子中，<code>switch</code> 语句会判断某个点是否在红色的 x 轴上，是否在橘黄色的 y 轴上，或者不在坐标轴上。</p>
+<p>这三个 case 都声明了常量 <code>x</code> 和 <code>y</code> 的占位符，用于临时获取元组 <code>anotherPoint</code> 的一个或两个值。第一个 case ——<code>case (let x, 0)</code> 将匹配一个纵坐标为 <code>0</code> 的点，并把这个点的横坐标赋给临时的常量 <code>x</code>。类似的，第二个 case ——<code>case (0, let y)</code> 将匹配一个横坐标为 <code>0</code> 的点，并把这个点的纵坐标赋给临时的常量 <code>y</code>。</p>
+<p>一旦声明了这些临时的常量，它们就可以在其对应的 case 分支里使用。在这个例子中，它们用于打印给定点的类型。</p>
+<p>请注意，这个 <code>switch</code> 语句不包含默认分支。这是因为最后一个 case ——<code>case let(x, y)</code> 声明了一个可以匹配余下所有值的元组。这使得 <code>switch</code> 语句已经完备了，因此不需要再书写默认分支。</p>
+<h4 id="Where">Where</h4>
+<p>case 分支的模式可以使用 <code>where</code> 语句来判断额外的条件。</p>
+<p>下面的例子把下图中的点 (x, y)进行了分类：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> yetAnotherPoint <span class="operator">=</span> (<span class="number">1</span>, <span class="operator">-</span><span class="number">1</span>)</span><br><span class="line"><span class="keyword">switch</span> yetAnotherPoint &#123;</span><br><span class="line"><span class="keyword">case</span> <span class="keyword">let</span> (x, y) <span class="keyword">where</span> x <span class="operator">==</span> y:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;(<span class="subst">\(x)</span>, <span class="subst">\(y)</span>) is on the line x == y&quot;</span>)</span><br><span class="line"><span class="keyword">case</span> <span class="keyword">let</span> (x, y) <span class="keyword">where</span> x <span class="operator">==</span> <span class="operator">-</span>y:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;(<span class="subst">\(x)</span>, <span class="subst">\(y)</span>) is on the line x == -y&quot;</span>)</span><br><span class="line"><span class="keyword">case</span> <span class="keyword">let</span> (x, y):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;(<span class="subst">\(x)</span>, <span class="subst">\(y)</span>) is just some arbitrary point&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“(1, -1) is on the line x == -y”</span></span><br></pre></td></tr></table></figure>
+<p><img src="https://docs.swift.org/swift-book/_images/coordinateGraphComplex_2x.png" alt="image"></p>
+<p>在上面的例子中，<code>switch</code> 语句会判断某个点是否在绿色的对角线 <code>x == y</code> 上，是否在紫色的对角线 <code>x == -y</code> 上，或者不在对角线上。</p>
+<p>这三个 case 都声明了常量 <code>x</code> 和 <code>y</code> 的占位符，用于临时获取元组 <code>yetAnotherPoint</code> 的两个值。这两个常量被用作 <code>where</code> 语句的一部分，从而创建一个动态的过滤器（filter）。当且仅当 <code>where</code> 语句的条件为 <code>true</code> 时，匹配到的 case 分支才会被执行。</p>
+<p>就像是值绑定中的例子，由于最后一个 case 分支匹配了余下所有可能的值，<code>switch</code> 语句就已经完备了，因此不需要再书写默认分支。</p>
+<h4 id="复合型-Cases">复合型 Cases</h4>
+<p>当多个条件可以使用同一种方法来处理时，可以将这几种可能放在同一个 <code>case</code> 后面，并且用逗号隔开。当 case 后面的任意一种模式匹配的时候，这条分支就会被匹配。并且，如果匹配列表过长，还可以分行书写：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> someCharacter: <span class="type">Character</span> <span class="operator">=</span> <span class="string">&quot;e&quot;</span></span><br><span class="line"><span class="keyword">switch</span> someCharacter &#123;</span><br><span class="line"><span class="keyword">case</span> <span class="string">&quot;a&quot;</span>, <span class="string">&quot;e&quot;</span>, <span class="string">&quot;i&quot;</span>, <span class="string">&quot;o&quot;</span>, <span class="string">&quot;u&quot;</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(someCharacter)</span> is a vowel&quot;</span>)</span><br><span class="line"><span class="keyword">case</span> <span class="string">&quot;b&quot;</span>, <span class="string">&quot;c&quot;</span>, <span class="string">&quot;d&quot;</span>, <span class="string">&quot;f&quot;</span>, <span class="string">&quot;g&quot;</span>, <span class="string">&quot;h&quot;</span>, <span class="string">&quot;j&quot;</span>, <span class="string">&quot;k&quot;</span>, <span class="string">&quot;l&quot;</span>, <span class="string">&quot;m&quot;</span>,</span><br><span class="line">     <span class="string">&quot;n&quot;</span>, <span class="string">&quot;p&quot;</span>, <span class="string">&quot;q&quot;</span>, <span class="string">&quot;r&quot;</span>, <span class="string">&quot;s&quot;</span>, <span class="string">&quot;t&quot;</span>, <span class="string">&quot;v&quot;</span>, <span class="string">&quot;w&quot;</span>, <span class="string">&quot;x&quot;</span>, <span class="string">&quot;y&quot;</span>, <span class="string">&quot;z&quot;</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(someCharacter)</span> is a consonant&quot;</span>)</span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(someCharacter)</span> is not a vowel or a consonant&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“e is a vowel”</span></span><br></pre></td></tr></table></figure>
+<p>这个 <code>switch</code> 语句中的第一个 case，匹配了英语中的五个小写元音字母。相似的，第二个 case 匹配了英语中所有的小写辅音字母。最终，<code>default</code> 分支匹配了其它所有字符。</p>
+<p>复合匹配同样可以包含值绑定。复合匹配里所有的匹配模式，都必须包含相同的值绑定。并且每一个绑定都必须获取到相同类型的值。这保证了，无论复合匹配中的哪个模式发生了匹配，分支体内的代码，都能获取到绑定的值，并且绑定的值都有一样的类型。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> stillAnotherPoint <span class="operator">=</span> (<span class="number">9</span>, <span class="number">0</span>)</span><br><span class="line"><span class="keyword">switch</span> stillAnotherPoint &#123;</span><br><span class="line"><span class="keyword">case</span> (<span class="keyword">let</span> distance, <span class="number">0</span>), (<span class="number">0</span>, <span class="keyword">let</span> distance):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;On an axis, <span class="subst">\(distance)</span> from the origin&quot;</span>)</span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Not on an axis&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“On an axis, 9 from the origin”</span></span><br></pre></td></tr></table></figure>
+<p>上面的 case 有两个模式：<code>(let distance, 0)</code> 匹配了在 x 轴上的值，<code>(0, let distance)</code> 匹配了在 y 轴上的值。两个模式都绑定了 <code>distance</code>，并且 <code>distance</code> 在两种模式下，都是整型——这意味着分支体内的代码，只要 case 匹配，都可以获取到 <code>distance</code> 值。</p>
+<h2 id="控制转移语句">控制转移语句</h2>
+<p>控制转移语句改变你代码的执行顺序，通过它可以实现代码的跳转。Swift 有五种控制转移语句：</p>
+<ul>
+<li><code>continue</code></li>
+<li><code>break</code></li>
+<li><code>fallthrough</code></li>
+<li><code>return</code></li>
+<li><code>throw</code></li>
+</ul>
+<p>我们将会在下面讨论 <code>continue</code>、<code>break</code> 和 <code>fallthrough</code> 语句。<code>return</code> 语句将会在 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/06_Functions.html">函数</a> 章节讨论，<code>throw</code> 语句会在 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/18_Error_Handling.md#throwing_errors">错误抛出</a> 章节讨论。</p>
+<h3 id="Continue">Continue</h3>
+<p><code>continue</code> 语句告诉一个循环体立刻停止本次循环，重新开始下次循环。就好像在说“本次循环我已经执行完了”，但是并不会离开整个循环体。</p>
+<p>下面的例子把一个小写字符串中的元音字母和空格字符移除，生成了一个含义模糊的短句：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> puzzleInput <span class="operator">=</span> <span class="string">&quot;great minds think alike&quot;</span></span><br><span class="line"><span class="keyword">var</span> puzzleOutput <span class="operator">=</span> <span class="string">&quot;&quot;</span></span><br><span class="line"><span class="keyword">for</span> character <span class="keyword">in</span> puzzleInput &#123;</span><br><span class="line">    <span class="keyword">switch</span> character &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="string">&quot;a&quot;</span>, <span class="string">&quot;e&quot;</span>, <span class="string">&quot;i&quot;</span>, <span class="string">&quot;o&quot;</span>, <span class="string">&quot;u&quot;</span>, <span class="string">&quot; &quot;</span>:</span><br><span class="line">        <span class="keyword">continue</span></span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">        puzzleOutput.append(character)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">print</span>(puzzleOutput)</span><br><span class="line">    <span class="comment">// 输出“grtmndsthnklk”</span></span><br></pre></td></tr></table></figure>
+<p>在上面的代码中，只要匹配到元音字母或者空格字符，就调用 <code>continue</code> 语句，使本次循环结束，重新开始下次循环。这种行为使 <code>switch</code> 匹配到元音字母和空格字符时不做处理，而不是让每一个匹配到的字符都被打印。</p>
+<h3 id="Break">Break</h3>
+<p><code>break</code> 语句会立刻结束整个控制流的执行。<code>break</code> 可以在 <code>switch</code> 或循环语句中使用，用来提前结束 <code>switch</code> 或循环语句。</p>
+<h4 id="循环语句中的-break">循环语句中的 break</h4>
+<p>当在一个循环体中使用 <code>break</code> 时，会立刻中断该循环体的执行，然后跳转到表示循环体结束的大括号（<code>&#125;</code>）后的第一行代码。不会再有本次循环的代码被执行，也不会再有下次的循环产生。</p>
+<h4 id="Switch-语句中的-break">Switch 语句中的 break</h4>
+<p>当在一个 <code>switch</code> 代码块中使用 <code>break</code> 时，会立即中断该 <code>switch</code> 代码块的执行，并且跳转到表示 <code>switch</code> 代码块结束的大括号（<code>&#125;</code>）后的第一行代码。</p>
+<p>这种特性可以被用来匹配或者忽略一个或多个分支。因为 Swift 的 <code>switch</code> 需要包含所有的分支而且不允许有为空的分支，有时为了使你的意图更明显，需要特意匹配或者忽略某个分支。那么当你想忽略某个分支时，可以在该分支内写上 <code>break</code> 语句。当那个分支被匹配到时，分支内的 <code>break</code> 语句立即结束 <code>switch</code> 代码块。</p>
+<blockquote>
+<p>注意</p>
+<p>当一个 <code>switch</code> 分支仅仅包含注释时，会被报编译时错误。注释不是代码语句而且也不能让 <code>switch</code> 分支达到被忽略的效果。你应该使用 <code>break</code> 来忽略某个分支。</p>
+</blockquote>
+<p>下面的例子通过 <code>switch</code> 来判断一个 <code>Character</code> 值是否代表下面四种语言之一。为了简洁，多个值被包含在了同一个分支情况中。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> numberSymbol: <span class="type">Character</span> <span class="operator">=</span> <span class="string">&quot;三&quot;</span>  <span class="comment">// 简体中文里的数字 3</span></span><br><span class="line"><span class="keyword">var</span> possibleIntegerValue: <span class="type">Int</span>?</span><br><span class="line"><span class="keyword">switch</span> numberSymbol &#123;</span><br><span class="line"><span class="keyword">case</span> <span class="string">&quot;1&quot;</span>, <span class="string">&quot;١&quot;</span>, <span class="string">&quot;一&quot;</span>, <span class="string">&quot;๑&quot;</span>:</span><br><span class="line">    possibleIntegerValue <span class="operator">=</span> <span class="number">1</span></span><br><span class="line"><span class="keyword">case</span> <span class="string">&quot;2&quot;</span>, <span class="string">&quot;٢&quot;</span>, <span class="string">&quot;二&quot;</span>, <span class="string">&quot;๒&quot;</span>:</span><br><span class="line">    possibleIntegerValue <span class="operator">=</span> <span class="number">2</span></span><br><span class="line"><span class="keyword">case</span> <span class="string">&quot;3&quot;</span>, <span class="string">&quot;٣&quot;</span>, <span class="string">&quot;三&quot;</span>, <span class="string">&quot;๓&quot;</span>:</span><br><span class="line">    possibleIntegerValue <span class="operator">=</span> <span class="number">3</span></span><br><span class="line"><span class="keyword">case</span> <span class="string">&quot;4&quot;</span>, <span class="string">&quot;٤&quot;</span>, <span class="string">&quot;四&quot;</span>, <span class="string">&quot;๔&quot;</span>:</span><br><span class="line">    possibleIntegerValue <span class="operator">=</span> <span class="number">4</span></span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">    <span class="keyword">break</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> <span class="keyword">let</span> integerValue <span class="operator">=</span> possibleIntegerValue &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;The integer value of <span class="subst">\(numberSymbol)</span> is <span class="subst">\(integerValue)</span>.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;An integer value could not be found for <span class="subst">\(numberSymbol)</span>.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 输出“The integer value of 三 is 3.”</span></span><br></pre></td></tr></table></figure>
+<p>这个例子检查 <code>numberSymbol</code> 是否是拉丁，阿拉伯，中文或者泰语中的 <code>1</code> 到 <code>4</code> 之一。如果被匹配到，该 <code>switch</code> 分支语句给 <code>Int?</code> 类型变量 <code>possibleIntegerValue</code> 设置一个整数值。</p>
+<p>当 <code>switch</code> 代码块执行完后，接下来的代码通过使用可选绑定来判断 <code>possibleIntegerValue</code> 是否曾经被设置过值。因为是可选类型的缘故，<code>possibleIntegerValue</code> 有一个隐式的初始值 <code>nil</code>，所以仅仅当 <code>possibleIntegerValue</code> 曾被 <code>switch</code> 代码块的前四个分支中的某个设置过一个值时，可选的绑定才会被判定为成功。</p>
+<p>在上面的例子中，想要把 <code>Character</code> 所有的的可能性都枚举出来是不现实的，所以使用 <code>default</code> 分支来包含所有上面没有匹配到字符的情况。由于这个 <code>default</code> 分支不需要执行任何动作，所以它只写了一条 <code>break</code> 语句。一旦落入到 <code>default</code> 分支中后，<code>break</code> 语句就完成了该分支的所有代码操作，代码继续向下，开始执行 <code>if let</code> 语句。</p>
+<h3 id="贯穿（Fallthrough）">贯穿（Fallthrough）</h3>
+<p>在 Swift 里，<code>switch</code> 语句不会从上一个 case 分支跳转到下一个 case 分支中。相反，只要第一个匹配到的 case 分支完成了它需要执行的语句，整个 <code>switch</code> 代码块完成了它的执行。相比之下，C 语言要求你显式地插入 <code>break</code> 语句到每个 case 分支的末尾来阻止自动落入到下一个 case 分支中。Swift 的这种避免默认落入到下一个分支中的特性意味着它的 <code>switch</code> 功能要比 C 语言的更加清晰和可预测，可以避免无意识地执行多个 case 分支从而引发的错误。</p>
+<p>如果你确实需要 C 风格的贯穿的特性，你可以在每个需要该特性的 case 分支中使用 <code>fallthrough</code> 关键字。下面的例子使用 <code>fallthrough</code> 来创建一个数字的描述语句。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> integerToDescribe <span class="operator">=</span> <span class="number">5</span></span><br><span class="line"><span class="keyword">var</span> description <span class="operator">=</span> <span class="string">&quot;The number <span class="subst">\(integerToDescribe)</span> is&quot;</span></span><br><span class="line"><span class="keyword">switch</span> integerToDescribe &#123;</span><br><span class="line"><span class="keyword">case</span> <span class="number">2</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">11</span>, <span class="number">13</span>, <span class="number">17</span>, <span class="number">19</span>:</span><br><span class="line">    description <span class="operator">+=</span> <span class="string">&quot; a prime number, and also&quot;</span></span><br><span class="line">    <span class="keyword">fallthrough</span></span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">    description <span class="operator">+=</span> <span class="string">&quot; an integer.&quot;</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">print</span>(description)</span><br><span class="line"><span class="comment">// 输出“The number 5 is a prime number, and also an integer.”</span></span><br></pre></td></tr></table></figure>
+<p>这个例子定义了一个 <code>String</code> 类型的变量 <code>description</code> 并且给它设置了一个初始值。函数使用 <code>switch</code> 逻辑来判断 <code>integerToDescribe</code> 变量的值。当 <code>integerToDescribe</code> 的值属于列表中的质数之一时，该函数在 <code>description</code> 后添加一段文字，来表明这个数字是一个质数。然后它使用 <code>fallthrough</code> 关键字来“贯穿”到 <code>default</code> 分支中。<code>default</code> 分支在 <code>description</code> 的最后添加一段额外的文字，至此 <code>switch</code> 代码块执行完了。</p>
+<p>如果 <code>integerToDescribe</code> 的值不属于列表中的任何质数，那么它不会匹配到第一个 <code>switch</code> 分支。而这里没有其他特别的分支情况，所以 <code>integerToDescribe</code> 匹配到 <code>default</code> 分支中。</p>
+<p>当 <code>switch</code> 代码块执行完后，使用 <code>print(_:separator:terminator:)</code> 函数打印该数字的描述。在这个例子中，数字 <code>5</code> 被准确的识别为了一个质数。</p>
+<blockquote>
+<p>注意</p>
+<p><code>fallthrough</code> 关键字不会检查它下一个将会落入执行的 case 中的匹配条件。<code>fallthrough</code> 简单地使代码继续连接到下一个 case 中的代码，这和 C 语言标准中的 <code>switch</code> 语句特性是一样的。</p>
+</blockquote>
+<h3 id="带标签的语句">带标签的语句</h3>
+<p>在 Swift 中，你可以在循环体和条件语句中嵌套循环体和条件语句来创造复杂的控制流结构。并且，循环体和条件语句都可以使用 <code>break</code> 语句来提前结束整个代码块。因此，显式地指明 <code>break</code> 语句想要终止的是哪个循环体或者条件语句，会很有用。类似地，如果你有许多嵌套的循环体，显式指明 <code>continue</code> 语句想要影响哪一个循环体也会非常有用。</p>
+<p>为了实现这个目的，你可以使用标签（<em>statement label</em>）来标记一个循环体或者条件语句，对于一个条件语句，你可以使用 <code>break</code> 加标签的方式，来结束这个被标记的语句。对于一个循环语句，你可以使用 <code>break</code> 或者 <code>continue</code> 加标签，来结束或者继续这条被标记语句的执行。</p>
+<p>声明一个带标签的语句是通过在该语句的关键词的同一行前面放置一个标签，作为这个语句的前导关键字（introducor keyword），并且该标签后面跟随一个冒号。下面是一个针对 <code>while</code> 循环体的标签语法，同样的规则适用于所有的循环体和条件语句。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">label name: <span class="keyword">while</span> condition &#123;</span><br><span class="line">    statements</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面的例子是前面章节中<em>蛇和梯子</em>的适配版本，在此版本中，我们将使用一个带有标签的 <code>while</code> 循环体中调用 <code>break</code> 和 <code>continue</code> 语句。这次，游戏增加了一条额外的规则：</p>
+<ul>
+<li>为了获胜，你必须<em>刚好</em>落在第 25 个方块中。</li>
+</ul>
+<p>如果某次掷骰子使你的移动超出第 25 个方块，你必须重新掷骰子，直到你掷出的骰子数刚好使你能落在第 25 个方块中。</p>
+<p>游戏的棋盘和之前一样：</p>
+<p><img src="https://docs.swift.org/swift-book/_images/snakesAndLadders_2x.png" alt="image"></p>
+<p><code>finalSquare</code>、<code>board</code>、<code>square</code> 和 <code>diceRoll</code> 值被和之前一样的方式初始化：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> finalSquare <span class="operator">=</span> <span class="number">25</span></span><br><span class="line"><span class="keyword">var</span> board <span class="operator">=</span> [<span class="type">Int</span>](repeating: <span class="number">0</span>, count: finalSquare <span class="operator">+</span> <span class="number">1</span>)</span><br><span class="line">board[<span class="number">03</span>] <span class="operator">=</span> <span class="operator">+</span><span class="number">08</span>; board[<span class="number">06</span>] <span class="operator">=</span> <span class="operator">+</span><span class="number">11</span>; board[<span class="number">09</span>] <span class="operator">=</span> <span class="operator">+</span><span class="number">09</span>; board[<span class="number">10</span>] <span class="operator">=</span> <span class="operator">+</span><span class="number">02</span></span><br><span class="line">board[<span class="number">14</span>] <span class="operator">=</span> <span class="operator">-</span><span class="number">10</span>; board[<span class="number">19</span>] <span class="operator">=</span> <span class="operator">-</span><span class="number">11</span>; board[<span class="number">22</span>] <span class="operator">=</span> <span class="operator">-</span><span class="number">02</span>; board[<span class="number">24</span>] <span class="operator">=</span> <span class="operator">-</span><span class="number">08</span></span><br><span class="line"><span class="keyword">var</span> square <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">var</span> diceRoll <span class="operator">=</span> <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>这个版本的游戏使用 <code>while</code> 循环和 <code>switch</code> 语句来实现游戏的逻辑。<code>while</code> 循环有一个标签名 <code>gameLoop</code>，来表明它是游戏的主循环。</p>
+<p>该 <code>while</code> 循环体的条件判断语句是 <code>while square !=finalSquare</code>，这表明你必须刚好落在方格25中。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">gameLoop: <span class="keyword">while</span> square <span class="operator">!=</span> finalSquare &#123;</span><br><span class="line">    diceRoll <span class="operator">+=</span> <span class="number">1</span></span><br><span class="line">    <span class="keyword">if</span> diceRoll <span class="operator">==</span> <span class="number">7</span> &#123; diceRoll <span class="operator">=</span> <span class="number">1</span> &#125;</span><br><span class="line">    <span class="keyword">switch</span> square <span class="operator">+</span> diceRoll &#123;</span><br><span class="line">    <span class="keyword">case</span> finalSquare:</span><br><span class="line">        <span class="comment">// 骰子数刚好使玩家移动到最终的方格里，游戏结束。</span></span><br><span class="line">        <span class="keyword">break</span> gameLoop</span><br><span class="line">    <span class="keyword">case</span> <span class="keyword">let</span> newSquare <span class="keyword">where</span> newSquare <span class="operator">&gt;</span> finalSquare:</span><br><span class="line">        <span class="comment">// 骰子数将会使玩家的移动超出最后的方格，那么这种移动是不合法的，玩家需要重新掷骰子</span></span><br><span class="line">        <span class="keyword">continue</span> gameLoop</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">        <span class="comment">// 合法移动，做正常的处理</span></span><br><span class="line">        square <span class="operator">+=</span> diceRoll</span><br><span class="line">        square <span class="operator">+=</span> board[square]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Game over!&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>每次循环迭代开始时掷骰子。与之前玩家掷完骰子就立即移动不同，这里使用了 <code>switch</code> 语句来考虑每次移动可能产生的结果，从而决定玩家本次是否能够移动。</p>
+<ul>
+<li>如果骰子数刚好使玩家移动到最终的方格里，游戏结束。<code>break gameLoop</code> 语句跳转控制去执行 <code>while</code> 循环体后的第一行代码，意味着游戏结束。</li>
+<li>如果骰子数将会使玩家的移动超出最后的方格，那么这种移动是不合法的，玩家需要重新掷骰子。<code>continue gameLoop</code> 语句结束本次 <code>while</code> 循环，开始下一次循环。</li>
+<li>在剩余的所有情况中，骰子数产生的都是合法的移动。玩家向前移动 <code>diceRoll</code> 个方格，然后游戏逻辑再处理玩家当前是否处于蛇头或者梯子的底部。接着本次循环结束，控制跳转到 <code>while</code> 循环体的条件判断语句处，再决定是否需要继续执行下次循环。</li>
+</ul>
+<blockquote>
+<p>注意</p>
+<p>如果上述的 <code>break</code> 语句没有使用 <code>gameLoop</code> 标签，那么它将会中断 <code>switch</code> 语句而不是 <code>while</code> 循环。使用 <code>gameLoop</code> 标签清晰的表明了 <code>break</code> 想要中断的是哪个代码块。</p>
+<p>同时请注意，当调用 <code>continue gameLoop</code> 去跳转到下一次循环迭代时，这里使用 <code>gameLoop</code> 标签并不是严格必须的。因为在这个游戏中，只有一个循环体，所以 <code>continue</code> 语句会影响到哪个循环体是没有歧义的。然而，<code>continue</code> 语句使用 <code>gameLoop</code> 标签也是没有危害的。这样做符合标签的使用规则，同时参照旁边的 <code>break gameLoop</code>，能够使游戏的逻辑更加清晰和易于理解。</p>
+</blockquote>
+<h2 id="提前退出">提前退出</h2>
+<p>像 <code>if</code> 语句一样，<code>guard</code> 的执行取决于一个表达式的布尔值。我们可以使用 <code>guard</code> 语句来要求条件必须为真时，以执行 <code>guard</code> 语句后的代码。不同于 <code>if</code> 语句，一个 <code>guard</code> 语句总是有一个 <code>else</code> 从句，如果条件不为真则执行 <code>else</code> 从句中的代码。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">greet</span>(<span class="params">person</span>: [<span class="params">String</span>: <span class="type">String</span>]) &#123;</span><br><span class="line">    <span class="keyword">guard</span> <span class="keyword">let</span> name <span class="operator">=</span> person[<span class="string">&quot;name&quot;</span>] <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Hello <span class="subst">\(name)</span>!&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">guard</span> <span class="keyword">let</span> location <span class="operator">=</span> person[<span class="string">&quot;location&quot;</span>] <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;I hope the weather is nice near you.&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;I hope the weather is nice in <span class="subst">\(location)</span>.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">greet(person: [<span class="string">&quot;name&quot;</span>: <span class="string">&quot;John&quot;</span>])</span><br><span class="line"><span class="comment">// 输出“Hello John!”</span></span><br><span class="line"><span class="comment">// 输出“I hope the weather is nice near you.”</span></span><br><span class="line">greet(person: [<span class="string">&quot;name&quot;</span>: <span class="string">&quot;Jane&quot;</span>, <span class="string">&quot;location&quot;</span>: <span class="string">&quot;Cupertino&quot;</span>])</span><br><span class="line"><span class="comment">// 输出“Hello Jane!”</span></span><br><span class="line"><span class="comment">// 输出“I hope the weather is nice in Cupertino.”</span></span><br></pre></td></tr></table></figure>
+<p>如果 <code>guard</code> 语句的条件被满足，则继续执行 <code>guard</code> 语句大括号后的代码。将变量或者常量的可选绑定作为 <code>guard</code> 语句的条件，都可以保护 <code>guard</code> 语句后面的代码。</p>
+<p>如果条件不被满足，在 <code>else</code> 分支上的代码就会被执行。这个分支必须转移控制以退出 <code>guard</code> 语句出现的代码段。它可以用控制转移语句如 <code>return</code>、<code>break</code>、<code>continue</code> 或者 <code>throw</code> 做这件事，或者调用一个不返回的方法或函数，例如 <code>fatalError()</code>。</p>
+<p>相比于可以实现同样功能的 <code>if</code> 语句，按需使用 <code>guard</code> 语句会提升我们代码的可读性。它可以使你的代码连贯的被执行而不需要将它包在 <code>else</code> 块中，它可以使你在紧邻条件判断的地方，处理违规的情况。</p>
+<h2 id="检测-API-可用性">检测 API 可用性</h2>
+<p>Swift 内置支持检查 API 可用性，这可以确保我们不会在当前部署机器上，不小心地使用了不可用的 API。</p>
+<p>编译器使用 SDK 中的可用信息来验证我们的代码中使用的所有 API 在项目指定的部署目标上是否可用。如果我们尝试使用一个不可用的 API，Swift 会在编译时报错。</p>
+<p>我们在 <code>if</code> 或 <code>guard</code> 语句中使用 <code>可用性条件（availability condition)</code>去有条件的执行一段代码，来在运行时判断调用的 API 是否可用。编译器使用从可用性条件语句中获取的信息去验证，在这个代码块中调用的 API 是否可用。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="keyword">#available</span>(<span class="keyword">iOS</span> <span class="number">10</span>, <span class="keyword">macOS</span> <span class="number">10.12</span>, <span class="operator">*</span>) &#123;</span><br><span class="line">    <span class="comment">// 在 iOS 使用 iOS 10 的 API, 在 macOS 使用 macOS 10.12 的 API</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 使用先前版本的 iOS 和 macOS 的 API</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以上可用性条件指定，<code>if</code> 语句的代码块仅仅在 iOS 10 或 macOS 10.12 及更高版本才运行。最后一个参数，<code>*</code>，是必须的，用于指定在所有其它平台中，如果版本号高于你的设备指定的最低版本，if 语句的代码块将会运行。</p>
+<p>在它一般的形式中，可用性条件使用了一个平台名字和版本的列表。平台名字可以是 <code>iOS</code>，<code>macOS</code>，<code>watchOS</code> 和 <code>tvOS</code>——请访问 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter3/06_Attributes.html">声明属性</a> 来获取完整列表。除了指定像 iOS 8 或 macOS 10.10 的大版本号，也可以指定像 iOS 11.2.6 以及 macOS 10.13.3 的小版本号。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="keyword">#available</span>(平台名称 版本号, <span class="operator">...</span>, <span class="operator">*</span>) &#123;</span><br><span class="line">    <span class="type">APIs</span> 可用，语句将执行</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="type">APIs</span> 不可用，语句将不执行</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/swift/" rel="tag">swift</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../23/Swift/swift%E5%87%BD%E6%95%B0/"
+                    data-tooltip="swift函数"
+                    aria-label="上一篇: swift函数"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                    data-tooltip="swift集合类型"
+                    aria-label="下一篇: swift集合类型"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../23/Swift/swift%E5%87%BD%E6%95%B0/"
+                    data-tooltip="swift函数"
+                    aria-label="上一篇: swift函数"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../21/Swift/swift%E9%9B%86%E5%90%88%E7%B1%BB%E5%9E%8B/"
+                    data-tooltip="swift集合类型"
+                    aria-label="下一篇: swift集合类型"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 235 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

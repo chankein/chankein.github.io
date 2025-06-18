@@ -1,0 +1,1074 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>swift类和结构 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"结构体和类\n结构体和类作为一种通用而又灵活的结构，成为了人们构建\b代码的\b基础。你可以使用定义常量、变量和函数的语法，为你的结构体和类定义属性、添加方法。\n与其他编程语言所不同的是，Swift 并不要求你为自定义的结构体和类的接口与实现代码分别创建文件。你只需在单一的文件中定义一个结构体或者类，系统将会自动生成面向其它代码的外部接口。\n\n注意\n通常一个类的实例被称为对象。然而相比其他语言，Swift 中结构体和类的功能更加相近，本章中所讨论的大部分功能都可以用在结构体或者类上。因此，这里会使用实例这个更通用的术语。\n\n结构体和类对比\nSwift 中结构体和类有很多共同点。两者都可以：\n\n定义属性用于存储值\n定义方法用于提供功能\n定义下标操作用于通过下标语法访问它们的值\n定义构造器用于设置初始值\n通过扩展以增加默认实现之外的功能\n遵循协议以提供某种标准功能\n\n更多信息请参见 属性、方法、下标、构造过程、扩展 和 协议。\n与结构体相比，类还有如下的附加功能：\n\n继承允许一个类继承另一个类的特征\n类型转换允许在运行时检查和解释一个类实例的类型\n析构器允许一个类实例释放任何其所被分配的资源\n引用计数允许对一个类的多次引用\n\n更多信息请参见 继承、类型转换、析构过程 和 自动引用计数。\n类支持的附加功能是以增加复杂性为代价的。作为一般准则，优先使用结构体，因为它们更容易理解，仅在适当或必要时才使用类。实际上，这意味着你的大多数自定义数据类型都会是结构体和枚举。更多详细的比较参见 在结构和类之间进行选择。\n类型定义的语法\n结构体和类有着相似的定义方式。你通过 struct 关键字引入结构体，通过 class 关键字引入类，并将它们的具体定义放在一对大括号中：\n123456struct SomeStructure &#123;    // 在这里定义结构体&#125;class SomeClass &#123;    // 在这里定义类&#125;\n\n注意\n每当你定义一个新的结构体或者类时，你都是定义了一个新的 Swift 类型。请使用 UpperCamelCase 这种方式来命名类型（如这里的 SomeClass 和 SomeStructure），以便符合标准 Swift 类型的大写命名风格（如 String，Int 和 Bool）。请使用 lowerCamelCase 这种方式来命名属性和方法（如 framerate 和 incrementCount），以便和类型名区分。\n\n以下是定义结构体和定义类的示例：\n12345678910struct Resolution &#123;    var width = 0    var height = 0&#125;class VideoMode &#123;    var resolution = Resolution()    var interlaced = false    var frameRate = 0.0    var name: String?&#125;\n在上面的示例中定义了一个名为 Resolution 的结构体，用来描述基于像素的分辨率。这个结构体包含了名为 width 和 height 的两个存储属性。存储属性是与结构体或者类绑定的，并存储在其中的常量或变量。当这两个属性被初始化为整数 0 的时候，它们会被推断为 Int 类型。\n在上面的示例还定义了一个名为 VideoMode 的类，用来描述视频显示器的某个特定视频模式。这个类包含了四个可变的存储属性。第一个， resolution，被初始化为一个新的 Resolution 结构体的实例，属性类型被推断为 Resolution。新 VideoMode 实例同时还会初始化其它三个属性，它们分别是初始值为 false 的 interlaced（意为“非隔行视频”），初始值为 0.0 的 frameRate，以及值为可选 String 的 name。因为 name 是一个可选类型，它会被自动赋予一个默认值 nil，意为“没有 name 值”。\n结构体和类的实例\nResolution 结构体和 VideoMode 类的定义仅描述了什么是 Resolution 和 VideoMode。它们并没有描述一个特定的分辨率（resolution）或者视频模式（video mode）。为此，你需要创建结构体或者类的一个实例。\n创建结构体和类实例的语法非常相似：\n12let someResolution = Resolution()let someVideoMode = VideoMode()\n结构体和类都使用构造器语法来创建新的实例。构造器语法的最简单形式是在结构体或者类的类型名称后跟随一对空括号，如 Resolution() 或 VideoMode()。通过这种方式所创建的类或者结构体实例，其属性均会被初始化为默认值。构造过程 章节会对类和结构体的初始化进行更详细的讨论。\n属性访问\n你可以通过使用点语法访问实例的属性。其语法规则是，实例名后面紧跟属性名，两者以点号（.）分隔，不带空格：\n12print(&quot;The width of someResolution is \\(someResolution.width)&quot;)// 打印 &quot;The width of someResolution is 0&quot;\n在上面的例子中，someResolution.width 引用 someResolution 的 width 属性，返回 width 的初始值 0。\n你也可以访问子属性，如 VideoMode 中 resolution 属性的 width 属性：\n12print(&quot;The width of someVideoMode is \\(someVideoMode.resolution.width)&quot;)// 打印 &quot;The width of someVideoMode is 0&quot;\n你也可以使用点语法为可变属性赋值：\n123someVideoMode.resolution.width = 1280print(&quot;The width of someVideoMode is now \\(someVideoMode.resolution.width)&quot;)// 打印 &quot;The width of someVideoMode is now 1280&quot;\n结构体类型的成员逐一构造器\n所有结构体都有一个自动生成的成员逐一构造器，用于初始化新结构体实例中成员的属性。新实例中各个属性的初始值可以通过属性的名称传递到成员逐一构造器之中：\n1let vga = Resolution(width: 640, height: 480)\n与结构体不同，类实例没有默认的成员逐一构造器。构造过程 章节会对构造器进行更详细的讨论。\n结构体和枚举是值类型\n值类型是这样一种类型，当它被赋值给一个变量、常量或者被传递给一个函数的时候，其值会被拷贝。\n在之前的章节中，你已经大量使用了值类型。实际上，Swift 中所有的基本类型：整数（integer）、浮点数（floating-point number）、布尔值（boolean）、字符串（string)、数组（array）和字典（dictionary），都是值类型，其底层也是使用结构体实现的。\nSwift 中所有的结构体和枚举类型都是值类型。这意味着它们的实例，以及实例中所包含的任何值类型的属性，在代码中传递的时候都会被复制。\n\n注意\b\n标准库定义的集合，例如数组，字典和字符串，都对复制进行了优化以降低性能成本。新集合不会立即复制，而是跟原集合共享同一份内存，共享同样的元素。在集合的某个副本要被修改前，才会复制它的元素。而你在代码中看起来就像是立即发生了复制。\n\n请看下面这个示例，其使用了上一个示例中的 Resolution 结构体：\n12let hd = Resolution(width: 1920, height: 1080)var cinema = hd\n在以上示例中，声明了一个名为 hd 的常量，其值为一个初始化为全高清视频分辨率（1920 像素宽，1080 像素高）的 Resolution 实例。\n然后示例中又声明了一个名为 cinema 的变量，并将 hd 赋值给它。因为 Resolution 是一个结构体，所以会先创建一个现有实例的副本，然后将副本赋值给 cinema 。尽管 hd 和 cinema 有着相同的宽（width）和高（height），但是在幕后它们是两个完全不同的实例。\n下面，为了符合数码影院放映的需求（2048 像素宽，1080 像素高），cinema 的 width 属性被修改为稍微宽一点的 2K 标准：\n1cinema.width = 2048\n查看 cinema 的 width 属性，它的值确实改为了 2048：\n12print(&quot;cinema is now  \\(cinema.width) pixels wide&quot;)// 打印 &quot;cinema is now 2048 pixels wide&quot;\n然而，初始的 hd 实例中 width 属性还是 1920：\n12print(&quot;hd is still \\(hd.width) pixels wide&quot;)// 打印 &quot;hd is still 1920 pixels wide&quot;\n将 hd 赋值给 cinema 时，hd 中所存储的值会拷贝到新的 cinema 实例中。结果就是两个完全独立的实例包含了相同的数值。由于两者相互独立，因此将 cinema 的 width 修改为 2048 并不会影响 hd 中的 width 的值，如下图所示：\n\n枚举也遵循相同的行为准则：\n1234567891011121314enum CompassPoint &#123;    case north, south, east, west    mutating func turnNorth() &#123;        self = .north    &#125;&#125;var currentDirection = CompassPoint.westlet rememberedDirection = currentDirectioncurrentDirection.turnNorth()print(&quot;The current direction is \\(currentDirection)&quot;)print(&quot;The remembered direction is \\(rememberedDirection)&quot;)// 打印 &quot;The current direction is north&quot;// 打印 &quot;The remembered direction is west&quot;\n当 rememberedDirection 被赋予了 currentDirection 的值，实际上它被赋予的是值的一个拷贝。赋值过程结束后再修改 currentDirection 的值并不影响 rememberedDirection 所储存的原始值的拷贝。\n类是引用类型\n与值类型不同，引用类型在被赋予到一个变量、常量或者被传递到一个函数时，其值不会被拷贝。因此，使用的是已存在实例的引用，而不是其拷贝。\n请看下面这个示例，其使用了之前定义的 VideoMode 类：\n12345let tenEighty = VideoMode()tenEighty.resolution = hdtenEighty.interlaced = truetenEighty.name = &quot;1080i&quot;tenEighty.frameRate = 25.0\n以上示例中，声明了一个名为 tenEighty 的常量，并让其引用一个 VideoMode 类的新实例。它的视频模式（video mode）被赋值为之前创建的 HD 分辨率（1920*1080）的一个拷贝。然后将它设置为隔行视频，名字设为 “1080i”，并将帧率设置为 25.0 帧每秒。\n接下来，将 tenEighty 赋值给一个名为 alsoTenEighty 的新常量，并修改 alsoTenEighty 的帧率：\n12let alsoTenEighty = tenEightyalsoTenEighty.frameRate = 30.0\n因为类是引用类型，所以 tenEight 和 alsoTenEight 实际上引用的是同一个 VideoMode 实例。换句话说，它们是同一个实例的两种叫法，如下图所示：\n\n通过查看 tenEighty 的 frameRate 属性，可以看到它正确地显示了底层的 VideoMode 实例的新帧率 30.0：\n12print(&quot;The frameRate property of tenEighty is now \\(tenEighty.frameRate)&quot;)// 打印 &quot;The frameRate property of theEighty is now 30.0&quot;\n这个例子也显示了为何引用类型更加难以理解。如果 tenEighty 和 alsoTenEighty 在你代码中的位置相距很远，那么就很难找到所有修改视频模式的地方。无论在哪使用 tenEighty，你都要考虑使用 alsoTenEighty 的代码，反之亦然。相反，值类型就更容易理解了，因为你的源码中与同一个值交互的代码都很近。\n需要注意的是 tenEighty 和 alsoTenEighty 被声明为常量而不是变量。然而你依然可以改变 tenEighty.frameRate 和 alsoTenEighty.frameRate，这是因为 tenEighty 和 alsoTenEighty 这两个常量的值并未改变。它们并不“存储”这个 VideoMode 实例，而仅仅是对 VideoMode 实例的引用。所以，改变的是底层 VideoMode 实例的 frameRate 属性，而不是\b指向 VideoMode 的常量引用的值。\n恒等运算符\n因为类是引用类型，所以多个常量和变量可能在幕后同时引用同一个类实例。（对于结构体和枚举来说，这并不成立。因为它们作为值类型，在被赋予到常量、变量或者传递到函数时，其值总是会被拷贝。）\n判定两个常量或者变量是否引用同一个类实例有时很有用。为了达到这个目的，Swift 提供了两个恒等运算符：\n\n相同（===）\n不相同（!==）\n\n使用这两个运算符检测两个常量或者变量是否引用了同一个实例：\n1234if tenEighty === alsoTenEighty &#123;    print(&quot;tenEighty and alsoTenEighty refer to the same VideoMode instance.&quot;)&#125;// 打印 &quot;tenEighty and alsoTenEighty refer to the same VideoMode instance.&quot;\n请注意，“相同”（用三个等号表示，===）与“等于”（用两个等号表示，==）的不同。“相同”表示两个类类型（class type）的常量或者变量引用同一个类实例。“等于”表示两个实例的值“相等”或“等价”，判定时要遵照设计者定义的评判标准。\n当在定义你的自定义结构体和类的时候，你有义务来决定判定两个实例“相等”的标准。在章节 等价操作符 中将会详细介绍实现自定义 == 和 !== 运算符的流程。\n指针\n如果你有 C，C++ 或者 Objective-C 语言的经验，那么你也许会知道这些语言使用指针来引用内存中的地址。Swift 中引用了某个引用类型实例的常量或变量，与 C 语言中的指针类似，不过它并不直接指向某个内存地址，也不要求你使用星号（*）来表明你在创建一个引用。相反，Swift 中引用的定义方式\b与其它的常量或变量的一样。如果需要直接与指针交互，你可以使用标准库提供的指针和缓冲区类型 —— 参见 手动管理内存。\n","dateCreated":"2023-06-26T10:13:17+08:00","dateModified":"2025-06-18T11:58:32+08:00","datePublished":"2023-06-26T10:13:17+08:00","description":"","headline":"swift类和结构","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/","keywords":"swift"}</script>
+    <meta name="description" content="结构体和类 结构体和类作为一种通用而又灵活的结构，成为了人们构建代码的基础。你可以使用定义常量、变量和函数的语法，为你的结构体和类定义属性、添加方法。 与其他编程语言所不同的是，Swift 并不要求你为自定义的结构体和类的接口与实现代码分别创建文件。你只需在单一的文件中定义一个结构体或者类，系统将会自动生成面向其它代码的外部接口。  注意 通常一个类的实例被称为对象。然而相比其他语言，Swif">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="swift类和结构">
+<meta property="og:url" content="https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="结构体和类 结构体和类作为一种通用而又灵活的结构，成为了人们构建代码的基础。你可以使用定义常量、变量和函数的语法，为你的结构体和类定义属性、添加方法。 与其他编程语言所不同的是，Swift 并不要求你为自定义的结构体和类的接口与实现代码分别创建文件。你只需在单一的文件中定义一个结构体或者类，系统将会自动生成面向其它代码的外部接口。  注意 通常一个类的实例被称为对象。然而相比其他语言，Swif">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://docs.swift.org/swift-book/_images/sharedStateStruct_2x.png">
+<meta property="og:image" content="https://docs.swift.org/swift-book/_images/sharedStateClass_2x.png">
+<meta property="article:published_time" content="2023-06-26T02:13:17.000Z">
+<meta property="article:modified_time" content="2025-06-18T03:58:32.998Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="swift">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://docs.swift.org/swift-book/_images/sharedStateStruct_2x.png">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            swift类和结构
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2023-06-26T10:13:17+08:00">
+	
+		    2023 年 6 月 26 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/swift/">swift</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="结构体和类">结构体和类</h2>
+<p><em>结构体</em>和<em>类</em>作为一种通用而又灵活的结构，成为了人们构建代码的基础。你可以使用定义常量、变量和函数的语法，为你的结构体和类定义属性、添加方法。</p>
+<p>与其他编程语言所不同的是，Swift 并不要求你为自定义的结构体和类的接口与实现代码分别创建文件。你只需在单一的文件中定义一个结构体或者类，系统将会自动生成面向其它代码的外部接口。</p>
+<blockquote>
+<p>注意</p>
+<p>通常一个<em>类</em>的实例被称为<em>对象</em>。然而相比其他语言，Swift 中结构体和类的功能更加相近，本章中所讨论的大部分功能都可以用在结构体或者类上。因此，这里会使用<em>实例</em>这个更通用的术语。</p>
+</blockquote>
+<h2 id="结构体和类对比">结构体和类对比</h2>
+<p>Swift 中结构体和类有很多共同点。两者都可以：</p>
+<ul>
+<li>定义属性用于存储值</li>
+<li>定义方法用于提供功能</li>
+<li>定义下标操作用于通过下标语法访问它们的值</li>
+<li>定义构造器用于设置初始值</li>
+<li>通过扩展以增加默认实现之外的功能</li>
+<li>遵循协议以提供某种标准功能</li>
+</ul>
+<p>更多信息请参见 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/10_Properties.html">属性</a>、<a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/11_Methods.html">方法</a>、<a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/12_Subscripts.html">下标</a>、<a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/14_Initialization.html">构造过程</a>、<a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/20_Extensions.html">扩展</a> 和 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/21_Protocols.html">协议</a>。</p>
+<p>与结构体相比，类还有如下的附加功能：</p>
+<ul>
+<li>继承允许一个类继承另一个类的特征</li>
+<li>类型转换允许在运行时检查和解释一个类实例的类型</li>
+<li>析构器允许一个类实例释放任何其所被分配的资源</li>
+<li>引用计数允许对一个类的多次引用</li>
+</ul>
+<p>更多信息请参见 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/13_Inheritance.html">继承</a>、<a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/18_Type_Casting.html">类型转换</a>、<a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/15_Deinitialization.html">析构过程</a> 和 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/23_Automatic_Reference_Counting.html">自动引用计数</a>。</p>
+<p>类支持的附加功能是以增加复杂性为代价的。作为一般准则，优先使用结构体，因为它们更容易理解，仅在适当或必要时才使用类。实际上，这意味着你的大多数自定义数据类型都会是结构体和枚举。更多详细的比较参见 <a target="_blank" rel="noopener" href="https://developer.apple.com/documentation/swift/choosing_between_structures_and_classes">在结构和类之间进行选择</a>。</p>
+<h3 id="类型定义的语法">类型定义的语法</h3>
+<p>结构体和类有着相似的定义方式。你通过 <code>struct</code> 关键字引入结构体，通过 <code>class</code> 关键字引入类，并将它们的具体定义放在一对大括号中：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">SomeStructure</span> &#123;</span><br><span class="line">    <span class="comment">// 在这里定义结构体</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">SomeClass</span> &#123;</span><br><span class="line">    <span class="comment">// 在这里定义类</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意</p>
+<p>每当你定义一个新的结构体或者类时，你都是定义了一个新的 Swift 类型。请使用 <code>UpperCamelCase</code> 这种方式来命名类型（如这里的 <code>SomeClass</code> 和 <code>SomeStructure</code>），以便符合标准 Swift 类型的大写命名风格（如 <code>String</code>，<code>Int</code> 和 <code>Bool</code>）。请使用 <code>lowerCamelCase</code> 这种方式来命名属性和方法（如 <code>framerate</code> 和 <code>incrementCount</code>），以便和类型名区分。</p>
+</blockquote>
+<p>以下是定义结构体和定义类的示例：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Resolution</span> &#123;</span><br><span class="line">    <span class="keyword">var</span> width <span class="operator">=</span> <span class="number">0</span></span><br><span class="line">    <span class="keyword">var</span> height <span class="operator">=</span> <span class="number">0</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">VideoMode</span> &#123;</span><br><span class="line">    <span class="keyword">var</span> resolution <span class="operator">=</span> <span class="type">Resolution</span>()</span><br><span class="line">    <span class="keyword">var</span> interlaced <span class="operator">=</span> <span class="literal">false</span></span><br><span class="line">    <span class="keyword">var</span> frameRate <span class="operator">=</span> <span class="number">0.0</span></span><br><span class="line">    <span class="keyword">var</span> name: <span class="type">String</span>?</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在上面的示例中定义了一个名为 <code>Resolution</code> 的结构体，用来描述基于像素的分辨率。这个结构体包含了名为 <code>width</code> 和 <code>height</code> 的两个存储属性。存储属性是与结构体或者类绑定的，并存储在其中的常量或变量。当这两个属性被初始化为整数 <code>0</code> 的时候，它们会被推断为 <code>Int</code> 类型。</p>
+<p>在上面的示例还定义了一个名为 <code>VideoMode</code> 的类，用来描述视频显示器的某个特定视频模式。这个类包含了四个可变的存储属性。第一个， <code>resolution</code>，被初始化为一个新的 <code>Resolution</code> 结构体的实例，属性类型被推断为 <code>Resolution</code>。新 <code>VideoMode</code> 实例同时还会初始化其它三个属性，它们分别是初始值为 <code>false</code> 的 <code>interlaced</code>（意为“非隔行视频”），初始值为 <code>0.0</code> 的 <code>frameRate</code>，以及值为可选 <code>String</code> 的 <code>name</code>。因为 <code>name</code> 是一个可选类型，它会被自动赋予一个默认值 <code>nil</code>，意为“没有 <code>name</code> 值”。</p>
+<h3 id="结构体和类的实例">结构体和类的实例</h3>
+<p><code>Resolution</code> 结构体和 <code>VideoMode</code> 类的定义仅描述了什么是 <code>Resolution</code> 和 <code>VideoMode</code>。它们并没有描述一个特定的分辨率（resolution）或者视频模式（video mode）。为此，你需要创建结构体或者类的一个实例。</p>
+<p>创建结构体和类实例的语法非常相似：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> someResolution <span class="operator">=</span> <span class="type">Resolution</span>()</span><br><span class="line"><span class="keyword">let</span> someVideoMode <span class="operator">=</span> <span class="type">VideoMode</span>()</span><br></pre></td></tr></table></figure>
+<p>结构体和类都使用构造器语法来创建新的实例。构造器语法的最简单形式是在结构体或者类的类型名称后跟随一对空括号，如 <code>Resolution()</code> 或 <code>VideoMode()</code>。通过这种方式所创建的类或者结构体实例，其属性均会被初始化为默认值。<a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/14_Initialization.html">构造过程</a> 章节会对类和结构体的初始化进行更详细的讨论。</p>
+<h3 id="属性访问">属性访问</h3>
+<p>你可以通过使用<em>点语法</em>访问实例的属性。其语法规则是，实例名后面紧跟属性名，两者以点号（<code>.</code>）分隔，不带空格：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(<span class="string">&quot;The width of someResolution is <span class="subst">\(someResolution.width)</span>&quot;</span>)</span><br><span class="line"><span class="comment">// 打印 &quot;The width of someResolution is 0&quot;</span></span><br></pre></td></tr></table></figure>
+<p>在上面的例子中，<code>someResolution.width</code> 引用 <code>someResolution</code> 的 <code>width</code> 属性，返回 <code>width</code> 的初始值 <code>0</code>。</p>
+<p>你也可以访问子属性，如 <code>VideoMode</code> 中 <code>resolution</code> 属性的 <code>width</code> 属性：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(<span class="string">&quot;The width of someVideoMode is <span class="subst">\(someVideoMode.resolution.width)</span>&quot;</span>)</span><br><span class="line"><span class="comment">// 打印 &quot;The width of someVideoMode is 0&quot;</span></span><br></pre></td></tr></table></figure>
+<p>你也可以使用点语法为可变属性赋值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">someVideoMode.resolution.width <span class="operator">=</span> <span class="number">1280</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;The width of someVideoMode is now <span class="subst">\(someVideoMode.resolution.width)</span>&quot;</span>)</span><br><span class="line"><span class="comment">// 打印 &quot;The width of someVideoMode is now 1280&quot;</span></span><br></pre></td></tr></table></figure>
+<h3 id="结构体类型的成员逐一构造器">结构体类型的成员逐一构造器</h3>
+<p>所有结构体都有一个自动生成的<em>成员逐一构造器</em>，用于初始化新结构体实例中成员的属性。新实例中各个属性的初始值可以通过属性的名称传递到成员逐一构造器之中：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> vga <span class="operator">=</span> <span class="type">Resolution</span>(width: <span class="number">640</span>, height: <span class="number">480</span>)</span><br></pre></td></tr></table></figure>
+<p>与结构体不同，类实例没有默认的成员逐一构造器。<a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/14_Initialization.html">构造过程</a> 章节会对构造器进行更详细的讨论。</p>
+<h2 id="结构体和枚举是值类型">结构体和枚举是值类型</h2>
+<p><em>值类型</em>是这样一种类型，当它被赋值给一个变量、常量或者被传递给一个函数的时候，其值会被<em>拷贝</em>。</p>
+<p>在之前的章节中，你已经大量使用了值类型。实际上，Swift 中所有的基本类型：整数（integer）、浮点数（floating-point number）、布尔值（boolean）、字符串（string)、数组（array）和字典（dictionary），都是值类型，其底层也是使用结构体实现的。</p>
+<p>Swift 中所有的结构体和枚举类型都是值类型。这意味着它们的实例，以及实例中所包含的任何值类型的属性，在代码中传递的时候都会被复制。</p>
+<blockquote>
+<p>注意</p>
+<p>标准库定义的集合，例如数组，字典和字符串，都对复制进行了优化以降低性能成本。新集合不会立即复制，而是跟原集合共享同一份内存，共享同样的元素。在集合的某个副本要被修改前，才会复制它的元素。而你在代码中看起来就像是立即发生了复制。</p>
+</blockquote>
+<p>请看下面这个示例，其使用了上一个示例中的 <code>Resolution</code> 结构体：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> hd <span class="operator">=</span> <span class="type">Resolution</span>(width: <span class="number">1920</span>, height: <span class="number">1080</span>)</span><br><span class="line"><span class="keyword">var</span> cinema <span class="operator">=</span> hd</span><br></pre></td></tr></table></figure>
+<p>在以上示例中，声明了一个名为 <code>hd</code> 的常量，其值为一个初始化为全高清视频分辨率（<code>1920</code> 像素宽，<code>1080</code> 像素高）的 <code>Resolution</code> 实例。</p>
+<p>然后示例中又声明了一个名为 <code>cinema</code> 的变量，并将 <code>hd</code> 赋值给它。因为 <code>Resolution</code> 是一个结构体，所以会先创建一个现有实例的副本，然后将副本赋值给 <code>cinema</code> 。尽管 <code>hd</code> 和 <code>cinema</code> 有着相同的宽（width）和高（height），但是在幕后它们是两个完全不同的实例。</p>
+<p>下面，为了符合数码影院放映的需求（<code>2048</code> 像素宽，<code>1080</code> 像素高），<code>cinema</code> 的 <code>width</code> 属性被修改为稍微宽一点的 2K 标准：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cinema.width <span class="operator">=</span> <span class="number">2048</span></span><br></pre></td></tr></table></figure>
+<p>查看 <code>cinema</code> 的 <code>width</code> 属性，它的值确实改为了 <code>2048</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(<span class="string">&quot;cinema is now  <span class="subst">\(cinema.width)</span> pixels wide&quot;</span>)</span><br><span class="line"><span class="comment">// 打印 &quot;cinema is now 2048 pixels wide&quot;</span></span><br></pre></td></tr></table></figure>
+<p>然而，初始的 <code>hd</code> 实例中 <code>width</code> 属性还是 <code>1920</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(<span class="string">&quot;hd is still <span class="subst">\(hd.width)</span> pixels wide&quot;</span>)</span><br><span class="line"><span class="comment">// 打印 &quot;hd is still 1920 pixels wide&quot;</span></span><br></pre></td></tr></table></figure>
+<p>将 <code>hd</code> 赋值给 <code>cinema</code> 时，<code>hd</code> 中所存储的<em>值</em>会拷贝到新的 <code>cinema</code> 实例中。结果就是两个完全独立的实例包含了相同的数值。由于两者相互独立，因此将 <code>cinema</code> 的 <code>width</code> 修改为 <code>2048</code> 并不会影响 <code>hd</code> 中的 <code>width</code> 的值，如下图所示：</p>
+<p><img src="https://docs.swift.org/swift-book/_images/sharedStateStruct_2x.png" alt="sharedStateStruct_2x"></p>
+<p>枚举也遵循相同的行为准则：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">enum</span> <span class="title class_">CompassPoint</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> north, south, east, west</span><br><span class="line">    <span class="keyword">mutating</span> <span class="keyword">func</span> <span class="title function_">turnNorth</span>() &#123;</span><br><span class="line">        <span class="keyword">self</span> <span class="operator">=</span> .north</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">var</span> currentDirection <span class="operator">=</span> <span class="type">CompassPoint</span>.west</span><br><span class="line"><span class="keyword">let</span> rememberedDirection <span class="operator">=</span> currentDirection</span><br><span class="line">currentDirection.turnNorth()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;The current direction is <span class="subst">\(currentDirection)</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;The remembered direction is <span class="subst">\(rememberedDirection)</span>&quot;</span>)</span><br><span class="line"><span class="comment">// 打印 &quot;The current direction is north&quot;</span></span><br><span class="line"><span class="comment">// 打印 &quot;The remembered direction is west&quot;</span></span><br></pre></td></tr></table></figure>
+<p>当 <code>rememberedDirection</code> 被赋予了 <code>currentDirection</code> 的值，实际上它被赋予的是值的一个拷贝。赋值过程结束后再修改 <code>currentDirection</code> 的值并不影响 <code>rememberedDirection</code> 所储存的原始值的拷贝。</p>
+<h2 id="类是引用类型">类是引用类型</h2>
+<p>与值类型不同，<em>引用类型</em>在被赋予到一个变量、常量或者被传递到一个函数时，其值不会被拷贝。因此，使用的是已存在实例的引用，而不是其拷贝。</p>
+<p>请看下面这个示例，其使用了之前定义的 <code>VideoMode</code> 类：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> tenEighty <span class="operator">=</span> <span class="type">VideoMode</span>()</span><br><span class="line">tenEighty.resolution <span class="operator">=</span> hd</span><br><span class="line">tenEighty.interlaced <span class="operator">=</span> <span class="literal">true</span></span><br><span class="line">tenEighty.name <span class="operator">=</span> <span class="string">&quot;1080i&quot;</span></span><br><span class="line">tenEighty.frameRate <span class="operator">=</span> <span class="number">25.0</span></span><br></pre></td></tr></table></figure>
+<p>以上示例中，声明了一个名为 <code>tenEighty</code> 的常量，并让其引用一个 <code>VideoMode</code> 类的新实例。它的视频模式（video mode）被赋值为之前创建的 HD 分辨率（<code>1920</code>*<code>1080</code>）的一个拷贝。然后将它设置为隔行视频，名字设为 <code>“1080i”</code>，并将帧率设置为 <code>25.0</code> 帧每秒。</p>
+<p>接下来，将 <code>tenEighty</code> 赋值给一个名为 <code>alsoTenEighty</code> 的新常量，并修改 <code>alsoTenEighty</code> 的帧率：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> alsoTenEighty <span class="operator">=</span> tenEighty</span><br><span class="line">alsoTenEighty.frameRate <span class="operator">=</span> <span class="number">30.0</span></span><br></pre></td></tr></table></figure>
+<p>因为类是引用类型，所以 <code>tenEight</code> 和 <code>alsoTenEight</code> 实际上引用的是同一个 <code>VideoMode</code> 实例。换句话说，它们是同一个实例的两种叫法，如下图所示：</p>
+<p><img src="https://docs.swift.org/swift-book/_images/sharedStateClass_2x.png" alt="sharedStateClass_2x"></p>
+<p>通过查看 <code>tenEighty</code> 的 <code>frameRate</code> 属性，可以看到它正确地显示了底层的 <code>VideoMode</code> 实例的新帧率 <code>30.0</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(<span class="string">&quot;The frameRate property of tenEighty is now <span class="subst">\(tenEighty.frameRate)</span>&quot;</span>)</span><br><span class="line"><span class="comment">// 打印 &quot;The frameRate property of theEighty is now 30.0&quot;</span></span><br></pre></td></tr></table></figure>
+<p>这个例子也显示了为何引用类型更加难以理解。如果 <code>tenEighty</code> 和 <code>alsoTenEighty</code> 在你代码中的位置相距很远，那么就很难找到所有修改视频模式的地方。无论在哪使用 <code>tenEighty</code>，你都要考虑使用 <code>alsoTenEighty</code> 的代码，反之亦然。相反，值类型就更容易理解了，因为你的源码中与同一个值交互的代码都很近。</p>
+<p>需要注意的是 <code>tenEighty</code> 和 <code>alsoTenEighty</code> 被声明为常量而不是变量。然而你依然可以改变 <code>tenEighty.frameRate</code> 和 <code>alsoTenEighty.frameRate</code>，这是因为 <code>tenEighty</code> 和 <code>alsoTenEighty</code> 这两个常量的值并未改变。它们并不“存储”这个 <code>VideoMode</code> 实例，而仅仅是对 <code>VideoMode</code> 实例的引用。所以，改变的是底层 <code>VideoMode</code> 实例的 <code>frameRate</code> 属性，而不是指向 <code>VideoMode</code> 的常量引用的值。</p>
+<h3 id="恒等运算符">恒等运算符</h3>
+<p>因为类是引用类型，所以多个常量和变量可能在幕后同时引用同一个类实例。（对于结构体和枚举来说，这并不成立。因为它们作为值类型，在被赋予到常量、变量或者传递到函数时，其值总是会被拷贝。）</p>
+<p>判定两个常量或者变量是否引用同一个类实例有时很有用。为了达到这个目的，Swift 提供了两个恒等运算符：</p>
+<ul>
+<li>相同（<code>===</code>）</li>
+<li>不相同（<code>!==</code>）</li>
+</ul>
+<p>使用这两个运算符检测两个常量或者变量是否引用了同一个实例：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> tenEighty <span class="operator">===</span> alsoTenEighty &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;tenEighty and alsoTenEighty refer to the same VideoMode instance.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 打印 &quot;tenEighty and alsoTenEighty refer to the same VideoMode instance.&quot;</span></span><br></pre></td></tr></table></figure>
+<p>请注意，“相同”（用三个等号表示，<code>===</code>）与“等于”（用两个等号表示，<code>==</code>）的不同。“相同”表示两个类类型（class type）的常量或者变量引用同一个类实例。“等于”表示两个实例的值“相等”或“等价”，判定时要遵照设计者定义的评判标准。</p>
+<p>当在定义你的自定义结构体和类的时候，你有义务来决定判定两个实例“相等”的标准。在章节 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/26_Advanced_Operators.html#equivalence_operators">等价操作符</a> 中将会详细介绍实现自定义 == 和 !== 运算符的流程。</p>
+<h3 id="指针">指针</h3>
+<p>如果你有 C，C++ 或者 Objective-C 语言的经验，那么你也许会知道这些语言使用<em>指针</em>来引用内存中的地址。Swift 中引用了某个引用类型实例的常量或变量，与 C 语言中的指针类似，不过它并不直接指向某个内存地址，也不要求你使用星号（<code>*</code>）来表明你在创建一个引用。相反，Swift 中引用的定义方式与其它的常量或变量的一样。如果需要直接与指针交互，你可以使用标准库提供的指针和缓冲区类型 —— 参见 <a target="_blank" rel="noopener" href="https://developer.apple.com/documentation/swift/swift_standard_library/manual_memory_management">手动管理内存</a>。</p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/swift/" rel="tag">swift</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                    data-tooltip="swift属性"
+                    aria-label="上一篇: swift属性"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../25/Swift/swift%E6%9E%9A%E4%B8%BE/"
+                    data-tooltip="swift枚举"
+                    aria-label="下一篇: swift枚举"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                    data-tooltip="swift属性"
+                    aria-label="上一篇: swift属性"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../25/Swift/swift%E6%9E%9A%E4%B8%BE/"
+                    data-tooltip="swift枚举"
+                    aria-label="下一篇: swift枚举"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/26/Swift/swift%E7%B1%BB%E5%92%8C%E7%BB%93%E6%9E%84/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 235 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

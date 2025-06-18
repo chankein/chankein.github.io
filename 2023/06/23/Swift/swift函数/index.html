@@ -1,0 +1,1129 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>swift函数 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"函数\n函数是一段完成特定任务的独立代码片段。你可以通过给函数命名来标识某个函数的功能，这个名字可以被用来在需要的时候“调用”这个函数来完成它的任务。\nSwift 统一的函数语法非常的灵活，可以用来表示任何函数，包括从最简单的没有参数名字的 C 风格函数，到复杂的带局部和外部参数名的 Objective-C 风格函数。参数可以提供默认值，以简化函数调用。参数也可以既当做传入参数，也当做传出参数，也就是说，一旦函数执行结束，传入的参数值将被修改。\n在 Swift 中，每个函数都有一个由函数的参数值类型和返回值类型组成的类型。你可以把函数类型当做任何其他普通变量类型一样处理，这样就可以更简单地把函数当做别的函数的参数，也可以从其他函数中返回函数。函数的定义可以写在其他函数定义中，这样可以在嵌套函数范围内实现功能封装。\n函数的定义与调用\n当你定义一个函数时，你可以定义一个或多个有名字和类型的值，作为函数的输入，称为参数，也可以定义某种类型的值作为函数执行结束时的输出，称为返回类型。\n每个函数有个函数名，用来描述函数执行的任务。要使用一个函数时，用函数名来“调用”这个函数，并传给它匹配的输入值（称作实参）。函数的实参必须与函数参数表里参数的顺序一致。\n下面例子中的函数的名字是 greet(person:)，之所以叫这个名字，是因为这个函数用一个人的名字当做输入，并返回向这个人问候的语句。为了完成这个任务，你需要定义一个输入参数——一个叫做 person 的 String 值，和一个包含给这个人问候语的 String 类型的返回值：\n1234func greet(person: String) -&gt; String &#123;    let greeting = &quot;Hello, &quot; + person + &quot;!&quot;    return greeting&#125;\n所有的这些信息汇总起来成为函数的定义，并以 func 作为前缀。指定函数返回类型时，用返回箭头 -&gt;（一个连字符后跟一个右尖括号）后跟返回类型的名称的方式来表示。\n该定义描述了函数的功能，它期望接收什么作为参数和执行结束时它返回的结果是什么类型。这样的定义使得函数可以在别的地方以一种清晰的方式被调用：\n1234print(greet(person: &quot;Anna&quot;))// 打印“Hello, Anna!”print(greet(person: &quot;Brian&quot;))// 打印“Hello, Brian!”\n调用 greet(person:) 函数时，在圆括号中传给它一个 String 类型的实参，例如 greet(person: &quot;Anna&quot;)。正如上面所示，因为这个函数返回一个 String 类型的值，所以 greet 可以被包含在 print(_:separator:terminator:) 的调用中，用来输出这个函数的返回值。\n\n注意\nprint(_:separator:terminator:) 函数的第一个参数并没有设置一个标签，而其他的参数因为已经有了默认值，因此是可选的。关于这些函数语法上的变化详见下方关于 函数参数标签和参数名以及默认参数值。\n\n在 greet(person:) 的函数体中，先定义了一个新的名为 greeting 的 String 常量，同时，把对 personName 的问候消息赋值给了 greeting 。然后用 return 关键字把这个问候返回出去。一旦 return greeting 被调用，该函数结束它的执行并返回 greeting 的当前值。\n你可以用不同的输入值多次调用 greet(person:)。上面的例子展示的是用 &quot;Anna&quot; 和 &quot;Brian&quot; 调用的结果，该函数分别返回了不同的结果。\n为了简化这个函数的定义，可以将问候消息的创建和返回写成一句：\n12345func greetAgain(person: String) -&gt; String &#123;    return &quot;Hello again, &quot; + person + &quot;!&quot;&#125;print(greetAgain(person: &quot;Anna&quot;))// 打印“Hello again, Anna!”\n函数参数与返回值\n函数参数与返回值在 Swift 中非常的灵活。你可以定义任何类型的函数，包括从只带一个未名参数的简单函数到复杂的带有表达性参数名和不同参数选项的复杂函数。\n无参数函数\n函数可以没有参数。下面这个函数就是一个无参数函数，当被调用时，它返回固定的 String 消息：\n12345func sayHelloWorld() -&gt; String &#123;    return &quot;hello, world&quot;&#125;print(sayHelloWorld())// 打印“hello, world”\n尽管这个函数没有参数，但是定义中在函数名后还是需要一对圆括号。当被调用时，也需要在函数名后写一对圆括号。\n多参数函数\n函数可以有多种输入参数，这些参数被包含在函数的括号之中，以逗号分隔。\n下面这个函数用一个人名和是否已经打过招呼作为输入，并返回对这个人的适当问候语:\n123456789func greet(person: String, alreadyGreeted: Bool) -&gt; String &#123;    if alreadyGreeted &#123;        return greetAgain(person: person)    &#125; else &#123;        return greet(person: person)    &#125;&#125;print(greet(person: &quot;Tim&quot;, alreadyGreeted: true))// 打印“Hello again, Tim!”\n你可以通过在括号内使用逗号分隔来传递一个 String 参数值和一个标识为 alreadyGreeted 的 Bool 值，来调用 greet(person:alreadyGreeted:) 函数。注意这个函数和上面 greet(person:) 是不同的。虽然它们都有着同样的名字 greet，但是 greet(person:alreadyGreeted:) 函数需要两个参数，而 greet(person:) 只需要一个参数。\n无返回值函数\n函数可以没有返回值。下面是 greet(person:) 函数的另一个版本，这个函数直接打印一个 String 值，而不是返回它：\n12345func greet(person: String) &#123;    print(&quot;Hello, \\(person)!&quot;)&#125;greet(person: &quot;Dave&quot;)// 打印“Hello, Dave!”\n因为这个函数不需要返回值，所以这个函数的定义中没有返回箭头（-&gt;）和返回类型。\n\n注意\n严格地说，即使没有明确定义返回值，该 greet(Person：) 函数仍然返回一个值。没有明确定义返回类型的函数的返回一个 Void 类型特殊值，该值为一个空元组，写成 ()。\n\n调用函数时，可以忽略该函数的返回值：\n1234567891011func printAndCount(string: String) -&gt; Int &#123;    print(string)    return string.count&#125;func printWithoutCounting(string: String) &#123;    let _ = printAndCount(string: string)&#125;printAndCount(string: &quot;hello, world&quot;)// 打印“hello, world”，并且返回值 12printWithoutCounting(string: &quot;hello, world&quot;)// 打印“hello, world”，但是没有返回任何值\n第一个函数 printAndCount(string:)，输出一个字符串并返回 Int 类型的字符数。第二个函数 printWithoutCounting(string:) 调用了第一个函数，但是忽略了它的返回值。当第二个函数被调用时，消息依然会由第一个函数输出，但是返回值不会被用到。\n\n注意\n返回值可以被忽略，但定义了有返回值的函数必须返回一个值，如果在函数定义底部没有返回任何值，将导致编译时错误。\n\n多重返回值函数\n你可以用元组（tuple）类型让多个值作为一个复合值从函数中返回。\n下例中定义了一个名为 minMax(array:) 的函数，作用是在一个 Int 类型的数组中找出最小值与最大值。\n123456789101112func minMax(array: [Int]) -&gt; (min: Int, max: Int) &#123;    var currentMin = array[0]    var currentMax = array[0]    for value in array[1..&lt;array.count] &#123;        if value &lt; currentMin &#123;            currentMin = value        &#125; else if value &gt; currentMax &#123;            currentMax = value        &#125;    &#125;    return (currentMin, currentMax)&#125;\nminMax(array:) 函数返回一个包含两个 Int 值的元组，这些值被标记为 min 和 max ，以便查询函数的返回值时可以通过名字访问它们。\n在 minMax(array:) 的函数体中，在开始的时候设置两个工作变量 currentMin 和 currentMax 的值为数组中的第一个数。然后函数会遍历数组中剩余的值并检查该值是否比 currentMin 和 currentMax 更小或更大。最后数组中的最小值与最大值作为一个包含两个 Int 值的元组返回。\n因为元组的成员值已被命名，因此可以通过 . 语法来检索找到的最小值与最大值：\n123let bounds = minMax(array: [8, -6, 2, 109, 3, 71])print(&quot;min is \\(bounds.min) and max is \\(bounds.max)&quot;)// 打印“min is -6 and max is 109”\n需要注意的是，元组的成员不需要在元组从函数中返回时命名，因为它们的名字已经在函数返回类型中指定了。\n可选元组返回类型\n如果函数返回的元组类型有可能整个元组都“没有值”，你可以使用可选的 元组返回类型反映整个元组可以是 nil 的事实。你可以通过在元组类型的右括号后放置一个问号来定义一个可选元组，例如 (Int, Int)? 或 (String, Int, Bool)?\n\n注意\n可选元组类型如 (Int, Int)? 与元组包含可选类型如 (Int?, Int?) 是不同的。可选的元组类型，整个元组是可选的，而不只是元组中的每个元素值。\n\n前面的 minMax(array:) 函数返回了一个包含两个 Int 值的元组。但是函数不会对传入的数组执行任何安全检查，如果 array 参数是一个空数组，如上定义的 minMax(array:) 在试图访问 array[0] 时会触发一个运行时错误。\n为了安全地处理这个“空数组”问题，将 minMax(array:) 函数改写为使用可选元组返回类型，并且当数组为空时返回 nil：\n12345678910111213func minMax(array: [Int]) -&gt; (min: Int, max: Int)? &#123;    if array.isEmpty &#123; return nil &#125;    var currentMin = array[0]    var currentMax = array[0]    for value in array[1..&lt;array.count] &#123;        if value &lt; currentMin &#123;            currentMin = value        &#125; else if value &gt; currentMax &#123;            currentMax = value        &#125;    &#125;    return (currentMin, currentMax)&#125;\n你可以使用可选绑定来检查 minMax(array:) 函数返回的是一个存在的元组值还是 nil：\n1234if let bounds = minMax(array: [8, -6, 2, 109, 3, 71]) &#123;    print(&quot;min is \\(bounds.min) and max is \\(bounds.max)&quot;)&#125;// 打印“min is -6 and max is 109”\n隐式返回的函数\n如果一个函数的整个函数体是一个单行表达式，这个函数可以隐式地返回这个表达式。举个例子，以下的函数有着同样的作用：\n1234567891011func greeting(for person: String) -&gt; String &#123;    &quot;Hello, &quot; + person + &quot;!&quot;&#125;print(greeting(for: &quot;Dave&quot;))// 打印 &quot;Hello, Dave!&quot;func anotherGreeting(for person: String) -&gt; String &#123;    return &quot;Hello, &quot; + person + &quot;!&quot;&#125;print(anotherGreeting(for: &quot;Dave&quot;))// 打印 &quot;Hello, Dave!&quot;\ngreeting(for:) 函数的完整定义是打招呼内容的返回，这就意味着它能使用隐式返回这样更简短的形式。anothergreeting(for:) 函数返回同样的内容，却因为 return 关键字显得函数更长。任何一个可以被写成一行 return 语句的函数都可以忽略 return。\n正如你将会在 简略的 Getter 声明 里看到的， 一个属性的 getter 也可以使用隐式返回的形式。\n函数参数标签和参数名称\n每个函数参数都有一个参数标签（argument label）以及一个参数名称（parameter name）。参数标签在调用函数的时候使用；调用的时候需要将函数的参数标签写在对应的参数前面。参数名称在函数的实现中使用。默认情况下，函数参数使用参数名称来作为它们的参数标签。\n1234func someFunction(firstParameterName: Int, secondParameterName: Int) &#123;    // 在函数体内，firstParameterName 和 secondParameterName 代表参数中的第一个和第二个参数值&#125;someFunction(firstParameterName: 1, secondParameterName: 2)\n所有的参数都必须有一个独一无二的名字。虽然多个参数拥有同样的参数标签是可能的，但是一个唯一的函数标签能够使你的代码更具可读性。\n指定参数标签\n你可以在参数名称前指定它的参数标签，中间以空格分隔：\n123func someFunction(argumentLabel parameterName: Int) &#123;    // 在函数体内，parameterName 代表参数值&#125;\n这个版本的 greet(person:) 函数，接收一个人的名字和他的家乡，并且返回一句问候：\n12345func greet(person: String, from hometown: String) -&gt; String &#123;    return &quot;Hello \\(person)!  Glad you could visit from \\(hometown).&quot;&#125;print(greet(person: &quot;Bill&quot;, from: &quot;Cupertino&quot;))// 打印“Hello Bill!  Glad you could visit from Cupertino.”\n参数标签的使用能够让一个函数在调用时更有表达力，更类似自然语言，并且仍保持了函数内部的可读性以及清晰的意图。\n忽略参数标签\n如果你不希望为某个参数添加一个标签，可以使用一个下划线（_）来代替一个明确的参数标签。\n1234func someFunction(_ firstParameterName: Int, secondParameterName: Int) &#123;     // 在函数体内，firstParameterName 和 secondParameterName 代表参数中的第一个和第二个参数值&#125;someFunction(1, secondParameterName: 2)\n如果一个参数有一个标签，那么在调用的时候必须使用标签来标记这个参数。\n默认参数值\n你可以在函数体中通过给参数赋值来为任意一个参数定义默认值（Deafult Value）。当默认值被定义后，调用这个函数时可以忽略这个参数。\n12345func someFunction(parameterWithoutDefault: Int, parameterWithDefault: Int = 12) &#123;    // 如果你在调用时候不传第二个参数，parameterWithDefault 会值为 12 传入到函数体中。&#125;someFunction(parameterWithoutDefault: 3, parameterWithDefault: 6) // parameterWithDefault = 6someFunction(parameterWithoutDefault: 4) // parameterWithDefault = 12\n将不带有默认值的参数放在函数参数列表的最前。一般来说，没有默认值的参数更加的重要，将不带默认值的参数放在最前保证在函数调用时，非默认参数的顺序是一致的，同时也使得相同的函数在不同情况下调用时显得更为清晰。\n可变参数\n一个*可变参数（variadic parameter）*可以接受零个或多个值。函数调用时，你可以用可变参数来指定函数参数可以被传入不确定数量的输入值。通过在变量类型名后面加入（...）的方式来定义可变参数。\n可变参数的传入值在函数体中变为此类型的一个数组。例如，一个叫做 numbers 的 Double... 型可变参数，在函数体内可以当做一个叫 numbers 的 [Double] 型的数组常量。\n下面的这个函数用来计算一组任意长度数字的 算术平均数（arithmetic mean)：\n1234567891011func arithmeticMean(_ numbers: Double...) -&gt; Double &#123;    var total: Double = 0    for number in numbers &#123;        total += number    &#125;    return total / Double(numbers.count)&#125;arithmeticMean(1, 2, 3, 4, 5)// 返回 3.0, 是这 5 个数的平均数。arithmeticMean(3, 8.25, 18.75)// 返回 10.0, 是这 3 个数的平均数。\n\n注意\n一个函数最多只能拥有一个可变参数。\n\n输入输出参数\n函数参数默认是常量。试图在函数体中更改参数值将会导致编译错误。这意味着你不能错误地更改参数值。如果你想要一个函数可以修改参数的值，并且想要在这些修改在函数调用结束后仍然存在，那么就应该把这个参数定义为输入输出参数（In-Out Parameters）。\n定义一个输入输出参数时，在参数定义前加 inout 关键字。一个 输入输出参数有传入函数的值，这个值被函数修改，然后被传出函数，替换原来的值。想获取更多的关于输入输出参数的细节和相关的编译器优化，请查看 输入输出参数 一节。\n你只能传递变量给输入输出参数。你不能传入常量或者字面量，因为这些量是不能被修改的。当传入的参数作为输入输出参数时，需要在参数名前加 &amp; 符，表示这个值可以被函数修改。\n\n注意\n输入输出参数不能有默认值，而且可变参数不能用 inout 标记。\n\n下例中，swapTwoInts(_:_:) 函数有两个分别叫做 a 和 b 的输入输出参数：\n12345func swapTwoInts(_ a: inout Int, _ b: inout Int) &#123;    let temporaryA = a    a = b    b = temporaryA&#125;\nswapTwoInts(_:_:) 函数简单地交换 a 与 b 的值。该函数先将 a 的值存到一个临时常量 temporaryA 中，然后将 b 的值赋给 a，最后将 temporaryA 赋值给 b。\n你可以用两个 Int 型的变量来调用 swapTwoInts(_:_:)。需要注意的是，someInt 和 anotherInt 在传入 swapTwoInts(_:_:) 函数前，都加了 &amp; 的前缀：\n12345var someInt = 3var anotherInt = 107swapTwoInts(&amp;someInt, &amp;anotherInt)print(&quot;someInt is now \\(someInt), and anotherInt is now \\(anotherInt)&quot;)// 打印“someInt is now 107, and anotherInt is now 3”\n从上面这个例子中，我们可以看到 someInt 和 anotherInt 的原始值在 swapTwoInts(_:_:) 函数中被修改，尽管它们的定义在函数体外。\n\n注意\n输入输出参数和返回值是不一样的。上面的 swapTwoInts 函数并没有定义任何返回值，但仍然修改了 someInt 和 anotherInt 的值。输入输出参数是函数对函数体外产生影响的另一种方式。\n\n函数类型\n每个函数都有种特定的函数类型，函数的类型由函数的参数类型和返回类型组成。\n例如：\n123456func addTwoInts(_ a: Int, _ b: Int) -&gt; Int &#123;    return a + b&#125;func multiplyTwoInts(_ a: Int, _ b: Int) -&gt; Int &#123;    return a * b&#125;\n这个例子中定义了两个简单的数学函数：addTwoInts 和 multiplyTwoInts。这两个函数都接受两个 Int 值， 返回一个 Int 值。\n这两个函数的类型是 (Int, Int) -&gt; Int，可以解读为:\n“这个函数类型有两个 Int 型的参数并返回一个 Int 型的值”。\n下面是另一个例子，一个没有参数，也没有返回值的函数：\n123func printHelloWorld() &#123;    print(&quot;hello, world&quot;)&#125;\n这个函数的类型是：() -&gt; Void，或者叫“没有参数，并返回 Void 类型的函数”。\n使用函数类型\n在 Swift 中，使用函数类型就像使用其他类型一样。例如，你可以定义一个类型为函数的常量或变量，并将适当的函数赋值给它：\n1var mathFunction: (Int, Int) -&gt; Int = addTwoInts\n这段代码可以被解读为：\n”定义一个叫做 mathFunction 的变量，类型是‘一个有两个 Int 型的参数并返回一个 Int 型的值的函数’，并让这个新变量指向 addTwoInts 函数”。\naddTwoInts 和 mathFunction 有同样的类型，所以这个赋值过程在 Swift 类型检查（type-check）中是允许的。\n现在，你可以用 mathFunction 来调用被赋值的函数了：\n12print(&quot;Result: \\(mathFunction(2, 3))&quot;)// Prints &quot;Result: 5&quot;\n有相同匹配类型的不同函数可以被赋值给同一个变量，就像非函数类型的变量一样：\n123mathFunction = multiplyTwoIntsprint(&quot;Result: \\(mathFunction(2, 3))&quot;)// Prints &quot;Result: 6&quot;\n就像其他类型一样，当赋值一个函数给常量或变量时，你可以让 Swift 来推断其函数类型：\n12let anotherMathFunction = addTwoInts// anotherMathFunction 被推断为 (Int, Int) -&gt; Int 类型\n函数类型作为参数类型\n你可以用 (Int, Int) -&gt; Int 这样的函数类型作为另一个函数的参数类型。这样你可以将函数的一部分实现留给函数的调用者来提供。\n下面是另一个例子，正如上面的函数一样，同样是输出某种数学运算结果：\n12345func printMathResult(_ mathFunction: (Int, Int) -&gt; Int, _ a: Int, _ b: Int) &#123;    print(&quot;Result: \\(mathFunction(a, b))&quot;)&#125;printMathResult(addTwoInts, 3, 5)// 打印“Result: 8”\n这个例子定义了 printMathResult(_:_:_:) 函数，它有三个参数：第一个参数叫 mathFunction，类型是 (Int, Int) -&gt; Int，你可以传入任何这种类型的函数；第二个和第三个参数叫 a 和 b，它们的类型都是 Int，这两个值作为已给出的函数的输入值。\n当 printMathResult(_:_:_:) 被调用时，它被传入 addTwoInts 函数和整数 3 和 5。它用传入 3 和 5 调用 addTwoInts，并输出结果：8。\nprintMathResult(_:_:_:) 函数的作用就是输出另一个适当类型的数学函数的调用结果。它不关心传入函数是如何实现的，只关心传入的函数是不是一个正确的类型。这使得 printMathResult(_:_:_:) 能以一种类型安全（type-safe）的方式将一部分功能转给调用者实现。\n函数类型作为返回类型\n你可以用函数类型作为另一个函数的返回类型。你需要做的是在返回箭头（-&gt;）后写一个完整的函数类型。\n下面的这个例子中定义了两个简单函数，分别是 stepForward(_:) 和 stepBackward(_:)。stepForward(_:) 函数返回一个比输入值大 1 的值。stepBackward(_:) 函数返回一个比输入值小 1 的值。这两个函数的类型都是 (Int) -&gt; Int：\n123456func stepForward(_ input: Int) -&gt; Int &#123;    return input + 1&#125;func stepBackward(_ input: Int) -&gt; Int &#123;    return input - 1&#125;\n如下名为 chooseStepFunction(backward:) 的函数，它的返回类型是 (Int) -&gt; Int 类型的函数。chooseStepFunction(backward:) 根据布尔值 backwards 来返回 stepForward(_:) 函数或 stepBackward(_:) 函数：\n123func chooseStepFunction(backward: Bool) -&gt; (Int) -&gt; Int &#123;    return backward ? stepBackward : stepForward&#125;\n你现在可以用 chooseStepFunction(backward:) 来获得两个函数其中的一个：\n123var currentValue = 3let moveNearerToZero = chooseStepFunction(backward: currentValue &gt; 0)// moveNearerToZero 现在指向 stepBackward() 函数。\n上面这个例子中计算出从 currentValue 逐渐接近到0是需要向正数走还是向负数走。currentValue 的初始值是 3，这意味着 currentValue &gt; 0 为真（true），这将使得 chooseStepFunction(_:) 返回 stepBackward(_:) 函数。一个指向返回的函数的引用保存在了 moveNearerToZero 常量中。\n现在，moveNearerToZero 指向了正确的函数，它可以被用来数到零：\n1234567891011print(&quot;Counting to zero:&quot;)// Counting to zero:while currentValue != 0 &#123;    print(&quot;\\(currentValue)... &quot;)    currentValue = moveNearerToZero(currentValue)&#125;print(&quot;zero!&quot;)// 3...// 2...// 1...// zero!\n嵌套函数\n到目前为止本章中你所见到的所有函数都叫全局函数（global functions），它们定义在全局域中。你也可以把函数定义在别的函数体中，称作 嵌套函数（nested functions）。\n默认情况下，嵌套函数是对外界不可见的，但是可以被它们的外围函数（enclosing function）调用。一个外围函数也可以返回它的某一个嵌套函数，使得这个函数可以在其他域中被使用。\n你可以用返回嵌套函数的方式重写 chooseStepFunction(backward:) 函数：\n123456789101112131415161718func chooseStepFunction(backward: Bool) -&gt; (Int) -&gt; Int &#123;    func stepForward(input: Int) -&gt; Int &#123; return input + 1 &#125;    func stepBackward(input: Int) -&gt; Int &#123; return input - 1 &#125;    return backward ? stepBackward : stepForward&#125;var currentValue = -4let moveNearerToZero = chooseStepFunction(backward: currentValue &gt; 0)// moveNearerToZero now refers to the nested stepForward() functionwhile currentValue != 0 &#123;    print(&quot;\\(currentValue)... &quot;)    currentValue = moveNearerToZero(currentValue)&#125;print(&quot;zero!&quot;)// -4...// -3...// -2...// -1...// zero!\n","dateCreated":"2023-06-23T10:13:17+08:00","dateModified":"2025-06-18T11:51:44+08:00","datePublished":"2023-06-23T10:13:17+08:00","description":"","headline":"swift函数","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/","keywords":"swift"}</script>
+    <meta name="description" content="函数 函数是一段完成特定任务的独立代码片段。你可以通过给函数命名来标识某个函数的功能，这个名字可以被用来在需要的时候“调用”这个函数来完成它的任务。 Swift 统一的函数语法非常的灵活，可以用来表示任何函数，包括从最简单的没有参数名字的 C 风格函数，到复杂的带局部和外部参数名的 Objective-C 风格函数。参数可以提供默认值，以简化函数调用。参数也可以既当做传入参数，也当做传出参数，也就">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="swift函数">
+<meta property="og:url" content="https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="函数 函数是一段完成特定任务的独立代码片段。你可以通过给函数命名来标识某个函数的功能，这个名字可以被用来在需要的时候“调用”这个函数来完成它的任务。 Swift 统一的函数语法非常的灵活，可以用来表示任何函数，包括从最简单的没有参数名字的 C 风格函数，到复杂的带局部和外部参数名的 Objective-C 风格函数。参数可以提供默认值，以简化函数调用。参数也可以既当做传入参数，也当做传出参数，也就">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2023-06-23T02:13:17.000Z">
+<meta property="article:modified_time" content="2025-06-18T03:51:44.167Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="swift">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            swift函数
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2023-06-23T10:13:17+08:00">
+	
+		    2023 年 6 月 23 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/swift/">swift</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="函数">函数</h2>
+<p><em>函数</em>是一段完成特定任务的独立代码片段。你可以通过给函数命名来标识某个函数的功能，这个名字可以被用来在需要的时候“调用”这个函数来完成它的任务。</p>
+<p>Swift 统一的函数语法非常的灵活，可以用来表示任何函数，包括从最简单的没有参数名字的 C 风格函数，到复杂的带局部和外部参数名的 Objective-C 风格函数。参数可以提供默认值，以简化函数调用。参数也可以既当做传入参数，也当做传出参数，也就是说，一旦函数执行结束，传入的参数值将被修改。</p>
+<p>在 Swift 中，每个函数都有一个由函数的参数值类型和返回值类型组成的类型。你可以把函数类型当做任何其他普通变量类型一样处理，这样就可以更简单地把函数当做别的函数的参数，也可以从其他函数中返回函数。函数的定义可以写在其他函数定义中，这样可以在嵌套函数范围内实现功能封装。</p>
+<h2 id="函数的定义与调用">函数的定义与调用</h2>
+<p>当你定义一个函数时，你可以定义一个或多个有名字和类型的值，作为函数的输入，称为<em>参数</em>，也可以定义某种类型的值作为函数执行结束时的输出，称为<em>返回类型</em>。</p>
+<p>每个函数有个<em>函数名</em>，用来描述函数执行的任务。要使用一个函数时，用函数名来“调用”这个函数，并传给它匹配的输入值（称作<em>实参</em>）。函数的实参必须与函数参数表里参数的顺序一致。</p>
+<p>下面例子中的函数的名字是 <code>greet(person:)</code>，之所以叫这个名字，是因为这个函数用一个人的名字当做输入，并返回向这个人问候的语句。为了完成这个任务，你需要定义一个输入参数——一个叫做 <code>person</code> 的 <code>String</code> 值，和一个包含给这个人问候语的 <code>String</code> 类型的返回值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">greet</span>(<span class="params">person</span>: <span class="type">String</span>) -&gt; <span class="type">String</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> greeting <span class="operator">=</span> <span class="string">&quot;Hello, &quot;</span> <span class="operator">+</span> person <span class="operator">+</span> <span class="string">&quot;!&quot;</span></span><br><span class="line">    <span class="keyword">return</span> greeting</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所有的这些信息汇总起来成为函数的<em>定义</em>，并以 <code>func</code> 作为前缀。指定函数返回类型时，用返回箭头 <code>-&gt;</code>（一个连字符后跟一个右尖括号）后跟返回类型的名称的方式来表示。</p>
+<p>该定义描述了函数的功能，它期望接收什么作为参数和执行结束时它返回的结果是什么类型。这样的定义使得函数可以在别的地方以一种清晰的方式被调用：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(greet(person: <span class="string">&quot;Anna&quot;</span>))</span><br><span class="line"><span class="comment">// 打印“Hello, Anna!”</span></span><br><span class="line"><span class="built_in">print</span>(greet(person: <span class="string">&quot;Brian&quot;</span>))</span><br><span class="line"><span class="comment">// 打印“Hello, Brian!”</span></span><br></pre></td></tr></table></figure>
+<p>调用 <code>greet(person:)</code> 函数时，在圆括号中传给它一个 <code>String</code> 类型的实参，例如 <code>greet(person: &quot;Anna&quot;)</code>。正如上面所示，因为这个函数返回一个 <code>String</code> 类型的值，所以 <code>greet</code> 可以被包含在 <code>print(_:separator:terminator:)</code> 的调用中，用来输出这个函数的返回值。</p>
+<blockquote>
+<p>注意</p>
+<p><code>print(_:separator:terminator:)</code> 函数的第一个参数并没有设置一个标签，而其他的参数因为已经有了默认值，因此是可选的。关于这些函数语法上的变化详见下方关于 函数参数标签和参数名以及默认参数值。</p>
+</blockquote>
+<p>在 <code>greet(person:)</code> 的函数体中，先定义了一个新的名为 <code>greeting</code> 的 <code>String</code> 常量，同时，把对 <code>personName</code> 的问候消息赋值给了 <code>greeting</code> 。然后用 <code>return</code> 关键字把这个问候返回出去。一旦 <code>return greeting</code> 被调用，该函数结束它的执行并返回 <code>greeting</code> 的当前值。</p>
+<p>你可以用不同的输入值多次调用 <code>greet(person:)</code>。上面的例子展示的是用 <code>&quot;Anna&quot;</code> 和 <code>&quot;Brian&quot;</code> 调用的结果，该函数分别返回了不同的结果。</p>
+<p>为了简化这个函数的定义，可以将问候消息的创建和返回写成一句：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">greetAgain</span>(<span class="params">person</span>: <span class="type">String</span>) -&gt; <span class="type">String</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;Hello again, &quot;</span> <span class="operator">+</span> person <span class="operator">+</span> <span class="string">&quot;!&quot;</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">print</span>(greetAgain(person: <span class="string">&quot;Anna&quot;</span>))</span><br><span class="line"><span class="comment">// 打印“Hello again, Anna!”</span></span><br></pre></td></tr></table></figure>
+<h2 id="函数参数与返回值">函数参数与返回值</h2>
+<p>函数参数与返回值在 Swift 中非常的灵活。你可以定义任何类型的函数，包括从只带一个未名参数的简单函数到复杂的带有表达性参数名和不同参数选项的复杂函数。</p>
+<h3 id="无参数函数">无参数函数</h3>
+<p>函数可以没有参数。下面这个函数就是一个无参数函数，当被调用时，它返回固定的 <code>String</code> 消息：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">sayHelloWorld</span>() -&gt; <span class="type">String</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;hello, world&quot;</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">print</span>(sayHelloWorld())</span><br><span class="line"><span class="comment">// 打印“hello, world”</span></span><br></pre></td></tr></table></figure>
+<p>尽管这个函数没有参数，但是定义中在函数名后还是需要一对圆括号。当被调用时，也需要在函数名后写一对圆括号。</p>
+<h3 id="多参数函数">多参数函数</h3>
+<p>函数可以有多种输入参数，这些参数被包含在函数的括号之中，以逗号分隔。</p>
+<p>下面这个函数用一个人名和是否已经打过招呼作为输入，并返回对这个人的适当问候语:</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">greet</span>(<span class="params">person</span>: <span class="type">String</span>, <span class="params">alreadyGreeted</span>: <span class="type">Bool</span>) -&gt; <span class="type">String</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> alreadyGreeted &#123;</span><br><span class="line">        <span class="keyword">return</span> greetAgain(person: person)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> greet(person: person)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">print</span>(greet(person: <span class="string">&quot;Tim&quot;</span>, alreadyGreeted: <span class="literal">true</span>))</span><br><span class="line"><span class="comment">// 打印“Hello again, Tim!”</span></span><br></pre></td></tr></table></figure>
+<p>你可以通过在括号内使用逗号分隔来传递一个 <code>String</code> 参数值和一个标识为 <code>alreadyGreeted</code> 的 <code>Bool</code> 值，来调用 <code>greet(person:alreadyGreeted:)</code> 函数。注意这个函数和上面 <code>greet(person:)</code> 是不同的。虽然它们都有着同样的名字 <code>greet</code>，但是 <code>greet(person:alreadyGreeted:)</code> 函数需要两个参数，而 <code>greet(person:)</code> 只需要一个参数。</p>
+<h3 id="无返回值函数">无返回值函数</h3>
+<p>函数可以没有返回值。下面是 <code>greet(person:)</code> 函数的另一个版本，这个函数直接打印一个 <code>String</code> 值，而不是返回它：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">greet</span>(<span class="params">person</span>: <span class="type">String</span>) &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Hello, <span class="subst">\(person)</span>!&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line">greet(person: <span class="string">&quot;Dave&quot;</span>)</span><br><span class="line"><span class="comment">// 打印“Hello, Dave!”</span></span><br></pre></td></tr></table></figure>
+<p>因为这个函数不需要返回值，所以这个函数的定义中没有返回箭头（-&gt;）和返回类型。</p>
+<blockquote>
+<p>注意</p>
+<p>严格地说，即使没有明确定义返回值，该 <code>greet(Person：)</code> 函数仍然返回一个值。没有明确定义返回类型的函数的返回一个 <code>Void</code> 类型特殊值，该值为一个空元组，写成 ()。</p>
+</blockquote>
+<p>调用函数时，可以忽略该函数的返回值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">printAndCount</span>(<span class="params">string</span>: <span class="type">String</span>) -&gt; <span class="type">Int</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(string)</span><br><span class="line">    <span class="keyword">return</span> string.count</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">func</span> <span class="title function_">printWithoutCounting</span>(<span class="params">string</span>: <span class="type">String</span>) &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">_</span> <span class="operator">=</span> printAndCount(string: string)</span><br><span class="line">&#125;</span><br><span class="line">printAndCount(string: <span class="string">&quot;hello, world&quot;</span>)</span><br><span class="line"><span class="comment">// 打印“hello, world”，并且返回值 12</span></span><br><span class="line">printWithoutCounting(string: <span class="string">&quot;hello, world&quot;</span>)</span><br><span class="line"><span class="comment">// 打印“hello, world”，但是没有返回任何值</span></span><br></pre></td></tr></table></figure>
+<p>第一个函数 <code>printAndCount(string:)</code>，输出一个字符串并返回 <code>Int</code> 类型的字符数。第二个函数 <code>printWithoutCounting(string:)</code> 调用了第一个函数，但是忽略了它的返回值。当第二个函数被调用时，消息依然会由第一个函数输出，但是返回值不会被用到。</p>
+<blockquote>
+<p>注意</p>
+<p>返回值可以被忽略，但定义了有返回值的函数必须返回一个值，如果在函数定义底部没有返回任何值，将导致编译时错误。</p>
+</blockquote>
+<h3 id="多重返回值函数">多重返回值函数</h3>
+<p>你可以用元组（tuple）类型让多个值作为一个复合值从函数中返回。</p>
+<p>下例中定义了一个名为 <code>minMax(array:)</code> 的函数，作用是在一个 <code>Int</code> 类型的数组中找出最小值与最大值。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">minMax</span>(<span class="params">array</span>: [<span class="type">Int</span>]) -&gt; (min: <span class="type">Int</span>, max: <span class="type">Int</span>) &#123;</span><br><span class="line">    <span class="keyword">var</span> currentMin <span class="operator">=</span> array[<span class="number">0</span>]</span><br><span class="line">    <span class="keyword">var</span> currentMax <span class="operator">=</span> array[<span class="number">0</span>]</span><br><span class="line">    <span class="keyword">for</span> value <span class="keyword">in</span> array[<span class="number">1</span><span class="operator">..&lt;</span>array.count] &#123;</span><br><span class="line">        <span class="keyword">if</span> value <span class="operator">&lt;</span> currentMin &#123;</span><br><span class="line">            currentMin <span class="operator">=</span> value</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> value <span class="operator">&gt;</span> currentMax &#123;</span><br><span class="line">            currentMax <span class="operator">=</span> value</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> (currentMin, currentMax)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>minMax(array:)</code> 函数返回一个包含两个 <code>Int</code> 值的元组，这些值被标记为 <code>min</code> 和 <code>max</code> ，以便查询函数的返回值时可以通过名字访问它们。</p>
+<p>在 <code>minMax(array:)</code> 的函数体中，在开始的时候设置两个工作变量 <code>currentMin</code> 和 <code>currentMax</code> 的值为数组中的第一个数。然后函数会遍历数组中剩余的值并检查该值是否比 <code>currentMin</code> 和 <code>currentMax</code> 更小或更大。最后数组中的最小值与最大值作为一个包含两个 <code>Int</code> 值的元组返回。</p>
+<p>因为元组的成员值已被命名，因此可以通过 <code>.</code> 语法来检索找到的最小值与最大值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> bounds <span class="operator">=</span> minMax(array: [<span class="number">8</span>, <span class="operator">-</span><span class="number">6</span>, <span class="number">2</span>, <span class="number">109</span>, <span class="number">3</span>, <span class="number">71</span>])</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;min is <span class="subst">\(bounds.min)</span> and max is <span class="subst">\(bounds.max)</span>&quot;</span>)</span><br><span class="line"><span class="comment">// 打印“min is -6 and max is 109”</span></span><br></pre></td></tr></table></figure>
+<p>需要注意的是，元组的成员不需要在元组从函数中返回时命名，因为它们的名字已经在函数返回类型中指定了。</p>
+<h3 id="可选元组返回类型">可选元组返回类型</h3>
+<p>如果函数返回的元组类型有可能整个元组都“没有值”，你可以使用<em>可选的</em> 元组返回类型反映整个元组可以是 <code>nil</code> 的事实。你可以通过在元组类型的右括号后放置一个问号来定义一个可选元组，例如 <code>(Int, Int)?</code> 或 <code>(String, Int, Bool)?</code></p>
+<blockquote>
+<p>注意</p>
+<p>可选元组类型如 <code>(Int, Int)?</code> 与元组包含可选类型如 <code>(Int?, Int?)</code> 是不同的。可选的元组类型，整个元组是可选的，而不只是元组中的每个元素值。</p>
+</blockquote>
+<p>前面的 <code>minMax(array:)</code> 函数返回了一个包含两个 <code>Int</code> 值的元组。但是函数不会对传入的数组执行任何安全检查，如果 <code>array</code> 参数是一个空数组，如上定义的 <code>minMax(array:)</code> 在试图访问 <code>array[0]</code> 时会触发一个运行时错误。</p>
+<p>为了安全地处理这个“空数组”问题，将 <code>minMax(array:)</code> 函数改写为使用可选元组返回类型，并且当数组为空时返回 <code>nil</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">minMax</span>(<span class="params">array</span>: [<span class="type">Int</span>]) -&gt; (min: <span class="type">Int</span>, max: <span class="type">Int</span>)<span class="operator">?</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> array.isEmpty &#123; <span class="keyword">return</span> <span class="literal">nil</span> &#125;</span><br><span class="line">    <span class="keyword">var</span> currentMin <span class="operator">=</span> array[<span class="number">0</span>]</span><br><span class="line">    <span class="keyword">var</span> currentMax <span class="operator">=</span> array[<span class="number">0</span>]</span><br><span class="line">    <span class="keyword">for</span> value <span class="keyword">in</span> array[<span class="number">1</span><span class="operator">..&lt;</span>array.count] &#123;</span><br><span class="line">        <span class="keyword">if</span> value <span class="operator">&lt;</span> currentMin &#123;</span><br><span class="line">            currentMin <span class="operator">=</span> value</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> value <span class="operator">&gt;</span> currentMax &#123;</span><br><span class="line">            currentMax <span class="operator">=</span> value</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> (currentMin, currentMax)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>你可以使用可选绑定来检查 <code>minMax(array:)</code> 函数返回的是一个存在的元组值还是 <code>nil</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="keyword">let</span> bounds <span class="operator">=</span> minMax(array: [<span class="number">8</span>, <span class="operator">-</span><span class="number">6</span>, <span class="number">2</span>, <span class="number">109</span>, <span class="number">3</span>, <span class="number">71</span>]) &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;min is <span class="subst">\(bounds.min)</span> and max is <span class="subst">\(bounds.max)</span>&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 打印“min is -6 and max is 109”</span></span><br></pre></td></tr></table></figure>
+<h3 id="隐式返回的函数">隐式返回的函数</h3>
+<p>如果一个函数的整个函数体是一个单行表达式，这个函数可以隐式地返回这个表达式。举个例子，以下的函数有着同样的作用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">func greeting(for person: String) -&gt; String &#123;</span><br><span class="line">    &quot;Hello, &quot; + person + &quot;!&quot;</span><br><span class="line">&#125;</span><br><span class="line">print(greeting(for: &quot;Dave&quot;))</span><br><span class="line">// 打印 &quot;Hello, Dave!&quot;</span><br><span class="line"></span><br><span class="line">func anotherGreeting(for person: String) -&gt; String &#123;</span><br><span class="line">    return &quot;Hello, &quot; + person + &quot;!&quot;</span><br><span class="line">&#125;</span><br><span class="line">print(anotherGreeting(for: &quot;Dave&quot;))</span><br><span class="line">// 打印 &quot;Hello, Dave!&quot;</span><br></pre></td></tr></table></figure>
+<p><code>greeting(for:)</code> 函数的完整定义是打招呼内容的返回，这就意味着它能使用隐式返回这样更简短的形式。<code>anothergreeting(for:)</code> 函数返回同样的内容，却因为 <code>return</code> 关键字显得函数更长。任何一个可以被写成一行 <code>return</code> 语句的函数都可以忽略 <code>return</code>。</p>
+<p>正如你将会在 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/10_Properties.html">简略的 Getter 声明</a> 里看到的， 一个属性的 getter 也可以使用隐式返回的形式。</p>
+<h2 id="函数参数标签和参数名称">函数参数标签和参数名称</h2>
+<p>每个函数参数都有一个<em>参数标签（argument label）<em>以及一个</em>参数名称（parameter name）</em>。参数标签在调用函数的时候使用；调用的时候需要将函数的参数标签写在对应的参数前面。参数名称在函数的实现中使用。默认情况下，函数参数使用参数名称来作为它们的参数标签。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">someFunction</span>(<span class="params">firstParameterName</span>: <span class="type">Int</span>, <span class="params">secondParameterName</span>: <span class="type">Int</span>) &#123;</span><br><span class="line">    <span class="comment">// 在函数体内，firstParameterName 和 secondParameterName 代表参数中的第一个和第二个参数值</span></span><br><span class="line">&#125;</span><br><span class="line">someFunction(firstParameterName: <span class="number">1</span>, secondParameterName: <span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+<p>所有的参数都必须有一个独一无二的名字。虽然多个参数拥有同样的参数标签是可能的，但是一个唯一的函数标签能够使你的代码更具可读性。</p>
+<h3 id="指定参数标签">指定参数标签</h3>
+<p>你可以在参数名称前指定它的参数标签，中间以空格分隔：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">someFunction</span>(<span class="params">argumentLabel</span> <span class="params">parameterName</span>: <span class="type">Int</span>) &#123;</span><br><span class="line">    <span class="comment">// 在函数体内，parameterName 代表参数值</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个版本的 <code>greet(person:)</code> 函数，接收一个人的名字和他的家乡，并且返回一句问候：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">greet</span>(<span class="params">person</span>: <span class="type">String</span>, <span class="params">from</span> <span class="params">hometown</span>: <span class="type">String</span>) -&gt; <span class="type">String</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;Hello <span class="subst">\(person)</span>!  Glad you could visit from <span class="subst">\(hometown)</span>.&quot;</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">print</span>(greet(person: <span class="string">&quot;Bill&quot;</span>, from: <span class="string">&quot;Cupertino&quot;</span>))</span><br><span class="line"><span class="comment">// 打印“Hello Bill!  Glad you could visit from Cupertino.”</span></span><br></pre></td></tr></table></figure>
+<p>参数标签的使用能够让一个函数在调用时更有表达力，更类似自然语言，并且仍保持了函数内部的可读性以及清晰的意图。</p>
+<h3 id="忽略参数标签">忽略参数标签</h3>
+<p>如果你不希望为某个参数添加一个标签，可以使用一个下划线（<code>_</code>）来代替一个明确的参数标签。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">someFunction</span>(<span class="keyword">_</span> <span class="params">firstParameterName</span>: <span class="type">Int</span>, <span class="params">secondParameterName</span>: <span class="type">Int</span>) &#123;</span><br><span class="line">     <span class="comment">// 在函数体内，firstParameterName 和 secondParameterName 代表参数中的第一个和第二个参数值</span></span><br><span class="line">&#125;</span><br><span class="line">someFunction(<span class="number">1</span>, secondParameterName: <span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+<p>如果一个参数有一个标签，那么在调用的时候必须使用标签来标记这个参数。</p>
+<h3 id="默认参数值">默认参数值</h3>
+<p>你可以在函数体中通过给参数赋值来为任意一个参数定义<em>默认值（Deafult Value）</em>。当默认值被定义后，调用这个函数时可以忽略这个参数。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">someFunction</span>(<span class="params">parameterWithoutDefault</span>: <span class="type">Int</span>, <span class="params">parameterWithDefault</span>: <span class="type">Int</span> <span class="operator">=</span> <span class="number">12</span>) &#123;</span><br><span class="line">    <span class="comment">// 如果你在调用时候不传第二个参数，parameterWithDefault 会值为 12 传入到函数体中。</span></span><br><span class="line">&#125;</span><br><span class="line">someFunction(parameterWithoutDefault: <span class="number">3</span>, parameterWithDefault: <span class="number">6</span>) <span class="comment">// parameterWithDefault = 6</span></span><br><span class="line">someFunction(parameterWithoutDefault: <span class="number">4</span>) <span class="comment">// parameterWithDefault = 12</span></span><br></pre></td></tr></table></figure>
+<p>将不带有默认值的参数放在函数参数列表的最前。一般来说，没有默认值的参数更加的重要，将不带默认值的参数放在最前保证在函数调用时，非默认参数的顺序是一致的，同时也使得相同的函数在不同情况下调用时显得更为清晰。</p>
+<h3 id="可变参数">可变参数</h3>
+<p>一个*可变参数（variadic parameter）*可以接受零个或多个值。函数调用时，你可以用可变参数来指定函数参数可以被传入不确定数量的输入值。通过在变量类型名后面加入（<code>...</code>）的方式来定义可变参数。</p>
+<p>可变参数的传入值在函数体中变为此类型的一个数组。例如，一个叫做 <code>numbers</code> 的 <code>Double...</code> 型可变参数，在函数体内可以当做一个叫 <code>numbers</code> 的 <code>[Double]</code> 型的数组常量。</p>
+<p>下面的这个函数用来计算一组任意长度数字的 <em>算术平均数（arithmetic mean)</em>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">arithmeticMean</span>(<span class="keyword">_</span> <span class="params">numbers</span>: <span class="type">Double</span>...) -&gt; <span class="type">Double</span> &#123;</span><br><span class="line">    <span class="keyword">var</span> total: <span class="type">Double</span> <span class="operator">=</span> <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> number <span class="keyword">in</span> numbers &#123;</span><br><span class="line">        total <span class="operator">+=</span> number</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> total <span class="operator">/</span> <span class="type">Double</span>(numbers.count)</span><br><span class="line">&#125;</span><br><span class="line">arithmeticMean(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>)</span><br><span class="line"><span class="comment">// 返回 3.0, 是这 5 个数的平均数。</span></span><br><span class="line">arithmeticMean(<span class="number">3</span>, <span class="number">8.25</span>, <span class="number">18.75</span>)</span><br><span class="line"><span class="comment">// 返回 10.0, 是这 3 个数的平均数。</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意</p>
+<p>一个函数最多只能拥有一个可变参数。</p>
+</blockquote>
+<h3 id="输入输出参数">输入输出参数</h3>
+<p>函数参数默认是常量。试图在函数体中更改参数值将会导致编译错误。这意味着你不能错误地更改参数值。如果你想要一个函数可以修改参数的值，并且想要在这些修改在函数调用结束后仍然存在，那么就应该把这个参数定义为<em>输入输出参数（In-Out Parameters）</em>。</p>
+<p>定义一个输入输出参数时，在参数定义前加 <code>inout</code> 关键字。一个 <code>输入输出参数</code>有传入函数的值，这个值被函数修改，然后被传出函数，替换原来的值。想获取更多的关于输入输出参数的细节和相关的编译器优化，请查看 <a target="_blank" rel="noopener" href="https://developer.apple.com/library/content/documentation/Swift/Conceptual/Swift_Programming_Language/Declarations.html#//apple_ref/doc/uid/TP40014097-CH34-ID545">输入输出参数</a> 一节。</p>
+<p>你只能传递变量给输入输出参数。你不能传入常量或者字面量，因为这些量是不能被修改的。当传入的参数作为输入输出参数时，需要在参数名前加 <code>&amp;</code> 符，表示这个值可以被函数修改。</p>
+<blockquote>
+<p>注意</p>
+<p>输入输出参数不能有默认值，而且可变参数不能用 <code>inout</code> 标记。</p>
+</blockquote>
+<p>下例中，<code>swapTwoInts(_:_:)</code> 函数有两个分别叫做 <code>a</code> 和 <code>b</code> 的输入输出参数：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">swapTwoInts</span>(<span class="keyword">_</span> <span class="params">a</span>: <span class="keyword">inout</span> <span class="type">Int</span>, <span class="keyword">_</span> <span class="params">b</span>: <span class="keyword">inout</span> <span class="type">Int</span>) &#123;</span><br><span class="line">    <span class="keyword">let</span> temporaryA <span class="operator">=</span> a</span><br><span class="line">    a <span class="operator">=</span> b</span><br><span class="line">    b <span class="operator">=</span> temporaryA</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>swapTwoInts(_:_:)</code> 函数简单地交换 <code>a</code> 与 <code>b</code> 的值。该函数先将 <code>a</code> 的值存到一个临时常量 <code>temporaryA</code> 中，然后将 <code>b</code> 的值赋给 <code>a</code>，最后将 <code>temporaryA</code> 赋值给 <code>b</code>。</p>
+<p>你可以用两个 <code>Int</code> 型的变量来调用 <code>swapTwoInts(_:_:)</code>。需要注意的是，<code>someInt</code> 和 <code>anotherInt</code> 在传入 <code>swapTwoInts(_:_:)</code> 函数前，都加了 <code>&amp;</code> 的前缀：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> someInt <span class="operator">=</span> <span class="number">3</span></span><br><span class="line"><span class="keyword">var</span> anotherInt <span class="operator">=</span> <span class="number">107</span></span><br><span class="line">swapTwoInts(<span class="operator">&amp;</span>someInt, <span class="operator">&amp;</span>anotherInt)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;someInt is now <span class="subst">\(someInt)</span>, and anotherInt is now <span class="subst">\(anotherInt)</span>&quot;</span>)</span><br><span class="line"><span class="comment">// 打印“someInt is now 107, and anotherInt is now 3”</span></span><br></pre></td></tr></table></figure>
+<p>从上面这个例子中，我们可以看到 <code>someInt</code> 和 <code>anotherInt</code> 的原始值在 <code>swapTwoInts(_:_:)</code> 函数中被修改，尽管它们的定义在函数体外。</p>
+<blockquote>
+<p>注意</p>
+<p>输入输出参数和返回值是不一样的。上面的 <code>swapTwoInts</code> 函数并没有定义任何返回值，但仍然修改了 <code>someInt</code> 和 <code>anotherInt</code> 的值。输入输出参数是函数对函数体外产生影响的另一种方式。</p>
+</blockquote>
+<h2 id="函数类型">函数类型</h2>
+<p>每个函数都有种特定的<em>函数类型</em>，函数的类型由函数的参数类型和返回类型组成。</p>
+<p>例如：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">addTwoInts</span>(<span class="keyword">_</span> <span class="params">a</span>: <span class="type">Int</span>, <span class="keyword">_</span> <span class="params">b</span>: <span class="type">Int</span>) -&gt; <span class="type">Int</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> a <span class="operator">+</span> b</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">func</span> <span class="title function_">multiplyTwoInts</span>(<span class="keyword">_</span> <span class="params">a</span>: <span class="type">Int</span>, <span class="keyword">_</span> <span class="params">b</span>: <span class="type">Int</span>) -&gt; <span class="type">Int</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> a <span class="operator">*</span> b</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个例子中定义了两个简单的数学函数：<code>addTwoInts</code> 和 <code>multiplyTwoInts</code>。这两个函数都接受两个 <code>Int</code> 值， 返回一个 <code>Int</code> 值。</p>
+<p>这两个函数的类型是 <code>(Int, Int) -&gt; Int</code>，可以解读为:</p>
+<p>“这个函数类型有两个 <code>Int</code> 型的参数并返回一个 <code>Int</code> 型的值”。</p>
+<p>下面是另一个例子，一个没有参数，也没有返回值的函数：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">printHelloWorld</span>() &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;hello, world&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个函数的类型是：<code>() -&gt; Void</code>，或者叫“没有参数，并返回 <code>Void</code> 类型的函数”。</p>
+<h3 id="使用函数类型">使用函数类型</h3>
+<p>在 Swift 中，使用函数类型就像使用其他类型一样。例如，你可以定义一个类型为函数的常量或变量，并将适当的函数赋值给它：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> mathFunction: (<span class="type">Int</span>, <span class="type">Int</span>) -&gt; <span class="type">Int</span> <span class="operator">=</span> addTwoInts</span><br></pre></td></tr></table></figure>
+<p>这段代码可以被解读为：</p>
+<p>”定义一个叫做 <code>mathFunction</code> 的变量，类型是‘一个有两个 <code>Int</code> 型的参数并返回一个 <code>Int</code> 型的值的函数’，并让这个新变量指向 <code>addTwoInts</code> 函数”。</p>
+<p><code>addTwoInts</code> 和 <code>mathFunction</code> 有同样的类型，所以这个赋值过程在 Swift 类型检查（type-check）中是允许的。</p>
+<p>现在，你可以用 <code>mathFunction</code> 来调用被赋值的函数了：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Result: <span class="subst">\(mathFunction(<span class="number">2</span>, <span class="number">3</span>))</span>&quot;</span>)</span><br><span class="line"><span class="comment">// Prints &quot;Result: 5&quot;</span></span><br></pre></td></tr></table></figure>
+<p>有相同匹配类型的不同函数可以被赋值给同一个变量，就像非函数类型的变量一样：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mathFunction <span class="operator">=</span> multiplyTwoInts</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Result: <span class="subst">\(mathFunction(<span class="number">2</span>, <span class="number">3</span>))</span>&quot;</span>)</span><br><span class="line"><span class="comment">// Prints &quot;Result: 6&quot;</span></span><br></pre></td></tr></table></figure>
+<p>就像其他类型一样，当赋值一个函数给常量或变量时，你可以让 Swift 来推断其函数类型：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> anotherMathFunction <span class="operator">=</span> addTwoInts</span><br><span class="line"><span class="comment">// anotherMathFunction 被推断为 (Int, Int) -&gt; Int 类型</span></span><br></pre></td></tr></table></figure>
+<h3 id="函数类型作为参数类型">函数类型作为参数类型</h3>
+<p>你可以用 <code>(Int, Int) -&gt; Int</code> 这样的函数类型作为另一个函数的参数类型。这样你可以将函数的一部分实现留给函数的调用者来提供。</p>
+<p>下面是另一个例子，正如上面的函数一样，同样是输出某种数学运算结果：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">printMathResult</span>(<span class="keyword">_</span> <span class="params">mathFunction</span>: (<span class="type">Int</span>, <span class="type">Int</span>) -&gt; <span class="type">Int</span>, <span class="keyword">_</span> <span class="params">a</span>: <span class="type">Int</span>, <span class="keyword">_</span> <span class="params">b</span>: <span class="type">Int</span>) &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Result: <span class="subst">\(mathFunction(a, b))</span>&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line">printMathResult(addTwoInts, <span class="number">3</span>, <span class="number">5</span>)</span><br><span class="line"><span class="comment">// 打印“Result: 8”</span></span><br></pre></td></tr></table></figure>
+<p>这个例子定义了 <code>printMathResult(_:_:_:)</code> 函数，它有三个参数：第一个参数叫 <code>mathFunction</code>，类型是 <code>(Int, Int) -&gt; Int</code>，你可以传入任何这种类型的函数；第二个和第三个参数叫 <code>a</code> 和 <code>b</code>，它们的类型都是 <code>Int</code>，这两个值作为已给出的函数的输入值。</p>
+<p>当 <code>printMathResult(_:_:_:)</code> 被调用时，它被传入 <code>addTwoInts</code> 函数和整数 <code>3</code> 和 <code>5</code>。它用传入 <code>3</code> 和 <code>5</code> 调用 <code>addTwoInts</code>，并输出结果：<code>8</code>。</p>
+<p><code>printMathResult(_:_:_:)</code> 函数的作用就是输出另一个适当类型的数学函数的调用结果。它不关心传入函数是如何实现的，只关心传入的函数是不是一个正确的类型。这使得 <code>printMathResult(_:_:_:)</code> 能以一种类型安全（type-safe）的方式将一部分功能转给调用者实现。</p>
+<h3 id="函数类型作为返回类型">函数类型作为返回类型</h3>
+<p>你可以用函数类型作为另一个函数的返回类型。你需要做的是在返回箭头（-&gt;）后写一个完整的函数类型。</p>
+<p>下面的这个例子中定义了两个简单函数，分别是 <code>stepForward(_:)</code> 和 <code>stepBackward(_:)</code>。<code>stepForward(_:)</code> 函数返回一个比输入值大 <code>1</code> 的值。<code>stepBackward(_:)</code> 函数返回一个比输入值小 <code>1</code> 的值。这两个函数的类型都是 <code>(Int) -&gt; Int</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">stepForward</span>(<span class="keyword">_</span> <span class="params">input</span>: <span class="type">Int</span>) -&gt; <span class="type">Int</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> input <span class="operator">+</span> <span class="number">1</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">func</span> <span class="title function_">stepBackward</span>(<span class="keyword">_</span> <span class="params">input</span>: <span class="type">Int</span>) -&gt; <span class="type">Int</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> input <span class="operator">-</span> <span class="number">1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如下名为 <code>chooseStepFunction(backward:)</code> 的函数，它的返回类型是 <code>(Int) -&gt; Int</code> 类型的函数。<code>chooseStepFunction(backward:)</code> 根据布尔值 <code>backwards</code> 来返回 <code>stepForward(_:)</code> 函数或 <code>stepBackward(_:)</code> 函数：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">chooseStepFunction</span>(<span class="params">backward</span>: <span class="type">Bool</span>) -&gt; (<span class="type">Int</span>) -&gt; <span class="type">Int</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> backward <span class="operator">?</span> stepBackward : stepForward</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>你现在可以用 <code>chooseStepFunction(backward:)</code> 来获得两个函数其中的一个：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> currentValue <span class="operator">=</span> <span class="number">3</span></span><br><span class="line"><span class="keyword">let</span> moveNearerToZero <span class="operator">=</span> chooseStepFunction(backward: currentValue <span class="operator">&gt;</span> <span class="number">0</span>)</span><br><span class="line"><span class="comment">// moveNearerToZero 现在指向 stepBackward() 函数。</span></span><br></pre></td></tr></table></figure>
+<p>上面这个例子中计算出从 <code>currentValue</code> 逐渐接近到0是需要向正数走还是向负数走。<code>currentValue</code> 的初始值是 <code>3</code>，这意味着 <code>currentValue &gt; 0</code> 为真（true），这将使得 <code>chooseStepFunction(_:)</code> 返回 <code>stepBackward(_:)</code> 函数。一个指向返回的函数的引用保存在了 <code>moveNearerToZero</code> 常量中。</p>
+<p>现在，<code>moveNearerToZero</code> 指向了正确的函数，它可以被用来数到零：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Counting to zero:&quot;</span>)</span><br><span class="line"><span class="comment">// Counting to zero:</span></span><br><span class="line"><span class="keyword">while</span> currentValue <span class="operator">!=</span> <span class="number">0</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(currentValue)</span>... &quot;</span>)</span><br><span class="line">    currentValue <span class="operator">=</span> moveNearerToZero(currentValue)</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;zero!&quot;</span>)</span><br><span class="line"><span class="comment">// 3...</span></span><br><span class="line"><span class="comment">// 2...</span></span><br><span class="line"><span class="comment">// 1...</span></span><br><span class="line"><span class="comment">// zero!</span></span><br></pre></td></tr></table></figure>
+<h2 id="嵌套函数">嵌套函数</h2>
+<p>到目前为止本章中你所见到的所有函数都叫<em>全局函数（global functions）</em>，它们定义在全局域中。你也可以把函数定义在别的函数体中，称作 <em>嵌套函数（nested functions）</em>。</p>
+<p>默认情况下，嵌套函数是对外界不可见的，但是可以被它们的外围函数（enclosing function）调用。一个外围函数也可以返回它的某一个嵌套函数，使得这个函数可以在其他域中被使用。</p>
+<p>你可以用返回嵌套函数的方式重写 <code>chooseStepFunction(backward:)</code> 函数：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">chooseStepFunction</span>(<span class="params">backward</span>: <span class="type">Bool</span>) -&gt; (<span class="type">Int</span>) -&gt; <span class="type">Int</span> &#123;</span><br><span class="line">    <span class="keyword">func</span> <span class="title function_">stepForward</span>(<span class="params">input</span>: <span class="type">Int</span>) -&gt; <span class="type">Int</span> &#123; <span class="keyword">return</span> input <span class="operator">+</span> <span class="number">1</span> &#125;</span><br><span class="line">    <span class="keyword">func</span> <span class="title function_">stepBackward</span>(<span class="params">input</span>: <span class="type">Int</span>) -&gt; <span class="type">Int</span> &#123; <span class="keyword">return</span> input <span class="operator">-</span> <span class="number">1</span> &#125;</span><br><span class="line">    <span class="keyword">return</span> backward <span class="operator">?</span> stepBackward : stepForward</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">var</span> currentValue <span class="operator">=</span> <span class="operator">-</span><span class="number">4</span></span><br><span class="line"><span class="keyword">let</span> moveNearerToZero <span class="operator">=</span> chooseStepFunction(backward: currentValue <span class="operator">&gt;</span> <span class="number">0</span>)</span><br><span class="line"><span class="comment">// moveNearerToZero now refers to the nested stepForward() function</span></span><br><span class="line"><span class="keyword">while</span> currentValue <span class="operator">!=</span> <span class="number">0</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;<span class="subst">\(currentValue)</span>... &quot;</span>)</span><br><span class="line">    currentValue <span class="operator">=</span> moveNearerToZero(currentValue)</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;zero!&quot;</span>)</span><br><span class="line"><span class="comment">// -4...</span></span><br><span class="line"><span class="comment">// -3...</span></span><br><span class="line"><span class="comment">// -2...</span></span><br><span class="line"><span class="comment">// -1...</span></span><br><span class="line"><span class="comment">// zero!</span></span><br></pre></td></tr></table></figure>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/swift/" rel="tag">swift</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../24/Swift/swift%E9%97%AD%E5%8C%85/"
+                    data-tooltip="swift闭包"
+                    aria-label="上一篇: swift闭包"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                    data-tooltip="swift控制流"
+                    aria-label="下一篇: swift控制流"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../24/Swift/swift%E9%97%AD%E5%8C%85/"
+                    data-tooltip="swift闭包"
+                    aria-label="上一篇: swift闭包"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../22/Swift/swift%E6%8E%A7%E5%88%B6%E6%B5%81/"
+                    data-tooltip="swift控制流"
+                    aria-label="下一篇: swift控制流"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/23/Swift/swift%E5%87%BD%E6%95%B0/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 235 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

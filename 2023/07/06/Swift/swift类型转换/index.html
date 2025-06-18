@@ -1,0 +1,1019 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>swift类型转换 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"类型转换\n类型转换可以判断实例的类型，也可以将实例看做是其父类或者子类的实例。\n类型转换在 Swift 中使用 is 和 as 操作符实现。这两个操作符分别提供了一种简单达意的方式去检查值的类型或者转换它的类型。\n你也可以用它来检查一个类型是否遵循了某个协议，就像在 检验协议遵循 部分讲述的一样。\n为类型转换定义类层次\n你可以将类型转换用在类和子类的层次结构上，检查特定类实例的类型并且转换这个类实例的类型成为这个层次结构中的其他类型。下面的三个代码段定义了一个类层次和一个包含了这些类实例的数组，作为类型转换的例子。\n第一个代码片段定义了一个新的基类 MediaItem。这个类为任何出现在数字媒体库的媒体项提供基础功能。特别的，它声明了一个 String 类型的 name 属性，和一个 init(name:) 初始化器。（假定所有的媒体项都有个名称。）\n123456class MediaItem &#123;    var name: String    init(name: String) &#123;        self.name = name    &#125;&#125;\n下一个代码段定义了 MediaItem 的两个子类。第一个子类 Movie 封装了与电影相关的额外信息，在父类（或者说基类）的基础上增加了一个 director（导演）属性，和相应的初始化器。第二个子类 Song，在父类的基础上增加了一个 artist（艺术家）属性，和相应的初始化器：\n123456789101112131415class Movie: MediaItem &#123;    var director: String    init(name: String, director: String) &#123;        self.director = director        super.init(name: name)    &#125;&#125;class Song: MediaItem &#123;    var artist: String    init(name: String, artist: String) &#123;        self.artist = artist        super.init(name: name)    &#125;&#125;\n最后一个代码段创建了一个数组常量 library，包含两个 Movie 实例和三个 Song 实例。library 的类型是在它被初始化时根据它数组中所包含的内容推断来的。Swift 的类型检测器能够推断出 Movie 和 Song 有共同的父类 MediaItem，所以它推断出 [MediaItem] 类作为 library 的类型：\n12345678let library = [    Movie(name: &quot;Casablanca&quot;, director: &quot;Michael Curtiz&quot;),    Song(name: &quot;Blue Suede Shoes&quot;, artist: &quot;Elvis Presley&quot;),    Movie(name: &quot;Citizen Kane&quot;, director: &quot;Orson Welles&quot;),    Song(name: &quot;The One And Only&quot;, artist: &quot;Chesney Hawkes&quot;),    Song(name: &quot;Never Gonna Give You Up&quot;, artist: &quot;Rick Astley&quot;)]// 数组 library 的类型被推断为 [MediaItem]\n在幕后 library 里存储的媒体项依然是 Movie 和 Song 类型的。但是，若你迭代它，依次取出的实例会是 MediaItem 类型的，而不是 Movie 和 Song 类型。为了让它们作为原本的类型工作，你需要检查它们的类型或者向下转换它们到其它类型，就像下面描述的一样。\n检查类型\n用类型检查操作符（is）来检查一个实例是否属于特定子类型。若实例属于那个子类型，类型检查操作符返回 true，否则返回 false。\n下面的例子定义了两个变量，movieCount 和 songCount，用来计算数组 library 中 Movie 和 Song 类型的实例数量：\n12345678910111213var movieCount = 0var songCount = 0for item in library &#123;    if item is Movie &#123;        movieCount += 1    &#125; else if item is Song &#123;        songCount += 1    &#125;&#125;print(&quot;Media library contains \\(movieCount) movies and \\(songCount) songs&quot;)// 打印“Media library contains 2 movies and 3 songs”\n示例迭代了数组 library 中的所有项。每一次，for-in 循环设置 item 常量为数组中的下一个 MediaItem 实例。\n若当前 MediaItem 是一个 Movie 类型的实例，item is Movie 返回 true，否则返回 false。同样的，item is Song 检查 item 是否为 Song 类型的实例。在循环结束后，movieCount 和 songCount 的值就是被找到的属于各自类型的实例的数量。\n向下转型\n某类型的一个常量或变量可能在幕后实际上属于一个子类。当确定是这种情况时，你可以尝试用类型转换操作符（as? 或 as!）向下转到它的子类型。\n因为向下转型可能会失败，类型转型操作符带有两种不同形式。条件形式 as? 返回一个你试图向下转成的类型的可选值。强制形式 as! 把试图向下转型和强制解包转换结果结合为一个操作。\n当你不确定向下转型可以成功时，用类型转换的条件形式（as?）。条件形式的类型转换总是返回一个可选值，并且若下转是不可能的，可选值将是 nil。这使你能够检查向下转型是否成功。\n只有你可以确定向下转型一定会成功时，才使用强制形式（as!）。当你试图向下转型为一个不正确的类型时，强制形式的类型转换会触发一个运行时错误。\n下面的例子，迭代了 library 里的每一个 MediaItem，并打印出适当的描述。要这样做，item 需要真正作为 Movie 或 Song 的类型来使用，而不仅仅是作为 MediaItem。为了能够在描述中使用 Movie 或 Song 的 director 或 artist 属性，这是必要的。\n在这个示例中，数组中的每一个 item 可能是 Movie 或 Song。事前你不知道每个 item 的真实类型，所以这里使用条件形式的类型转换（as?）去检查循环里的每次下转：\n12345678910111213for item in library &#123;    if let movie = item as? Movie &#123;        print(&quot;Movie: \\(movie.name), dir. \\(movie.director)&quot;)    &#125; else if let song = item as? Song &#123;        print(&quot;Song: \\(song.name), by \\(song.artist)&quot;)    &#125;&#125;// Movie: Casablanca, dir. Michael Curtiz// Song: Blue Suede Shoes, by Elvis Presley// Movie: Citizen Kane, dir. Orson Welles// Song: The One And Only, by Chesney Hawkes// Song: Never Gonna Give You Up, by Rick Astley\n示例首先试图将 item 下转为 Movie。因为 item 是一个 MediaItem 类型的实例，它可能是一个 Movie；同样，它也可能是一个 Song，或者仅仅是基类 MediaItem。因为不确定，as? 形式在试图下转时将返回一个可选值。item as? Movie 的返回值是 Movie? 或者说“可选 Movie”。\n当向下转型为 Movie 应用在两个 Song 实例时将会失败。为了处理这种情况，上面的例子使用了可选绑定（optional binding）来检查可选 Movie 真的包含一个值（这个是为了判断下转是否成功。）可选绑定是这样写的“if let movie = item as? Movie”，可以这样解读：\n“尝试将 item 转为 Movie 类型。若成功，设置一个新的临时常量 movie 来存储返回的可选 Movie 中的值”\n若向下转型成功，然后 movie 的属性将用于打印一个 Movie 实例的描述，包括它的导演的名字 director。相似的原理被用来检测 Song 实例，当 Song 被找到时则打印它的描述（包含 artist 的名字）。\n\n注意\n转换没有真的改变实例或它的值。根本的实例保持不变；只是简单地把它作为它被转换成的类型来使用。\n\nAny 和 AnyObject 的类型转换\nSwift 为不确定类型提供了两种特殊的类型别名：\n\nAny 可以表示任何类型，包括函数类型。\nAnyObject 可以表示任何类类型的实例。\n\n只有当你确实需要它们的行为和功能时才使用 Any 和 AnyObject。最好还是在代码中指明需要使用的类型。\n这里有个示例，使用 Any 类型来和混合的不同类型一起工作，包括函数类型和非类类型。它创建了一个可以存储 Any 类型的数组 things：\n12345678910var things = [Any]()things.append(0)things.append(0.0)things.append(42)things.append(3.14159)things.append(&quot;hello&quot;)things.append((3.0, 5.0))things.append(Movie(name: &quot;Ghostbusters&quot;, director: &quot;Ivan Reitman&quot;))things.append(&#123; (name: String) -&gt; String in &quot;Hello, \\(name)&quot; &#125;)\nthings 数组包含两个 Int 值，两个 Double 值，一个 String 值，一个元组 (Double, Double)，一个 Movie 实例“Ghostbusters”，以及一个接受 String 值并返回另一个 String 值的闭包表达式。\n你可以在 switch 表达式的 case 中使用 is 和 as 操作符来找出只知道是 Any 或 AnyObject 类型的常量或变量的具体类型。下面的示例迭代 things 数组中的每一项，并用 switch 语句查找每一项的类型。有几个 switch 语句的 case 绑定它们匹配到的值到一个指定类型的常量，从而可以打印这些值：\n123456789101112131415161718192021222324252627282930313233for thing in things &#123;    switch thing &#123;    case 0 as Int:        print(&quot;zero as an Int&quot;)    case 0 as Double:        print(&quot;zero as a Double&quot;)    case let someInt as Int:        print(&quot;an integer value of \\(someInt)&quot;)    case let someDouble as Double where someDouble &gt; 0:        print(&quot;a positive double value of \\(someDouble)&quot;)    case is Double:        print(&quot;some other double value that I don&#x27;t want to print&quot;)    case let someString as String:        print(&quot;a string value of \\&quot;\\(someString)\\&quot;&quot;)    case let (x, y) as (Double, Double):        print(&quot;an (x, y) point at \\(x), \\(y)&quot;)    case let movie as Movie:        print(&quot;a movie called \\(movie.name), dir. \\(movie.director)&quot;)    case let stringConverter as (String) -&gt; String:        print(stringConverter(&quot;Michael&quot;))    default:        print(&quot;something else&quot;)    &#125;&#125;// zero as an Int// zero as a Double// an integer value of 42// a positive double value of 3.14159// a string value of &quot;hello&quot;// an (x, y) point at 3.0, 5.0// a movie called Ghostbusters, dir. Ivan Reitman// Hello, Michael\n\n注意\nAny 类型可以表示所有类型的值，包括可选类型。Swift 会在你用 Any 类型来表示一个可选值的时候，给你一个警告。如果你确实想使用 Any 类型来承载可选值，你可以使用 as 操作符显式转换为 Any，如下所示：\n\n123let optionalNumber: Int? = 3things.append(optionalNumber)        // 警告things.append(optionalNumber as Any) // 没有警告\n","dateCreated":"2023-07-06T10:13:17+08:00","dateModified":"2025-06-18T12:24:11+08:00","datePublished":"2023-07-06T10:13:17+08:00","description":"","headline":"swift类型转换","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/","keywords":"swift"}</script>
+    <meta name="description" content="类型转换 类型转换可以判断实例的类型，也可以将实例看做是其父类或者子类的实例。 类型转换在 Swift 中使用 is 和 as 操作符实现。这两个操作符分别提供了一种简单达意的方式去检查值的类型或者转换它的类型。 你也可以用它来检查一个类型是否遵循了某个协议，就像在 检验协议遵循 部分讲述的一样。 为类型转换定义类层次 你可以将类型转换用在类和子类的层次结构上，检查特定类实例的类型并且转换这个类实">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="swift类型转换">
+<meta property="og:url" content="https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="类型转换 类型转换可以判断实例的类型，也可以将实例看做是其父类或者子类的实例。 类型转换在 Swift 中使用 is 和 as 操作符实现。这两个操作符分别提供了一种简单达意的方式去检查值的类型或者转换它的类型。 你也可以用它来检查一个类型是否遵循了某个协议，就像在 检验协议遵循 部分讲述的一样。 为类型转换定义类层次 你可以将类型转换用在类和子类的层次结构上，检查特定类实例的类型并且转换这个类实">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2023-07-06T02:13:17.000Z">
+<meta property="article:modified_time" content="2025-06-18T04:24:11.447Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="swift">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            swift类型转换
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2023-07-06T10:13:17+08:00">
+	
+		    2023 年 7 月 6 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/swift/">swift</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="类型转换">类型转换</h2>
+<p><em>类型转换</em>可以判断实例的类型，也可以将实例看做是其父类或者子类的实例。</p>
+<p>类型转换在 Swift 中使用 <code>is</code> 和 <code>as</code> 操作符实现。这两个操作符分别提供了一种简单达意的方式去检查值的类型或者转换它的类型。</p>
+<p>你也可以用它来检查一个类型是否遵循了某个协议，就像在 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter2/21_Protocols.html#checking_for_protocol_conformance">检验协议遵循</a> 部分讲述的一样。</p>
+<h2 id="为类型转换定义类层次">为类型转换定义类层次</h2>
+<p>你可以将类型转换用在类和子类的层次结构上，检查特定类实例的类型并且转换这个类实例的类型成为这个层次结构中的其他类型。下面的三个代码段定义了一个类层次和一个包含了这些类实例的数组，作为类型转换的例子。</p>
+<p>第一个代码片段定义了一个新的基类 <code>MediaItem</code>。这个类为任何出现在数字媒体库的媒体项提供基础功能。特别的，它声明了一个 <code>String</code> 类型的 <code>name</code> 属性，和一个 <code>init(name:)</code> 初始化器。（假定所有的媒体项都有个名称。）</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MediaItem</span> &#123;</span><br><span class="line">    <span class="keyword">var</span> name: <span class="type">String</span></span><br><span class="line">    <span class="keyword">init</span>(<span class="params">name</span>: <span class="type">String</span>) &#123;</span><br><span class="line">        <span class="keyword">self</span>.name <span class="operator">=</span> name</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下一个代码段定义了 <code>MediaItem</code> 的两个子类。第一个子类 <code>Movie</code> 封装了与电影相关的额外信息，在父类（或者说基类）的基础上增加了一个 <code>director</code>（导演）属性，和相应的初始化器。第二个子类 <code>Song</code>，在父类的基础上增加了一个 <code>artist</code>（艺术家）属性，和相应的初始化器：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Movie</span>: <span class="title class_ inherited__">MediaItem</span> &#123;</span><br><span class="line">    <span class="keyword">var</span> director: <span class="type">String</span></span><br><span class="line">    <span class="keyword">init</span>(<span class="params">name</span>: <span class="type">String</span>, <span class="params">director</span>: <span class="type">String</span>) &#123;</span><br><span class="line">        <span class="keyword">self</span>.director <span class="operator">=</span> director</span><br><span class="line">        <span class="keyword">super</span>.<span class="keyword">init</span>(name: name)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Song</span>: <span class="title class_ inherited__">MediaItem</span> &#123;</span><br><span class="line">    <span class="keyword">var</span> artist: <span class="type">String</span></span><br><span class="line">    <span class="keyword">init</span>(<span class="params">name</span>: <span class="type">String</span>, <span class="params">artist</span>: <span class="type">String</span>) &#123;</span><br><span class="line">        <span class="keyword">self</span>.artist <span class="operator">=</span> artist</span><br><span class="line">        <span class="keyword">super</span>.<span class="keyword">init</span>(name: name)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后一个代码段创建了一个数组常量 <code>library</code>，包含两个 <code>Movie</code> 实例和三个 <code>Song</code> 实例。<code>library</code> 的类型是在它被初始化时根据它数组中所包含的内容推断来的。Swift 的类型检测器能够推断出 <code>Movie</code> 和 <code>Song</code> 有共同的父类 <code>MediaItem</code>，所以它推断出 <code>[MediaItem]</code> 类作为 <code>library</code> 的类型：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> library <span class="operator">=</span> [</span><br><span class="line">    <span class="type">Movie</span>(name: <span class="string">&quot;Casablanca&quot;</span>, director: <span class="string">&quot;Michael Curtiz&quot;</span>),</span><br><span class="line">    <span class="type">Song</span>(name: <span class="string">&quot;Blue Suede Shoes&quot;</span>, artist: <span class="string">&quot;Elvis Presley&quot;</span>),</span><br><span class="line">    <span class="type">Movie</span>(name: <span class="string">&quot;Citizen Kane&quot;</span>, director: <span class="string">&quot;Orson Welles&quot;</span>),</span><br><span class="line">    <span class="type">Song</span>(name: <span class="string">&quot;The One And Only&quot;</span>, artist: <span class="string">&quot;Chesney Hawkes&quot;</span>),</span><br><span class="line">    <span class="type">Song</span>(name: <span class="string">&quot;Never Gonna Give You Up&quot;</span>, artist: <span class="string">&quot;Rick Astley&quot;</span>)</span><br><span class="line">]</span><br><span class="line"><span class="comment">// 数组 library 的类型被推断为 [MediaItem]</span></span><br></pre></td></tr></table></figure>
+<p>在幕后 <code>library</code> 里存储的媒体项依然是 <code>Movie</code> 和 <code>Song</code> 类型的。但是，若你迭代它，依次取出的实例会是 <code>MediaItem</code> 类型的，而不是 <code>Movie</code> 和 <code>Song</code> 类型。为了让它们作为原本的类型工作，你需要检查它们的类型或者向下转换它们到其它类型，就像下面描述的一样。</p>
+<h2 id="检查类型">检查类型</h2>
+<p>用<em>类型检查操作符</em>（<code>is</code>）来检查一个实例是否属于特定子类型。若实例属于那个子类型，类型检查操作符返回 <code>true</code>，否则返回 <code>false</code>。</p>
+<p>下面的例子定义了两个变量，<code>movieCount</code> 和 <code>songCount</code>，用来计算数组 <code>library</code> 中 <code>Movie</code> 和 <code>Song</code> 类型的实例数量：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> movieCount <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">var</span> songCount <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> item <span class="keyword">in</span> library &#123;</span><br><span class="line">    <span class="keyword">if</span> item <span class="keyword">is</span> <span class="type">Movie</span> &#123;</span><br><span class="line">        movieCount <span class="operator">+=</span> <span class="number">1</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> item <span class="keyword">is</span> <span class="type">Song</span> &#123;</span><br><span class="line">        songCount <span class="operator">+=</span> <span class="number">1</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Media library contains <span class="subst">\(movieCount)</span> movies and <span class="subst">\(songCount)</span> songs&quot;</span>)</span><br><span class="line"><span class="comment">// 打印“Media library contains 2 movies and 3 songs”</span></span><br></pre></td></tr></table></figure>
+<p>示例迭代了数组 <code>library</code> 中的所有项。每一次，<code>for-in</code> 循环设置 <code>item</code> 常量为数组中的下一个 <code>MediaItem</code> 实例。</p>
+<p>若当前 <code>MediaItem</code> 是一个 <code>Movie</code> 类型的实例，<code>item is Movie</code> 返回 <code>true</code>，否则返回 <code>false</code>。同样的，<code>item is Song</code> 检查 <code>item</code> 是否为 <code>Song</code> 类型的实例。在循环结束后，<code>movieCount</code> 和 <code>songCount</code> 的值就是被找到的属于各自类型的实例的数量。</p>
+<h2 id="向下转型">向下转型</h2>
+<p>某类型的一个常量或变量可能在幕后实际上属于一个子类。当确定是这种情况时，你可以尝试用<em>类型转换操作符</em>（<code>as?</code> 或 <code>as!</code>）向下转到它的子类型。</p>
+<p>因为向下转型可能会失败，类型转型操作符带有两种不同形式。条件形式 <code>as?</code> 返回一个你试图向下转成的类型的可选值。强制形式 <code>as!</code> 把试图向下转型和强制解包转换结果结合为一个操作。</p>
+<p>当你不确定向下转型可以成功时，用类型转换的条件形式（<code>as?</code>）。条件形式的类型转换总是返回一个可选值，并且若下转是不可能的，可选值将是 <code>nil</code>。这使你能够检查向下转型是否成功。</p>
+<p>只有你可以确定向下转型一定会成功时，才使用强制形式（<code>as!</code>）。当你试图向下转型为一个不正确的类型时，强制形式的类型转换会触发一个运行时错误。</p>
+<p>下面的例子，迭代了 <code>library</code> 里的每一个 <code>MediaItem</code>，并打印出适当的描述。要这样做，<code>item</code> 需要真正作为 <code>Movie</code> 或 <code>Song</code> 的类型来使用，而不仅仅是作为 <code>MediaItem</code>。为了能够在描述中使用 <code>Movie</code> 或 <code>Song</code> 的 <code>director</code> 或 <code>artist</code> 属性，这是必要的。</p>
+<p>在这个示例中，数组中的每一个 <code>item</code> 可能是 <code>Movie</code> 或 <code>Song</code>。事前你不知道每个 <code>item</code> 的真实类型，所以这里使用条件形式的类型转换（<code>as?</code>）去检查循环里的每次下转：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> item <span class="keyword">in</span> library &#123;</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">let</span> movie <span class="operator">=</span> item <span class="keyword">as?</span> <span class="type">Movie</span> &#123;</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;Movie: <span class="subst">\(movie.name)</span>, dir. <span class="subst">\(movie.director)</span>&quot;</span>)</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> <span class="keyword">let</span> song <span class="operator">=</span> item <span class="keyword">as?</span> <span class="type">Song</span> &#123;</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;Song: <span class="subst">\(song.name)</span>, by <span class="subst">\(song.artist)</span>&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Movie: Casablanca, dir. Michael Curtiz</span></span><br><span class="line"><span class="comment">// Song: Blue Suede Shoes, by Elvis Presley</span></span><br><span class="line"><span class="comment">// Movie: Citizen Kane, dir. Orson Welles</span></span><br><span class="line"><span class="comment">// Song: The One And Only, by Chesney Hawkes</span></span><br><span class="line"><span class="comment">// Song: Never Gonna Give You Up, by Rick Astley</span></span><br></pre></td></tr></table></figure>
+<p>示例首先试图将 <code>item</code> 下转为 <code>Movie</code>。因为 <code>item</code> 是一个 <code>MediaItem</code> 类型的实例，它可能是一个 <code>Movie</code>；同样，它也可能是一个 <code>Song</code>，或者仅仅是基类 <code>MediaItem</code>。因为不确定，<code>as?</code> 形式在试图下转时将返回一个可选值。<code>item as? Movie</code> 的返回值是 <code>Movie?</code> 或者说“可选 <code>Movie</code>”。</p>
+<p>当向下转型为 <code>Movie</code> 应用在两个 <code>Song</code> 实例时将会失败。为了处理这种情况，上面的例子使用了可选绑定（optional binding）来检查可选 <code>Movie</code> 真的包含一个值（这个是为了判断下转是否成功。）可选绑定是这样写的“<code>if let movie = item as? Movie</code>”，可以这样解读：</p>
+<p>“尝试将 <code>item</code> 转为 <code>Movie</code> 类型。若成功，设置一个新的临时常量 <code>movie</code> 来存储返回的可选 <code>Movie</code> 中的值”</p>
+<p>若向下转型成功，然后 <code>movie</code> 的属性将用于打印一个 <code>Movie</code> 实例的描述，包括它的导演的名字 <code>director</code>。相似的原理被用来检测 <code>Song</code> 实例，当 <code>Song</code> 被找到时则打印它的描述（包含 <code>artist</code> 的名字）。</p>
+<blockquote>
+<p>注意</p>
+<p>转换没有真的改变实例或它的值。根本的实例保持不变；只是简单地把它作为它被转换成的类型来使用。</p>
+</blockquote>
+<h2 id="Any-和-AnyObject-的类型转换"><code>Any</code> 和 <code>AnyObject</code> 的类型转换</h2>
+<p>Swift 为不确定类型提供了两种特殊的类型别名：</p>
+<ul>
+<li><code>Any</code> 可以表示任何类型，包括函数类型。</li>
+<li><code>AnyObject</code> 可以表示任何类类型的实例。</li>
+</ul>
+<p>只有当你确实需要它们的行为和功能时才使用 <code>Any</code> 和 <code>AnyObject</code>。最好还是在代码中指明需要使用的类型。</p>
+<p>这里有个示例，使用 <code>Any</code> 类型来和混合的不同类型一起工作，包括函数类型和非类类型。它创建了一个可以存储 <code>Any</code> 类型的数组 <code>things</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> things <span class="operator">=</span> [<span class="keyword">Any</span>]()</span><br><span class="line"></span><br><span class="line">things.append(<span class="number">0</span>)</span><br><span class="line">things.append(<span class="number">0.0</span>)</span><br><span class="line">things.append(<span class="number">42</span>)</span><br><span class="line">things.append(<span class="number">3.14159</span>)</span><br><span class="line">things.append(<span class="string">&quot;hello&quot;</span>)</span><br><span class="line">things.append((<span class="number">3.0</span>, <span class="number">5.0</span>))</span><br><span class="line">things.append(<span class="type">Movie</span>(name: <span class="string">&quot;Ghostbusters&quot;</span>, director: <span class="string">&quot;Ivan Reitman&quot;</span>))</span><br><span class="line">things.append(&#123; (name: <span class="type">String</span>) -&gt; <span class="type">String</span> <span class="keyword">in</span> <span class="string">&quot;Hello, <span class="subst">\(name)</span>&quot;</span> &#125;)</span><br></pre></td></tr></table></figure>
+<p><code>things</code> 数组包含两个 <code>Int</code> 值，两个 <code>Double</code> 值，一个 <code>String</code> 值，一个元组 <code>(Double, Double)</code>，一个 <code>Movie</code> 实例“Ghostbusters”，以及一个接受 <code>String</code> 值并返回另一个 <code>String</code> 值的闭包表达式。</p>
+<p>你可以在 <code>switch</code> 表达式的 <code>case</code> 中使用 <code>is</code> 和 <code>as</code> 操作符来找出只知道是 <code>Any</code> 或 <code>AnyObject</code> 类型的常量或变量的具体类型。下面的示例迭代 <code>things</code> 数组中的每一项，并用 <code>switch</code> 语句查找每一项的类型。有几个 <code>switch</code> 语句的 <code>case</code> 绑定它们匹配到的值到一个指定类型的常量，从而可以打印这些值：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> thing <span class="keyword">in</span> things &#123;</span><br><span class="line">    <span class="keyword">switch</span> thing &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">0</span> <span class="keyword">as</span> <span class="type">Int</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;zero as an Int&quot;</span>)</span><br><span class="line">    <span class="keyword">case</span> <span class="number">0</span> <span class="keyword">as</span> <span class="type">Double</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;zero as a Double&quot;</span>)</span><br><span class="line">    <span class="keyword">case</span> <span class="keyword">let</span> someInt <span class="keyword">as</span> <span class="type">Int</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;an integer value of <span class="subst">\(someInt)</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">case</span> <span class="keyword">let</span> someDouble <span class="keyword">as</span> <span class="type">Double</span> <span class="keyword">where</span> someDouble <span class="operator">&gt;</span> <span class="number">0</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;a positive double value of <span class="subst">\(someDouble)</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">case</span> <span class="keyword">is</span> <span class="type">Double</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;some other double value that I don&#x27;t want to print&quot;</span>)</span><br><span class="line">    <span class="keyword">case</span> <span class="keyword">let</span> someString <span class="keyword">as</span> <span class="type">String</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;a string value of <span class="subst">\&quot;</span><span class="subst">\(someString)</span><span class="subst">\&quot;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">case</span> <span class="keyword">let</span> (x, y) <span class="keyword">as</span> (<span class="type">Double</span>, <span class="type">Double</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;an (x, y) point at <span class="subst">\(x)</span>, <span class="subst">\(y)</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">case</span> <span class="keyword">let</span> movie <span class="keyword">as</span> <span class="type">Movie</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;a movie called <span class="subst">\(movie.name)</span>, dir. <span class="subst">\(movie.director)</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">case</span> <span class="keyword">let</span> stringConverter <span class="keyword">as</span> (<span class="type">String</span>) -&gt; <span class="type">String</span>:</span><br><span class="line">        <span class="built_in">print</span>(stringConverter(<span class="string">&quot;Michael&quot;</span>))</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;something else&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// zero as an Int</span></span><br><span class="line"><span class="comment">// zero as a Double</span></span><br><span class="line"><span class="comment">// an integer value of 42</span></span><br><span class="line"><span class="comment">// a positive double value of 3.14159</span></span><br><span class="line"><span class="comment">// a string value of &quot;hello&quot;</span></span><br><span class="line"><span class="comment">// an (x, y) point at 3.0, 5.0</span></span><br><span class="line"><span class="comment">// a movie called Ghostbusters, dir. Ivan Reitman</span></span><br><span class="line"><span class="comment">// Hello, Michael</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意</p>
+<p><code>Any</code> 类型可以表示所有类型的值，包括可选类型。Swift 会在你用 <code>Any</code> 类型来表示一个可选值的时候，给你一个警告。如果你确实想使用 <code>Any</code> 类型来承载可选值，你可以使用 <code>as</code> 操作符显式转换为 <code>Any</code>，如下所示：</p>
+</blockquote>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> optionalNumber: <span class="type">Int</span>? <span class="operator">=</span> <span class="number">3</span></span><br><span class="line">things.append(optionalNumber)        <span class="comment">// 警告</span></span><br><span class="line">things.append(optionalNumber <span class="keyword">as</span> <span class="keyword">Any</span>) <span class="comment">// 没有警告</span></span><br></pre></td></tr></table></figure>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/swift/" rel="tag">swift</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    data-tooltip="swift嵌套类型"
+                    aria-label="上一篇: swift嵌套类型"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                    data-tooltip="swift错误处理"
+                    aria-label="下一篇: swift错误处理"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    data-tooltip="swift嵌套类型"
+                    aria-label="上一篇: swift嵌套类型"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                    data-tooltip="swift错误处理"
+                    aria-label="下一篇: swift错误处理"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 235 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

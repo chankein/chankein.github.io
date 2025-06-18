@@ -1,0 +1,1113 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>JavaScript-underscore - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"underscore\n前面我们已经讲过了，JavaScript是函数式编程语言，支持高阶函数和闭包。函数式编程非常强大，可以写出非常简洁的代码。例如Array的map()和filter()方法：\n123let a1 = [1, 4, 9, 16];let a2 = a1.map(Math.sqrt); // [1, 2, 3, 4]let a3 = a2.filter((x) =&gt; &#123; return x % 2 === 0; &#125;); // [2, 4]\n现在问题来了，Array有map()和filter()方法，可是Object没有这些方法。此外，低版本的浏览器例如IE6～8也没有这些方法，怎么办？\n方法一，自己把这些方法添加到Array.prototype中，然后给Object.prototype也加上mapObject()等类似的方法。\n方法二，直接找一个成熟可靠的第三方开源库，使用统一的函数来实现map()、filter()这些操作。\n我们采用方法二，选择的第三方库就是underscore。\n正如jQuery统一了不同浏览器之间的DOM操作的差异，让我们可以简单地对DOM进行操作，underscore则提供了一套完善的函数式编程的接口，让我们更方便地在JavaScript中实现函数式编程。\njQuery在加载时，会把自身绑定到唯一的全局变量$上，underscore与其类似，会把自身绑定到唯一的全局变量_上，这也是为啥它的名字叫underscore的原因。\n用underscore实现map()操作如下：\n12let r = _.map([1, 2, 3], (x) =&gt; x * x);console.log(r); // [1, 4, 9]\n咋一看比直接用Array.map()要麻烦一点，可是underscore的map()还可以作用于Object：\n1_.map(&#123; a: 1, b: 2, c: 3 &#125;, (v, k) =&gt; k + &#x27;=&#x27; + v); // [&#x27;a=1&#x27;, &#x27;b=2&#x27;, &#x27;c=3&#x27;]\n后面我们会详细介绍underscore提供了一系列函数式接口。\n\n\nunderscore为集合类对象提供了一致的接口。集合类是指Array和Object，暂不支持Map和Set。\nmap/filter\n和Array的map()与filter()类似，但是underscore的map()和filter()可以作用于Object。当作用于Object时，传入的函数为function (value, key)，第一个参数接收value，第二个参数接收key：\n1234567891011let obj = &#123;    name: &#x27;bob&#x27;,    school: &#x27;No.1 middle school&#x27;,    address: &#x27;xueyuan road&#x27;&#125;;let upper = _.map(obj, function (value, key) &#123;    return ???;&#125;);console.log(JSON.stringify(upper));\n你也许会想，为啥对Object作map()操作的返回结果是Array？应该是Object才合理啊！把_.map换成_.mapObject再试试。\nevery / some\n当集合的所有元素都满足条件时，_.every()函数返回true，当集合的至少一个元素满足条件时，_.some()函数返回true：\n1234// 所有元素都大于0？_.every([1, 4, 7, -3, -9], (x) =&gt; x &gt; 0); // false// 至少一个元素大于0？_.some([1, 4, 7, -3, -9], (x) =&gt; x &gt; 0); // true\n当集合是Object时，我们可以同时获得value和key：\n123456789101112131415let obj = &#123;    name: &#x27;bob&#x27;,    school: &#x27;No.1 middle school&#x27;,    address: &#x27;xueyuan road&#x27;&#125;;// 判断key和value是否全部是小写：let r1 = _.every(obj, function (value, key) &#123;    return ???;&#125;);let r2 = _.some(obj, function (value, key) &#123;    return ???;&#125;);console.log(&#x27;every key-value are lowercase: &#x27; + r1 + &#x27;\\nsome key-value are lowercase: &#x27; + r2);\nmax / min\n这两个函数直接返回集合中最大和最小的数：\n123456789let arr = [3, 5, 7, 9];_.max(arr); // 9_.min(arr); // 3// 空集合会返回-Infinity和Infinity，所以要先判断集合不为空：_.max([])-Infinity_.min([])Infinity\n注意，如果集合是Object，max()和min()只作用于value，忽略掉key：\n1_.max(&#123; a: 1, b: 2, c: 3 &#125;); // 3\ngroupBy\ngroupBy()把集合的元素按照key归类，key由传入的函数返回：\n12345678910111213141516let scores = [20, 81, 75, 40, 91, 59, 77, 66, 72, 88, 99];let groups = _.groupBy(scores, function (x) &#123;    if (x &lt; 60) &#123;        return &#x27;C&#x27;;    &#125; else if (x &lt; 80) &#123;        return &#x27;B&#x27;;    &#125; else &#123;        return &#x27;A&#x27;;    &#125;&#125;);// 结果:// &#123;//   A: [81, 91, 88, 99],//   B: [75, 77, 66, 72],//   C: [20, 40, 59]// &#125;\n可见groupBy()用来分组是非常方便的。\nshuffle / sample\nshuffle()用洗牌算法随机打乱一个集合：\n12// 注意每次结果都不一样：_.shuffle([1, 2, 3, 4, 5, 6]); // [3, 5, 4, 6, 2, 1]\nsample()则是随机选择一个或多个元素：\n12345// 注意每次结果都不一样：// 随机选1个：_.sample([1, 2, 3, 4, 5, 6]); // 2// 随机选3个：_.sample([1, 2, 3, 4, 5, 6], 3); // [6, 1, 4]\n更多完整的函数请参考underscore的文档：https://underscorejs.org/#collections\nunderscore为Array提供了许多工具类方法，可以更方便快捷地操作Array。\nfirst / last\n顾名思义，这两个函数分别取第一个和最后一个元素：\n123let arr = [2, 4, 6, 8];_.first(arr); // 2_.last(arr); // 8\nflatten\nflatten()接收一个Array，无论这个Array里面嵌套了多少个Array，flatten()最后都把它们变成一个一维数组：\n1_.flatten([1, [2], [3, [[4], [5]]]]); // [1, 2, 3, 4, 5]\nzip / unzip\nzip()把两个或多个数组的所有元素按索引对齐，然后按索引合并成新数组。例如，你有一个Array保存了名字，另一个Array保存了分数，现在，要把名字和分数给对上，用zip()轻松实现：\n1234let names = [&#x27;Adam&#x27;, &#x27;Lisa&#x27;, &#x27;Bart&#x27;];let scores = [85, 92, 59];_.zip(names, scores);// [[&#x27;Adam&#x27;, 85], [&#x27;Lisa&#x27;, 92], [&#x27;Bart&#x27;, 59]]\nunzip()则是反过来：\n123let namesAndScores = [[&#x27;Adam&#x27;, 85], [&#x27;Lisa&#x27;, 92], [&#x27;Bart&#x27;, 59]];_.unzip(namesAndScores);// [[&#x27;Adam&#x27;, &#x27;Lisa&#x27;, &#x27;Bart&#x27;], [85, 92, 59]]\nobject\n有时候你会想，与其用zip()，为啥不把名字和分数直接对应成Object呢？别急，object()函数就是干这个的：\n1234let names = [&#x27;Adam&#x27;, &#x27;Lisa&#x27;, &#x27;Bart&#x27;];let scores = [85, 92, 59];_.object(names, scores);// &#123;Adam: 85, Lisa: 92, Bart: 59&#125;\n注意_.object()是一个函数，不是JavaScript的Object对象。\nrange\nrange()让你快速生成一个序列，不再需要用for循环实现了：\n1234567891011// 从0开始小于10:_.range(10); // [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]// 从1开始小于11：_.range(1, 11); // [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]// 从0开始小于30，步长5:_.range(0, 30, 5); // [0, 5, 10, 15, 20, 25]// 从0开始大于-10，步长-1:_.range(0, -10, -1); // [0, -1, -2, -3, -4, -5, -6, -7, -8, -9]\n更多完整的函数请参考underscore的文档：https://underscorejs.org/#arrays\n练习\n请根据underscore官方文档，使用_.uniq对数组元素进行不区分大小写去重：\n123456789let arr = [&#x27;Apple&#x27;, &#x27;orange&#x27;, &#x27;banana&#x27;, &#x27;ORANGE&#x27;, &#x27;apple&#x27;, &#x27;PEAR&#x27;];let result = ???// 测试if (result.toString() === [&quot;Apple&quot;, &quot;orange&quot;, &quot;banana&quot;, &quot;PEAR&quot;].toString()) &#123;    console.log(&#x27;测试成功!&#x27;);&#125; else &#123;    console.log(&#x27;测试失败!&#x27;);&#125;\n因为underscore本来就是为了充分发挥JavaScript的函数式编程特性，所以也提供了大量JavaScript本身没有的高阶函数。\nbind\nbind()有什么用？我们先看一个常见的错误用法：\n1234567let s = &#x27; Hello  &#x27;;s.trim();// 输出&#x27;Hello&#x27;let fn = s.trim;fn();// Uncaught TypeError: String.prototype.trim called on null or undefined\n如果你想用fn()取代s.trim()，按照上面的做法是不行的，因为直接调用fn()传入的this指针是undefined，必须这么用：\n12345let s = &#x27; Hello  &#x27;;let fn = s.trim;// 调用call并传入s对象作为this:fn.call(s)// 输出Hello\n这样搞多麻烦！还不如直接用s.trim()。但是，bind()可以帮我们把s对象直接绑定在fn()的this指针上，以后调用fn()就可以直接正常调用了：\n1234let s = &#x27; Hello  &#x27;;let fn = _.bind(s.trim, s);fn();// 输出Hello\n结论：当用一个变量fn指向一个对象的方法时，直接调用fn()是不行的，因为丢失了this对象的引用。用bind可以修复这个问题。\npartial\npartial()就是为一个函数创建偏函数。偏函数是什么东东？看例子：\n假设我们要计算xy，这时只需要调用Math.pow(x, y)就可以了。\n假设我们经常计算2y，每次都写Math.pow(2, y)就比较麻烦，如果创建一个新的函数能直接这样写pow2N(y)就好了，这个新函数pow2N(y)就是根据Math.pow(x, y)创建出来的偏函数，它固定住了原函数的第一个参数（始终为2）：\n1234let pow2N = _.partial(Math.pow, 2);pow2N(3); // 8pow2N(5); // 32pow2N(10); // 1024\n如果我们不想固定第一个参数，想固定第二个参数怎么办？比如，希望创建一个偏函数cube(x)，计算x3，可以用_作占位符，固定住第二个参数：\n1234let cube = _.partial(Math.pow, _, 3);cube(3); // 27cube(5); // 125cube(10); // 1000\n可见，创建偏函数的目的是将原函数的某些参数固定住，可以降低新函数调用的难度。\nmemoize\n如果一个函数调用开销很大，我们就可能希望能把结果缓存下来，以便后续调用时直接获得结果。举个例子，计算阶乘就比较耗时：\n123456789101112131415function factorial(n) &#123;    console.log(&#x27;start calculate &#x27; + n + &#x27;!...&#x27;);    let s = 1, i = n;    while (i &gt; 1) &#123;        s = s * i;        i --;    &#125;    console.log(n + &#x27;! = &#x27; + s);    return s;&#125;factorial(10); // 3628800// 注意控制台输出:// start calculate 10!...// 10! = 3628800\n用memoize()就可以自动缓存函数计算的结果：\n1234567891011121314151617181920let factorial = _.memoize(function(n) &#123;    console.log(&#x27;start calculate &#x27; + n + &#x27;!...&#x27;);    let s = 1, i = n;    while (i &gt; 1) &#123;        s = s * i;        i --;    &#125;    console.log(n + &#x27;! = &#x27; + s);    return s;&#125;);// 第一次调用:factorial(10); // 3628800// 注意控制台输出:// start calculate 10!...// 10! = 3628800// 第二次调用:factorial(10); // 3628800// 控制台没有输出\n对于相同的调用，比如连续两次调用factorial(10)，第二次调用并没有计算，而是直接返回上次计算后缓存的结果。不过，当你计算factorial(9)的时候，仍然会重新计算。\n可以对factorial()进行改进，让其递归调用：\n1234567891011121314151617181920212223let factorial = _.memoize(function(n) &#123;    console.log(&#x27;start calculate &#x27; + n + &#x27;!...&#x27;);    if (n &lt; 2) &#123;        return 1;    &#125;    return n * factorial(n - 1);&#125;);factorial(10); // 3628800// 输出结果说明factorial(1)~factorial(10)都已经缓存了:// start calculate 10!...// start calculate 9!...// start calculate 8!...// start calculate 7!...// start calculate 6!...// start calculate 5!...// start calculate 4!...// start calculate 3!...// start calculate 2!...// start calculate 1!...factorial(9); // 362880// console无输出\nonce\n顾名思义，once()保证某个函数执行且仅执行一次。如果你有一个方法叫register()，用户在页面上点两个按钮的任何一个都可以执行的话，就可以用once()保证函数仅调用一次，无论用户点击多少次：\n12345678let register = _.once(function () &#123;    console.log(&#x27;Register ok!&#x27;);&#125;);// 测试效果:register();register();register();\ndelay\ndelay()可以让一个函数延迟执行，效果和setTimeout()是一样的，但是代码明显简单了：\n12// 2秒后调用alert():_.delay(alert, 2000);\n如果要延迟调用的函数有参数，把参数也传进去：\n123let log = _.bind(console.log, console);_.delay(log, 2000, &#x27;Hello,&#x27;, &#x27;world!&#x27;);// 2秒后打印&#x27;Hello, world!&#x27;:\n更多完整的函数请参考underscore的文档：https://underscorejs.org/#functions\n和Array类似，underscore也提供了大量针对Object的函数。\nkeys / allKeys\nkeys()可以非常方便地返回一个object自身所有的key，但不包含从原型链继承下来的：\n1234567function Student(name, age) &#123;    this.name = name;    this.age = age;&#125;let xiaoming = new Student(&#x27;小明&#x27;, 20);_.keys(xiaoming); // [&#x27;name&#x27;, &#x27;age&#x27;]\nallKeys()除了object自身的key，还包含从原型链继承下来的：\n1234567function Student(name, age) &#123;    this.name = name;    this.age = age;&#125;Student.prototype.school = &#x27;No.1 Middle School&#x27;;let xiaoming = new Student(&#x27;小明&#x27;, 20);_.allKeys(xiaoming); // [&#x27;name&#x27;, &#x27;age&#x27;, &#x27;school&#x27;]\nvalues\n和keys()类似，values()返回object自身但不包含原型链继承的所有值：\n123456let obj = &#123;    name: &#x27;小明&#x27;,    age: 20&#125;;_.values(obj); // [&#x27;小明&#x27;, 20]\n注意，没有allValues()，原因我也不知道。\nmapObject\nmapObject()就是针对object的map版本：\n123let obj = &#123; a: 1, b: 2, c: 3 &#125;;// 注意传入的函数签名，value在前，key在后:_.mapObject(obj, (v, k) =&gt; 100 + v); // &#123; a: 101, b: 102, c: 103 &#125;\ninvert\ninvert()把object的每个key-value来个交换，key变成value，value变成key：\n123456let obj = &#123;    Adam: 90,    Lisa: 85,    Bart: 59&#125;;_.invert(obj); // &#123; &#x27;59&#x27;: &#x27;Bart&#x27;, &#x27;85&#x27;: &#x27;Lisa&#x27;, &#x27;90&#x27;: &#x27;Adam&#x27; &#125;\nextend / extendOwn\nextend()把多个object的key-value合并到第一个object并返回：\n1234let a = &#123;name: &#x27;Bob&#x27;, age: 20&#125;;_.extend(a, &#123;age: 15&#125;, &#123;age: 88, city: &#x27;Beijing&#x27;&#125;); // &#123;name: &#x27;Bob&#x27;, age: 88, city: &#x27;Beijing&#x27;&#125;// 变量a的内容也改变了：a; // &#123;name: &#x27;Bob&#x27;, age: 88, city: &#x27;Beijing&#x27;&#125;\n注意：如果有相同的key，后面的object的value将覆盖前面的object的value。\nextendOwn()和extend()类似，但获取属性时忽略从原型链继承下来的属性。\nclone\n如果我们要复制一个object对象，就可以用clone()方法，它会把原有对象的所有属性都复制到新的对象中：\n12345678let source = &#123;    name: &#x27;小明&#x27;,    age: 20,    skills: [&#x27;JavaScript&#x27;, &#x27;CSS&#x27;, &#x27;HTML&#x27;]&#125;;let copied = _.clone(source);console.log(JSON.stringify(copied, null, &#x27;  &#x27;));\n注意，clone()是“浅复制”。所谓“浅复制”就是说，两个对象相同的key所引用的value其实是同一对象：\n1source.skills === copied.skills; // true\n也就是说，修改source.skills会影响copied.skills。\nisEqual\nisEqual()对两个object进行深度比较，如果内容完全相同，则返回true：\n12345let o1 = &#123; name: &#x27;Bob&#x27;, skills: &#123; Java: 90, JavaScript: 99 &#125;&#125;;let o2 = &#123; name: &#x27;Bob&#x27;, skills: &#123; JavaScript: 99, Java: 90 &#125;&#125;;o1 === o2; // false_.isEqual(o1, o2); // true\nisEqual()其实对Array也可以比较：\n12345let o1 = [&#x27;Bob&#x27;, &#123; skills: [&#x27;Java&#x27;, &#x27;JavaScript&#x27;] &#125;];let o2 = [&#x27;Bob&#x27;, &#123; skills: [&#x27;Java&#x27;, &#x27;JavaScript&#x27;] &#125;];o1 === o2; // false_.isEqual(o1, o2); // true\n更多完整的函数请参考underscore的文档：https://underscorejs.org/#objects\nChaining\n还记得jQuery支持链式调用吗？\n123$(&#x27;a&#x27;).attr(&#x27;target&#x27;, &#x27;_blank&#x27;)      .append(&#x27; &lt;i class=&quot;uk-icon-external-link&quot;&gt;&lt;/i&gt;&#x27;)      .click(function () &#123;&#125;);\n如果我们有一组操作，用underscore提供的函数，写出来像这样：\n12_.filter(_.map([1, 4, 9, 16, 25], Math.sqrt), x =&gt; x % 2 === 1);// [1, 3, 5]\n能不能写成链式调用？\n能！\nunderscore提供了把对象包装成能进行链式调用的方法，就是chain()函数：\n12345let r = _.chain([1, 4, 9, 16, 25])         .map(Math.sqrt)         .filter(x =&gt; x % 2 === 1)         .value();console.log(r); // [1, 3, 5]\n因为每一步返回的都是包装对象，所以最后一步的结果需要调用value()获得最终结果。\n小结\n通过学习underscore，是不是对JavaScript的函数式编程又有了进一步的认识？\n\n\n","dateCreated":"2024-01-17T22:15:06+08:00","dateModified":"2025-06-18T12:38:04+08:00","datePublished":"2024-01-17T22:15:06+08:00","description":"","headline":"JavaScript-underscore","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/","keywords":"JavaScript, 前端"}</script>
+    <meta name="description" content="underscore 前面我们已经讲过了，JavaScript是函数式编程语言，支持高阶函数和闭包。函数式编程非常强大，可以写出非常简洁的代码。例如Array的map()和filter()方法： 123let a1 &#x3D; [1, 4, 9, 16];let a2 &#x3D; a1.map(Math.sqrt); &#x2F;&#x2F; [1, 2, 3, 4]let a3 &#x3D; a2.filter((x) &#x3D;&gt; &amp;#12">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="JavaScript-underscore">
+<meta property="og:url" content="https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="underscore 前面我们已经讲过了，JavaScript是函数式编程语言，支持高阶函数和闭包。函数式编程非常强大，可以写出非常简洁的代码。例如Array的map()和filter()方法： 123let a1 &#x3D; [1, 4, 9, 16];let a2 &#x3D; a1.map(Math.sqrt); &#x2F;&#x2F; [1, 2, 3, 4]let a3 &#x3D; a2.filter((x) &#x3D;&gt; &amp;#12">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2024-01-17T14:15:06.000Z">
+<meta property="article:modified_time" content="2025-06-18T04:38:04.558Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="JavaScript">
+<meta property="article:tag" content="前端">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            JavaScript-underscore
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2024-01-17T22:15:06+08:00">
+	
+		    2024 年 1 月 17 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/JavaScript/">JavaScript</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="underscore">underscore</h2>
+<p>前面我们已经讲过了，JavaScript是函数式编程语言，支持高阶函数和闭包。函数式编程非常强大，可以写出非常简洁的代码。例如<code>Array</code>的<code>map()</code>和<code>filter()</code>方法：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> a1 = [<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>, <span class="number">16</span>];</span><br><span class="line"><span class="keyword">let</span> a2 = a1.<span class="title function_">map</span>(<span class="title class_">Math</span>.<span class="property">sqrt</span>); <span class="comment">// [1, 2, 3, 4]</span></span><br><span class="line"><span class="keyword">let</span> a3 = a2.<span class="title function_">filter</span>(<span class="function">(<span class="params">x</span>) =&gt;</span> &#123; <span class="keyword">return</span> x % <span class="number">2</span> === <span class="number">0</span>; &#125;); <span class="comment">// [2, 4]</span></span><br></pre></td></tr></table></figure>
+<p>现在问题来了，<code>Array</code>有<code>map()</code>和<code>filter()</code>方法，可是Object没有这些方法。此外，低版本的浏览器例如IE6～8也没有这些方法，怎么办？</p>
+<p>方法一，自己把这些方法添加到<code>Array.prototype</code>中，然后给<code>Object.prototype</code>也加上<code>mapObject()</code>等类似的方法。</p>
+<p>方法二，直接找一个成熟可靠的第三方开源库，使用统一的函数来实现<code>map()</code>、<code>filter()</code>这些操作。</p>
+<p>我们采用方法二，选择的第三方库就是underscore。</p>
+<p>正如jQuery统一了不同浏览器之间的DOM操作的差异，让我们可以简单地对DOM进行操作，underscore则提供了一套完善的函数式编程的接口，让我们更方便地在JavaScript中实现函数式编程。</p>
+<p>jQuery在加载时，会把自身绑定到唯一的全局变量<code>$</code>上，underscore与其类似，会把自身绑定到唯一的全局变量<code>_</code>上，这也是为啥它的名字叫underscore的原因。</p>
+<p>用underscore实现<code>map()</code>操作如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">let r = _.map([1, 2, 3], (x) =&gt; x * x);</span><br><span class="line">console.log(r); // [1, 4, 9]</span><br></pre></td></tr></table></figure>
+<p>咋一看比直接用<code>Array.map()</code>要麻烦一点，可是underscore的<code>map()</code>还可以作用于Object：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">_.<span class="title function_">map</span>(&#123; <span class="attr">a</span>: <span class="number">1</span>, <span class="attr">b</span>: <span class="number">2</span>, <span class="attr">c</span>: <span class="number">3</span> &#125;, <span class="function">(<span class="params">v, k</span>) =&gt;</span> k + <span class="string">&#x27;=&#x27;</span> + v); <span class="comment">// [&#x27;a=1&#x27;, &#x27;b=2&#x27;, &#x27;c=3&#x27;]</span></span><br></pre></td></tr></table></figure>
+<p>后面我们会详细介绍underscore提供了一系列函数式接口。</p>
+<hr>
+<hr>
+<p>underscore为集合类对象提供了一致的接口。集合类是指Array和Object，暂不支持Map和Set。</p>
+<h3 id="map-filter">map/filter</h3>
+<p>和<code>Array</code>的<code>map()</code>与<code>filter()</code>类似，但是underscore的<code>map()</code>和<code>filter()</code>可以作用于Object。当作用于Object时，传入的函数为<code>function (value, key)</code>，第一个参数接收value，第二个参数接收key：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">let obj = &#123;</span><br><span class="line">    name: &#x27;bob&#x27;,</span><br><span class="line">    school: &#x27;No.1 middle school&#x27;,</span><br><span class="line">    address: &#x27;xueyuan road&#x27;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">let upper = _.map(obj, function (value, key) &#123;</span><br><span class="line">    return ???;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">console.log(JSON.stringify(upper));</span><br></pre></td></tr></table></figure>
+<p>你也许会想，为啥对Object作<code>map()</code>操作的返回结果是<code>Array</code>？应该是Object才合理啊！把<code>_.map</code>换成<code>_.mapObject</code>再试试。</p>
+<h3 id="every-some">every / some</h3>
+<p>当集合的所有元素都满足条件时，<code>_.every()</code>函数返回<code>true</code>，当集合的至少一个元素满足条件时，<code>_.some()</code>函数返回<code>true</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 所有元素都大于0？</span></span><br><span class="line">_.<span class="title function_">every</span>([<span class="number">1</span>, <span class="number">4</span>, <span class="number">7</span>, -<span class="number">3</span>, -<span class="number">9</span>], <span class="function">(<span class="params">x</span>) =&gt;</span> x &gt; <span class="number">0</span>); <span class="comment">// false</span></span><br><span class="line"><span class="comment">// 至少一个元素大于0？</span></span><br><span class="line">_.<span class="title function_">some</span>([<span class="number">1</span>, <span class="number">4</span>, <span class="number">7</span>, -<span class="number">3</span>, -<span class="number">9</span>], <span class="function">(<span class="params">x</span>) =&gt;</span> x &gt; <span class="number">0</span>); <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+<p>当集合是Object时，我们可以同时获得value和key：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">let obj = &#123;</span><br><span class="line">    name: &#x27;bob&#x27;,</span><br><span class="line">    school: &#x27;No.1 middle school&#x27;,</span><br><span class="line">    address: &#x27;xueyuan road&#x27;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">// 判断key和value是否全部是小写：</span><br><span class="line">let r1 = _.every(obj, function (value, key) &#123;</span><br><span class="line">    return ???;</span><br><span class="line">&#125;);</span><br><span class="line">let r2 = _.some(obj, function (value, key) &#123;</span><br><span class="line">    return ???;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">console.log(&#x27;every key-value are lowercase: &#x27; + r1 + &#x27;\nsome key-value are lowercase: &#x27; + r2);</span><br></pre></td></tr></table></figure>
+<h3 id="max-min">max / min</h3>
+<p>这两个函数直接返回集合中最大和最小的数：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> arr = [<span class="number">3</span>, <span class="number">5</span>, <span class="number">7</span>, <span class="number">9</span>];</span><br><span class="line">_.<span class="title function_">max</span>(arr); <span class="comment">// 9</span></span><br><span class="line">_.<span class="title function_">min</span>(arr); <span class="comment">// 3</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 空集合会返回-Infinity和Infinity，所以要先判断集合不为空：</span></span><br><span class="line">_.<span class="title function_">max</span>([])</span><br><span class="line">-<span class="title class_">Infinity</span></span><br><span class="line">_.<span class="title function_">min</span>([])</span><br><span class="line"><span class="title class_">Infinity</span></span><br></pre></td></tr></table></figure>
+<p>注意，如果集合是Object，<code>max()</code>和<code>min()</code>只作用于value，忽略掉key：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">_.<span class="title function_">max</span>(&#123; <span class="attr">a</span>: <span class="number">1</span>, <span class="attr">b</span>: <span class="number">2</span>, <span class="attr">c</span>: <span class="number">3</span> &#125;); <span class="comment">// 3</span></span><br></pre></td></tr></table></figure>
+<h3 id="groupBy">groupBy</h3>
+<p><code>groupBy()</code>把集合的元素按照key归类，key由传入的函数返回：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> scores = [<span class="number">20</span>, <span class="number">81</span>, <span class="number">75</span>, <span class="number">40</span>, <span class="number">91</span>, <span class="number">59</span>, <span class="number">77</span>, <span class="number">66</span>, <span class="number">72</span>, <span class="number">88</span>, <span class="number">99</span>];</span><br><span class="line"><span class="keyword">let</span> groups = _.<span class="title function_">groupBy</span>(scores, <span class="keyword">function</span> (<span class="params">x</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (x &lt; <span class="number">60</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&#x27;C&#x27;</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (x &lt; <span class="number">80</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&#x27;B&#x27;</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&#x27;A&#x27;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br><span class="line"><span class="comment">// 结果:</span></span><br><span class="line"><span class="comment">// &#123;</span></span><br><span class="line"><span class="comment">//   A: [81, 91, 88, 99],</span></span><br><span class="line"><span class="comment">//   B: [75, 77, 66, 72],</span></span><br><span class="line"><span class="comment">//   C: [20, 40, 59]</span></span><br><span class="line"><span class="comment">// &#125;</span></span><br></pre></td></tr></table></figure>
+<p>可见<code>groupBy()</code>用来分组是非常方便的。</p>
+<h3 id="shuffle-sample">shuffle / sample</h3>
+<p><code>shuffle()</code>用洗牌算法随机打乱一个集合：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 注意每次结果都不一样：</span></span><br><span class="line">_.<span class="title function_">shuffle</span>([<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>]); <span class="comment">// [3, 5, 4, 6, 2, 1]</span></span><br></pre></td></tr></table></figure>
+<p><code>sample()</code>则是随机选择一个或多个元素：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 注意每次结果都不一样：</span></span><br><span class="line"><span class="comment">// 随机选1个：</span></span><br><span class="line">_.<span class="title function_">sample</span>([<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>]); <span class="comment">// 2</span></span><br><span class="line"><span class="comment">// 随机选3个：</span></span><br><span class="line">_.<span class="title function_">sample</span>([<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>], <span class="number">3</span>); <span class="comment">// [6, 1, 4]</span></span><br></pre></td></tr></table></figure>
+<p>更多完整的函数请参考underscore的文档：<a target="_blank" rel="noopener" href="https://underscorejs.org/#collections">https://underscorejs.org/#collections</a></p>
+<p>underscore为<code>Array</code>提供了许多工具类方法，可以更方便快捷地操作<code>Array</code>。</p>
+<h3 id="first-last">first / last</h3>
+<p>顾名思义，这两个函数分别取第一个和最后一个元素：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> arr = [<span class="number">2</span>, <span class="number">4</span>, <span class="number">6</span>, <span class="number">8</span>];</span><br><span class="line">_.<span class="title function_">first</span>(arr); <span class="comment">// 2</span></span><br><span class="line">_.<span class="title function_">last</span>(arr); <span class="comment">// 8</span></span><br></pre></td></tr></table></figure>
+<h3 id="flatten">flatten</h3>
+<p><code>flatten()</code>接收一个<code>Array</code>，无论这个<code>Array</code>里面嵌套了多少个<code>Array</code>，<code>flatten()</code>最后都把它们变成一个一维数组：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">_.<span class="title function_">flatten</span>([<span class="number">1</span>, [<span class="number">2</span>], [<span class="number">3</span>, [[<span class="number">4</span>], [<span class="number">5</span>]]]]); <span class="comment">// [1, 2, 3, 4, 5]</span></span><br></pre></td></tr></table></figure>
+<h3 id="zip-unzip">zip / unzip</h3>
+<p><code>zip()</code>把两个或多个数组的所有元素按索引对齐，然后按索引合并成新数组。例如，你有一个<code>Array</code>保存了名字，另一个<code>Array</code>保存了分数，现在，要把名字和分数给对上，用<code>zip()</code>轻松实现：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> names = [<span class="string">&#x27;Adam&#x27;</span>, <span class="string">&#x27;Lisa&#x27;</span>, <span class="string">&#x27;Bart&#x27;</span>];</span><br><span class="line"><span class="keyword">let</span> scores = [<span class="number">85</span>, <span class="number">92</span>, <span class="number">59</span>];</span><br><span class="line">_.<span class="title function_">zip</span>(names, scores);</span><br><span class="line"><span class="comment">// [[&#x27;Adam&#x27;, 85], [&#x27;Lisa&#x27;, 92], [&#x27;Bart&#x27;, 59]]</span></span><br></pre></td></tr></table></figure>
+<p><code>unzip()</code>则是反过来：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> namesAndScores = [[<span class="string">&#x27;Adam&#x27;</span>, <span class="number">85</span>], [<span class="string">&#x27;Lisa&#x27;</span>, <span class="number">92</span>], [<span class="string">&#x27;Bart&#x27;</span>, <span class="number">59</span>]];</span><br><span class="line">_.<span class="title function_">unzip</span>(namesAndScores);</span><br><span class="line"><span class="comment">// [[&#x27;Adam&#x27;, &#x27;Lisa&#x27;, &#x27;Bart&#x27;], [85, 92, 59]]</span></span><br></pre></td></tr></table></figure>
+<h3 id="object">object</h3>
+<p>有时候你会想，与其用<code>zip()</code>，为啥不把名字和分数直接对应成Object呢？别急，<code>object()</code>函数就是干这个的：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> names = [<span class="string">&#x27;Adam&#x27;</span>, <span class="string">&#x27;Lisa&#x27;</span>, <span class="string">&#x27;Bart&#x27;</span>];</span><br><span class="line"><span class="keyword">let</span> scores = [<span class="number">85</span>, <span class="number">92</span>, <span class="number">59</span>];</span><br><span class="line">_.<span class="title function_">object</span>(names, scores);</span><br><span class="line"><span class="comment">// &#123;Adam: 85, Lisa: 92, Bart: 59&#125;</span></span><br></pre></td></tr></table></figure>
+<p>注意<code>_.object()</code>是一个函数，不是JavaScript的<code>Object</code>对象。</p>
+<h3 id="range">range</h3>
+<p><code>range()</code>让你快速生成一个序列，不再需要用<code>for</code>循环实现了：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 从0开始小于10:</span></span><br><span class="line">_.<span class="title function_">range</span>(<span class="number">10</span>); <span class="comment">// [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 从1开始小于11：</span></span><br><span class="line">_.<span class="title function_">range</span>(<span class="number">1</span>, <span class="number">11</span>); <span class="comment">// [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 从0开始小于30，步长5:</span></span><br><span class="line">_.<span class="title function_">range</span>(<span class="number">0</span>, <span class="number">30</span>, <span class="number">5</span>); <span class="comment">// [0, 5, 10, 15, 20, 25]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 从0开始大于-10，步长-1:</span></span><br><span class="line">_.<span class="title function_">range</span>(<span class="number">0</span>, -<span class="number">10</span>, -<span class="number">1</span>); <span class="comment">// [0, -1, -2, -3, -4, -5, -6, -7, -8, -9]</span></span><br></pre></td></tr></table></figure>
+<p>更多完整的函数请参考underscore的文档：<a target="_blank" rel="noopener" href="https://underscorejs.org/#arrays">https://underscorejs.org/#arrays</a></p>
+<h3 id="练习">练习</h3>
+<p>请根据underscore官方文档，使用<code>_.uniq</code>对数组元素进行<em>不区分大小写</em>去重：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">let arr = [&#x27;Apple&#x27;, &#x27;orange&#x27;, &#x27;banana&#x27;, &#x27;ORANGE&#x27;, &#x27;apple&#x27;, &#x27;PEAR&#x27;];</span><br><span class="line">let result = ???</span><br><span class="line"></span><br><span class="line">// 测试</span><br><span class="line">if (result.toString() === [&quot;Apple&quot;, &quot;orange&quot;, &quot;banana&quot;, &quot;PEAR&quot;].toString()) &#123;</span><br><span class="line">    console.log(&#x27;测试成功!&#x27;);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    console.log(&#x27;测试失败!&#x27;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因为underscore本来就是为了充分发挥JavaScript的函数式编程特性，所以也提供了大量JavaScript本身没有的高阶函数。</p>
+<h3 id="bind">bind</h3>
+<p><code>bind()</code>有什么用？我们先看一个常见的错误用法：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> s = <span class="string">&#x27; Hello  &#x27;</span>;</span><br><span class="line">s.<span class="title function_">trim</span>();</span><br><span class="line"><span class="comment">// 输出&#x27;Hello&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> fn = s.<span class="property">trim</span>;</span><br><span class="line"><span class="title function_">fn</span>();</span><br><span class="line"><span class="comment">// Uncaught TypeError: String.prototype.trim called on null or undefined</span></span><br></pre></td></tr></table></figure>
+<p>如果你想用<code>fn()</code>取代<code>s.trim()</code>，按照上面的做法是不行的，因为直接调用<code>fn()</code>传入的<code>this</code>指针是<code>undefined</code>，必须这么用：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> s = <span class="string">&#x27; Hello  &#x27;</span>;</span><br><span class="line"><span class="keyword">let</span> fn = s.<span class="property">trim</span>;</span><br><span class="line"><span class="comment">// 调用call并传入s对象作为this:</span></span><br><span class="line">fn.<span class="title function_">call</span>(s)</span><br><span class="line"><span class="comment">// 输出Hello</span></span><br></pre></td></tr></table></figure>
+<p>这样搞多麻烦！还不如直接用<code>s.trim()</code>。但是，<code>bind()</code>可以帮我们把<code>s</code>对象直接绑定在<code>fn()</code>的<code>this</code>指针上，以后调用<code>fn()</code>就可以直接正常调用了：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> s = <span class="string">&#x27; Hello  &#x27;</span>;</span><br><span class="line"><span class="keyword">let</span> fn = _.<span class="title function_">bind</span>(s.<span class="property">trim</span>, s);</span><br><span class="line"><span class="title function_">fn</span>();</span><br><span class="line"><span class="comment">// 输出Hello</span></span><br></pre></td></tr></table></figure>
+<p>结论：当用一个变量<code>fn</code>指向一个对象的方法时，直接调用<code>fn()</code>是不行的，因为丢失了<code>this</code>对象的引用。用<code>bind</code>可以修复这个问题。</p>
+<h3 id="partial">partial</h3>
+<p><code>partial()</code>就是为一个函数创建偏函数。偏函数是什么东东？看例子：</p>
+<p>假设我们要计算xy，这时只需要调用<code>Math.pow(x, y)</code>就可以了。</p>
+<p>假设我们经常计算2y，每次都写<code>Math.pow(2, y)</code>就比较麻烦，如果创建一个新的函数能直接这样写<code>pow2N(y)</code>就好了，这个新函数<code>pow2N(y)</code>就是根据<code>Math.pow(x, y)</code>创建出来的偏函数，它固定住了原函数的第一个参数（始终为2）：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> pow2N = _.<span class="title function_">partial</span>(<span class="title class_">Math</span>.<span class="property">pow</span>, <span class="number">2</span>);</span><br><span class="line"><span class="title function_">pow2N</span>(<span class="number">3</span>); <span class="comment">// 8</span></span><br><span class="line"><span class="title function_">pow2N</span>(<span class="number">5</span>); <span class="comment">// 32</span></span><br><span class="line"><span class="title function_">pow2N</span>(<span class="number">10</span>); <span class="comment">// 1024</span></span><br></pre></td></tr></table></figure>
+<p>如果我们不想固定第一个参数，想固定第二个参数怎么办？比如，希望创建一个偏函数<code>cube(x)</code>，计算x3，可以用<code>_</code>作占位符，固定住第二个参数：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> cube = _.<span class="title function_">partial</span>(<span class="title class_">Math</span>.<span class="property">pow</span>, _, <span class="number">3</span>);</span><br><span class="line"><span class="title function_">cube</span>(<span class="number">3</span>); <span class="comment">// 27</span></span><br><span class="line"><span class="title function_">cube</span>(<span class="number">5</span>); <span class="comment">// 125</span></span><br><span class="line"><span class="title function_">cube</span>(<span class="number">10</span>); <span class="comment">// 1000</span></span><br></pre></td></tr></table></figure>
+<p>可见，创建偏函数的目的是将原函数的某些参数固定住，可以降低新函数调用的难度。</p>
+<h3 id="memoize">memoize</h3>
+<p>如果一个函数调用开销很大，我们就可能希望能把结果缓存下来，以便后续调用时直接获得结果。举个例子，计算阶乘就比较耗时：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">factorial</span>(<span class="params">n</span>) &#123;</span><br><span class="line">    <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;start calculate &#x27;</span> + n + <span class="string">&#x27;!...&#x27;</span>);</span><br><span class="line">    <span class="keyword">let</span> s = <span class="number">1</span>, i = n;</span><br><span class="line">    <span class="keyword">while</span> (i &gt; <span class="number">1</span>) &#123;</span><br><span class="line">        s = s * i;</span><br><span class="line">        i --;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="variable language_">console</span>.<span class="title function_">log</span>(n + <span class="string">&#x27;! = &#x27;</span> + s);</span><br><span class="line">    <span class="keyword">return</span> s;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="title function_">factorial</span>(<span class="number">10</span>); <span class="comment">// 3628800</span></span><br><span class="line"><span class="comment">// 注意控制台输出:</span></span><br><span class="line"><span class="comment">// start calculate 10!...</span></span><br><span class="line"><span class="comment">// 10! = 3628800</span></span><br></pre></td></tr></table></figure>
+<p>用<code>memoize()</code>就可以自动缓存函数计算的结果：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> factorial = _.<span class="title function_">memoize</span>(<span class="keyword">function</span>(<span class="params">n</span>) &#123;</span><br><span class="line">    <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;start calculate &#x27;</span> + n + <span class="string">&#x27;!...&#x27;</span>);</span><br><span class="line">    <span class="keyword">let</span> s = <span class="number">1</span>, i = n;</span><br><span class="line">    <span class="keyword">while</span> (i &gt; <span class="number">1</span>) &#123;</span><br><span class="line">        s = s * i;</span><br><span class="line">        i --;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="variable language_">console</span>.<span class="title function_">log</span>(n + <span class="string">&#x27;! = &#x27;</span> + s);</span><br><span class="line">    <span class="keyword">return</span> s;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 第一次调用:</span></span><br><span class="line"><span class="title function_">factorial</span>(<span class="number">10</span>); <span class="comment">// 3628800</span></span><br><span class="line"><span class="comment">// 注意控制台输出:</span></span><br><span class="line"><span class="comment">// start calculate 10!...</span></span><br><span class="line"><span class="comment">// 10! = 3628800</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 第二次调用:</span></span><br><span class="line"><span class="title function_">factorial</span>(<span class="number">10</span>); <span class="comment">// 3628800</span></span><br><span class="line"><span class="comment">// 控制台没有输出</span></span><br></pre></td></tr></table></figure>
+<p>对于相同的调用，比如连续两次调用<code>factorial(10)</code>，第二次调用并没有计算，而是直接返回上次计算后缓存的结果。不过，当你计算<code>factorial(9)</code>的时候，仍然会重新计算。</p>
+<p>可以对<code>factorial()</code>进行改进，让其递归调用：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> factorial = _.<span class="title function_">memoize</span>(<span class="keyword">function</span>(<span class="params">n</span>) &#123;</span><br><span class="line">    <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;start calculate &#x27;</span> + n + <span class="string">&#x27;!...&#x27;</span>);</span><br><span class="line">    <span class="keyword">if</span> (n &lt; <span class="number">2</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> n * <span class="title function_">factorial</span>(n - <span class="number">1</span>);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"><span class="title function_">factorial</span>(<span class="number">10</span>); <span class="comment">// 3628800</span></span><br><span class="line"><span class="comment">// 输出结果说明factorial(1)~factorial(10)都已经缓存了:</span></span><br><span class="line"><span class="comment">// start calculate 10!...</span></span><br><span class="line"><span class="comment">// start calculate 9!...</span></span><br><span class="line"><span class="comment">// start calculate 8!...</span></span><br><span class="line"><span class="comment">// start calculate 7!...</span></span><br><span class="line"><span class="comment">// start calculate 6!...</span></span><br><span class="line"><span class="comment">// start calculate 5!...</span></span><br><span class="line"><span class="comment">// start calculate 4!...</span></span><br><span class="line"><span class="comment">// start calculate 3!...</span></span><br><span class="line"><span class="comment">// start calculate 2!...</span></span><br><span class="line"><span class="comment">// start calculate 1!...</span></span><br><span class="line"></span><br><span class="line"><span class="title function_">factorial</span>(<span class="number">9</span>); <span class="comment">// 362880</span></span><br><span class="line"><span class="comment">// console无输出</span></span><br></pre></td></tr></table></figure>
+<h3 id="once">once</h3>
+<p>顾名思义，<code>once()</code>保证某个函数执行且仅执行一次。如果你有一个方法叫<code>register()</code>，用户在页面上点两个按钮的任何一个都可以执行的话，就可以用<code>once()</code>保证函数仅调用一次，无论用户点击多少次：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">let register = _.once(function () &#123;</span><br><span class="line">    console.log(&#x27;Register ok!&#x27;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">// 测试效果:</span><br><span class="line">register();</span><br><span class="line">register();</span><br><span class="line">register();</span><br></pre></td></tr></table></figure>
+<h3 id="delay">delay</h3>
+<p><code>delay()</code>可以让一个函数延迟执行，效果和<code>setTimeout()</code>是一样的，但是代码明显简单了：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 2秒后调用alert():</span></span><br><span class="line">_.<span class="title function_">delay</span>(alert, <span class="number">2000</span>);</span><br></pre></td></tr></table></figure>
+<p>如果要延迟调用的函数有参数，把参数也传进去：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> log = _.<span class="title function_">bind</span>(<span class="variable language_">console</span>.<span class="property">log</span>, <span class="variable language_">console</span>);</span><br><span class="line">_.<span class="title function_">delay</span>(log, <span class="number">2000</span>, <span class="string">&#x27;Hello,&#x27;</span>, <span class="string">&#x27;world!&#x27;</span>);</span><br><span class="line"><span class="comment">// 2秒后打印&#x27;Hello, world!&#x27;:</span></span><br></pre></td></tr></table></figure>
+<p>更多完整的函数请参考underscore的文档：<a target="_blank" rel="noopener" href="https://underscorejs.org/#functions">https://underscorejs.org/#functions</a></p>
+<p>和<code>Array</code>类似，underscore也提供了大量针对Object的函数。</p>
+<h3 id="keys-allKeys">keys / allKeys</h3>
+<p><code>keys()</code>可以非常方便地返回一个object自身所有的key，但不包含从原型链继承下来的：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">Student</span>(<span class="params">name, age</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">age</span> = age;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> xiaoming = <span class="keyword">new</span> <span class="title class_">Student</span>(<span class="string">&#x27;小明&#x27;</span>, <span class="number">20</span>);</span><br><span class="line">_.<span class="title function_">keys</span>(xiaoming); <span class="comment">// [&#x27;name&#x27;, &#x27;age&#x27;]</span></span><br></pre></td></tr></table></figure>
+<p><code>allKeys()</code>除了object自身的key，还包含从原型链继承下来的：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">Student</span>(<span class="params">name, age</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">age</span> = age;</span><br><span class="line">&#125;</span><br><span class="line"><span class="title class_">Student</span>.<span class="property"><span class="keyword">prototype</span></span>.<span class="property">school</span> = <span class="string">&#x27;No.1 Middle School&#x27;</span>;</span><br><span class="line"><span class="keyword">let</span> xiaoming = <span class="keyword">new</span> <span class="title class_">Student</span>(<span class="string">&#x27;小明&#x27;</span>, <span class="number">20</span>);</span><br><span class="line">_.<span class="title function_">allKeys</span>(xiaoming); <span class="comment">// [&#x27;name&#x27;, &#x27;age&#x27;, &#x27;school&#x27;]</span></span><br></pre></td></tr></table></figure>
+<h3 id="values">values</h3>
+<p>和<code>keys()</code>类似，<code>values()</code>返回object自身但不包含原型链继承的所有值：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> obj = &#123;</span><br><span class="line">    <span class="attr">name</span>: <span class="string">&#x27;小明&#x27;</span>,</span><br><span class="line">    <span class="attr">age</span>: <span class="number">20</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">_.<span class="title function_">values</span>(obj); <span class="comment">// [&#x27;小明&#x27;, 20]</span></span><br></pre></td></tr></table></figure>
+<p>注意，没有<code>allValues()</code>，原因我也不知道。</p>
+<h3 id="mapObject">mapObject</h3>
+<p><code>mapObject()</code>就是针对object的map版本：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> obj = &#123; <span class="attr">a</span>: <span class="number">1</span>, <span class="attr">b</span>: <span class="number">2</span>, <span class="attr">c</span>: <span class="number">3</span> &#125;;</span><br><span class="line"><span class="comment">// 注意传入的函数签名，value在前，key在后:</span></span><br><span class="line">_.<span class="title function_">mapObject</span>(obj, <span class="function">(<span class="params">v, k</span>) =&gt;</span> <span class="number">100</span> + v); <span class="comment">// &#123; a: 101, b: 102, c: 103 &#125;</span></span><br></pre></td></tr></table></figure>
+<h3 id="invert">invert</h3>
+<p><code>invert()</code>把object的每个key-value来个交换，key变成value，value变成key：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> obj = &#123;</span><br><span class="line">    <span class="title class_">Adam</span>: <span class="number">90</span>,</span><br><span class="line">    <span class="title class_">Lisa</span>: <span class="number">85</span>,</span><br><span class="line">    <span class="title class_">Bart</span>: <span class="number">59</span></span><br><span class="line">&#125;;</span><br><span class="line">_.<span class="title function_">invert</span>(obj); <span class="comment">// &#123; &#x27;59&#x27;: &#x27;Bart&#x27;, &#x27;85&#x27;: &#x27;Lisa&#x27;, &#x27;90&#x27;: &#x27;Adam&#x27; &#125;</span></span><br></pre></td></tr></table></figure>
+<h3 id="extend-extendOwn">extend / extendOwn</h3>
+<p><code>extend()</code>把多个object的key-value合并到第一个object并返回：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> a = &#123;<span class="attr">name</span>: <span class="string">&#x27;Bob&#x27;</span>, <span class="attr">age</span>: <span class="number">20</span>&#125;;</span><br><span class="line">_.<span class="title function_">extend</span>(a, &#123;<span class="attr">age</span>: <span class="number">15</span>&#125;, &#123;<span class="attr">age</span>: <span class="number">88</span>, <span class="attr">city</span>: <span class="string">&#x27;Beijing&#x27;</span>&#125;); <span class="comment">// &#123;name: &#x27;Bob&#x27;, age: 88, city: &#x27;Beijing&#x27;&#125;</span></span><br><span class="line"><span class="comment">// 变量a的内容也改变了：</span></span><br><span class="line">a; <span class="comment">// &#123;name: &#x27;Bob&#x27;, age: 88, city: &#x27;Beijing&#x27;&#125;</span></span><br></pre></td></tr></table></figure>
+<p>注意：如果有相同的key，后面的object的value将覆盖前面的object的value。</p>
+<p><code>extendOwn()</code>和<code>extend()</code>类似，但获取属性时忽略从原型链继承下来的属性。</p>
+<h3 id="clone">clone</h3>
+<p>如果我们要复制一个object对象，就可以用<code>clone()</code>方法，它会把原有对象的所有属性都复制到新的对象中：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">let source = &#123;</span><br><span class="line">    name: &#x27;小明&#x27;,</span><br><span class="line">    age: 20,</span><br><span class="line">    skills: [&#x27;JavaScript&#x27;, &#x27;CSS&#x27;, &#x27;HTML&#x27;]</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">let copied = _.clone(source);</span><br><span class="line">console.log(JSON.stringify(copied, null, &#x27;  &#x27;));</span><br></pre></td></tr></table></figure>
+<p>注意，<code>clone()</code>是“浅复制”。所谓“浅复制”就是说，两个对象相同的key所引用的value其实是同一对象：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source.<span class="property">skills</span> === copied.<span class="property">skills</span>; <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+<p>也就是说，修改<code>source.skills</code>会影响<code>copied.skills</code>。</p>
+<h3 id="isEqual">isEqual</h3>
+<p><code>isEqual()</code>对两个object进行深度比较，如果内容完全相同，则返回<code>true</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> o1 = &#123; <span class="attr">name</span>: <span class="string">&#x27;Bob&#x27;</span>, <span class="attr">skills</span>: &#123; <span class="title class_">Java</span>: <span class="number">90</span>, <span class="title class_">JavaScript</span>: <span class="number">99</span> &#125;&#125;;</span><br><span class="line"><span class="keyword">let</span> o2 = &#123; <span class="attr">name</span>: <span class="string">&#x27;Bob&#x27;</span>, <span class="attr">skills</span>: &#123; <span class="title class_">JavaScript</span>: <span class="number">99</span>, <span class="title class_">Java</span>: <span class="number">90</span> &#125;&#125;;</span><br><span class="line"></span><br><span class="line">o1 === o2; <span class="comment">// false</span></span><br><span class="line">_.<span class="title function_">isEqual</span>(o1, o2); <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+<p><code>isEqual()</code>其实对<code>Array</code>也可以比较：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> o1 = [<span class="string">&#x27;Bob&#x27;</span>, &#123; <span class="attr">skills</span>: [<span class="string">&#x27;Java&#x27;</span>, <span class="string">&#x27;JavaScript&#x27;</span>] &#125;];</span><br><span class="line"><span class="keyword">let</span> o2 = [<span class="string">&#x27;Bob&#x27;</span>, &#123; <span class="attr">skills</span>: [<span class="string">&#x27;Java&#x27;</span>, <span class="string">&#x27;JavaScript&#x27;</span>] &#125;];</span><br><span class="line"></span><br><span class="line">o1 === o2; <span class="comment">// false</span></span><br><span class="line">_.<span class="title function_">isEqual</span>(o1, o2); <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+<p>更多完整的函数请参考underscore的文档：<a target="_blank" rel="noopener" href="https://underscorejs.org/#objects">https://underscorejs.org/#objects</a></p>
+<h2 id="Chaining">Chaining</h2>
+<p>还记得jQuery支持链式调用吗？</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$(<span class="string">&#x27;a&#x27;</span>).<span class="title function_">attr</span>(<span class="string">&#x27;target&#x27;</span>, <span class="string">&#x27;_blank&#x27;</span>)</span><br><span class="line">      .<span class="title function_">append</span>(<span class="string">&#x27; &lt;i class=&quot;uk-icon-external-link&quot;&gt;&lt;/i&gt;&#x27;</span>)</span><br><span class="line">      .<span class="title function_">click</span>(<span class="keyword">function</span> (<span class="params"></span>) &#123;&#125;);</span><br></pre></td></tr></table></figure>
+<p>如果我们有一组操作，用underscore提供的函数，写出来像这样：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">_.<span class="title function_">filter</span>(_.<span class="title function_">map</span>([<span class="number">1</span>, <span class="number">4</span>, <span class="number">9</span>, <span class="number">16</span>, <span class="number">25</span>], <span class="title class_">Math</span>.<span class="property">sqrt</span>), <span class="function"><span class="params">x</span> =&gt;</span> x % <span class="number">2</span> === <span class="number">1</span>);</span><br><span class="line"><span class="comment">// [1, 3, 5]</span></span><br></pre></td></tr></table></figure>
+<p>能不能写成链式调用？</p>
+<p>能！</p>
+<p>underscore提供了把对象包装成能进行链式调用的方法，就是<code>chain()</code>函数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">let r = _.chain([1, 4, 9, 16, 25])</span><br><span class="line">         .map(Math.sqrt)</span><br><span class="line">         .filter(x =&gt; x % 2 === 1)</span><br><span class="line">         .value();</span><br><span class="line">console.log(r); // [1, 3, 5]</span><br></pre></td></tr></table></figure>
+<p>因为每一步返回的都是包装对象，所以最后一步的结果需要调用<code>value()</code>获得最终结果。</p>
+<h3 id="小结">小结</h3>
+<p>通过学习underscore，是不是对JavaScript的函数式编程又有了进一步的认识？</p>
+<hr>
+<hr>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/JavaScript/" rel="tag">JavaScript</a> <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/%E5%89%8D%E7%AB%AF/" rel="tag">前端</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../18/JavaScript/JavaScript-Node-js/"
+                    data-tooltip="JavaScript-Node.js"
+                    aria-label="上一篇: JavaScript-Node.js"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../16/JavaScript/JavaScript-jQuery/"
+                    data-tooltip="JavaScript-jQuery"
+                    aria-label="下一篇: JavaScript-jQuery"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../18/JavaScript/JavaScript-Node-js/"
+                    data-tooltip="JavaScript-Node.js"
+                    aria-label="上一篇: JavaScript-Node.js"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../16/JavaScript/JavaScript-jQuery/"
+                    data-tooltip="JavaScript-jQuery"
+                    aria-label="下一篇: JavaScript-jQuery"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 235 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>

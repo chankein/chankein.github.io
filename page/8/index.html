@@ -301,6 +301,254 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                            aria-label=": 持续集成服务Travis CI教程"
+                        >
+                            持续集成服务Travis CI教程
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2022-12-15T15:15:55+08:00">
+	
+		    2022 年 12 月 15 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/devops/">devops</a>, <a class="category-link" href="../../categories/devops/CI-CD/">CI/CD</a>, <a class="category-link" href="../../categories/devops/CI-CD/TravisCI/">TravisCI</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <p>编写代码只是软件开发的一小部分，更多的时间往往花在构建（build）和测试（test）。</p>
+<p>为了提高软件开发的效率，构建和测试的自动化工具层出不穷。<a target="_blank" rel="noopener" href="https://travis-ci.org/">Travis CI</a> 就是这类工具之中，<a target="_blank" rel="noopener" href="https://github.com/blog/2463-github-welcomes-all-ci-tools">市场份额</a>最大的一个。</p>
+<p><img src="https://www.ruanyifeng.com/blogimg/asset/2017/bg2017121901.png" alt=""></p>
+<p>本文介绍 Travis CI 的基本用法。用好这个工具不仅可以提高效率，还能使开发流程更可靠和专业化，从而提高软件的价值。而且，它对于开源项目是免费的，不花一分钱，就能帮你做掉很多事情。</p>
+<h2 id="一、什么是持续集成？">一、什么是持续集成？</h2>
+<p>Travis CI 提供的是持续集成服务（Continuous Integration，简称 CI）。它绑定 Github 上面的项目，只要有新的代码，就会自动抓取。然后，提供一个运行环境，执行测试，完成构建，还能部署到服务器。</p>
+<p>持续集成指的是只要代码有变更，就自动运行构建和测试，反馈运行结果。确保符合预期以后，再将新代码&quot;集成&quot;到主干。</p>
+<p>持续集成的好处在于，每次代码的小幅变更，就能看到运行结果，从而不断累积小的变更，而不是在开发周期结束时，一下子合并一大块代码。</p>
+<h2 id="二、使用准备">二、使用准备</h2>
+<p>Travis CI 只支持 Github，不支持其他代码托管服务。这意味着，你必须满足以下条件，才能使用 Travis CI。</p>
+<blockquote>
+<ul>
+<li>拥有 GitHub 帐号</li>
+<li>该帐号下面有一个项目</li>
+<li>该项目里面有可运行的代码</li>
+<li>该项目还包含构建或测试脚本</li>
+</ul>
+</blockquote>
+<p>如果这些条件都没问题，就可以开始使用 Travis CI 了。</p>
+<p>首先，访问官方网站 <a target="_blank" rel="noopener" href="https://travis-ci.org/">travis-ci.org</a>，点击右上角的个人头像，使用 Github 账户登入 Travis CI。</p>
+<p>Travis 会列出 Github 上面你的所有仓库，以及你所属于的组织。此时，选择你需要 Travis 帮你构建的仓库，打开仓库旁边的开关。一旦激活了一个仓库，Travis 会监听这个仓库的所有变化。</p>
+<p><img src="https://www.ruanyifeng.com/blogimg/asset/2017/bg2017121902.png" alt=""></p>
+<h2 id="三、-travis-yml">三、.travis.yml</h2>
+<p>Travis 要求项目的根目录下面，必须有一个<code>.travis.yml</code>文件。这是配置文件，指定了 Travis 的行为。该文件必须保存在 Github 仓库里面，一旦代码仓库有新的 Commit，Travis 就会去找这个文件，执行里面的命令。</p>
+<p>这个文件采用 <a target="_blank" rel="noopener" href="https://www.ruanyifeng.com/blog/2016/07/yaml.html">YAML</a> 格式。下面是一个最简单的 Python 项目的<code>.travis.yml</code>文件。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">language</span>: python</span><br><span class="line"><span class="attr">script</span>: <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码中，设置了两个字段。<code>language</code>字段指定了默认运行环境，这里设定使用 Python 环境。<code>script</code>字段指定要运行的脚本，<code>script: true</code>表示不执行任何脚本，状态直接设为成功。</p>
+<p>Travis 默认提供的运行环境，请参考<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/languages">官方文档</a> 。目前一共支持31种语言，以后还会不断增加。</p>
+<p>下面是一个稍微复杂一点的<code>.travis.yml</code>。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">language</span>: python</span><br><span class="line"><span class="attr">sudo</span>: required</span><br><span class="line"><span class="attr">before_install</span>: sudo pip install foo</span><br><span class="line"><span class="attr">script</span>: py.<span class="property">test</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码中，设置了四个字段：运行环境是 Python，需要<code>sudo</code>权限，在安装依赖之前需要安装<code>foo</code>模块，然后执行脚本<code>py.test</code>。</p>
+<h2 id="四、运行流程">四、运行流程</h2>
+<p>Travis 的运行流程很简单，任何项目都会经过两个阶段。</p>
+<blockquote>
+<ul>
+<li>install 阶段：安装依赖</li>
+<li>script 阶段：运行脚本</li>
+</ul>
+</blockquote>
+<h3 id="4-1-install-字段">4.1 install 字段</h3>
+<p><code>install</code>字段用来指定安装脚本。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">install</span>: ./install-dependencies.<span class="property">sh</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>如果有多个脚本，可以写成下面的形式。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">install</span>:</span><br><span class="line">  - command1</span><br><span class="line">  - command2</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码中，如果<code>command1</code>失败了，整个构建就会停下来，不再往下进行。</p>
+<p>如果不需要安装，即跳过安装阶段，就直接设为<code>true</code>。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">install</span>: <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="4-2、script-字段">4.2、script 字段</h3>
+<p><code>script</code>字段用来指定构建或测试脚本。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">script</span>: bundle exec thor build</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>如果有多个脚本，可以写成下面的形式。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">script</span>:</span><br><span class="line">  - command1</span><br><span class="line">  - command2</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>注意，<code>script</code>与<code>install</code>不一样，如果<code>command1</code>失败，<code>command2</code>会继续执行。但是，整个构建阶段的状态是失败。</p>
+<p>如果<code>command2</code>只有在<code>command1</code>成功后才能执行，就要写成下面这样。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">script</span>: command1 &amp;&amp; command2</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="4-3-实例：Node-项目">4.3 实例：Node 项目</h3>
+<p>Node 项目的环境需要写成下面这样。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">language</span>: node_js</span><br><span class="line"><span class="attr">node_js</span>:</span><br><span class="line">  - <span class="string">&quot;8&quot;</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码中，<code>node_js</code>字段用来指定 Node 版本。</p>
+<p>Node 项目的<code>install</code>和<code>script</code>阶段都有默认脚本，可以省略。</p>
+<blockquote>
+<ul>
+<li><code>install</code>默认值：npm install</li>
+<li><code>script</code>默认值：npm test</li>
+</ul>
+</blockquote>
+<p>更多设置请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/languages/javascript-with-nodejs/">官方文档</a>。</p>
+<h3 id="4-4-部署">4.4 部署</h3>
+<p><code>script</code>阶段结束以后，还可以设置<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/notifications/">通知步骤</a>（notification）和<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/deployment/">部署步骤</a>（deployment），它们不是必须的。</p>
+<p>部署的脚本可以在<code>script</code>阶段执行，也可以使用 Travis 为几十种常见服务提供的快捷部署功能。比如，要部署到 <a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/deployment/pages/">Github Pages</a>，可以写成下面这样。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">deploy</span>:</span><br><span class="line">  <span class="attr">provider</span>: pages</span><br><span class="line">  <span class="attr">skip_cleanup</span>: <span class="literal">true</span></span><br><span class="line">  <span class="attr">github_token</span>: $GITHUB_TOKEN # <span class="title class_">Set</span> <span class="keyword">in</span> travis-ci.<span class="property">org</span> dashboard</span><br><span class="line">  <span class="attr">on</span>:</span><br><span class="line">    <span class="attr">branch</span>: master</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>其他部署方式，请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/deployment/">官方文档</a>。</p>
+<h3 id="4-5-钩子方法">4.5 钩子方法</h3>
+<p>Travis 为上面这些阶段提供了7个钩子。</p>
+<blockquote>
+<ul>
+<li>before_install：install 阶段之前执行</li>
+<li>before_script：script 阶段之前执行</li>
+<li>after_failure：script 阶段失败时执行</li>
+<li>after_success：script 阶段成功时执行</li>
+<li>before_deploy：deploy 步骤之前执行</li>
+<li>after_deploy：deploy 步骤之后执行</li>
+<li>after_script：script 阶段之后执行</li>
+</ul>
+</blockquote>
+<p>完整的生命周期，从开始到结束是下面的流程。</p>
+<blockquote>
+<ol>
+<li>before_install</li>
+<li>install</li>
+<li>before_script</li>
+<li>script</li>
+<li>after<em>success or after</em>failure</li>
+<li>[OPTIONAL] before_deploy</li>
+<li>[OPTIONAL] deploy</li>
+<li>[OPTIONAL] after_deploy</li>
+<li>after_script</li>
+</ol>
+</blockquote>
+<p>下面是一个<code>before_install</code>钩子的例子。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">before_install</span>:</span><br><span class="line">  - sudo apt-get -qq update</span><br><span class="line">  - sudo apt-get install -y libxml2-dev</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码表示<code>before_install</code>阶段要做两件事，第一件事是要更新依赖，第二件事是安装<code>libxml2-dev</code>。用到的几个参数的含义如下：<code>-qq</code>表示减少中间步骤的输出，<code>-y</code>表示如果需要用户输入，总是输入<code>yes</code>。</p>
+<h3 id="4-6-运行状态">4.6 运行状态</h3>
+<p>最后，Travis 每次运行，可能会返回四种状态。</p>
+<blockquote>
+<ul>
+<li>passed：运行成功，所有步骤的退出码都是<code>0</code></li>
+<li>canceled：用户取消执行</li>
+<li>errored：<code>before_install</code>、<code>install</code>、<code>before_script</code>有非零退出码，运行会立即停止</li>
+<li>failed ：<code>script</code>有非零状态码 ，会继续运行</li>
+</ul>
+</blockquote>
+<h2 id="五、使用技巧">五、使用技巧</h2>
+<h3 id="5-1-环境变量">5.1 环境变量</h3>
+<p><code>.travis.yml</code>的<code>env</code>字段可以定义环境变量。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">env</span>:</span><br><span class="line">  - <span class="variable constant_">DB</span>=postgres</span><br><span class="line">  - <span class="variable constant_">SH</span>=bash</span><br><span class="line">  - <span class="variable constant_">PACKAGE_VERSION</span>=<span class="string">&quot;1.0.*&quot;</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>然后，脚本内部就使用这些变量了。</p>
+<p>有些环境变量（比如用户名和密码）不能公开，这时可以通过 Travis 网站，写在每个仓库的设置页里面，Travis 会自动把它们加入环境变量。这样一来，脚本内部依然可以使用这些环境变量，但是只有管理员才能看到变量的值。具体操作请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/environment-variables">官方文档</a>。</p>
+<p><img src="https://www.ruanyifeng.com/blogimg/asset/2017/bg2017121903.png" alt=""></p>
+<h3 id="5-2-加密信息">5.2 加密信息</h3>
+<p>如果不放心保密信息明文存在 Travis 的网站，可以使用 Travis 提供的加密功能。</p>
+<p>首先，安装 Ruby 的包<code>travis</code>。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ gem install travis</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>然后，就可以用<code>travis encrypt</code>命令加密信息。</p>
+<p>在项目的根目录下，执行下面的命令。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis encrypt SOMEVAR=secretvalue</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面命令中，<code>SOMEVAR</code>是要加密的变量名，<code>secretvalue</code>是要加密的变量值。执行以后，屏幕上会输出如下信息。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">secure: <span class="string">&quot;.... encrypted data ....&quot;</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>现在，就可以把这一行加入<code>.travis.yml</code>。</p>
+<blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">env</span>:</span><br><span class="line">  <span class="attr">global</span>:</span><br><span class="line">    - <span class="attr">secure</span>: <span class="string">&quot;.... encrypted data ....&quot;</span></span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>然后，脚本里面就可以使用环境变量<code>$SOMEVAR</code>了，Travis 会在运行时自动对它解密。</p>
+<p><code>travis encrypt</code>命令的<code>--add</code>参数会把输出自动写入<code>.travis.yml</code>，省掉了修改<code>env</code>字段的步骤。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis encrypt SOMEVAR=secretvalue --add</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>详细信息请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/encryption-keys/">官方文档</a>。</p>
+<h3 id="5-3-加密文件">5.3 加密文件</h3>
+<p>如果要加密的是文件（比如私钥），Travis 提供了加密文件功能。</p>
+<p>安装命令行客户端以后，使用下面的命令登入 Travis CI。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis login </span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>然后，进入项目的根目录，使用<code>travis encrypt-file</code>命令加密那些想要加密的文件。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis encrypt-file bacon.txt</span><br><span class="line"></span><br><span class="line">encrypting bacon.txt <span class="keyword">for</span> rkh/travis-encrypt-file-example</span><br><span class="line">storing result as bacon.txt.enc</span><br><span class="line">storing secure <span class="built_in">env</span> variables <span class="keyword">for</span> decryption</span><br><span class="line"></span><br><span class="line">Please add the following to your build script (before_install stage <span class="keyword">in</span> your .travis.yml, <span class="keyword">for</span> instance):</span><br><span class="line"></span><br><span class="line">    openssl aes-256-cbc -K <span class="variable">$encrypted_0a6446eb3ae3_key</span> -iv <span class="variable">$encrypted_0a6446eb3ae3_key</span> -<span class="keyword">in</span> bacon.txt.enc -out bacon.txt -d</span><br><span class="line"></span><br><span class="line">Pro Tip: You can add it automatically by running with --add.</span><br><span class="line"></span><br><span class="line">Make sure to add bacon.txt.enc to the git repository.</span><br><span class="line">Make sure not to add bacon.txt to the git repository.</span><br><span class="line">Commit all changes to your .travis.yml.</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面的代码对文件<code>bacon.txt</code>进行加密，加密后会生成<code>bacon.txt.enc</code>，该文件需要提交到代码库。此外，该命令还会生成一个环境变量<code>$encrypted_0a6446eb3ae3_key</code>，保存密钥，储存在 Travis CI，文件解密时需要这个环境变量。你需要把解密所需的<code>openssl</code>命令，写在<code>.travis.yml</code>的<code>before_install</code>字段里面。这些都写在上面的命令行提示里面。</p>
+<p><code>--add</code>参数可以自动把环境变量写入<code>.travis.yml</code>。</p>
+<blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ travis encrypt-file bacon.txt --add</span><br><span class="line"></span><br><span class="line">encrypting bacon.txt <span class="keyword">for</span> rkh/travis-encrypt-file-example</span><br><span class="line">storing result as bacon.txt.enc</span><br><span class="line">storing secure <span class="built_in">env</span> variables <span class="keyword">for</span> decryption</span><br><span class="line"></span><br><span class="line">Make sure to add bacon.txt.enc to the git repository.</span><br><span class="line">Make sure not to add bacon.txt to the git repository.</span><br><span class="line">Commit all changes to your .travis.yml.</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>详细信息请看<a target="_blank" rel="noopener" href="https://docs.travis-ci.com/user/encrypting-files/">官方文档</a>，实际的例子可以参考下面两篇文章。</p>
+<blockquote>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://gist.github.com/domenic/ec8b0fc8ab45f39403dd">Auto-deploying built products to gh-pages with Travis</a></li>
+<li><a target="_blank" rel="noopener" href="https://oncletom.io/2016/travis-ssh-deploy/">SSH deploys with Travis CI</a></li>
+</ul>
+</blockquote>
+<p>（完）</p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../2022/11/05/Redis%E4%BD%BF%E7%94%A8%E8%AF%A6%E8%A7%A3/"
                             aria-label=": Redis使用详解"
                         >
@@ -2861,6 +3109,324 @@ ansible-doc -s MOD_NAME
                     
                         <a
                             class="link-unstyled"
+                            href="../../2021/05/23/makefile%E6%95%99%E7%A8%8B/"
+                            aria-label=": makefile教程"
+                        >
+                            makefile教程
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2021-05-23T12:48:01+08:00">
+	
+		    2021 年 5 月 23 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/devops/">devops</a>, <a class="category-link" href="../../categories/devops/make/">make</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="简介">简介</h2>
+<p>Linux的<code>make</code>程序用来自动化编译大型源码，很多时候，我们在Linux下编译安装软件，只需要敲一个<code>make</code>就可以全自动完成，非常方便。</p>
+<p><code>make</code>能自动化完成这些工作，是因为项目提供了一个<code>Makefile</code>文件，它负责告诉<code>make</code>，应该如何编译和链接程序。</p>
+<p><code>Makefile</code>相当于Java项目的<code>pom.xml</code>，Node工程的<code>package.json</code>，Rust项目的<code>Cargo.toml</code>，不同之处在于，<code>make</code>虽然最初是针对C语言开发，但它实际上并不限定C语言，而是可以应用到任意项目，甚至不是编程语言。此外，<code>make</code>主要用于Unix/Linux环境的自动化开发，掌握<code>Makefile</code>的写法，可以更好地在Linux环境下做开发，也可以为后续开发Linux内核做好准备。</p>
+<p>在本教程中，我们将由浅入深，一步一步学习如何编写<code>Makefile</code>，完全针对零基础小白，只需要提前掌握如何使用Linux命令。</p>
+<hr>
+<p>在Linux环境下，当我们输入<code>make</code>命令时，它就在当前目录查找一个名为<code>Makefile</code>的文件，然后，根据这个文件定义的规则，自动化地执行任意命令，包括编译命令。</p>
+<p><code>Makefile</code>这个单词，顾名思义，就是指如何生成文件。</p>
+<p>我们举个例子：在当前目录下，有3个文本文件：<code>a.txt</code>，<code>b.txt</code>和<code>c.txt</code>。</p>
+<p>现在，我们要合并<code>a.txt</code>与<code>b.txt</code>，生成中间文件<code>m.txt</code>，再用中间文件<code>m.txt</code>与<code>c.txt</code>合并，生成最终的目标文件<code>x.txt</code>，整个逻辑如下图所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">┌─────┐ ┌─────┐ ┌─────┐</span><br><span class="line">│a.txt│ │b.txt│ │c.txt│</span><br><span class="line">└─────┘ └─────┘ └─────┘</span><br><span class="line">   │       │       │</span><br><span class="line">   └───┬───┘       │</span><br><span class="line">       │           │</span><br><span class="line">       ▼           │</span><br><span class="line">    ┌─────┐        │</span><br><span class="line">    │m.txt│        │</span><br><span class="line">    └─────┘        │</span><br><span class="line">       │           │</span><br><span class="line">       └─────┬─────┘</span><br><span class="line">             │</span><br><span class="line">             ▼</span><br><span class="line">          ┌─────┐</span><br><span class="line">          │x.txt│</span><br><span class="line">          └─────┘</span><br></pre></td></tr></table></figure>
+<p>根据上述逻辑，我们来编写<code>Makefile</code>。</p>
+<h3 id="规则">规则</h3>
+<p><code>Makefile</code>由若干条规则（Rule）构成，每一条规则指出一个目标文件（Target），若干依赖文件（prerequisites），以及生成目标文件的命令。</p>
+<p>例如，要生成<code>m.txt</code>，依赖<code>a.txt</code>与<code>b.txt</code>，规则如下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># 目标文件: 依赖文件1 依赖文件2</span><br><span class="line">m.txt: a.txt b.txt</span><br><span class="line">	cat a.txt b.txt &gt; m.txt</span><br></pre></td></tr></table></figure>
+<p>一条规则的格式为<code>目标文件: 依赖文件1 依赖文件2 ...</code>，紧接着，以Tab开头的是命令，用来生成目标文件。上述规则使用<code>cat</code>命令合并了<code>a.txt</code>与<code>b.txt</code>，并写入到<code>m.txt</code>。用什么方式生成目标文件<code>make</code>并不关心，因为命令完全是我们自己写的，可以是编译命令，也可以是<code>cp</code>、<code>mv</code>等任何命令。</p>
+<p>以<code>#</code>开头的是注释，会被<code>make</code>命令忽略。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">注意：Makefile的规则中，命令必须以Tab开头，不能是空格。</span><br></pre></td></tr></table></figure>
+<p>类似的，我们写出生成<code>x.txt</code>的规则如下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x.txt: m.txt c.txt</span><br><span class="line">	cat m.txt c.txt &gt; x.txt</span><br></pre></td></tr></table></figure>
+<p>由于<code>make</code>执行时，默认执行第一条规则，所以，我们把规则<code>x.txt</code>放到前面。完整的<code>Makefile</code>如下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">x.txt: m.txt c.txt</span><br><span class="line">	cat m.txt c.txt &gt; x.txt</span><br><span class="line"></span><br><span class="line">m.txt: a.txt b.txt</span><br><span class="line">	cat a.txt b.txt &gt; m.txt</span><br></pre></td></tr></table></figure>
+<p>在当前目录创建<code>a.txt</code>、<code>b.txt</code>和<code>c.txt</code>，输入一些内容，执行<code>make</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">cat a.txt b.txt &gt; m.txt</span><br><span class="line">cat m.txt c.txt &gt; x.txt</span><br></pre></td></tr></table></figure>
+<p><code>make</code>默认执行第一条规则，也就是创建<code>x.txt</code>，但是由于<code>x.txt</code>依赖的文件<code>m.txt</code>不存在（另一个依赖<code>c.txt</code>已存在），故需要先执行规则<code>m.txt</code>创建出<code>m.txt</code>文件，再执行规则<code>x.txt</code>。执行完成后，当前目录下生成了两个文件<code>m.txt</code>和<code>x.txt</code>。</p>
+<p>可见，<code>Makefile</code>定义了一系列规则，每个规则在满足依赖文件的前提下执行命令，就能创建出一个目标文件，这就是英文Make file的意思。</p>
+<p>把默认执行的规则放第一条，其他规则的顺序是无关紧要的，因为<code>make</code>执行时自动判断依赖。</p>
+<p>此外，<code>make</code>会打印出执行的每一条命令，便于我们观察执行顺序以便调试。</p>
+<p>如果我们再次运行<code>make</code>，输出如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">make: `x.txt&#x27; is up to date.</span><br></pre></td></tr></table></figure>
+<p><code>make</code>检测到<code>x.txt</code>已经是最新版本，无需再次执行，因为<code>x.txt</code>的创建时间晚于它依赖的<code>m.txt</code>和<code>c.txt</code>的最后修改时间。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make使用文件的创建和修改时间来判断是否应该更新一个目标文件。</span><br></pre></td></tr></table></figure>
+<p>修改<code>c.txt</code>后，运行<code>make</code>，会触发<code>x.txt</code>的更新：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">cat m.txt c.txt &gt; x.txt</span><br></pre></td></tr></table></figure>
+<p>但并不会触发<code>m.txt</code>的更新，原因是<code>m.txt</code>的依赖<code>a.txt</code>与<code>b.txt</code>并未更新，所以，<code>make</code>只会根据<code>Makefile</code>去执行那些必要的规则，并不会把所有规则都无脑执行一遍。</p>
+<p>在编译大型程序时，全量编译往往需要几十分钟甚至几个小时。全量编译完成后，如果仅修改了几个文件，再全部重新编译完全没有必要，用<code>Makefile</code>实现增量编译就十分节省时间。</p>
+<p>当然，是否能正确地实现增量更新，取决于我们的规则写得对不对，<code>make</code>本身并不会检查规则逻辑是否正确。</p>
+<h3 id="伪目标">伪目标</h3>
+<p>因为<code>m.txt</code>与<code>x.txt</code>都是自动生成的文件，所以，可以安全地删除。</p>
+<p>删除时，我们也不希望手动删除，而是编写一个<code>clean</code>规则来删除它们：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">clean:</span><br><span class="line">	rm -f m.txt</span><br><span class="line">	rm -f x.txt</span><br></pre></td></tr></table></figure>
+<p><code>clean</code>规则与我们前面编写的规则有所不同，它没有依赖文件，因此，要执行<code>clean</code>，必须用命令<code>make clean</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ make clean</span><br><span class="line">rm -f m.txt</span><br><span class="line">rm -f x.txt</span><br></pre></td></tr></table></figure>
+<p>然而，在执行<code>clean</code>时，我们并没有创建一个名为<code>clean</code>的文件，所以，因为目标文件<code>clean</code>不存在，每次运行<code>make clean</code>，都会执行这个规则的命令。</p>
+<p>如果我们手动创建一个<code>clean</code>的文件，这个<code>clean</code>规则就不会执行了！</p>
+<p>如果我们希望<code>make</code>把<code>clean</code>不要视为文件，可以添加一个标识：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta"><span class="keyword">.PHONY</span>: clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	rm -f m.txt</span><br><span class="line">	rm -f x.txt</span><br></pre></td></tr></table></figure>
+<p>此时，<code>clean</code>就不被视为一个文件，而是伪目标（Phony Target）。</p>
+<p>大型项目通常会提供<code>clean</code>、<code>install</code>这些约定俗成的伪目标名称，方便用户快速执行特定任务。</p>
+<p>一般来说，并不需要用<code>.PHONY</code>标识<code>clean</code>等约定俗成的伪目标名称，除非有人故意搞破坏，手动创建名字叫<code>clean</code>的文件。</p>
+<h3 id="执行多条命令">执行多条命令</h3>
+<p>一个规则可以有多条命令，例如：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">cd:</span></span><br><span class="line">	pwd</span><br><span class="line">	cd ..</span><br><span class="line">	pwd</span><br></pre></td></tr></table></figure>
+<p>执行<code>cd</code>规则：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ make cd</span><br><span class="line">pwd</span><br><span class="line">/home/ubuntu/makefile-tutorial/v1</span><br><span class="line">cd ..</span><br><span class="line">pwd</span><br><span class="line">/home/ubuntu/makefile-tutorial/v1</span><br></pre></td></tr></table></figure>
+<p>观察输出，发现<code>cd ..</code>命令执行后，并未改变当前目录，两次输出的<code>pwd</code>是一样的，这是因为<code>make</code>针对每条命令，都会创建一个独立的Shell环境，类似<code>cd ..</code>这样的命令，并不会影响当前目录。</p>
+<p>解决办法是把多条命令以<code>;</code>分隔，写到一行：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">cd_ok:</span></span><br><span class="line">	pwd; cd ..; pwd;</span><br></pre></td></tr></table></figure>
+<p>再执行<code>cd_ok</code>目标就得到了预期结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ make cd_ok</span><br><span class="line">pwd; cd ..; pwd</span><br><span class="line">/home/ubuntu/makefile-tutorial/v1</span><br><span class="line">/home/ubuntu/makefile-tutorial</span><br></pre></td></tr></table></figure>
+<p>可以使用<code>\</code>把一行语句拆成多行，便于浏览：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">cd_ok:</span></span><br><span class="line">	pwd; \</span><br><span class="line">	cd ..; \</span><br><span class="line">	pwd</span><br></pre></td></tr></table></figure>
+<p>另一种执行多条命令的语法是用<code>&amp;&amp;</code>，它的好处是当某条命令失败时，后续命令不会继续执行：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">cd_ok:</span></span><br><span class="line">	cd .. &amp;&amp; pwd</span><br></pre></td></tr></table></figure>
+<h3 id="控制打印">控制打印</h3>
+<p>默认情况下，<code>make</code>会打印出它执行的每一条命令。如果我们不想打印某一条命令，可以在命令前加上<code>@</code>，表示不打印命令（但是仍然会执行）：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">no_output:</span></span><br><span class="line">	@echo &#x27;not display&#x27;</span><br><span class="line">	echo &#x27;will display&#x27;</span><br></pre></td></tr></table></figure>
+<p>执行结果如下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ make no_output</span><br><span class="line">not display</span><br><span class="line">echo &#x27;will display&#x27;</span><br><span class="line">will display</span><br></pre></td></tr></table></figure>
+<p>注意命令<code>echo 'not display'</code>本身没有打印，但命令仍然会执行，并且执行的结果仍然正常打印。</p>
+<h3 id="控制错误">控制错误</h3>
+<p><code>make</code>在执行命令时，会检查每一条命令的返回值，如果返回错误（非0值），就会中断执行。</p>
+<p>例如，不使用<code>-f</code>删除一个不存在的文件会报错：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">has_error:</span></span><br><span class="line">	rm zzz.txt</span><br><span class="line">	echo &#x27;ok&#x27;</span><br></pre></td></tr></table></figure>
+<p>执行上述目标，输出如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ make has_error</span><br><span class="line">rm zzz.txt</span><br><span class="line">rm: zzz.txt: No such file or directory</span><br><span class="line">make: *** [has_error] Error 1</span><br></pre></td></tr></table></figure>
+<p>由于命令<code>rm zzz.txt</code>报错，导致后面的命令<code>echo 'ok'</code>并不会执行，<code>make</code>打印出错误，然后退出。</p>
+<p>有些时候，我们想忽略错误，继续执行后续命令，可以在需要忽略错误的命令前加上<code>-</code>：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">ignore_error:</span></span><br><span class="line">	-rm zzz.txt</span><br><span class="line">	echo &#x27;ok&#x27;</span><br></pre></td></tr></table></figure>
+<p>执行上述目标，输出如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ make ignore_error</span><br><span class="line">rm zzz.txt</span><br><span class="line">rm: zzz.txt: No such file or directory</span><br><span class="line">make: [ignore_error] Error 1 (ignored)</span><br><span class="line">echo &#x27;ok&#x27;</span><br><span class="line">ok</span><br></pre></td></tr></table></figure>
+<p><code>make</code>检测到<code>rm zzz.txt</code>报错，并打印错误，但显示<code>(ignored)</code>，然后继续执行后续命令。</p>
+<p>对于执行可能出错，但不影响逻辑的命令，可以用<code>-</code>忽略。</p>
+<h3 id="参考源码">参考源码</h3>
+<p>可以从<a target="_blank" rel="noopener" href="https://github.com/michaelliao/makefile-tutorial/tree/main/v1">GitHub</a>下载源码。</p>
+<h3 id="小结">小结</h3>
+<p>编写<code>Makefile</code>就是编写一系列规则，用来告诉<code>make</code>如何执行这些规则，最终生成我们期望的目标文件。</p>
+<p>查看官方手册：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.gnu.org/software/make/manual/html_node/Rules.html">编写规则</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.gnu.org/software/make/manual/html_node/Execution.html">执行命令</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html">伪目标</a></li>
+</ul>
+<h2 id="编译C程序">编译C程序</h2>
+<p>C程序的编译通常分两步：</p>
+<ol>
+<li>将每个<code>.c</code>文件编译为<code>.o</code>文件；</li>
+<li>将所有<code>.o</code>文件链接为最终的可执行文件。</li>
+</ol>
+<p>我们假设如下的一个C项目，包含<code>hello.c</code>、<code>hello.h</code>和<code>main.c</code>。</p>
+<p><code>hello.c</code>内容如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">hello</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;hello, world!\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>hello.h</code>内容如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">hello</span><span class="params">()</span>;</span><br></pre></td></tr></table></figure>
+<p><code>main.c</code>内容如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;hello.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;start...\n&quot;</span>);</span><br><span class="line">    hello();</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;exit.\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意到<code>main.c</code>引用了头文件<code>hello.h</code>。我们很容易梳理出需要生成的文件，逻辑如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">┌───────┐ ┌───────┐ ┌───────┐</span><br><span class="line">│hello.c│ │main.c │ │hello.h│</span><br><span class="line">└───────┘ └───────┘ └───────┘</span><br><span class="line">    │         │         │</span><br><span class="line">    │         └────┬────┘</span><br><span class="line">    │              │</span><br><span class="line">    ▼              ▼</span><br><span class="line">┌───────┐      ┌───────┐</span><br><span class="line">│hello.o│      │main.o │</span><br><span class="line">└───────┘      └───────┘</span><br><span class="line">    │              │</span><br><span class="line">    └───────┬──────┘</span><br><span class="line">            │</span><br><span class="line">            ▼</span><br><span class="line">       ┌─────────┐</span><br><span class="line">       │world.out│</span><br><span class="line">       └─────────┘</span><br></pre></td></tr></table></figure>
+<p>假定最终生成的可执行文件是<code>world.out</code>，中间步骤还需要生成<code>hello.o</code>和<code>main.o</code>两个文件。根据上述依赖关系，我们可以很容易地写出<code>Makefile</code>如下：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 生成可执行文件:</span></span><br><span class="line"><span class="section">world.out: hello.o main.o</span></span><br><span class="line">	cc -o world.out hello.o main.o</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编译 hello.c:</span></span><br><span class="line"><span class="section">hello.o: hello.c</span></span><br><span class="line">	cc -c hello.c</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编译 main.c:</span></span><br><span class="line"><span class="section">main.o: main.c hello.h</span></span><br><span class="line">	cc -c main.c</span><br><span class="line"></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	rm -f *.o world.out</span><br></pre></td></tr></table></figure>
+<p>执行<code>make</code>，输出如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">cc -c hello.c</span><br><span class="line">cc -c main.c</span><br><span class="line">cc -o world.out hello.o main.o</span><br></pre></td></tr></table></figure>
+<p>在当前目录下可以看到<code>hello.o</code>、<code>main.o</code>以及最终的可执行程序<code>world.out</code>。执行<code>world.out</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ ./world.out </span><br><span class="line">start...</span><br><span class="line">hello, world!</span><br><span class="line">exit.</span><br></pre></td></tr></table></figure>
+<p>与我们预期相符。</p>
+<p>修改<code>hello.c</code>，把输出改为<code>&quot;hello, bob!\n&quot;</code>，再执行<code>make</code>，观察输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">cc -c hello.c</span><br><span class="line">cc -o world.out hello.o main.o</span><br></pre></td></tr></table></figure>
+<p>仅重新编译了<code>hello.c</code>，并未编译<code>main.c</code>。由于<code>hello.o</code>已更新，所以，仍然要重新生成<code>world.out</code>。执行<code>world.out</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ ./world.out </span><br><span class="line">start...</span><br><span class="line">hello, bob!</span><br><span class="line">exit.</span><br></pre></td></tr></table></figure>
+<p>与我们预期相符。</p>
+<p>修改<code>hello.h</code>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// int 变为 void:</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">hello</span><span class="params">()</span>;</span><br></pre></td></tr></table></figure>
+<p>以及<code>hello.c</code>，再次执行<code>make</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">cc -c hello.c</span><br><span class="line">cc -c main.c</span><br><span class="line">cc -o world.out hello.o main.o</span><br></pre></td></tr></table></figure>
+<p>会触发<code>main.c</code>的编译，因为<code>main.c</code>依赖<code>hello.h</code>。</p>
+<p>执行<code>make clean</code>会删除所有的<code>.o</code>文件，以及可执行文件<code>world.out</code>，再次执行<code>make</code>就会强制全量编译：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ make clean &amp;&amp; make</span><br><span class="line">rm -f *.o world.out</span><br><span class="line">cc -c hello.c</span><br><span class="line">cc -c main.c</span><br><span class="line">cc -o world.out hello.o main.o</span><br></pre></td></tr></table></figure>
+<p>这个简单的<code>Makefile</code>使我们能自动化编译C程序，十分方便。</p>
+<p>不过，随着越来越多的<code>.c</code>文件被添加进来，如何高效维护<code>Makefile</code>的规则？我们后面继续讲解。</p>
+<h3 id="参考源码-2">参考源码</h3>
+<p>可以从<a target="_blank" rel="noopener" href="https://github.com/michaelliao/makefile-tutorial/tree/main/v2">GitHub</a>下载源码。</p>
+<h3 id="小结-2">小结</h3>
+<p>在<code>Makefile</code>正确定义规则后，我们就能用<code>make</code>自动化编译C程序。</p>
+<hr>
+<hr>
+<h2 id="使用隐式规则">使用隐式规则</h2>
+<p>我们仍然以上一节的C项目为例，当我们添加越来越多的<code>.c</code>文件时，就需要编写越来越多的规则来生成<code>.o</code>文件。</p>
+<p>实际上，有的同学可能发现了，即使我们把<code>.o</code>的规则删掉，也能正常编译：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 只保留生成 world.out 的规则:</span></span><br><span class="line"><span class="section">world.out: hello.o main.o</span></span><br><span class="line">	cc -o world.out hello.o main.o</span><br><span class="line"></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	rm -f *.o world.out</span><br></pre></td></tr></table></figure>
+<p>执行<code>make</code>，输出如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">cc    -c -o hello.o hello.c</span><br><span class="line">cc    -c -o main.o main.c</span><br><span class="line">cc -o world.out hello.o main.o</span><br></pre></td></tr></table></figure>
+<p>我们没有定义<code>hello.o</code>和<code>main.o</code>的规则，为什么<code>make</code>也能正常创建这两个文件？</p>
+<p>因为<code>make</code>最初就是为了编译C程序而设计的，为了免去重复创建编译<code>.o</code>文件的规则，<code>make</code>内置了隐式规则（Implicit Rule），即遇到一个<code>xyz.o</code>时，如果没有找到对应的规则，就自动应用一个隐式规则：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">xyz.o: xyz.c</span></span><br><span class="line">	cc -c -o xyz.o xyz.c</span><br></pre></td></tr></table></figure>
+<p><code>make</code>针对C、C++、ASM、Fortran等程序内置了一系列隐式规则，可以参考官方手册查看。</p>
+<p>对于C程序来说，使用隐式规则有一个潜在问题，那就是无法跟踪<code>.h</code>文件的修改。如果我们修改了<code>hello.h</code>的定义，由于隐式规则<code>main.o: main.c</code>并不会跟踪<code>hello.h</code>的修改，导致<code>main.c</code>不会被重新编译，这个问题我们放到后面解决。</p>
+<h3 id="参考源码-3">参考源码</h3>
+<p>可以从<a target="_blank" rel="noopener" href="https://github.com/michaelliao/makefile-tutorial/tree/main/v3">GitHub</a>下载源码。</p>
+<h3 id="小结-3">小结</h3>
+<p>针对C、C++、ASM、Fortran等程序，<code>make</code>内置了一系列隐式规则，使用隐式规则可减少大量重复的通用编译规则。</p>
+<p>查看官方手册：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.gnu.org/software/make/manual/html_node/Using-Implicit.html">使用隐式规则</a></li>
+</ul>
+<hr>
+<hr>
+<p>当我们在<code>Makefile</code>中重复写很多文件名时，一来容易写错，二来如果要改名，要全部替换，费时费力。</p>
+<p>编程语言使用变量（Variable）来解决反复引用的问题，类似的，在<code>Makefile</code>中，也可以使用变量来解决重复问题。</p>
+<p>以上一节的<code>Makefile</code>为例：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">world.out: hello.o main.o</span></span><br><span class="line">	cc -o world.out hello.o main.o</span><br><span class="line"></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	rm -f *.o world.out</span><br></pre></td></tr></table></figure>
+<p>编译的最终文件<code>world.out</code>重复出现了3次，因此，完全可以定义一个变量来替换它：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">TARGET = world.out</span><br><span class="line"></span><br><span class="line"><span class="variable">$(TARGET)</span>: hello.o main.o</span><br><span class="line">	cc -o <span class="variable">$(TARGET)</span> hello.o main.o</span><br><span class="line"></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	rm -f *.o <span class="variable">$(TARGET)</span></span><br></pre></td></tr></table></figure>
+<p>变量定义用<code>变量名 = 值</code>或者<code>变量名 := 值</code>，通常变量名全大写。引用变量用<code>$(变量名)</code>，非常简单。</p>
+<p>注意到<code>hello.o main.o</code>这个“列表”也重复了，我们也可以用变量来替换：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">OBJS = hello.o main.o</span><br><span class="line">TARGET = world.out</span><br><span class="line"></span><br><span class="line"><span class="variable">$(TARGET)</span>: <span class="variable">$(OBJS)</span></span><br><span class="line">	cc -o <span class="variable">$(TARGET)</span> <span class="variable">$(OBJS)</span></span><br><span class="line"></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	rm -f *.o <span class="variable">$(TARGET)</span></span><br></pre></td></tr></table></figure>
+<p>如果有一种方式能让<code>make</code>自动生成<code>hello.o main.o</code>这个“列表”，就更好了。注意到每个<code>.o</code>文件是由对应的<code>.c</code>文件编译产生的，因此，可以让<code>make</code>先获取<code>.c</code>文件列表，再替换，得到<code>.o</code>文件列表：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># $(wildcard *.c) 列出当前目录下的所有 .c 文件: hello.c main.c</span></span><br><span class="line"><span class="comment"># 用函数 patsubst 进行模式替换得到: hello.o main.o</span></span><br><span class="line">OBJS = <span class="variable">$(<span class="built_in">patsubst</span> %.c,%.o,$(<span class="built_in">wildcard</span> *.c)</span>)</span><br><span class="line">TARGET = world.out</span><br><span class="line"></span><br><span class="line"><span class="variable">$(TARGET)</span>: <span class="variable">$(OBJS)</span></span><br><span class="line">	cc -o <span class="variable">$(TARGET)</span> <span class="variable">$(OBJS)</span></span><br><span class="line"></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	rm -f *.o <span class="variable">$(TARGET)</span></span><br></pre></td></tr></table></figure>
+<p>这样，我们每添加一个<code>.c</code>文件，不需要修改<code>Makefile</code>，变量<code>OBJS</code>会自动更新。</p>
+<p>思考：为什么我们不能直接定义<code>OBJS = $(wildcard *.o)</code>让<code>make</code>列出所有<code>.o</code>文件？</p>
+<h3 id="内置变量">内置变量</h3>
+<p>我们还可以用变量<code>$(CC)</code>替换命令<code>cc</code>：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$(TARGET)</span>: <span class="variable">$(OBJS)</span></span><br><span class="line">	<span class="variable">$(CC)</span> -o <span class="variable">$(TARGET)</span> <span class="variable">$(OBJS)</span></span><br></pre></td></tr></table></figure>
+<p>没有定义变量<code>CC</code>也可以引用它，因为它是<code>make</code>的内置变量（Builtin Variables），表示C编译器的名字，默认值是<code>cc</code>，我们也可以修改它，例如使用交叉编译时，指定编译器：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CC = riscv64-linux-gnu-gcc</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<h3 id="自动变量">自动变量</h3>
+<p>在<code>Makefile</code>中，经常可以看到<code>$@</code>、<code>$&lt;</code>这样的变量，这种变量称为自动变量（Automatic Variable），它们在一个规则中自动指向某个值。</p>
+<p>例如，<code>$@</code>表示目标文件，<code>$^</code>表示所有依赖文件，因此，我们可以这么写：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">world.out: hello.o main.o</span></span><br><span class="line">	cc -o <span class="variable">$@</span> <span class="variable">$^</span></span><br></pre></td></tr></table></figure>
+<p>在没有歧义时可以写<code>$@</code>，也可以写<code>$(@)</code>，有歧义时必须用括号，例如<code>$(@D)</code>。</p>
+<p>为了更好地调试，我们还可以把变量打印出来：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">world.out: hello.o main.o</span></span><br><span class="line">	@echo &#x27;$<span class="variable">$@</span> = <span class="variable">$@</span>&#x27; <span class="comment"># 变量 $@ 表示target</span></span><br><span class="line">	@echo &#x27;$<span class="variable">$&lt;</span> = <span class="variable">$&lt;</span>&#x27; <span class="comment"># 变量 $&lt; 表示第一个依赖项</span></span><br><span class="line">	@echo &#x27;$<span class="variable">$^</span> = <span class="variable">$^</span>&#x27; <span class="comment"># 变量 $^ 表示所有依赖项</span></span><br><span class="line">	cc -o <span class="variable">$@</span> <span class="variable">$^</span></span><br></pre></td></tr></table></figure>
+<p>执行结果输出如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$@ = world.out</span><br><span class="line">$&lt; = hello.o</span><br><span class="line">$^ = hello.o main.o</span><br><span class="line">cc -o world.out hello.o main.o</span><br></pre></td></tr></table></figure>
+<h3 id="参考源码-4">参考源码</h3>
+<p>可以从<a target="_blank" rel="noopener" href="https://github.com/michaelliao/makefile-tutorial/tree/main/v4">GitHub</a>下载源码。</p>
+<h3 id="小结-4">小结</h3>
+<p>使用变量可以让<code>Makefile</code>更加容易维护。</p>
+<p>查看官方手册：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.gnu.org/software/make/manual/html_node/Using-Variables.html">如何使用变量</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html">自动变量</a></li>
+</ul>
+<h2 id="使用模式规则">使用模式规则</h2>
+<p>前面我们讲了使用隐式规则可以让<code>make</code>在必要时自动创建<code>.o</code>文件的规则，但<code>make</code>的隐式规则的命令是固定的，对于<code>xyz.o: xyz.c</code>，它实际上是：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$(CC)</span> <span class="variable">$(CFLAGS)</span> -c -o <span class="variable">$@</span> <span class="variable">$&lt;</span></span><br></pre></td></tr></table></figure>
+<p>能修改的只有变量<code>$(CC)</code>和<code>$(CFLAGS)</code>。如果要执行多条命令，使用隐式规则就不行了。</p>
+<p>这时，我们可以自定义模式规则（Pattern Rules），它允许<code>make</code>匹配模式规则，如果匹配上了，就自动创建一条模式规则。</p>
+<p>我们修改上一节的<code>Makefile</code>如下：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">OBJS = <span class="variable">$(<span class="built_in">patsubst</span> %.c,%.o,$(<span class="built_in">wildcard</span> *.c)</span>)</span><br><span class="line">TARGET = world.out</span><br><span class="line"></span><br><span class="line"><span class="variable">$(TARGET)</span>: <span class="variable">$(OBJS)</span></span><br><span class="line">	cc -o <span class="variable">$(TARGET)</span> <span class="variable">$(OBJS)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 模式匹配规则：当make需要目标 xyz.o 时，自动生成一条 xyz.o: xyz.c 规则:</span></span><br><span class="line"><span class="section">%.o: %.c</span></span><br><span class="line">	@echo &#x27;compiling <span class="variable">$&lt;</span>...&#x27;</span><br><span class="line">	cc -c -o <span class="variable">$@</span> <span class="variable">$&lt;</span></span><br><span class="line"></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	rm -f *.o <span class="variable">$(TARGET)</span></span><br></pre></td></tr></table></figure>
+<p>当<code>make</code>执行<code>world.out: hello.o main.o</code>时，发现没有<code>hello.o</code>文件，于是需要查找以<code>hello.o</code>为目标的规则，结果匹配到模式规则<code>%.o: %.c</code>，于是<code>make</code>自动根据模式规则为我们动态创建了如下规则：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">hello.o: hello.c</span></span><br><span class="line">	@echo &#x27;compiling <span class="variable">$&lt;</span>...&#x27;</span><br><span class="line">	cc -c -o <span class="variable">$@</span> <span class="variable">$&lt;</span></span><br></pre></td></tr></table></figure>
+<p>查找<code>main.o</code>也是类似的匹配过程，于是我们执行<code>make</code>，就可以用模式规则完成编译：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">compiling hello.c...</span><br><span class="line">cc -c -o hello.o hello.c</span><br><span class="line">compiling main.c...</span><br><span class="line">cc -c -o main.o main.c</span><br><span class="line">cc -o world.out hello.o main.o</span><br></pre></td></tr></table></figure>
+<p>模式规则的命令完全由我们自己定义，因此，它比隐式规则更灵活。</p>
+<p>但是，模式规则仍然没有解决修改<code>hello.h</code>头文件不会触发<code>main.c</code>重新编译的问题，这个依赖问题我们继续放到后面解决。</p>
+<p>最后注意，模式规则是按需生成，如果我们在当前目录创建一个<code>zzz.o</code>文件，因为<code>make</code>并不会在执行过程中用到它，所以并不会自动生成<code>zzz.o: zzz.c</code>这个规则。</p>
+<h3 id="参考源码-5">参考源码</h3>
+<p>可以从<a target="_blank" rel="noopener" href="https://github.com/michaelliao/makefile-tutorial/tree/main/v5">GitHub</a>下载源码。</p>
+<h3 id="小结-5">小结</h3>
+<p>使用模式规则可以灵活地按需动态创建规则，它比隐式规则更灵活。</p>
+<p>查看官方手册：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.gnu.org/software/make/manual/html_node/Pattern-Intro.html">模式规则</a></li>
+</ul>
+<hr>
+<hr>
+<p>前面我们讲了隐式规则和模式规则，这两种规则都可以解决自动把<code>.c</code>文件编译成<code>.o</code>文件，但都无法解决<code>.c</code>文件依赖<code>.h</code>文件的问题。</p>
+<p>因为一个<code>.c</code>文件依赖哪个<code>.h</code>文件必须要分析文件内容才能确定，没有一个简单的文件名映射规则。</p>
+<p>但是，要识别出<code>.c</code>文件的头文件依赖，可以用GCC提供的<code>-MM</code>参数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cc -MM main.c</span><br><span class="line">main.o: main.c hello.h</span><br></pre></td></tr></table></figure>
+<p>上述输出告诉我们，编译<code>main.o</code>依赖<code>main.c</code>和<code>hello.h</code>两个文件。</p>
+<p>因此，我们可以利用GCC的这个功能，对每个<code>.c</code>文件都生成一个依赖项，通常我们把它保存到<code>.d</code>文件中，再用<code>include</code>引入到<code>Makefile</code>，就相当于自动化完成了每个<code>.c</code>文件的精准依赖。</p>
+<p>我们改写上一节的<code>Makefile</code>如下：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 列出所有 .c 文件:</span></span><br><span class="line">SRCS = <span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 根据SRCS生成 .o 文件列表:</span></span><br><span class="line">OBJS = $(SRCS:.c=.o)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 根据SRCS生成 .d 文件列表:</span></span><br><span class="line">DEPS = $(SRCS:.c=.d)</span><br><span class="line"></span><br><span class="line">TARGET = world.out</span><br><span class="line"></span><br><span class="line"><span class="comment"># 默认目标:</span></span><br><span class="line"><span class="variable">$(TARGET)</span>: <span class="variable">$(OBJS)</span></span><br><span class="line">	<span class="variable">$(CC)</span> -o <span class="variable">$@</span> <span class="variable">$^</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># xyz.d 的规则由 xyz.c 生成:</span></span><br><span class="line"><span class="section">%.d: %.c</span></span><br><span class="line">	rm -f <span class="variable">$@</span>; \</span><br><span class="line">	<span class="variable">$(CC)</span> -MM <span class="variable">$&lt;</span> &gt;<span class="variable">$@</span>.tmp; \</span><br><span class="line">	sed &#x27;s,\(<span class="variable">$*</span>\)\.o[ :]*,\1.o <span class="variable">$@</span> : ,g&#x27; &lt; <span class="variable">$@</span>.tmp &gt; <span class="variable">$@</span>; \</span><br><span class="line">	rm -f <span class="variable">$@</span>.tmp</span><br><span class="line"></span><br><span class="line"><span class="comment"># 模式规则:</span></span><br><span class="line"><span class="section">%.o: %.c</span></span><br><span class="line">	<span class="variable">$(CC)</span> -c -o <span class="variable">$@</span> <span class="variable">$&lt;</span></span><br><span class="line"></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	rm -rf *.o *.d <span class="variable">$(TARGET)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入所有 .d 文件:</span></span><br><span class="line"><span class="keyword">include</span> <span class="variable">$(DEPS)</span></span><br></pre></td></tr></table></figure>
+<p>变量<code>$(SRCS)</code>通过扫描目录可以确定为<code>hello.c main.c</code>，因此，变量<code>$(OBJS)</code>赋值为<code>hello.o main.o</code>，变量<code>$(DEPS)</code>赋值为<code>hello.d main.d</code>。</p>
+<p>通过<code>include $(DEPS)</code>我们引入<code>hello.d</code>和<code>main.d</code>文件，但是这两个文件一开始并不存在，不过，<code>make</code>通过模式规则匹配到<code>%.d: %.c</code>，这就给了我们一个机会，在这个模式规则内部，用<code>cc -MM</code>命令外加<code>sed</code>把<code>.d</code>文件创建出来。</p>
+<p>运行<code>make</code>，首次输出如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">Makefile:31: hello.d: No such file or directory</span><br><span class="line">Makefile:31: main.d: No such file or directory</span><br><span class="line">rm -f main.d; \</span><br><span class="line">        cc -MM main.c &gt;main.d.tmp; \</span><br><span class="line">        sed &#x27;s,\(main\)\.o[ :]*,\1.o main.d : ,g&#x27; &lt; main.d.tmp &gt; main.d; \</span><br><span class="line">        rm -f main.d.tmp</span><br><span class="line">rm -f hello.d; \</span><br><span class="line">        cc -MM hello.c &gt;hello.d.tmp; \</span><br><span class="line">        sed &#x27;s,\(hello\)\.o[ :]*,\1.o hello.d : ,g&#x27; &lt; hello.d.tmp &gt; hello.d; \</span><br><span class="line">        rm -f hello.d.tmp</span><br><span class="line">cc -c -o hello.o hello.c</span><br><span class="line">cc -c -o main.o main.c</span><br><span class="line">cc -o world.out hello.o main.o</span><br></pre></td></tr></table></figure>
+<p><code>make</code>会提示找不到<code>hello.d</code>和<code>main.d</code>，不过随后自动创建出<code>hello.d</code>和<code>main.d</code>。<code>hello.d</code>内容如下：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hello.o hello.d : hello.c</span><br></pre></td></tr></table></figure>
+<p>上述规则有两个目标文件，实际上相当于如下两条规则：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hello.o : hello.c</span><br><span class="line">hello.d : hello.c</span><br></pre></td></tr></table></figure>
+<p><code>main.d</code>内容如下：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">main.o main.d : main.c hello.h</span><br></pre></td></tr></table></figure>
+<p>因此，<code>main.o</code>依赖于<code>main.c</code>和<code>hello.h</code>，这个依赖关系就和我们手动指定的一致。</p>
+<p>改动<code>hello.h</code>，再次运行<code>make</code>，可以触发<code>main.c</code>的编译：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">rm -f main.d; \</span><br><span class="line">        cc -MM main.c &gt;main.d.tmp; \</span><br><span class="line">        sed &#x27;s,\(main\)\.o[ :]*,\1.o main.d : ,g&#x27; &lt; main.d.tmp &gt; main.d; \</span><br><span class="line">        rm -f main.d.tmp</span><br><span class="line">cc -c -o main.o main.c</span><br><span class="line">cc -o world.out hello.o main.o</span><br></pre></td></tr></table></figure>
+<p>在实际项目中，对每个<code>.c</code>文件都可以生成一个对应的<code>.d</code>文件表示依赖关系，再通过<code>include</code>引入到<code>Makefile</code>，同时又能让<code>make</code>自动更新<code>.d</code>文件，有点蛋生鸡和鸡生蛋的关系，不过，这种机制能正常工作，除了<code>.d</code>文件不存在时会打印错误，有强迫症的同学肯定感觉不满意，这个问题我们后面解决。</p>
+<h3 id="参考源码-6">参考源码</h3>
+<p>可以从<a target="_blank" rel="noopener" href="https://github.com/michaelliao/makefile-tutorial/tree/main/v6">GitHub</a>下载源码。</p>
+<h3 id="小结-6">小结</h3>
+<p>利用GCC生成<code>.d</code>文件，再用<code>include</code>引入<code>Makefile</code>，可解决一个<code>.c</code>文件应该如何正确触发编译的问题。</p>
+<p>查看官方手册：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.gnu.org/software/make/manual/html_node/Automatic-Prerequisites.html">自动生成依赖</a></li>
+</ul>
+<h2 id="完善Makefile">完善Makefile</h2>
+<p>上一节我们解决了自动生成依赖的问题，这一节我们对项目目录进行整理，把所有源码放入<code>src</code>目录，所有编译生成的文件放入<code>build</code>目录：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;project&gt;</span><br><span class="line">├── Makefile</span><br><span class="line">├── build</span><br><span class="line">└── src</span><br><span class="line">    ├── hello.c</span><br><span class="line">    ├── hello.h</span><br><span class="line">    └── main.c</span><br></pre></td></tr></table></figure>
+<p>整理<code>Makefile</code>，内容如下：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">SRC_DIR = ./src</span><br><span class="line">BUILD_DIR = ./build</span><br><span class="line">TARGET = <span class="variable">$(BUILD_DIR)</span>/world.out</span><br><span class="line"></span><br><span class="line">CC = cc</span><br><span class="line">CFLAGS = -Wall</span><br><span class="line"></span><br><span class="line"><span class="comment"># ./src/*.c</span></span><br><span class="line">SRCS = <span class="variable">$(<span class="built_in">shell</span> find <span class="variable">$(SRC_DIR)</span> -name &#x27;*.c&#x27;)</span></span><br><span class="line"><span class="comment"># ./src/*.c =&gt; ./build/*.o</span></span><br><span class="line">OBJS = <span class="variable">$(<span class="built_in">patsubst</span> <span class="variable">$(SRC_DIR)</span>/%.c,<span class="variable">$(BUILD_DIR)</span>/%.o,<span class="variable">$(SRCS)</span>)</span></span><br><span class="line"><span class="comment"># ./src/*.c =&gt; ./build/*.d</span></span><br><span class="line">DEPS = <span class="variable">$(<span class="built_in">patsubst</span> <span class="variable">$(SRC_DIR)</span>/%.c,<span class="variable">$(BUILD_DIR)</span>/%.d,<span class="variable">$(SRCS)</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 默认目标:</span></span><br><span class="line"><span class="section">all: <span class="variable">$(TARGET)</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment"># build/xyz.d 的规则由 src/xyz.c 生成:</span></span><br><span class="line"><span class="variable">$(BUILD_DIR)</span>/%.d: <span class="variable">$(SRC_DIR)</span>/%.c</span><br><span class="line">	@mkdir -p <span class="variable">$(<span class="built_in">dir</span> <span class="variable">$@</span>)</span>; \</span><br><span class="line">	rm -f <span class="variable">$@</span>; \</span><br><span class="line">	<span class="variable">$(CC)</span> -MM <span class="variable">$&lt;</span> &gt;<span class="variable">$@</span>.tmp; \</span><br><span class="line">	sed &#x27;s,\(<span class="variable">$*</span>\)\.o[ :]*,<span class="variable">$(BUILD_DIR)</span>/\1.o <span class="variable">$@</span> : ,g&#x27; &lt; <span class="variable">$@</span>.tmp &gt; <span class="variable">$@</span>; \</span><br><span class="line">	rm -f <span class="variable">$@</span>.tmp</span><br><span class="line"></span><br><span class="line"><span class="comment"># build/xyz.o 的规则由 src/xyz.c 生成:</span></span><br><span class="line"><span class="variable">$(BUILD_DIR)</span>/%.o: <span class="variable">$(SRC_DIR)</span>/%.c</span><br><span class="line">	@mkdir -p <span class="variable">$(<span class="built_in">dir</span> <span class="variable">$@</span>)</span></span><br><span class="line">	<span class="variable">$(CC)</span> <span class="variable">$(CFLAGS)</span> -c -o <span class="variable">$@</span> <span class="variable">$&lt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 链接:</span></span><br><span class="line"><span class="variable">$(TARGET)</span>: <span class="variable">$(OBJS)</span></span><br><span class="line">	@echo <span class="string">&quot;buiding <span class="variable">$@</span>...&quot;</span></span><br><span class="line">	@mkdir -p <span class="variable">$(<span class="built_in">dir</span> <span class="variable">$@</span>)</span></span><br><span class="line">	<span class="variable">$(CC)</span> -o <span class="variable">$(TARGET)</span> <span class="variable">$(OBJS)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 清理 build 目录:</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	@echo <span class="string">&quot;clean...&quot;</span></span><br><span class="line">	rm -rf <span class="variable">$(BUILD_DIR)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入所有 .d 文件:</span></span><br><span class="line"><span class="keyword">-include</span> <span class="variable">$(DEPS)</span></span><br></pre></td></tr></table></figure>
+<p>这个<code>Makefile</code>定义了源码目录<code>SRC_DIR</code>、生成目录<code>BUILD_DIR</code>，以及其他变量，同时用<code>-include</code>消除了<code>.d</code>文件不存在的错误。执行<code>make</code>，输出如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">cc -Wall -c -o build/hello.o src/hello.c</span><br><span class="line">cc -Wall -c -o build/main.o src/main.c</span><br><span class="line">buiding build/world.out...</span><br><span class="line">cc -o ./build/world.out ./build/hello.o ./build/main.o</span><br></pre></td></tr></table></figure>
+<p>可以说基本满足编译需求，收工！</p>
+<h3 id="参考源码-7">参考源码</h3>
+<p>可以从<a target="_blank" rel="noopener" href="https://github.com/michaelliao/makefile-tutorial/tree/main/v7">GitHub</a>下载源码。</p>
+<h3 id="小结-7">小结</h3>
+<p>除了基础的用法外，<code>Makefile</code>还支持条件判断，环境变量，嵌套执行，变量展开等各种功能，需要用到时可以查询<a target="_blank" rel="noopener" href="https://www.gnu.org/software/make/manual/html_node/index.html">官方手册</a>。</p>
+<hr>
+<hr>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2021/05/23/makefile%E6%95%99%E7%A8%8B/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
                             aria-label=": oracelDB基础"
                         >
@@ -3633,6 +4199,600 @@ ansible-doc -s MOD_NAME
                     
                         <a
                             class="link-unstyled"
+                            href="../../2021/03/12/vim%E6%95%99%E7%A8%8B/"
+                            aria-label=": vim教程"
+                        >
+                            vim教程
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2021-03-12T16:01:20+08:00">
+	
+		    2021 年 3 月 12 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/devops/">devops</a>, <a class="category-link" href="../../categories/devops/vim/">vim</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h1>Vim 编辑器使用笔记整理</h1>
+<h2 id="1-退出-Vim">1. 退出 Vim</h2>
+<h3 id="命令行模式退出方式">命令行模式退出方式</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>:wq</code></td>
+<td>保存并退出</td>
+</tr>
+<tr>
+<td><code>:q!</code></td>
+<td>强制退出，不保存</td>
+</tr>
+<tr>
+<td><code>:q</code></td>
+<td>退出(未修改时)</td>
+</tr>
+<tr>
+<td><code>:wq!</code></td>
+<td>强制保存并退出</td>
+</tr>
+<tr>
+<td><code>:w &lt;文件路径&gt;</code></td>
+<td>另存为指定文件</td>
+</tr>
+<tr>
+<td><code>:saveas 文件路径</code></td>
+<td>另存为指定文件</td>
+</tr>
+<tr>
+<td><code>:x</code></td>
+<td>保存并退出(类似:wq)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="普通模式退出方式">普通模式退出方式</h3>
+<ul>
+<li>输入 <code>Shift+zz</code> 即可保存退出</li>
+</ul>
+<h2 id="2-删除文本">2. 删除文本</h2>
+<h3 id="普通模式删除命令">普通模式删除命令</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>x</code></td>
+<td>删除游标所在字符</td>
+</tr>
+<tr>
+<td><code>X</code></td>
+<td>删除游标前一个字符</td>
+</tr>
+<tr>
+<td><code>Delete</code></td>
+<td>同 <code>x</code></td>
+</tr>
+<tr>
+<td><code>dd</code></td>
+<td>删除整行</td>
+</tr>
+<tr>
+<td><code>dw</code></td>
+<td>删除一个单词(不适用中文)</td>
+</tr>
+<tr>
+<td><code>d$</code> 或 <code>D</code></td>
+<td>删除至行尾</td>
+</tr>
+<tr>
+<td><code>d^</code></td>
+<td>删除至行首</td>
+</tr>
+<tr>
+<td><code>dG</code></td>
+<td>删除到文档结尾</td>
+</tr>
+<tr>
+<td><code>d1G</code></td>
+<td>删除至文档开头</td>
+</tr>
+<tr>
+<td><code>:%d</code></td>
+<td>清空整个文档内容（删除所有行）</td>
+</tr>
+<tr>
+<td><code>:1,$d</code></td>
+<td>同 <code>:%d</code>，删除从第一行到最后一行</td>
+</tr>
+<tr>
+<td><code>ggdG</code></td>
+<td>普通模式下清空文档的快捷方式（先跳转到首行，然后删除到末尾）</td>
+</tr>
+</tbody>
+</table>
+<p>注意：这些命令会立即生效且不可撤销，使用前请确保已保存重要内容</p>
+<h3 id="数字前缀用法">数字前缀用法</h3>
+<ul>
+<li><code>2dd</code> 表示一次删除2行</li>
+<li><code>3dw</code> 表示删除3个单词</li>
+</ul>
+<h2 id="3-重复执行命令">3. 重复执行命令</h2>
+<ul>
+<li>普通模式下 <code>.</code> (小数点)表示重复上一次命令</li>
+<li>数字前缀：<code>10x</code> 删除10个连续字符</li>
+</ul>
+<h2 id="4-游标跳转">4. 游标跳转</h2>
+<h3 id="行间跳转">行间跳转</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>nG</code></td>
+<td>跳转到第n行(需先<code>:set nu</code>显示行号)</td>
+</tr>
+<tr>
+<td><code>gg</code></td>
+<td>跳转到第一行</td>
+</tr>
+<tr>
+<td><code>G</code></td>
+<td>跳转到最后一行</td>
+</tr>
+</tbody>
+</table>
+<h3 id="行内跳转">行内跳转</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>w</code></td>
+<td>到下一个单词开头</td>
+</tr>
+<tr>
+<td><code>e</code></td>
+<td>到当前单词结尾</td>
+</tr>
+<tr>
+<td><code>b</code></td>
+<td>到前一个单词开头</td>
+</tr>
+<tr>
+<td><code>ge</code></td>
+<td>到前一个单词结尾</td>
+</tr>
+<tr>
+<td><code>0</code> 或 <code>^</code></td>
+<td>到行头</td>
+</tr>
+<tr>
+<td><code>$</code></td>
+<td>到行尾</td>
+</tr>
+<tr>
+<td><code>f&lt;字母&gt;</code></td>
+<td>向后搜索字母并跳转</td>
+</tr>
+<tr>
+<td><code>F&lt;字母&gt;</code></td>
+<td>向前搜索字母并跳转</td>
+</tr>
+<tr>
+<td><code>t&lt;字母&gt;</code></td>
+<td>向后搜索字母并跳转到匹配前</td>
+</tr>
+<tr>
+<td><code>T&lt;字母&gt;</code></td>
+<td>向前搜索字母并跳转到匹配后</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-复制粘贴和剪切">5. 复制粘贴和剪切</h2>
+<h3 id="复制命令-yank">复制命令(yank)</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>yy</code></td>
+<td>复制整行(3yy复制3行)</td>
+</tr>
+<tr>
+<td><code>y^</code></td>
+<td>复制至行首</td>
+</tr>
+<tr>
+<td><code>y$</code></td>
+<td>复制至行尾</td>
+</tr>
+<tr>
+<td><code>yw</code></td>
+<td>复制一个单词</td>
+</tr>
+<tr>
+<td><code>yG</code></td>
+<td>复制至文本末</td>
+</tr>
+<tr>
+<td><code>y1G</code></td>
+<td>复制至文本开头</td>
+</tr>
+</tbody>
+</table>
+<h3 id="粘贴命令">粘贴命令</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>p</code></td>
+<td>粘贴至光标后</td>
+</tr>
+<tr>
+<td><code>P</code></td>
+<td>粘贴至光标前</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-替换和撤销">6. 替换和撤销</h2>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>r+&lt;字母&gt;</code></td>
+<td>替换游标所在字母</td>
+</tr>
+<tr>
+<td><code>R</code></td>
+<td>连续替换(按Esc结束)</td>
+</tr>
+<tr>
+<td><code>cc</code></td>
+<td>替换整行</td>
+</tr>
+<tr>
+<td><code>cw</code></td>
+<td>替换一个单词</td>
+</tr>
+<tr>
+<td><code>C</code></td>
+<td>替换至行末</td>
+</tr>
+<tr>
+<td><code>~</code></td>
+<td>反转字母大小写</td>
+</tr>
+<tr>
+<td><code>u</code></td>
+<td>撤销操作</td>
+</tr>
+<tr>
+<td><code>U</code></td>
+<td>撤销当前行所有修改</td>
+</tr>
+<tr>
+<td><code>Ctrl+r</code></td>
+<td>重做(redo)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-缩进调整">7. 缩进调整</h2>
+<h3 id="缩进命令">缩进命令</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&gt;&gt;</code></td>
+<td>整行向右缩进</td>
+</tr>
+<tr>
+<td><code>&lt;&lt;</code></td>
+<td>整行向左回退</td>
+</tr>
+<tr>
+<td><code>:set shiftwidth=n</code></td>
+<td>设置缩进字符数</td>
+</tr>
+</tbody>
+</table>
+<h3 id="文本位置调整">文本位置调整</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>:ce</code></td>
+<td>本行内容居中</td>
+</tr>
+<tr>
+<td><code>:ri</code></td>
+<td>本行文本靠右</td>
+</tr>
+<tr>
+<td><code>:le</code></td>
+<td>本行内容靠左</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-查找功能">8. 查找功能</h2>
+<h3 id="基本查找">基本查找</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/字符串</code></td>
+<td>向下查找</td>
+</tr>
+<tr>
+<td><code>?字符串</code></td>
+<td>向上查找</td>
+</tr>
+<tr>
+<td><code>n</code></td>
+<td>继续查找</td>
+</tr>
+<tr>
+<td><code>N</code></td>
+<td>反向查找</td>
+</tr>
+</tbody>
+</table>
+<h3 id="高级查找">高级查找</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>*</code></td>
+<td>向后查找当前单词</td>
+</tr>
+<tr>
+<td><code>#</code></td>
+<td>向前查找当前单词</td>
+</tr>
+<tr>
+<td><code>g*</code></td>
+<td>向后查找部分匹配单词</td>
+</tr>
+<tr>
+<td><code>g#</code></td>
+<td>向前查找部分匹配单词</td>
+</tr>
+</tbody>
+</table>
+<h2 id="9-多文件编辑">9. 多文件编辑</h2>
+<h3 id="多文件操作">多文件操作</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>:n</code></td>
+<td>编辑下一个文件</td>
+</tr>
+<tr>
+<td><code>:N</code></td>
+<td>编辑上一个文件</td>
+</tr>
+<tr>
+<td><code>:e 文件名</code></td>
+<td>打开新文件</td>
+</tr>
+<tr>
+<td><code>:e#</code></td>
+<td>回到前一个文件</td>
+</tr>
+<tr>
+<td><code>:ls</code></td>
+<td>列出编辑过的文档</td>
+</tr>
+<tr>
+<td><code>:b 文件名/编号</code></td>
+<td>切换到指定文件</td>
+</tr>
+<tr>
+<td><code>:bd 文件名/编号</code></td>
+<td>从列表删除文件</td>
+</tr>
+<tr>
+<td><code>:f</code></td>
+<td>显示当前文件名</td>
+</tr>
+</tbody>
+</table>
+<h3 id="文件恢复">文件恢复</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">vim -r 文件名</span><br><span class="line">:ewcover 文件名</span><br></pre></td></tr></table></figure>
+<h2 id="10-可视模式">10. 可视模式</h2>
+<h3 id="进入可视模式">进入可视模式</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>v</code></td>
+<td>字符选择模式</td>
+</tr>
+<tr>
+<td><code>V</code></td>
+<td>行选择模式</td>
+</tr>
+<tr>
+<td><code>Ctrl+v</code></td>
+<td>区域选择模式</td>
+</tr>
+</tbody>
+</table>
+<h3 id="可视模式操作">可视模式操作</h3>
+<ul>
+<li><code>d</code> 删除选中区域</li>
+<li><code>y</code> 复制选中区域</li>
+</ul>
+<h2 id="11-视窗操作">11. 视窗操作</h2>
+<h3 id="窗口分割">窗口分割</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>:new</code></td>
+<td>新建窗口</td>
+</tr>
+<tr>
+<td><code>:sp 文件名</code></td>
+<td>水平分割窗口</td>
+</tr>
+<tr>
+<td><code>:vsp 文件名</code></td>
+<td>垂直分割窗口</td>
+</tr>
+<tr>
+<td><code>Ctrl+w s</code></td>
+<td>水平分割当前窗口</td>
+</tr>
+<tr>
+<td><code>Ctrl+w v</code></td>
+<td>垂直分割当前窗口</td>
+</tr>
+</tbody>
+</table>
+<h3 id="窗口切换">窗口切换</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Ctrl+w j/k/h/l</code></td>
+<td>向下/上/左/右切换窗口</td>
+</tr>
+<tr>
+<td><code>Ctrl+w q</code></td>
+<td>关闭当前窗口</td>
+</tr>
+<tr>
+<td><code>Ctrl+w o</code></td>
+<td>只保留当前窗口</td>
+</tr>
+</tbody>
+</table>
+<h2 id="12-其他功能">12. 其他功能</h2>
+<h3 id="文档加密">文档加密</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim -x 文件名</span><br></pre></td></tr></table></figure>
+<h3 id="执行外部命令">执行外部命令</h3>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">:!命令</span><br><span class="line">:<span class="keyword">w</span> 文件名  # 另存为</span><br></pre></td></tr></table></figure>
+<h3 id="帮助系统">帮助系统</h3>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">:F1        # 打开帮助</span><br><span class="line">:h 主题    # 查看特定帮助</span><br><span class="line">:ver       # 显示版本</span><br></pre></td></tr></table></figure>
+<h3 id="功能设定">功能设定</h3>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">:<span class="keyword">set</span> <span class="keyword">nu</span>    # 显示行号</span><br><span class="line">:<span class="keyword">set</span> ai    # 自动缩进</span><br><span class="line">:<span class="keyword">set</span> aw    # 自动保存</span><br><span class="line">:<span class="keyword">set</span> cin   # C语言风格缩进</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>提示：所有设置可通过修改 <code>~/.vimrc</code> 文件永久保存</p>
+</blockquote>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2021/03/12/vim%E6%95%99%E7%A8%8B/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
                             aria-label=": GitHub Actions 入门教程"
                         >
@@ -3814,843 +4974,6 @@ ansible-doc -s MOD_NAME
         
     </article>
     
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2021/01/12/VPC/"
-                            aria-label=": VPC"
-                        >
-                            VPC
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2021-01-12T23:15:39+08:00">
-	
-		    2021 年 1 月 12 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../categories/%E5%90%8E%E7%AB%AF/AWS/">AWS</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <ol>
-<li>
-<p>Security Group(SG):</p>
-<ol>
-<li>所有设定默认是拒绝，只可以设定许可规则，拒否ルールは指定できません。</li>
-<li>特征是不单可以指定CIDR等IP,还可以指定SG</li>
-<li>安全组是有状态的 — 如果您从实例发送一个请求，则无论入站安全组规则如何，都将允许该请求的响应流量流入。如果是为响应已允许的入站流量，则该响应可以出站，此时可忽略出站规则。セキュリティグループはステートフルです。</li>
-</ol>
-</li>
-<li>
-<p>Access Control List(ACL):</p>
-<ol>
-<li>VPC 自动带有可修改的默认网络 ACL。默认情况下，它允许所有入站和出站 IPv4 流量以及 IPv6 流量 (如果适用)。</li>
-<li>可以创建自定义网络 ACL 并将其与子网相关联。默认情况下，每个自定义网络 ACL 都拒绝所有入站和出站流量，直至您添加规则。</li>
-<li>VPC 中的每个子网都必须与一个网络 ACL 相关联。如果您没有明确地将子网与网络 ACL 相关联，则子网将自动与默认网络 ACL 关联。</li>
-<li>可以将网络 ACL 与多个子网关联。但是，一个子网一次只能与一个网络 ACL 关联。当您将一个网络 ACL 与一个子网关联时，将删除之前的关联。</li>
-<li>网络 ACL 包含规则的编号列表。我们按顺序评估（从编号最小的规则开始）规则，以判断是否允许流量进入或离开任何与网络 ACL 关联的子网。您可以使用的最高规则编号为 32766。我们建议您开始先以增量方式创建规则（例如，以 10 或 100 的增量增加），这样您可以在稍后需要时插入新的规则。</li>
-<li>网络 ACL 有单独的入站和出站规则，每项规则都或是允许或是拒绝数据流。</li>
-<li>网络 ACL 没有任何状态，这意味着对允许入站数据流的响应会随着出站数据流规则的变化而改变（反之亦然）。(ネットワーク ACL はステートレスです。許可されているインバウンドトラフィックに対する応答は、アウトバウンドトラフィックのルールに従います（その逆の場合も同様です）。)</li>
-<li>ルール番号。ルールは、最も低い番号のルールから評価されます。ルールがトラフィックに一致すると、それと相反するより高い数値のルールの有無にかかわらず、すぐに適用されます。</li>
-<li>タイプ。トラフィックのタイプ（SSH など）。また、すべてのトラフィックまたはカスタム範囲を指定することもできます。</li>
-</ol>
-</li>
-</ol>
-<p>セキュリティグループはステートフルです。（レスポンスでも明示する必要なしで許可。）<br>
-ACLはステートレスです。（レスポンスでも明示する必要ある。）</p>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2021/01/12/VPC/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2020/11/17/linux/17-%E7%B3%BB%E7%BB%9F%E7%BB%B4%E6%8A%A4/"
-                            aria-label=": 17.系统维护"
-                        >
-                            17.系统维护
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2020-11-17T14:01:48+08:00">
-	
-		    2020 年 11 月 17 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h1>从源代码安装软件笔记整理</h1>
-<h2 id="1-安装C语言开源软件的三个主要步骤">1. 安装C语言开源软件的三个主要步骤</h2>
-<ol>
-<li>解压源代码</li>
-<li>编译成二进制文件</li>
-<li>将二进制文件安装到适当的文件夹</li>
-</ol>
-<h2 id="2-解压源代码">2. 解压源代码</h2>
-<h3 id="常用解压命令">常用解压命令</h3>
-<table>
-<thead>
-<tr>
-<th>命令格式</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>gunzip [文件名]</code></td>
-<td>解压.gz文件</td>
-</tr>
-<tr>
-<td><code>gzip [option] [文件名]</code></td>
-<td>压缩/解压文件</td>
-</tr>
-<tr>
-<td><code>bunzip [文件名]</code></td>
-<td>解压.bz2文件</td>
-</tr>
-<tr>
-<td><code>bzip [option] [文件名]</code></td>
-<td>压缩/解压文件</td>
-</tr>
-</tbody>
-</table>
-<h3 id="gzip-bzip-选项说明">gzip/bzip 选项说明</h3>
-<table>
-<thead>
-<tr>
-<th>选项</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>-d</code></td>
-<td>解压压缩文件</td>
-</tr>
-<tr>
-<td><code>-c</code></td>
-<td>解压压缩文件到标准输出</td>
-</tr>
-</tbody>
-</table>
-<h2 id="3-patch命令">3. patch命令</h2>
-<p>用于应用补丁文件</p>
-<table>
-<thead>
-<tr>
-<th>选项</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>-d 文件夹</code></td>
-<td>移动到指定文件夹后处理</td>
-</tr>
-<tr>
-<td><code>-p</code></td>
-<td>修正patch文件内的path: <br><code>-p0</code>: 不修正path <br><code>-p1</code>: 删除最初的’/’ <br><code>-p2</code>: 删除下一级文件夹</td>
-</tr>
-<tr>
-<td><code>patch</code></td>
-<td>应用补丁</td>
-</tr>
-<tr>
-<td><code>-C</code></td>
-<td>测试(不实际应用补丁)</td>
-</tr>
-<tr>
-<td><code>-R</code></td>
-<td>取消补丁，恢复到补丁前状态</td>
-</tr>
-</tbody>
-</table>
-<h2 id="4-生成Makefile">4. 生成Makefile</h2>
-<p>运行config脚本根据环境配置config文件:</p>
-<h3 id="config脚本主要选项">config脚本主要选项</h3>
-<table>
-<thead>
-<tr>
-<th>选项</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--help</code></td>
-<td>显示帮助说明</td>
-</tr>
-<tr>
-<td><code>--prefix=文件夹</code></td>
-<td>指定安装目标的top路径</td>
-</tr>
-</tbody>
-</table>
-<h2 id="5-编译和安装">5. 编译和安装</h2>
-<h3 id="make命令">make命令</h3>
-<p>根据当前文件夹内的Makefile编译源代码</p>
-<p>基本格式：</p>
-<pre><code class="language-bash">make [option] [目标]</code></pre>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2020/11/17/linux/17-%E7%B3%BB%E7%BB%9F%E7%BB%B4%E6%8A%A4/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2020/11/16/linux/16-%E7%BD%91%E7%BB%9C/"
-                            aria-label=": 16.网络"
-                        >
-                            16.网络
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2020-11-16T14:01:40+08:00">
-	
-		    2020 年 11 月 16 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/%E5%90%8E%E7%AB%AF/">后端</a>, <a class="category-link" href="../../categories/%E5%90%8E%E7%AB%AF/linux/">linux</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h2 id="1-网络设备管理">1. 网络设备管理</h2>
-<h3 id="1-1-网络接口命名规则">1.1 网络接口命名规则</h3>
-<table>
-<thead>
-<tr>
-<th>接口名称</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>eth0</code></td>
-<td>第一个 Ethernet 接口</td>
-</tr>
-<tr>
-<td><code>eth1</code></td>
-<td>第二个 Ethernet 接口</td>
-</tr>
-<tr>
-<td><code>ppp0</code></td>
-<td>第一个 PPP 接口</td>
-</tr>
-<tr>
-<td><code>lo</code></td>
-<td>Loopback 接口</td>
-</tr>
-</tbody>
-</table>
-<h3 id="1-2-网络设备识别命令">1.2 网络设备识别命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dmesg | grep eth  <span class="comment"># 查看内核识别的网络设备</span></span><br></pre></td></tr></table></figure>
-<h3 id="1-3-网络接口配置命令">1.3 网络接口配置命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ifconfig [-a] [IF名] [参数]</span><br></pre></td></tr></table></figure>
-<table>
-<thead>
-<tr>
-<th>参数</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>-a</code></td>
-<td>显示所有接口</td>
-</tr>
-<tr>
-<td><code>IF名</code></td>
-<td>指定接口名称</td>
-</tr>
-<tr>
-<td><code>IP地址</code></td>
-<td>设置 IP 地址</td>
-</tr>
-<tr>
-<td><code>netmask</code></td>
-<td>设置子网掩码</td>
-</tr>
-<tr>
-<td><code>up</code></td>
-<td>激活接口（等价于 <code>ifup</code>）</td>
-</tr>
-<tr>
-<td><code>down</code></td>
-<td>停止接口（等价于 <code>ifdown</code>）</td>
-</tr>
-</tbody>
-</table>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ifconfig eth0 192.168.120.27 netmask 255.255.255.0 up</span><br></pre></td></tr></table></figure>
-<h3 id="1-4-NIC-组合与虚拟网络接口">1.4 NIC 组合与虚拟网络接口</h3>
-<ul>
-<li><strong>NIC 组合</strong>：允许将多个物理以太网适配器分组为虚拟网络适配器，提高性能和容错能力。</li>
-<li><strong>MAC 地址设置</strong>：在 “交换机独立” 模式下，团队会将 MAC 地址设置为出站流量。</li>
-<li><strong>IP 别名</strong>：在同一个网卡上分配不同 IP 地址。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ifconfig eth0:0 192.168.0.1 netmask 255.255.255.0 up</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h2 id="2-ARP-协议管理">2. ARP 协议管理</h2>
-<h3 id="2-1-ARP-协议简介">2.1 ARP 协议简介</h3>
-<p>ARP (Address Resolution Protocol) 用于将 IP 地址解析为 MAC 地址。</p>
-<h3 id="2-2-ARP-命令">2.2 ARP 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">arp [option]</span><br></pre></td></tr></table></figure>
-<table>
-<thead>
-<tr>
-<th>选项</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>-a [host]</code></td>
-<td>显示指定主机或全部 ARP 表</td>
-</tr>
-<tr>
-<td><code>-f 文件名</code></td>
-<td>从文件读取主机:MAC 对应表</td>
-</tr>
-<tr>
-<td><code>-n</code></td>
-<td>显示 IP 地址而非主机名</td>
-</tr>
-<tr>
-<td><code>-d [host]</code></td>
-<td>删除指定主机的 ARP 记录</td>
-</tr>
-<tr>
-<td><code>-i [IF名]</code></td>
-<td>指定接口</td>
-</tr>
-<tr>
-<td><code>-s [host] [MAC地址]</code></td>
-<td>添加主机和 MAC 地址的对应关系</td>
-</tr>
-</tbody>
-</table>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">arp -s h001.example.com 00:01:02:03:04:05</span><br></pre></td></tr></table></figure>
-<h3 id="2-3-ARP-监视工具">2.3 ARP 监视工具</h3>
-<ul>
-<li><code>arpwatch</code>：监视网络中的 ARP 活动。</li>
-</ul>
-<h2 id="3-网络管理命令">3. 网络管理命令</h2>
-<h3 id="3-1-Ping-命令">3.1 Ping 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ping [host名或IP] [option]</span><br></pre></td></tr></table></figure>
-<table>
-<thead>
-<tr>
-<th>选项</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>-n</code></td>
-<td>不解析主机名，显示 IP 地址</td>
-</tr>
-<tr>
-<td><code>-c 次数</code></td>
-<td>发送指定次数的 ICMP 包</td>
-</tr>
-<tr>
-<td><code>-i 间隔</code></td>
-<td>按指定间隔发送 ICMP 包</td>
-</tr>
-</tbody>
-</table>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ping -c 4 192.168.1.1</span><br></pre></td></tr></table></figure>
-<h3 id="3-2-Traceroute-命令">3.2 Traceroute 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">traceroute [option] [host名或IP]</span><br></pre></td></tr></table></figure>
-<table>
-<thead>
-<tr>
-<th>选项</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>-i [IF]</code></td>
-<td>指定接口</td>
-</tr>
-<tr>
-<td><code>-n</code></td>
-<td>显示 IP 地址而非主机名</td>
-</tr>
-</tbody>
-</table>
-<h3 id="3-3-Tcpdump-命令">3.3 Tcpdump 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tcpdump [option] [条件式]</span><br></pre></td></tr></table></figure>
-<table>
-<thead>
-<tr>
-<th>选项</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>-i IF名</code></td>
-<td>指定监视的接口</td>
-</tr>
-<tr>
-<td><code>-s 比特数</code></td>
-<td>指定从包中提取的比特数</td>
-</tr>
-<tr>
-<td><code>-X</code></td>
-<td>显示十六进制和 ASCII 文本</td>
-</tr>
-<tr>
-<td><code>-n</code></td>
-<td>不解析 ARP 地址</td>
-</tr>
-<tr>
-<td><code>-l</code></td>
-<td>缓存标准输出</td>
-</tr>
-<tr>
-<td><code>-t</code></td>
-<td>不显示时间</td>
-</tr>
-<tr>
-<td><code>-v</code></td>
-<td>显示详细信息</td>
-</tr>
-</tbody>
-</table>
-<p><strong>条件式</strong>:</p>
-<ul>
-<li><code>port</code>：指定端口</li>
-</ul>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tcpdump -nli eth0 port 53</span><br></pre></td></tr></table></figure>
-<h3 id="3-4-Wireshark">3.4 Wireshark</h3>
-<ul>
-<li>图形化网络监视工具。</li>
-</ul>
-<h3 id="3-5-Netstat-命令">3.5 Netstat 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">netstat [option]</span><br></pre></td></tr></table></figure>
-<table>
-<thead>
-<tr>
-<th>选项</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>-a</code></td>
-<td>显示所有 socket</td>
-</tr>
-<tr>
-<td><code>-c</code></td>
-<td>每秒刷新</td>
-</tr>
-<tr>
-<td><code>-i</code></td>
-<td>显示接口状态</td>
-</tr>
-<tr>
-<td><code>-l</code></td>
-<td>只显示监听状态的端口</td>
-</tr>
-<tr>
-<td><code>-n</code></td>
-<td>显示地址和端口</td>
-</tr>
-<tr>
-<td><code>-p</code></td>
-<td>显示 PID 和进程</td>
-</tr>
-<tr>
-<td><code>-r</code></td>
-<td>显示路由表</td>
-</tr>
-<tr>
-<td><code>-t</code></td>
-<td>显示 TCP 连接</td>
-</tr>
-<tr>
-<td><code>-u</code></td>
-<td>显示 UDP 连接</td>
-</tr>
-</tbody>
-</table>
-<h3 id="3-6-IP-命令">3.6 IP 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ip [option] 操作对象 [命令] [设备]</span><br></pre></td></tr></table></figure>
-<table>
-<thead>
-<tr>
-<th>选项</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>-s</code></td>
-<td>显示状态</td>
-</tr>
-<tr>
-<td><code>-r</code></td>
-<td>解析名称</td>
-</tr>
-</tbody>
-</table>
-<p><strong>操作对象</strong>:</p>
-<ul>
-<li><code>link</code>：接口详细信息</li>
-<li><code>addr</code>：IP 地址</li>
-<li><code>route</code>：路由表</li>
-<li><code>neigh</code>：ARP 缓存</li>
-</ul>
-<p><strong>命令</strong>:</p>
-<ul>
-<li><code>show</code>：显示指定对象</li>
-<li><code>add</code>：设置指定对象的参数</li>
-</ul>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ip <span class="built_in">link</span> show eth0</span><br></pre></td></tr></table></figure>
-<h2 id="4-路由设置">4. 路由设置</h2>
-<h3 id="4-1-Route-命令">4.1 Route 命令</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">route [option]</span><br></pre></td></tr></table></figure>
-<table>
-<thead>
-<tr>
-<th>选项</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>-n</code></td>
-<td>不解析主机名</td>
-</tr>
-<tr>
-<td><code>-F</code></td>
-<td>显示内核路由表</td>
-</tr>
-<tr>
-<td><code>-C</code></td>
-<td>显示内核路由缓存</td>
-</tr>
-</tbody>
-</table>
-<p><strong>路由表项目</strong>:</p>
-<ul>
-<li><code>Destination</code>：目标网络或主机</li>
-<li><code>Gateway</code>：网关</li>
-<li><code>Genmask</code>：目标子网掩码</li>
-<li><code>Flags</code>：路由状态（U:有效, H:目标主机, G:使用网关, !:无效）</li>
-<li><code>Metric</code>：到达目标的距离</li>
-<li><code>Ref</code>：路由引用数</li>
-<li><code>Use</code>：路径引用次数</li>
-<li><code>Iface</code>：使用的接口</li>
-</ul>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">route add -net 192.168.100.0 netmask 255.255.255.0 gw 172.16.0.1</span><br><span class="line">route add default gw 192.168.0.50</span><br><span class="line">route del -net 192.168.100.0 netmask 255.255.255.0 gw 172.16.0.1</span><br></pre></td></tr></table></figure>
-<h2 id="5-无线网络设置">5. 无线网络设置</h2>
-<h3 id="5-1-无线规格与安全标准">5.1 无线规格与安全标准</h3>
-<table>
-<thead>
-<tr>
-<th>规格</th>
-<th>频率</th>
-<th>传送速度</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>IEEE 802.11a</td>
-<td>5.2GHz</td>
-<td>54Mbps</td>
-</tr>
-<tr>
-<td>IEEE 802.11b</td>
-<td>2.4GHz</td>
-<td>11Mbps</td>
-</tr>
-<tr>
-<td>IEEE 802.11g</td>
-<td>2.4GHz</td>
-<td>54Mbps</td>
-</tr>
-<tr>
-<td>IEEE 802.11n</td>
-<td>2.4GHz/5GHz</td>
-<td>600Mbps</td>
-</tr>
-<tr>
-<td>IEEE 802.11ac</td>
-<td>5GHz</td>
-<td>433Mbps~7Gbps</td>
-</tr>
-</tbody>
-</table>
-<p><strong>安全标准</strong>:</p>
-<ul>
-<li><strong>WEP</strong>：使用 RC4 算法，存在漏洞。</li>
-<li><strong>WPA</strong>：多种加密技术（TKIP, AES），用户认证由 IEEE 802.1x 等实现。WPA-AES 比 WPA-TKIP 更安全。</li>
-</ul>
-<h3 id="5-2-无线接口状态确认">5.2 无线接口状态确认</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iwconfig [wlanN] [essid ESSID] [key [s:]WEP key]</span><br></pre></td></tr></table></figure>
-<p><strong>示例</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">iwconfig wlan0 essid <span class="string">&quot;windsor&quot;</span></span><br><span class="line">iwconfig wlan0 key s:abc12345</span><br></pre></td></tr></table></figure>
-<h3 id="5-3-获取无线接口信息">5.3 获取无线接口信息</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iwlist [无线IF] [参数]</span><br></pre></td></tr></table></figure>
-<table>
-<thead>
-<tr>
-<th>参数</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>scanning [essid ID]</code></td>
-<td>显示可接入的热点列表</td>
-</tr>
-<tr>
-<td><code>channel</code></td>
-<td>显示可设置的频道</td>
-</tr>
-<tr>
-<td><code>rate</code></td>
-<td>显示传送速度</td>
-</tr>
-</tbody>
-</table>
-<h2 id="6-高级网络设置">6. 高级网络设置</h2>
-<h3 id="6-1-网络相关文件">6.1 网络相关文件</h3>
-<table>
-<thead>
-<tr>
-<th>文件</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>/etc/hostname</code></td>
-<td>记录主机名</td>
-</tr>
-<tr>
-<td><code>/etc/hosts</code></td>
-<td>记录主机名、别名和 IP 的对应关系</td>
-</tr>
-<tr>
-<td><code>/etc/networks</code></td>
-<td>记录网络和 IP 的对应关系</td>
-</tr>
-<tr>
-<td><code>/etc/nsswitch.conf</code></td>
-<td>规定信息查找顺序</td>
-</tr>
-<tr>
-<td><code>/etc/resolv.conf</code></td>
-<td>记录 DNS 服务器和域名</td>
-</tr>
-<tr>
-<td><code>/etc/sysconfig/network</code></td>
-<td>网络功能、主机名、默认网关等设置</td>
-</tr>
-<tr>
-<td><code>/etc/sysconfig/network-scripts/</code></td>
-<td>存放网络接口设置文件</td>
-</tr>
-<tr>
-<td><code>/etc/network/interfaces</code></td>
-<td>Debian 系统的网络接口设置文件</td>
-</tr>
-</tbody>
-</table>
-<h3 id="6-2-配置文件示例">6.2 配置文件示例</h3>
-<p><strong>/etc/sysconfig/network-scripts/ifcfg-eth0</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">DEVICE=eth0</span><br><span class="line">BOOTPROTO=static</span><br><span class="line">IPADDR=192.168.0.6</span><br><span class="line">NETMASK=255.255.255.0</span><br><span class="line">NETWORK=192.168.0.0</span><br><span class="line">BROADCAST=192.168.0.255</span><br><span class="line">ONBOOT=<span class="built_in">yes</span></span><br></pre></td></tr></table></figure>
-<p><strong>/etc/network/interfaces (Debian)</strong>:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">auto lo</span><br><span class="line">iface lo inet loopback</span><br><span class="line">allow-hotplug eth0</span><br><span class="line">iface eth0 inet static </span><br><span class="line">    address 192.168.0.6</span><br><span class="line">    netmask 255.255.255.0</span><br><span class="line">    gateway 192.168.0.1</span><br><span class="line">    dns-domain example.com</span><br><span class="line">    dns-nameservers 192.168.1.1</span><br></pre></td></tr></table></figure>
-<h2 id="7-网络问题排查">7. 网络问题排查</h2>
-<h3 id="7-1-排查步骤">7.1 排查步骤</h3>
-<ol>
-<li>
-<p><strong>Ping 测试</strong>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ping 172.16.0.1</span><br><span class="line">ping h001.s16.la.net</span><br></pre></td></tr></table></figure>
-<ul>
-<li>如果 IP 能 Ping 通，但主机名失败，可能是 DNS 问题，检查 <code>/etc/resolv.conf</code>。</li>
-</ul>
-</li>
-<li>
-<p><strong>局域网连通但无法访问互联网</strong>：</p>
-<ul>
-<li>检查默认网关或路由表：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">route</span><br></pre></td></tr></table></figure>
-</li>
-<li>如果没有默认路由，添加默认网关：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">route add default gw 172.16.0.1</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li>
-<p><strong>网络连接不通</strong>：</p>
-<ul>
-<li>使用 <code>traceroute</code> 或 <code>tracepath</code> 查看路径：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">traceroute www.lpi.jp</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li>
-<p><strong>网络接口问题</strong>：</p>
-<ul>
-<li>检查网卡状态：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ifconfig</span><br></pre></td></tr></table></figure>
-</li>
-<li>如果只显示 <code>lo</code>，启动接口：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ifup eth0</span><br><span class="line"><span class="comment"># 或</span></span><br><span class="line">ifconfig eth0 up</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-</ol>
-<h3 id="7-2-需要确认的配置文件">7.2 需要确认的配置文件</h3>
-<table>
-<thead>
-<tr>
-<th>文件</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>/etc/resolv.conf</code></td>
-<td>DNS 服务器设置</td>
-</tr>
-<tr>
-<td><code>/etc/sysconfig/network-scripts/*</code></td>
-<td>网络接口设置（RHEL/CentOS）</td>
-</tr>
-<tr>
-<td><code>/etc/network/interfaces</code></td>
-<td>网络接口设置（Debian）</td>
-</tr>
-<tr>
-<td><code>/etc/hosts.allow</code>, <code>/etc/hosts.deny</code></td>
-<td>连接控制</td>
-</tr>
-</tbody>
-</table>
-<hr>
-<p><strong>补充说明</strong>：</p>
-<ul>
-<li><strong>IP 别名</strong>：允许在同一个网卡上分配多个 IP 地址，常用于服务器提供多种服务。</li>
-<li><strong>ARP 缓存</strong>：存储 IP 地址与 MAC 地址的映射关系，可通过 <code>arp -d</code> 手动清除缓存。</li>
-<li><strong>无线安全</strong>：建议使用 WPA2 或 WPA3 加密方式，避免使用不安全的 WEP。</li>
-<li><strong>路由表</strong>：理解目标网络、网关、子网掩码和接口的关系，确保数据包正确转发。</li>
-</ul>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2020/11/16/linux/16-%E7%BD%91%E7%BB%9C/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -4677,7 +5000,7 @@ ACLはステートレスです。（レスポンスでも明示する必要あ�
             </a>
           </li>
         
-        <li class="pagination-number">第 8 頁 共 22 頁</li>
+        <li class="pagination-number">第 8 頁 共 24 頁</li>
     </ul>
 </div>
 
@@ -4988,7 +5311,7 @@ ACLはステートレスです。（レスポンスでも明示する必要あ�
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 211 篇文章
+                找到 235 篇文章
             </p>
         </div>
     </div>

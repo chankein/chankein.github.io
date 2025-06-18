@@ -1,0 +1,1036 @@
+
+<!DOCTYPE html>
+<html lang="zh-tw">
+    
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/locale/zh-tw.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4/dist/algoliasearch-lite.umd.js"></script>
+    <script>
+      window.algoliaConfig = {
+        appId: 'AWFC86Q51O',
+        apiKey: 'c9d952906eb1b154d75cf863e75c1ede',
+        indexName: 'MyBlog'
+      };
+      var algoliaIndex = algoliasearch(
+        algoliaConfig.appId,
+        algoliaConfig.apiKey
+      ).initIndex(algoliaConfig.indexName);
+    </script>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="Kein&#39;s blog">
+    <title>swift错误处理 - Kein&#39;s blog</title>
+    <meta name="author" content="Kein Chan">
+    
+    
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"错误处理\n错误处理（Error handling） 是响应错误以及从错误中恢复的过程。Swift 在运行时提供了抛出、捕获、传递和操作可恢复错误（recoverable errors）的一等支持（first-class support）。\n某些操作无法保证总是执行完所有代码或生成有用的结果。可选类型用来表示值缺失，但是当某个操作失败时，理解造成失败的原因有助于你的代码作出相应的应对。\n举个例子，假如有个从磁盘上的某个文件读取数据并进行处理的任务，该任务会有多种可能失败的情况，包括指定路径下文件并不存在，文件不具有可读权限，或者文件编码格式不兼容。区分这些不同的失败情况可以让程序处理并解决某些错误，然后把它解决不了的错误报告给用户。\n\n注意\nSwift 中的错误处理涉及到错误处理模式，这会用到 Cocoa 和 Objective-C 中的 NSError。更多详情参见 用 Swift 解决 Cocoa 错误。\n\n表示与抛出错误\n在 Swift 中，错误用遵循 Error 协议的类型的值来表示。这个空协议表明该类型可以用于错误处理。\nSwift 的枚举类型尤为适合构建一组相关的错误状态，枚举的关联值还可以提供错误状态的额外信息。例如，在游戏中操作自动贩卖机时，你可以这样表示可能会出现的错误状态：\n12345enum VendingMachineError: Error &#123;    case invalidSelection                     //选择无效    case insufficientFunds(coinsNeeded: Int) //金额不足    case outOfStock                             //缺货&#125;\n抛出一个错误可以让你表明有意外情况发生，导致正常的执行流程无法继续执行。抛出错误使用 throw 语句。例如，下面的代码抛出一个错误，提示贩卖机还需要 5 个硬币：\n1throw VendingMachineError.insufficientFunds(coinsNeeded: 5)\n处理错误\n某个错误被抛出时，附近的某部分代码必须负责处理这个错误，例如纠正这个问题、尝试另外一种方式、或是向用户报告错误。\nSwift 中有 4 种处理错误的方式。你可以把函数抛出的错误传递给调用此函数的代码、用 do-catch 语句处理错误、将错误作为可选类型处理、或者断言此错误根本不会发生。每种方式在下面的小节中都有描述。\n当一个函数抛出一个错误时，你的程序流程会发生改变，所以重要的是你能迅速识别代码中会抛出错误的地方。为了标识出这些地方，在调用一个能抛出错误的函数、方法或者构造器之前，加上 try 关键字，或者 try? 或 try! 这种变体。这些关键字在下面的小节中有具体讲解。\n\n注意\nSwift 中的错误处理和其他语言中用 try，catch 和 throw 进行异常处理很像。和其他语言中（包括 Objective-C ）的异常处理不同的是，Swift 中的错误处理并不涉及解除调用栈，这是一个计算代价高昂的过程。就此而言，throw 语句的性能特性是可以和 return 语句相媲美的。\n\n用 throwing 函数传递错误\n为了表示一个函数、方法或构造器可以抛出错误，在函数声明的参数之后加上 throws 关键字。一个标有 throws 关键字的函数被称作 throwing 函数。如果这个函数指明了返回值类型，throws 关键词需要写在返回箭头（-&gt;）的前面。\n123func canThrowErrors() throws -&gt; Stringfunc cannotThrowErrors() -&gt; String\n一个 throwing 函数可以在其内部抛出错误，并将错误传递到函数被调用时的作用域。\n\n注意\n只有 throwing 函数可以传递错误。任何在某个非 throwing 函数内部抛出的错误只能在函数内部处理。\n\n下面的例子中，VendingMachine 类有一个 vend(itemNamed:) 方法，如果请求的物品不存在、缺货或者投入金额小于物品价格，该方法就会抛出一个相应的 VendingMachineError：\n1234567891011121314151617181920212223242526272829303132333435struct Item &#123;    var price: Int    var count: Int&#125;class VendingMachine &#123;    var inventory = [        &quot;Candy Bar&quot;: Item(price: 12, count: 7),        &quot;Chips&quot;: Item(price: 10, count: 4),        &quot;Pretzels&quot;: Item(price: 7, count: 11)    ]    var coinsDeposited = 0    func vend(itemNamed name: String) throws &#123;        guard let item = inventory[name] else &#123;            throw VendingMachineError.invalidSelection        &#125;        guard item.count &gt; 0 else &#123;            throw VendingMachineError.outOfStock        &#125;        guard item.price &lt;= coinsDeposited else &#123;            throw VendingMachineError.insufficientFunds(coinsNeeded: item.price - coinsDeposited)        &#125;        coinsDeposited -= item.price        var newItem = item        newItem.count -= 1        inventory[name] = newItem        print(&quot;Dispensing \\(name)&quot;)    &#125;&#125;\n在 vend(itemNamed:) 方法的实现中使用了 guard 语句来确保在购买某个物品所需的条件中有任一条件不满足时，能提前退出方法并抛出相应的错误。由于 throw 语句会立即退出方法，所以物品只有在所有条件都满足时才会被售出。\n因为 vend(itemNamed:) 方法会传递出它抛出的任何错误，在你的代码中调用此方法的地方，必须要么直接处理这些错误——使用 do-catch 语句，try? 或 try!；要么继续将这些错误传递下去。例如下面例子中，buyFavoriteSnack(person:vendingMachine:) 同样是一个 throwing 函数，任何由 vend(itemNamed:) 方法抛出的错误会一直被传递到 buyFavoriteSnack(person:vendingMachine:) 函数被调用的地方。\n123456789let favoriteSnacks = [    &quot;Alice&quot;: &quot;Chips&quot;,    &quot;Bob&quot;: &quot;Licorice&quot;,    &quot;Eve&quot;: &quot;Pretzels&quot;,]func buyFavoriteSnack(person: String, vendingMachine: VendingMachine) throws &#123;    let snackName = favoriteSnacks[person] ?? &quot;Candy Bar&quot;    try vendingMachine.vend(itemNamed: snackName)&#125;\n上例中，buyFavoriteSnack(person:vendingMachine:) 函数会查找某人最喜欢的零食，并通过调用 vend(itemNamed:) 方法来尝试为他们购买。因为 vend(itemNamed:) 方法能抛出错误，所以在调用的它时候在它前面加了 try 关键字。\nthrowing 构造器能像 throwing 函数一样传递错误。例如下面代码中的 PurchasedSnack 构造器在构造过程中调用了 throwing 函数，并且通过传递到它的调用者来处理这些错误。\n1234567struct PurchasedSnack &#123;    let name: String    init(name: String, vendingMachine: VendingMachine) throws &#123;        try vendingMachine.vend(itemNamed: name)        self.name = name    &#125;&#125;\n用 Do-Catch 处理错误\n你可以使用一个 do-catch 语句运行一段闭包代码来处理错误。如果在 do 子句中的代码抛出了一个错误，这个错误会与 catch 子句做匹配，从而决定哪条子句能处理它。\n下面是 do-catch 语句的一般形式：\n12345678910do &#123;    try expression    statements&#125; catch pattern 1 &#123;    statements&#125; catch pattern 2 where condition &#123;    statements&#125; catch &#123;    statements&#125;\n在 catch 后面写一个匹配模式来表明这个子句能处理什么样的错误。如果一条 catch 子句没有指定匹配模式，那么这条子句可以匹配任何错误，并且把错误绑定到一个名字为 error 的局部常量。关于模式匹配的更多信息请参考 模式。\n举例来说，下面的代码处理了 VendingMachineError 枚举类型的全部三种情况：\n123456789101112131415var vendingMachine = VendingMachine()vendingMachine.coinsDeposited = 8do &#123;    try buyFavoriteSnack(person: &quot;Alice&quot;, vendingMachine: vendingMachine)    print(&quot;Success! Yum.&quot;)&#125; catch VendingMachineError.invalidSelection &#123;    print(&quot;Invalid Selection.&quot;)&#125; catch VendingMachineError.outOfStock &#123;    print(&quot;Out of Stock.&quot;)&#125; catch VendingMachineError.insufficientFunds(let coinsNeeded) &#123;    print(&quot;Insufficient funds. Please insert an additional \\(coinsNeeded) coins.&quot;)&#125; catch &#123;    print(&quot;Unexpected error: \\(error).&quot;)&#125;// 打印“Insufficient funds. Please insert an additional 2 coins.”\n上面的例子中，buyFavoriteSnack(person:vendingMachine:) 函数在一个 try 表达式中被调用，是因为它能抛出错误。如果错误被抛出，相应的执行会马上转移到 catch 子句中，并判断这个错误是否要被继续传递下去。如果错误没有被匹配，它会被最后一个 catch 语句捕获，并赋值给一个 error 常量。如果没有错误被抛出，do 子句中余下的语句就会被执行。\ncatch 子句不必将 do 子句中的代码所抛出的每一个可能的错误都作处理。如果所有 catch 子句都未处理错误，错误就会传递到周围的作用域。然而，错误还是必须要被某个周围的作用域处理的。在不会抛出错误的函数中，必须用 do-catch 语句处理错误。而能够抛出错误的函数既可以使用 do-catch 语句处理，也可以让调用方来处理错误。如果错误传递到了顶层作用域却依然没有被处理，你会得到一个运行时错误。\n以下面的代码为例，不是 VendingMachineError 中申明的错误会在调用函数的地方被捕获：\n1234567891011121314func nourish(with item: String) throws &#123;    do &#123;        try vendingMachine.vend(itemNamed: item)    &#125; catch is VendingMachineError &#123;        print(&quot;Invalid selection, out of stock, or not enough money.&quot;)    &#125;&#125;do &#123;    try nourish(with: &quot;Beet-Flavored Chips&quot;)&#125; catch &#123;    print(&quot;Unexpected non-vending-machine-related error: \\(error)&quot;)&#125;// 打印“Invalid selection, out of stock, or not enough money.”\n如果 vend(itemNamed:) 抛出的是一个 VendingMachineError 类型的错误，nourish(with:) 会打印一条消息，否则 nourish(with:) 会将错误抛给它的调用方。这个错误之后会被通用的 catch 语句捕获。\n将错误转换成可选值\n可以使用 try? 通过将错误转换成一个可选值来处理错误。如果是在计算 try? 表达式时抛出错误，该表达式的结果就为 nil。例如，在下面的代码中，x 和 y 有着相同的数值和等价的含义：\n123456789101112func someThrowingFunction() throws -&gt; Int &#123;    // ...&#125;let x = try? someThrowingFunction()let y: Int?do &#123;    y = try someThrowingFunction()&#125; catch &#123;    y = nil&#125;\n如果 someThrowingFunction() 抛出一个错误，x 和 y 的值是 nil。否则 x 和 y 的值就是该函数的返回值。注意，无论 someThrowingFunction() 的返回值类型是什么类型，x 和 y 都是这个类型的可选类型。例子中此函数返回一个整型，所以 x 和 y 是可选整型。\n如果你想对所有的错误都采用同样的方式来处理，用 try? 就可以让你写出简洁的错误处理代码。例如，下面的代码用几种方式来获取数据，如果所有方式都失败了则返回 nil。\n12345func fetchData() -&gt; Data? &#123;    if let data = try? fetchDataFromDisk() &#123; return data &#125;    if let data = try? fetchDataFromServer() &#123; return data &#125;    return nil&#125;\n禁用错误传递\n有时你知道某个 throwing 函数实际上在运行时是不会抛出错误的，在这种情况下，你可以在表达式前面写 try! 来禁用错误传递，这会把调用包装在一个不会有错误抛出的运行时断言中。如果真的抛出了错误，你会得到一个运行时错误。\n例如，下面的代码使用了 loadImage(atPath:) 函数，该函数从给定的路径加载图片资源，如果图片无法载入则抛出一个错误。在这种情况下，因为图片是和应用绑定的，运行时不会有错误抛出，所以适合禁用错误传递。\n1let photo = try! loadImage(atPath: &quot;./Resources/John Appleseed.jpg&quot;)\n指定清理操作\n你可以使用 defer 语句在即将离开当前代码块时执行一系列语句。该语句让你能执行一些必要的清理工作，不管是以何种方式离开当前代码块的——无论是由于抛出错误而离开，或是由于诸如 return、break 的语句。例如，你可以用 defer 语句来确保文件描述符得以关闭，以及手动分配的内存得以释放。\ndefer 语句将代码的执行延迟到当前的作用域退出之前。该语句由 defer 关键字和要被延迟执行的语句组成。延迟执行的语句不能包含任何控制转移语句，例如 break、return 语句，或是抛出一个错误。延迟执行的操作会按照它们声明的顺序从后往前执行——也就是说，第一条 defer 语句中的代码最后才执行，第二条 defer 语句中的代码倒数第二个执行，以此类推。最后一条语句会第一个执行。\n123456789101112func processFile(filename: String) throws &#123;    if exists(filename) &#123;        let file = open(filename)        defer &#123;            close(file)        &#125;        while let line = try file.readline() &#123;            // 处理文件。        &#125;        // close(file) 会在这里被调用，即作用域的最后。    &#125;&#125;\n上面的代码使用一条 defer 语句来确保 open(_:) 函数有一个相应的对 close(_:) 函数的调用。\n\n注意\n即使没有涉及到错误处理的代码，你也可以使用 defer 语句。\n\n","dateCreated":"2023-07-05T10:13:17+08:00","dateModified":"2025-06-18T12:18:17+08:00","datePublished":"2023-07-05T10:13:17+08:00","description":"","headline":"swift错误处理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/","keywords":"swift"}</script>
+    <meta name="description" content="错误处理 错误处理（Error handling） 是响应错误以及从错误中恢复的过程。Swift 在运行时提供了抛出、捕获、传递和操作可恢复错误（recoverable errors）的一等支持（first-class support）。 某些操作无法保证总是执行完所有代码或生成有用的结果。可选类型用来表示值缺失，但是当某个操作失败时，理解造成失败的原因有助于你的代码作出相应的应对。 举个例子，假">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="swift错误处理">
+<meta property="og:url" content="https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/index.html">
+<meta property="og:site_name" content="Kein&#39;s blog">
+<meta property="og:description" content="错误处理 错误处理（Error handling） 是响应错误以及从错误中恢复的过程。Swift 在运行时提供了抛出、捕获、传递和操作可恢复错误（recoverable errors）的一等支持（first-class support）。 某些操作无法保证总是执行完所有代码或生成有用的结果。可选类型用来表示值缺失，但是当某个操作失败时，理解造成失败的原因有助于你的代码作出相应的应对。 举个例子，假">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2023-07-05T02:13:17.000Z">
+<meta property="article:modified_time" content="2025-06-18T04:18:17.503Z">
+<meta property="article:author" content="Kein Chan">
+<meta property="article:tag" content="swift">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    
+<link rel="stylesheet" href="../../../../../assets/css/style-l9zwheso7r7pnk98nvirovsz9dl7fhkrc9mlb5vmuxw7tk5movrk0eevsrpr.min.css">
+
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="../../../../../index.html"
+            aria-label=""
+        >
+            Kein&#39;s blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打開鏈接: ../../../../../#about"
+            >
+        
+        
+            <img class="header-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="../../../../../#about"
+                    aria-label="閱讀有關作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+                </a>
+                <h4 class="sidebar-profile-name">Kein Chan</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../index.html"
+                            
+                            rel="noopener"
+                            title="首頁"
+                        >
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首頁</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-categories"
+                            
+                            rel="noopener"
+                            title="分類"
+                        >
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分類</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-tags"
+                            
+                            rel="noopener"
+                            title="標籤"
+                        >
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">標籤</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../all-archives"
+                            
+                            rel="noopener"
+                            title="所有文章"
+                        >
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">所有文章</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link open-algolia-search"
+                            href="#search"
+                            
+                            rel="noopener"
+                            title="搜尋"
+                        >
+                        <i class="sidebar-button-icon fa fa-search" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">搜尋</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="#about"
+                            
+                            rel="noopener"
+                            title="關於"
+                        >
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">關於</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://github.com/chankein/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="GitHub"
+                        >
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="https://www.linkedin.com/profile/"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="LinkedIn"
+                        >
+                        <i class="sidebar-button-icon fab fa-linkedin" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">LinkedIn</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../mailto:kein.chan85@gmail.com"
+                            
+                                target="_blank"
+                            
+                            rel="noopener"
+                            title="Email"
+                        >
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Email</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a
+                            class="sidebar-button-link "
+                            href="../../../../../atom.xml"
+                            
+                            rel="noopener"
+                            title="Atom"
+                        >
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">Atom</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            swift错误处理
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2023-07-05T10:13:17+08:00">
+	
+		    2023 年 7 月 5 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/swift/">swift</a>
+
+
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <h2 id="错误处理">错误处理</h2>
+<p><em>错误处理（Error handling）</em> 是响应错误以及从错误中恢复的过程。Swift 在运行时提供了抛出、捕获、传递和操作可恢复错误（recoverable errors）的一等支持（first-class support）。</p>
+<p>某些操作无法保证总是执行完所有代码或生成有用的结果。可选类型用来表示值缺失，但是当某个操作失败时，理解造成失败的原因有助于你的代码作出相应的应对。</p>
+<p>举个例子，假如有个从磁盘上的某个文件读取数据并进行处理的任务，该任务会有多种可能失败的情况，包括指定路径下文件并不存在，文件不具有可读权限，或者文件编码格式不兼容。区分这些不同的失败情况可以让程序处理并解决某些错误，然后把它解决不了的错误报告给用户。</p>
+<blockquote>
+<p>注意</p>
+<p>Swift 中的错误处理涉及到错误处理模式，这会用到 Cocoa 和 Objective-C 中的 <code>NSError</code>。更多详情参见 <a target="_blank" rel="noopener" href="https://developer.apple.com/documentation/swift/cocoa_design_patterns/handling_cocoa_errors_in_swift">用 Swift 解决 Cocoa 错误</a>。</p>
+</blockquote>
+<h2 id="表示与抛出错误">表示与抛出错误</h2>
+<p>在 Swift 中，错误用遵循 <code>Error</code> 协议的类型的值来表示。这个空协议表明该类型可以用于错误处理。</p>
+<p>Swift 的枚举类型尤为适合构建一组相关的错误状态，枚举的关联值还可以提供错误状态的额外信息。例如，在游戏中操作自动贩卖机时，你可以这样表示可能会出现的错误状态：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">enum</span> <span class="title class_">VendingMachineError</span>: <span class="title class_ inherited__">Error</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> invalidSelection                     <span class="comment">//选择无效</span></span><br><span class="line">    <span class="keyword">case</span> insufficientFunds(coinsNeeded: <span class="type">Int</span>) <span class="comment">//金额不足</span></span><br><span class="line">    <span class="keyword">case</span> outOfStock                             <span class="comment">//缺货</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>抛出一个错误可以让你表明有意外情况发生，导致正常的执行流程无法继续执行。抛出错误使用 <code>throw</code> 语句。例如，下面的代码抛出一个错误，提示贩卖机还需要 <code>5</code> 个硬币：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">throw</span> <span class="type">VendingMachineError</span>.insufficientFunds(coinsNeeded: <span class="number">5</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="处理错误">处理错误</h2>
+<p>某个错误被抛出时，附近的某部分代码必须负责处理这个错误，例如纠正这个问题、尝试另外一种方式、或是向用户报告错误。</p>
+<p>Swift 中有 <code>4</code> 种处理错误的方式。你可以把函数抛出的错误传递给调用此函数的代码、用 <code>do-catch</code> 语句处理错误、将错误作为可选类型处理、或者断言此错误根本不会发生。每种方式在下面的小节中都有描述。</p>
+<p>当一个函数抛出一个错误时，你的程序流程会发生改变，所以重要的是你能迅速识别代码中会抛出错误的地方。为了标识出这些地方，在调用一个能抛出错误的函数、方法或者构造器之前，加上 <code>try</code> 关键字，或者 <code>try?</code> 或 <code>try!</code> 这种变体。这些关键字在下面的小节中有具体讲解。</p>
+<blockquote>
+<p>注意</p>
+<p>Swift 中的错误处理和其他语言中用 <code>try</code>，<code>catch</code> 和 <code>throw</code> 进行异常处理很像。和其他语言中（包括 Objective-C ）的异常处理不同的是，Swift 中的错误处理并不涉及解除调用栈，这是一个计算代价高昂的过程。就此而言，<code>throw</code> 语句的性能特性是可以和 <code>return</code> 语句相媲美的。</p>
+</blockquote>
+<h3 id="用-throwing-函数传递错误">用 throwing 函数传递错误</h3>
+<p>为了表示一个函数、方法或构造器可以抛出错误，在函数声明的参数之后加上 <code>throws</code> 关键字。一个标有 <code>throws</code> 关键字的函数被称作 <em>throwing 函数</em>。如果这个函数指明了返回值类型，<code>throws</code> 关键词需要写在返回箭头（<code>-&gt;</code>）的前面。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">canThrowErrors</span>() <span class="keyword">throws</span> -&gt; <span class="type">String</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">func</span> <span class="title function_">cannotThrowErrors</span>() -&gt; <span class="type">String</span></span><br></pre></td></tr></table></figure>
+<p>一个 throwing 函数可以在其内部抛出错误，并将错误传递到函数被调用时的作用域。</p>
+<blockquote>
+<p>注意</p>
+<p>只有 throwing 函数可以传递错误。任何在某个非 throwing 函数内部抛出的错误只能在函数内部处理。</p>
+</blockquote>
+<p>下面的例子中，<code>VendingMachine</code> 类有一个 <code>vend(itemNamed:)</code> 方法，如果请求的物品不存在、缺货或者投入金额小于物品价格，该方法就会抛出一个相应的 <code>VendingMachineError</code>：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Item</span> &#123;</span><br><span class="line">    <span class="keyword">var</span> price: <span class="type">Int</span></span><br><span class="line">    <span class="keyword">var</span> count: <span class="type">Int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">VendingMachine</span> &#123;</span><br><span class="line">    <span class="keyword">var</span> inventory <span class="operator">=</span> [</span><br><span class="line">        <span class="string">&quot;Candy Bar&quot;</span>: <span class="type">Item</span>(price: <span class="number">12</span>, count: <span class="number">7</span>),</span><br><span class="line">        <span class="string">&quot;Chips&quot;</span>: <span class="type">Item</span>(price: <span class="number">10</span>, count: <span class="number">4</span>),</span><br><span class="line">        <span class="string">&quot;Pretzels&quot;</span>: <span class="type">Item</span>(price: <span class="number">7</span>, count: <span class="number">11</span>)</span><br><span class="line">    ]</span><br><span class="line">    <span class="keyword">var</span> coinsDeposited <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">func</span> <span class="title function_">vend</span>(<span class="params">itemNamed</span> <span class="params">name</span>: <span class="type">String</span>) <span class="keyword">throws</span> &#123;</span><br><span class="line">        <span class="keyword">guard</span> <span class="keyword">let</span> item <span class="operator">=</span> inventory[name] <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="type">VendingMachineError</span>.invalidSelection</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">guard</span> item.count <span class="operator">&gt;</span> <span class="number">0</span> <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="type">VendingMachineError</span>.outOfStock</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">guard</span> item.price <span class="operator">&lt;=</span> coinsDeposited <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="type">VendingMachineError</span>.insufficientFunds(coinsNeeded: item.price <span class="operator">-</span> coinsDeposited)</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        coinsDeposited <span class="operator">-=</span> item.price</span><br><span class="line"></span><br><span class="line">        <span class="keyword">var</span> newItem <span class="operator">=</span> item</span><br><span class="line">        newItem.count <span class="operator">-=</span> <span class="number">1</span></span><br><span class="line">        inventory[name] <span class="operator">=</span> newItem</span><br><span class="line"></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;Dispensing <span class="subst">\(name)</span>&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 <code>vend(itemNamed:)</code> 方法的实现中使用了 <code>guard</code> 语句来确保在购买某个物品所需的条件中有任一条件不满足时，能提前退出方法并抛出相应的错误。由于 <code>throw</code> 语句会立即退出方法，所以物品只有在所有条件都满足时才会被售出。</p>
+<p>因为 <code>vend(itemNamed:)</code> 方法会传递出它抛出的任何错误，在你的代码中调用此方法的地方，必须要么直接处理这些错误——使用 <code>do-catch</code> 语句，<code>try?</code> 或 <code>try!</code>；要么继续将这些错误传递下去。例如下面例子中，<code>buyFavoriteSnack(person:vendingMachine:)</code> 同样是一个 throwing 函数，任何由 <code>vend(itemNamed:)</code> 方法抛出的错误会一直被传递到 <code>buyFavoriteSnack(person:vendingMachine:)</code> 函数被调用的地方。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> favoriteSnacks <span class="operator">=</span> [</span><br><span class="line">    <span class="string">&quot;Alice&quot;</span>: <span class="string">&quot;Chips&quot;</span>,</span><br><span class="line">    <span class="string">&quot;Bob&quot;</span>: <span class="string">&quot;Licorice&quot;</span>,</span><br><span class="line">    <span class="string">&quot;Eve&quot;</span>: <span class="string">&quot;Pretzels&quot;</span>,</span><br><span class="line">]</span><br><span class="line"><span class="keyword">func</span> <span class="title function_">buyFavoriteSnack</span>(<span class="params">person</span>: <span class="type">String</span>, <span class="params">vendingMachine</span>: <span class="type">VendingMachine</span>) <span class="keyword">throws</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> snackName <span class="operator">=</span> favoriteSnacks[person] <span class="operator">??</span> <span class="string">&quot;Candy Bar&quot;</span></span><br><span class="line">    <span class="keyword">try</span> vendingMachine.vend(itemNamed: snackName)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上例中，<code>buyFavoriteSnack(person:vendingMachine:)</code> 函数会查找某人最喜欢的零食，并通过调用 <code>vend(itemNamed:)</code> 方法来尝试为他们购买。因为 <code>vend(itemNamed:)</code> 方法能抛出错误，所以在调用的它时候在它前面加了 <code>try</code> 关键字。</p>
+<p><code>throwing</code> 构造器能像 <code>throwing</code> 函数一样传递错误。例如下面代码中的 <code>PurchasedSnack</code> 构造器在构造过程中调用了 throwing 函数，并且通过传递到它的调用者来处理这些错误。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">PurchasedSnack</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> name: <span class="type">String</span></span><br><span class="line">    <span class="keyword">init</span>(<span class="params">name</span>: <span class="type">String</span>, <span class="params">vendingMachine</span>: <span class="type">VendingMachine</span>) <span class="keyword">throws</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> vendingMachine.vend(itemNamed: name)</span><br><span class="line">        <span class="keyword">self</span>.name <span class="operator">=</span> name</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="用-Do-Catch-处理错误">用 Do-Catch 处理错误</h3>
+<p>你可以使用一个 <code>do-catch</code> 语句运行一段闭包代码来处理错误。如果在 <code>do</code> 子句中的代码抛出了一个错误，这个错误会与 <code>catch</code> 子句做匹配，从而决定哪条子句能处理它。</p>
+<p>下面是 <code>do-catch</code> 语句的一般形式：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> expression</span><br><span class="line">    statements</span><br><span class="line">&#125; <span class="keyword">catch</span> pattern <span class="number">1</span> &#123;</span><br><span class="line">    statements</span><br><span class="line">&#125; <span class="keyword">catch</span> pattern <span class="number">2</span> <span class="keyword">where</span> condition &#123;</span><br><span class="line">    statements</span><br><span class="line">&#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">    statements</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在 <code>catch</code> 后面写一个匹配模式来表明这个子句能处理什么样的错误。如果一条 <code>catch</code> 子句没有指定匹配模式，那么这条子句可以匹配任何错误，并且把错误绑定到一个名字为 <code>error</code> 的局部常量。关于模式匹配的更多信息请参考 <a target="_blank" rel="noopener" href="https://www.runoob.com/manual/gitbook/swift5/source/_book/chapter3/07_Patterns.html">模式</a>。</p>
+<p>举例来说，下面的代码处理了 <code>VendingMachineError</code> 枚举类型的全部三种情况：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> vendingMachine <span class="operator">=</span> <span class="type">VendingMachine</span>()</span><br><span class="line">vendingMachine.coinsDeposited <span class="operator">=</span> <span class="number">8</span></span><br><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> buyFavoriteSnack(person: <span class="string">&quot;Alice&quot;</span>, vendingMachine: vendingMachine)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Success! Yum.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">catch</span> <span class="type">VendingMachineError</span>.invalidSelection &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Invalid Selection.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">catch</span> <span class="type">VendingMachineError</span>.outOfStock &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Out of Stock.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">catch</span> <span class="type">VendingMachineError</span>.insufficientFunds(<span class="keyword">let</span> coinsNeeded) &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Insufficient funds. Please insert an additional <span class="subst">\(coinsNeeded)</span> coins.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Unexpected error: <span class="subst">\(error)</span>.&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 打印“Insufficient funds. Please insert an additional 2 coins.”</span></span><br></pre></td></tr></table></figure>
+<p>上面的例子中，<code>buyFavoriteSnack(person:vendingMachine:)</code> 函数在一个 <code>try</code> 表达式中被调用，是因为它能抛出错误。如果错误被抛出，相应的执行会马上转移到 <code>catch</code> 子句中，并判断这个错误是否要被继续传递下去。如果错误没有被匹配，它会被最后一个 <code>catch</code> 语句捕获，并赋值给一个 <code>error</code> 常量。如果没有错误被抛出，<code>do</code> 子句中余下的语句就会被执行。</p>
+<p><code>catch</code> 子句不必将 <code>do</code> 子句中的代码所抛出的每一个可能的错误都作处理。如果所有 <code>catch</code> 子句都未处理错误，错误就会传递到周围的作用域。然而，错误还是必须要被某个周围的作用域处理的。在不会抛出错误的函数中，必须用 <code>do-catch</code> 语句处理错误。而能够抛出错误的函数既可以使用 <code>do-catch</code> 语句处理，也可以让调用方来处理错误。如果错误传递到了顶层作用域却依然没有被处理，你会得到一个运行时错误。</p>
+<p>以下面的代码为例，不是 <code>VendingMachineError</code> 中申明的错误会在调用函数的地方被捕获：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">nourish</span>(<span class="params">with</span> <span class="params">item</span>: <span class="type">String</span>) <span class="keyword">throws</span> &#123;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> vendingMachine.vend(itemNamed: item)</span><br><span class="line">    &#125; <span class="keyword">catch</span> <span class="keyword">is</span> <span class="type">VendingMachineError</span> &#123;</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;Invalid selection, out of stock, or not enough money.&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> nourish(with: <span class="string">&quot;Beet-Flavored Chips&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Unexpected non-vending-machine-related error: <span class="subst">\(error)</span>&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 打印“Invalid selection, out of stock, or not enough money.”</span></span><br></pre></td></tr></table></figure>
+<p>如果 <code>vend(itemNamed:)</code> 抛出的是一个 <code>VendingMachineError</code> 类型的错误，<code>nourish(with:)</code> 会打印一条消息，否则 <code>nourish(with:)</code> 会将错误抛给它的调用方。这个错误之后会被通用的 <code>catch</code> 语句捕获。</p>
+<h3 id="将错误转换成可选值">将错误转换成可选值</h3>
+<p>可以使用 <code>try?</code> 通过将错误转换成一个可选值来处理错误。如果是在计算 <code>try?</code> 表达式时抛出错误，该表达式的结果就为 <code>nil</code>。例如，在下面的代码中，<code>x</code> 和 <code>y</code> 有着相同的数值和等价的含义：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">someThrowingFunction</span>() <span class="keyword">throws</span> -&gt; <span class="type">Int</span> &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> x <span class="operator">=</span> <span class="keyword">try?</span> someThrowingFunction()</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> y: <span class="type">Int</span>?</span><br><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">    y <span class="operator">=</span> <span class="keyword">try</span> someThrowingFunction()</span><br><span class="line">&#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">    y <span class="operator">=</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果 <code>someThrowingFunction()</code> 抛出一个错误，<code>x</code> 和 <code>y</code> 的值是 <code>nil</code>。否则 <code>x</code> 和 <code>y</code> 的值就是该函数的返回值。注意，无论 <code>someThrowingFunction()</code> 的返回值类型是什么类型，<code>x</code> 和 <code>y</code> 都是这个类型的可选类型。例子中此函数返回一个整型，所以 <code>x</code> 和 <code>y</code> 是可选整型。</p>
+<p>如果你想对所有的错误都采用同样的方式来处理，用 <code>try?</code> 就可以让你写出简洁的错误处理代码。例如，下面的代码用几种方式来获取数据，如果所有方式都失败了则返回 <code>nil</code>。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">fetchData</span>() -&gt; <span class="type">Data</span>? &#123;</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">let</span> data <span class="operator">=</span> <span class="keyword">try?</span> fetchDataFromDisk() &#123; <span class="keyword">return</span> data &#125;</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">let</span> data <span class="operator">=</span> <span class="keyword">try?</span> fetchDataFromServer() &#123; <span class="keyword">return</span> data &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="禁用错误传递">禁用错误传递</h3>
+<p>有时你知道某个 <code>throwing</code> 函数实际上在运行时是不会抛出错误的，在这种情况下，你可以在表达式前面写 <code>try!</code> 来禁用错误传递，这会把调用包装在一个不会有错误抛出的运行时断言中。如果真的抛出了错误，你会得到一个运行时错误。</p>
+<p>例如，下面的代码使用了 <code>loadImage(atPath:)</code> 函数，该函数从给定的路径加载图片资源，如果图片无法载入则抛出一个错误。在这种情况下，因为图片是和应用绑定的，运行时不会有错误抛出，所以适合禁用错误传递。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> photo <span class="operator">=</span> <span class="keyword">try!</span> loadImage(atPath: <span class="string">&quot;./Resources/John Appleseed.jpg&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="指定清理操作">指定清理操作</h2>
+<p>你可以使用 <code>defer</code> 语句在即将离开当前代码块时执行一系列语句。该语句让你能执行一些必要的清理工作，不管是以何种方式离开当前代码块的——无论是由于抛出错误而离开，或是由于诸如 <code>return</code>、<code>break</code> 的语句。例如，你可以用 <code>defer</code> 语句来确保文件描述符得以关闭，以及手动分配的内存得以释放。</p>
+<p><code>defer</code> 语句将代码的执行延迟到当前的作用域退出之前。该语句由 <code>defer</code> 关键字和要被延迟执行的语句组成。延迟执行的语句不能包含任何控制转移语句，例如 <code>break</code>、<code>return</code> 语句，或是抛出一个错误。延迟执行的操作会按照它们声明的顺序从后往前执行——也就是说，第一条 <code>defer</code> 语句中的代码最后才执行，第二条 <code>defer</code> 语句中的代码倒数第二个执行，以此类推。最后一条语句会第一个执行。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">processFile</span>(<span class="params">filename</span>: <span class="type">String</span>) <span class="keyword">throws</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> exists(filename) &#123;</span><br><span class="line">        <span class="keyword">let</span> file <span class="operator">=</span> <span class="keyword">open</span>(filename)</span><br><span class="line">        <span class="keyword">defer</span> &#123;</span><br><span class="line">            close(file)</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">while</span> <span class="keyword">let</span> line <span class="operator">=</span> <span class="keyword">try</span> file.readline() &#123;</span><br><span class="line">            <span class="comment">// 处理文件。</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// close(file) 会在这里被调用，即作用域的最后。</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面的代码使用一条 <code>defer</code> 语句来确保 <code>open(_:)</code> 函数有一个相应的对 <code>close(_:)</code> 函数的调用。</p>
+<blockquote>
+<p>注意</p>
+<p>即使没有涉及到错误处理的代码，你也可以使用 <code>defer</code> 语句。</p>
+</blockquote>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">標籤</span><br/>
+                
+    <a class="tag tag--primary tag--small t-none-link" href="../../../../../tags/swift/" rel="tag">swift</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    data-tooltip="swift类型转换"
+                    aria-label="上一篇: swift类型转换"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../04/Swift/swift%E5%8F%AF%E9%80%89%E9%93%BE/"
+                    data-tooltip="swift可选链"
+                    aria-label="下一篇: swift可选链"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2025 Kein Chan. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    data-tooltip="swift类型转换"
+                    aria-label="上一篇: swift类型转换"
+                >
+                    
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="../../../04/Swift/swift%E5%8F%AF%E9%80%89%E9%93%BE/"
+                    data-tooltip="swift可选链"
+                    aria-label="下一篇: swift可选链"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Share this post"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                    title="分享到 Facebook"
+                    aria-label="分享到 Facebook"
+                >
+                    <i class="fab fa-facebook" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                    title="分享到 Twitter"
+                    aria-label="分享到 Twitter"
+                >
+                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                    title="global.share_on_linkedin"
+                    aria-label="global.share_on_linkedin"
+                >
+                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                        aria-label="分享到 Facebook"
+                    >
+                        <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                        aria-label="分享到 Twitter"
+                    >
+                        <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                        aria-label="global.share_on_linkedin"
+                    >
+                        <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/05/Swift/swift%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="../../../../../assets/images/profile.jpg" alt="作者的圖片"/>
+        
+            <h4 id="about-card-name">Kein Chan</h4>
+        
+            <div id="about-card-bio"><p>這是獨立全棧工程師Kein Chan的技術博客</br>分享一些技術教程,命令備忘(cheat-sheet)等</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>全棧工程師</br>資深技術顧問</br>數據科學家</br>Hit廣島觀光大使</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                Tokyo/Macau
+            </div>
+        
+    </div>
+</div>
+
+        
+            <div id="algolia-search-modal" class="modal-container">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="close-button"><i class="fa fa-times"></i></span>
+            <a href="https://algolia.com" target="_blank" rel="noopener" class="searchby-algolia text-color-light link-unstyled">
+                <span class="searchby-algolia-text text-color-light text-small">by</span>
+                <img class="searchby-algolia-logo" src="../assets/images/logo-algolia-nebula-blue-full.svg">
+            </a>
+            <i class="search-icon fa fa-search"></i>
+            <form id="algolia-search-form">
+                <input type="text" id="algolia-search-input" name="search"
+                    class="form-control input--large search-input" placeholder="Search "
+                    />
+            </form>
+        </div>
+        <div class="modal-body">
+            <div class="no-result text-color-light text-center">沒有找到文章</div>
+            <div class="results">
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            aria-label=": R语言-环境安装"
+                        >
+                            <h3 class="media-heading">R语言-环境安装</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月27日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            aria-label=": R语言-基础"
+                        >
+                            <h3 class="media-heading">R语言-基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年4月28日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            aria-label=": R语言-读取数据"
+                        >
+                            <h3 class="media-heading">R语言-读取数据</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月1日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            aria-label=": R语言-绘图"
+                        >
+                            <h3 class="media-heading">R语言-绘图</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月2日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            aria-label=": R语言-线性回归"
+                        >
+                            <h3 class="media-heading">R语言-线性回归</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2013年5月3日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            aria-label=": 1. 算法在计算中的作用"
+                        >
+                            <h3 class="media-heading">1. 算法在计算中的作用</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月22日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            aria-label=": 2. 算法基础"
+                        >
+                            <h3 class="media-heading">2. 算法基础</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月23日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            aria-label=": 3. 函数的增长"
+                        >
+                            <h3 class="media-heading">3. 函数的增长</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月24日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            aria-label=": 4. 分治策略"
+                        >
+                            <h3 class="media-heading">4. 分治策略</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月25日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+                <div class="media">
+                    
+                    <div class="media-body">
+                        <a
+                            class="link-unstyled"
+                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            aria-label=": 5. 概率分析和随机算法"
+                        >
+                            <h3 class="media-heading">5. 概率分析和随机算法</h3>
+                        </a>
+                        <span class="media-meta">
+                            <span class="media-date text-small">
+                                
+                                    2015年2月26日
+                                
+                            </span>
+                        </span>
+                        <div class="media-content hide-xs font-merryweather"></div>
+                    </div>
+                    <div style="clear:both;"></div>
+                    <hr>
+                </div>
+                
+            </div>
+        </div>
+        <div class="modal-footer">
+            <p class="results-count text-medium"
+                data-message-zero="沒有找到文章"
+                data-message-one="找到 1 篇文章"
+                data-message-other="找到 {n} 篇文章">
+                找到 235 篇文章
+            </p>
+        </div>
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('../../../../../assets/images/cover.jpeg');"></div>
+        <!--SCRIPTS-->
+
+<script src="../../../../../assets/js/script-qtzvvb63gamuirvfphht7lytrxkfllzng1escnm2phjtlt4tvvxi5gl0wx4o.min.js"></script>
+
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>
