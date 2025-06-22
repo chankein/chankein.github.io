@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"Linux 安装与软件包管理\n1. 硬盘分区布局\n1.1 标准目录结构\n12345/home     # 普通用户文件存储目录/var      # 存放日志文件、邮件队列等可变数据/usr      # 存放程序、库文件、文档等(通常占用空间最大)/boot     # 引导分区，通常100MB左右足够/swap     # 交换分区(建议大小为物理内存的1-2倍)\n2. 引导加载程序(GRUB)\n2.1 传统GRUB (GRUB Legacy)\n12grub-install /dev/sda   # 安装GRUB到指定设备grub-install -v         # 显示详细安装信息\n配置文件关键参数(/boot/grub/menu.lst):\n12345678timeout      # 等待用户选择的时间(秒)default      # 默认启动项序号title        # 启动项标题root         # 指定根分区kernel       # 指定内核文件makeactive   # 激活分区chainloader  # 链式加载其他引导程序hiddenmenu   # 是否隐藏菜单\n2.2 GRUB2 (现代Linux默认使用)\n1update-grub2   # 更新GRUB2配置\n配置文件(/etc/default/grub):\n123456GRUB_DEFAULT                  # 默认启动项GRUB_HIDDEN_TIMEOUT           # 隐藏菜单超时GRUB_HIDDEN_TIMEOUT_QUIET     # 是否静默隐藏GRUB_TIMEOUT                  # 菜单显示时间GRUB_CMDLINE_LINUX_DEFAULT    # 默认内核参数GRUB_CMDLINE_LINUX            # 附加内核参数\n3. 共享库管理\n3.1 基本概念\n\n共享库(Shared Library): 通过动态链接方式被多个程序共同使用的库文件\n命名规则: lib*.so* (如 libc.so.6)\n\n3.2 常用命令\n123ldd /bin/ls      # 查看二进制文件依赖的共享库ldconfig         # 重建共享库缓存ldconfig -p      # 打印当前缓存内容\n3.3 共享库搜索顺序\n\n可执行文件中的DT_RPATH或DT_RUNPATH段\n环境变量LD_LIBRARY_PATH指定的路径\n/etc/ld.so.cache缓存中的路径(除非使用-z nodeflib选项)\n默认路径/lib和/usr/lib(除非使用-z nodeflib选项)\n\n3.4 添加自定义库路径\n123456# 临时添加(当前会话有效)export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/library# 永久添加(需修改配置文件)echo &quot;/path/to/library&quot; &gt;&gt; /etc/ld.so.confldconfig\n4. Debian系包管理(Debian/Ubuntu等)\n4.1 包命名格式\n123456tree_1.5.3-1_i386.deb├── 包名(tree)├── 版本号(1.5.3)├── 发布号(1)├── 架构(i386)└── 扩展名(.deb)\n4.2 dpkg命令(底层工具)\n123456789dpkg -i package.deb       # 安装包dpkg -r package           # 移除包(保留配置)dpkg -P package           # 完全清除包(包括配置)dpkg -l                   # 列出已安装包dpkg -L package           # 列出包安装的文件dpkg -s package           # 显示包状态信息dpkg -S /path/to/file     # 查找文件属于哪个包dpkg --configure package  # 配置已解压的包dpkg --unpack package.deb # 仅解压不配置\n4.3 apt-get命令(高级工具)\n12345678apt-get update            # 更新包数据库apt-get upgrade           # 升级所有可升级包apt-get dist-upgrade      # 智能升级(处理依赖变化)apt-get install package   # 安装包apt-get remove package    # 移除包apt-get clean             # 清理下载的包文件apt-get -d install package # 仅下载不安装apt-get -s install package # 模拟安装(不实际执行)\n4.4 软件源配置(/etc/apt/sources.list)\n123deb http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse↑         ↑                          ↑       ↑类型     镜像地址                    发行版   组件\n\n类型: deb(二进制包)或deb-src(源代码包)\n组件:\n\nmain: 官方支持的免费软件\ncontrib: 非自由软件但有自由依赖\nnon-free: 有分发限制的软件\n\n\n\n4.5 apt-cache命令(查询工具)\n123apt-cache search keyword    # 搜索包apt-cache show package      # 显示包详细信息apt-cache depends package   # 显示包依赖\n4.6 aptitude命令(交互式工具)\n123456aptitude update          # 更新包列表aptitude install package # 安装包aptitude remove package  # 移除包aptitude purge package   # 完全清除包aptitude upgrade         # 升级包aptitude dist-upgrade    # 智能升级\n5. RedHat系包管理(RHEL/CentOS/Fedora)\n5.1 rpm命令(底层工具)\n123456789101112rpm -ivh package.rpm     # 安装包(-v:详细,-h:进度条)rpm -Uvh package.rpm     # 升级包rpm -Fvh *.rpm           # 仅升级已安装的包rpm -e package           # 卸载包rpm -qa                  # 查询所有已安装包rpm -qf /path/to/file    # 查询文件属于哪个包rpm -qi package          # 查询包信息rpm -ql package          # 列出包安装的文件rpm -qc package          # 列出包配置文件rpm -qd package          # 列出包文档文件rpm --nodeps             # 忽略依赖关系(不推荐)rpm --test               # 测试模式(不实际执行)\n5.2 rpm文件提取\n12rpm2cpio package.rpm | cpio -idv  # 提取rpm包内容rpm2cpio package.rpm | cpio -t    # 列出rpm包内容\n5.3 yum命令(高级工具)\n12345678910yum install package      # 安装包yum remove package       # 移除包yum update               # 更新所有包yum update package       # 更新指定包yum check-update         # 检查可用更新yum info package         # 显示包信息yum list                 # 列出包yum search keyword       # 搜索包yum groupinstall &quot;Development Tools&quot; # 安装软件组yum repolist             # 列出已配置的仓库\n5.4 下载rpm包\n1yumdownloader package    # 下载rpm包不安装\n5.5 zypper命令(SUSE系统)\n123zypper install package   # 安装包zypper remove package    # 移除包zypper update            # 更新系统\n6. 软件包管理对比\n\n\n\n功能\nDebian系(apt)\nRedHat系(yum)\nSUSE系(zypper)\n\n\n\n\n安装包\napt-get install\nyum install\nzypper install\n\n\n移除包\napt-get remove\nyum remove\nzypper remove\n\n\n更新系统\napt-get upgrade\nyum update\nzypper update\n\n\n搜索包\napt-cache search\nyum search\nzypper search\n\n\n显示包信息\napt-cache show\nyum info\nzypper info\n\n\n清理缓存\napt-get clean\nyum clean\nzypper clean\n\n\n\n","dateCreated":"2020-05-07T16:29:52+08:00","dateModified":"2025-05-08T14:04:04+08:00","datePublished":"2020-05-07T16:29:52+08:00","description":"","headline":"2.linux安装与包管理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/","keywords":"linux, LPIC"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"Linux 安装与软件包管理\n1. 硬盘分区布局\n1.1 标准目录结构\n12345/home     # 普通用户文件存储目录/var      # 存放日志文件、邮件队列等可变数据/usr      # 存放程序、库文件、文档等(通常占用空间最大)/boot     # 引导分区，通常100MB左右足够/swap     # 交换分区(建议大小为物理内存的1-2倍)\n2. 引导加载程序(GRUB)\n2.1 传统GRUB (GRUB Legacy)\n12grub-install /dev/sda   # 安装GRUB到指定设备grub-install -v         # 显示详细安装信息\n配置文件关键参数(/boot/grub/menu.lst):\n12345678timeout      # 等待用户选择的时间(秒)default      # 默认启动项序号title        # 启动项标题root         # 指定根分区kernel       # 指定内核文件makeactive   # 激活分区chainloader  # 链式加载其他引导程序hiddenmenu   # 是否隐藏菜单\n2.2 GRUB2 (现代Linux默认使用)\n1update-grub2   # 更新GRUB2配置\n配置文件(/etc/default/grub):\n123456GRUB_DEFAULT                  # 默认启动项GRUB_HIDDEN_TIMEOUT           # 隐藏菜单超时GRUB_HIDDEN_TIMEOUT_QUIET     # 是否静默隐藏GRUB_TIMEOUT                  # 菜单显示时间GRUB_CMDLINE_LINUX_DEFAULT    # 默认内核参数GRUB_CMDLINE_LINUX            # 附加内核参数\n3. 共享库管理\n3.1 基本概念\n\n共享库(Shared Library): 通过动态链接方式被多个程序共同使用的库文件\n命名规则: lib*.so* (如 libc.so.6)\n\n3.2 常用命令\n123ldd /bin/ls      # 查看二进制文件依赖的共享库ldconfig         # 重建共享库缓存ldconfig -p      # 打印当前缓存内容\n3.3 共享库搜索顺序\n\n可执行文件中的DT_RPATH或DT_RUNPATH段\n环境变量LD_LIBRARY_PATH指定的路径\n/etc/ld.so.cache缓存中的路径(除非使用-z nodeflib选项)\n默认路径/lib和/usr/lib(除非使用-z nodeflib选项)\n\n3.4 添加自定义库路径\n123456# 临时添加(当前会话有效)export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/library# 永久添加(需修改配置文件)echo &quot;/path/to/library&quot; &gt;&gt; /etc/ld.so.confldconfig\n4. Debian系包管理(Debian/Ubuntu等)\n4.1 包命名格式\n123456tree_1.5.3-1_i386.deb├── 包名(tree)├── 版本号(1.5.3)├── 发布号(1)├── 架构(i386)└── 扩展名(.deb)\n4.2 dpkg命令(底层工具)\n123456789dpkg -i package.deb       # 安装包dpkg -r package           # 移除包(保留配置)dpkg -P package           # 完全清除包(包括配置)dpkg -l                   # 列出已安装包dpkg -L package           # 列出包安装的文件dpkg -s package           # 显示包状态信息dpkg -S /path/to/file     # 查找文件属于哪个包dpkg --configure package  # 配置已解压的包dpkg --unpack package.deb # 仅解压不配置\n4.3 apt-get命令(高级工具)\n12345678apt-get update            # 更新包数据库apt-get upgrade           # 升级所有可升级包apt-get dist-upgrade      # 智能升级(处理依赖变化)apt-get install package   # 安装包apt-get remove package    # 移除包apt-get clean             # 清理下载的包文件apt-get -d install package # 仅下载不安装apt-get -s install package # 模拟安装(不实际执行)\n4.4 软件源配置(/etc/apt/sources.list)\n123deb http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse↑         ↑                          ↑       ↑类型     镜像地址                    发行版   组件\n\n类型: deb(二进制包)或deb-src(源代码包)\n组件:\n\nmain: 官方支持的免费软件\ncontrib: 非自由软件但有自由依赖\nnon-free: 有分发限制的软件\n\n\n\n4.5 apt-cache命令(查询工具)\n123apt-cache search keyword    # 搜索包apt-cache show package      # 显示包详细信息apt-cache depends package   # 显示包依赖\n4.6 aptitude命令(交互式工具)\n123456aptitude update          # 更新包列表aptitude install package # 安装包aptitude remove package  # 移除包aptitude purge package   # 完全清除包aptitude upgrade         # 升级包aptitude dist-upgrade    # 智能升级\n5. RedHat系包管理(RHEL/CentOS/Fedora)\n5.1 rpm命令(底层工具)\n123456789101112rpm -ivh package.rpm     # 安装包(-v:详细,-h:进度条)rpm -Uvh package.rpm     # 升级包rpm -Fvh *.rpm           # 仅升级已安装的包rpm -e package           # 卸载包rpm -qa                  # 查询所有已安装包rpm -qf /path/to/file    # 查询文件属于哪个包rpm -qi package          # 查询包信息rpm -ql package          # 列出包安装的文件rpm -qc package          # 列出包配置文件rpm -qd package          # 列出包文档文件rpm --nodeps             # 忽略依赖关系(不推荐)rpm --test               # 测试模式(不实际执行)\n5.2 rpm文件提取\n12rpm2cpio package.rpm | cpio -idv  # 提取rpm包内容rpm2cpio package.rpm | cpio -t    # 列出rpm包内容\n5.3 yum命令(高级工具)\n12345678910yum install package      # 安装包yum remove package       # 移除包yum update               # 更新所有包yum update package       # 更新指定包yum check-update         # 检查可用更新yum info package         # 显示包信息yum list                 # 列出包yum search keyword       # 搜索包yum groupinstall &quot;Development Tools&quot; # 安装软件组yum repolist             # 列出已配置的仓库\n5.4 下载rpm包\n1yumdownloader package    # 下载rpm包不安装\n5.5 zypper命令(SUSE系统)\n123zypper install package   # 安装包zypper remove package    # 移除包zypper update            # 更新系统\n6. 软件包管理对比\n\n\n\n功能\nDebian系(apt)\nRedHat系(yum)\nSUSE系(zypper)\n\n\n\n\n安装包\napt-get install\nyum install\nzypper install\n\n\n移除包\napt-get remove\nyum remove\nzypper remove\n\n\n更新系统\napt-get upgrade\nyum update\nzypper update\n\n\n搜索包\napt-cache search\nyum search\nzypper search\n\n\n显示包信息\napt-cache show\nyum info\nzypper info\n\n\n清理缓存\napt-get clean\nyum clean\nzypper clean\n\n\n\n","dateCreated":"2020-05-07T16:29:52+08:00","dateModified":"2025-05-08T14:04:04+08:00","datePublished":"2020-05-07T16:29:52+08:00","description":"","headline":"2.linux安装与包管理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/","keywords":"linux, LPIC"}</script>
     <meta name="description" content="Linux 安装与软件包管理 1. 硬盘分区布局 1.1 标准目录结构 12345&#x2F;home     # 普通用户文件存储目录&#x2F;var      # 存放日志文件、邮件队列等可变数据&#x2F;usr      # 存放程序、库文件、文档等(通常占用空间最大)&#x2F;boot     # 引导分区，通常100MB左右足够&#x2F;swap     # 交换分区(建议大小为物理内存的1-2倍) 2. 引导加载程序(GRUB">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="2.linux安装与包管理">
-<meta property="og:url" content="https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/index.html">
+<meta property="og:url" content="https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="Linux 安装与软件包管理 1. 硬盘分区布局 1.1 标准目录结构 12345&#x2F;home     # 普通用户文件存储目录&#x2F;var      # 存放日志文件、邮件队列等可变数据&#x2F;usr      # 存放程序、库文件、文档等(通常占用空间最大)&#x2F;boot     # 引导分区，通常100MB左右足够&#x2F;swap     # 交换分区(建议大小为物理内存的1-2倍) 2. 引导加载程序(GRUB">
 <meta property="og:locale" content="zh_TW">
@@ -51,7 +51,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -497,7 +497,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -508,7 +508,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -521,7 +521,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -534,7 +534,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -547,7 +547,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -560,7 +560,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -625,7 +625,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -636,7 +636,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -649,7 +649,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -662,7 +662,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -675,7 +675,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -688,7 +688,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -709,7 +709,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -722,7 +722,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -735,7 +735,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -748,7 +748,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/05/07/linux/2-linux%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8C%85%E7%AE%A1%E7%90%86/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -824,7 +824,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -847,7 +847,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -870,7 +870,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -893,7 +893,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -916,7 +916,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -939,7 +939,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -962,7 +962,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -985,7 +985,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1008,7 +1008,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1031,7 +1031,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

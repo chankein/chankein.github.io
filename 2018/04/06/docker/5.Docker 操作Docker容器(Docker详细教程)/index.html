@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"# 操作 Docker 容器\n容器是 Docker 又一核心概念。\n简单的说，容器是独立运行的一个或一组应用，以及它们的运行态环境。对应的，虚拟机可以理解为模拟运行的一整套操作系统（提供了运行态环境和其他系统环境）和跑在上面的应用。\n本章将具体介绍如何来管理一个容器，包括创建、启动和停止等。\n# 启动容器\n启动容器有两种方式，一种是基于镜像新建一个容器并启动，另外一个是将在终止状态（exited）的容器重新启动。\n因为 Docker 的容器实在太轻量级了，很多时候用户都是随时删除和新创建容器。\n# 新建并启动\n所需要的命令主要为 docker run。\n例如，下面的命令输出一个 “Hello World”，之后终止容器。\n12$ docker run ubuntu:18.04 /bin/echo &#x27;Hello world&#x27;Hello world\n这跟在本地直接执行 /bin/echo 'hello world' 几乎感觉不出任何区别。\n下面的命令则启动一个 bash 终端，允许用户进行交互。\n12$ docker run -t -i ubuntu:18.04 /bin/bashroot@af8bae53bdd3:/#\n其中，-t 选项让Docker分配一个伪终端（pseudo-tty）并绑定到容器的标准输入上， -i 则让容器的标准输入保持打开。\n在交互模式下，用户可以通过所创建的终端来输入命令，例如\n1234root@af8bae53bdd3:/# pwd/root@af8bae53bdd3:/# lsbin boot dev etc home lib lib64 media mnt opt proc root run sbin srv sys tmp usr var\n当利用 docker run 来创建容器时，Docker 在后台运行的标准操作包括：\n\n检查本地是否存在指定的镜像，不存在就从 registry 下载\n利用镜像创建并启动一个容器\n分配一个文件系统，并在只读的镜像层外面挂载一层可读写层\n从宿主主机配置的网桥接口中桥接一个虚拟接口到容器中去\n从地址池配置一个 ip 地址给容器\n执行用户指定的应用程序\n执行完毕后容器被终止\n\n# 启动已终止容器\n可以利用 docker container start 命令，直接将一个已经终止（exited）的容器启动运行。\n容器的核心为所执行的应用程序，所需要的资源都是应用程序运行所必需的。除此之外，并没有其它的资源。可以在伪终端中利用 ps 或 top 来查看进程信息。\n1234root@ba267838cc1b:/# ps  PID TTY          TIME CMD    1 ?        00:00:00 bash   11 ?        00:00:00 ps\n可见，容器中仅运行了指定的 bash 应用。这种特点使得 Docker 对资源的利用率极高，是货真价实的轻量级虚拟化。\n# 后台运行\n更多的时候，需要让 Docker 在后台运行而不是直接把执行命令的结果输出在当前宿主机下。此时，可以通过添加 -d 参数来实现。\n下面举两个例子来说明一下。\n如果不使用 -d 参数运行容器。\n12345$ docker run ubuntu:18.04 /bin/sh -c &quot;while true; do echo hello world; sleep 1; done&quot;hello worldhello worldhello worldhello world\n容器会把输出的结果 (STDOUT) 打印到宿主机上面\n如果使用了 -d 参数运行容器。\n12$ docker run -d ubuntu:18.04 /bin/sh -c &quot;while true; do echo hello world; sleep 1; done&quot;77b2dc01fe0f3f1265df143181e7b9af5e05279a884f4776ee75350ea9d8017a\n此时容器会在后台运行并不会把输出的结果 (STDOUT) 打印到宿主机上面(输出结果可以用 docker logs 查看)。\n注： 容器是否会长久运行，是和 docker run 指定的命令有关，和 -d 参数无关。\n使用 -d 参数启动后会返回一个唯一的 id，也可以通过 docker container ls 命令来查看容器信息。\n123$ docker container lsCONTAINER ID  IMAGE         COMMAND               CREATED        STATUS       PORTS NAMES77b2dc01fe0f  ubuntu:18.04  /bin/sh -c &#x27;while tr  2 minutes ago  Up 1 minute        agitated_wright\n要获取容器的输出信息，可以通过 docker container logs 命令。\n12345$ docker container logs [container ID or NAMES]hello worldhello worldhello world. . .\n# 终止容器\n可以使用 docker container stop 来终止一个运行中的容器。\n此外，当 Docker 容器中指定的应用终结时，容器也自动终止。\n例如对于上一章节中只启动了一个终端的容器，用户通过 exit 命令或 Ctrl+d 来退出终端时，所创建的容器立刻终止。\n终止状态的容器可以用 docker container ls -a 命令看到。例如\n123$ docker container ls -aCONTAINER ID        IMAGE                    COMMAND                CREATED             STATUS                          PORTS               NAMESba267838cc1b        ubuntu:18.04             &quot;/bin/bash&quot;            30 minutes ago      Exited (0) About a minute ago                       trusting_newton\n处于终止状态的容器，可以通过 docker container start 命令来重新启动。\n此外，docker container restart 命令会将一个运行态的容器终止，然后再重新启动它。\n# 进入容器\n在使用 -d 参数时，容器启动后会进入后台。\n某些时候需要进入容器进行操作，包括使用 docker attach 命令或 docker exec 命令，推荐大家使用 docker exec 命令，原因会在下面说明。\n# attach 命令\n下面示例如何使用 docker attach 命令。\n123456789$ docker run -dit ubuntu243c32535da7d142fb0e6df616a3c3ada0b8ab417937c853a9e1c251f499f550$ docker container lsCONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES243c32535da7        ubuntu:latest       &quot;/bin/bash&quot;         18 seconds ago      Up 17 seconds                           nostalgic_hypatia$ docker attach 243croot@243c32535da7:/#\n注意： 如果从这个 stdin 中 exit，会导致容器的停止。\n# exec 命令\n# -i -t 参数\ndocker exec 后边可以跟多个参数，这里主要说明 -i -t 参数。\n只用 -i 参数时，由于没有分配伪终端，界面没有我们熟悉的 Linux 命令提示符，但命令执行结果仍然可以返回。\n当 -i -t 参数一起使用时，则可以看到我们熟悉的 Linux 命令提示符。\n12345678910111213141516$ docker run -dit ubuntu69d137adef7a8a689cbcb059e94da5489d3cddd240ff675c640c8d96e84fe1f6$ docker container lsCONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES69d137adef7a        ubuntu:latest       &quot;/bin/bash&quot;         18 seconds ago      Up 17 seconds                           zealous_swirles$ docker exec -i 69d1 bashlsbinbootdev...$ docker exec -it 69d1 bashroot@69d137adef7a:/#\n如果从这个 stdin 中 exit，不会导致容器的停止。这就是为什么推荐大家使用 docker exec 的原因。\n更多参数说明请使用 docker exec --help 查看。\n# 导出和导入容器\n# 导出容器\n如果要导出本地某个容器，可以使用 docker export 命令。\n1234$ docker container ls -aCONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                    PORTS               NAMES7691a814370e        ubuntu:18.04        &quot;/bin/bash&quot;         36 hours ago        Exited (0) 21 hours ago                       test$ docker export 7691a814370e &gt; ubuntu.tar\n这样将导出容器快照到本地文件。\n# 导入容器快照\n可以使用 docker import 从容器快照文件中再导入为镜像，例如\n1234$ cat ubuntu.tar | docker import - test/ubuntu:v1.0$ docker image lsREPOSITORY          TAG                 IMAGE ID            CREATED              VIRTUAL SIZEtest/ubuntu         v1.0                9d37a6082e97        About a minute ago   171.3 MB\n此外，也可以通过指定 URL 或者某个目录来导入，例如\n1$ docker import http://example.com/exampleimage.tgz example/imagerepo\n注：用户既可以使用 docker load 来导入镜像存储文件到本地镜像库，也可以使用 docker import 来导入一个容器快照到本地镜像库。这两者的区别在于容器快照文件将丢弃所有的历史记录和元数据信息（即仅保存容器当时的快照状态），而镜像存储文件将保存完整记录，体积也要大。此外，从容器快照文件导入时可以重新指定标签等元数据信息。\n# 删除容器\n可以使用 docker container rm 来删除一个处于终止状态的容器。例如\n12$ docker container rm trusting_newtontrusting_newton\n如果要删除一个运行中的容器，可以添加 -f 参数。Docker 会发送 SIGKILL 信号给容器。\n# 清理所有处于终止状态的容器\n用 docker container ls -a 命令可以查看所有已经创建的包括终止状态的容器，如果数量太多要一个个删除可能会很麻烦，用下面的命令可以清理掉所有处于终止状态的容器。\n1$ docker container prune\n","dateCreated":"2018-04-06T16:02:39+08:00","dateModified":"2025-06-16T10:22:16+08:00","datePublished":"2018-04-06T16:02:39+08:00","description":"","headline":"5.Docker 操作Docker容器(Docker详细教程)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/","keywords":"Docker"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"# 操作 Docker 容器\n容器是 Docker 又一核心概念。\n简单的说，容器是独立运行的一个或一组应用，以及它们的运行态环境。对应的，虚拟机可以理解为模拟运行的一整套操作系统（提供了运行态环境和其他系统环境）和跑在上面的应用。\n本章将具体介绍如何来管理一个容器，包括创建、启动和停止等。\n# 启动容器\n启动容器有两种方式，一种是基于镜像新建一个容器并启动，另外一个是将在终止状态（exited）的容器重新启动。\n因为 Docker 的容器实在太轻量级了，很多时候用户都是随时删除和新创建容器。\n# 新建并启动\n所需要的命令主要为 docker run。\n例如，下面的命令输出一个 “Hello World”，之后终止容器。\n12$ docker run ubuntu:18.04 /bin/echo &#x27;Hello world&#x27;Hello world\n这跟在本地直接执行 /bin/echo 'hello world' 几乎感觉不出任何区别。\n下面的命令则启动一个 bash 终端，允许用户进行交互。\n12$ docker run -t -i ubuntu:18.04 /bin/bashroot@af8bae53bdd3:/#\n其中，-t 选项让Docker分配一个伪终端（pseudo-tty）并绑定到容器的标准输入上， -i 则让容器的标准输入保持打开。\n在交互模式下，用户可以通过所创建的终端来输入命令，例如\n1234root@af8bae53bdd3:/# pwd/root@af8bae53bdd3:/# lsbin boot dev etc home lib lib64 media mnt opt proc root run sbin srv sys tmp usr var\n当利用 docker run 来创建容器时，Docker 在后台运行的标准操作包括：\n\n检查本地是否存在指定的镜像，不存在就从 registry 下载\n利用镜像创建并启动一个容器\n分配一个文件系统，并在只读的镜像层外面挂载一层可读写层\n从宿主主机配置的网桥接口中桥接一个虚拟接口到容器中去\n从地址池配置一个 ip 地址给容器\n执行用户指定的应用程序\n执行完毕后容器被终止\n\n# 启动已终止容器\n可以利用 docker container start 命令，直接将一个已经终止（exited）的容器启动运行。\n容器的核心为所执行的应用程序，所需要的资源都是应用程序运行所必需的。除此之外，并没有其它的资源。可以在伪终端中利用 ps 或 top 来查看进程信息。\n1234root@ba267838cc1b:/# ps  PID TTY          TIME CMD    1 ?        00:00:00 bash   11 ?        00:00:00 ps\n可见，容器中仅运行了指定的 bash 应用。这种特点使得 Docker 对资源的利用率极高，是货真价实的轻量级虚拟化。\n# 后台运行\n更多的时候，需要让 Docker 在后台运行而不是直接把执行命令的结果输出在当前宿主机下。此时，可以通过添加 -d 参数来实现。\n下面举两个例子来说明一下。\n如果不使用 -d 参数运行容器。\n12345$ docker run ubuntu:18.04 /bin/sh -c &quot;while true; do echo hello world; sleep 1; done&quot;hello worldhello worldhello worldhello world\n容器会把输出的结果 (STDOUT) 打印到宿主机上面\n如果使用了 -d 参数运行容器。\n12$ docker run -d ubuntu:18.04 /bin/sh -c &quot;while true; do echo hello world; sleep 1; done&quot;77b2dc01fe0f3f1265df143181e7b9af5e05279a884f4776ee75350ea9d8017a\n此时容器会在后台运行并不会把输出的结果 (STDOUT) 打印到宿主机上面(输出结果可以用 docker logs 查看)。\n注： 容器是否会长久运行，是和 docker run 指定的命令有关，和 -d 参数无关。\n使用 -d 参数启动后会返回一个唯一的 id，也可以通过 docker container ls 命令来查看容器信息。\n123$ docker container lsCONTAINER ID  IMAGE         COMMAND               CREATED        STATUS       PORTS NAMES77b2dc01fe0f  ubuntu:18.04  /bin/sh -c &#x27;while tr  2 minutes ago  Up 1 minute        agitated_wright\n要获取容器的输出信息，可以通过 docker container logs 命令。\n12345$ docker container logs [container ID or NAMES]hello worldhello worldhello world. . .\n# 终止容器\n可以使用 docker container stop 来终止一个运行中的容器。\n此外，当 Docker 容器中指定的应用终结时，容器也自动终止。\n例如对于上一章节中只启动了一个终端的容器，用户通过 exit 命令或 Ctrl+d 来退出终端时，所创建的容器立刻终止。\n终止状态的容器可以用 docker container ls -a 命令看到。例如\n123$ docker container ls -aCONTAINER ID        IMAGE                    COMMAND                CREATED             STATUS                          PORTS               NAMESba267838cc1b        ubuntu:18.04             &quot;/bin/bash&quot;            30 minutes ago      Exited (0) About a minute ago                       trusting_newton\n处于终止状态的容器，可以通过 docker container start 命令来重新启动。\n此外，docker container restart 命令会将一个运行态的容器终止，然后再重新启动它。\n# 进入容器\n在使用 -d 参数时，容器启动后会进入后台。\n某些时候需要进入容器进行操作，包括使用 docker attach 命令或 docker exec 命令，推荐大家使用 docker exec 命令，原因会在下面说明。\n# attach 命令\n下面示例如何使用 docker attach 命令。\n123456789$ docker run -dit ubuntu243c32535da7d142fb0e6df616a3c3ada0b8ab417937c853a9e1c251f499f550$ docker container lsCONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES243c32535da7        ubuntu:latest       &quot;/bin/bash&quot;         18 seconds ago      Up 17 seconds                           nostalgic_hypatia$ docker attach 243croot@243c32535da7:/#\n注意： 如果从这个 stdin 中 exit，会导致容器的停止。\n# exec 命令\n# -i -t 参数\ndocker exec 后边可以跟多个参数，这里主要说明 -i -t 参数。\n只用 -i 参数时，由于没有分配伪终端，界面没有我们熟悉的 Linux 命令提示符，但命令执行结果仍然可以返回。\n当 -i -t 参数一起使用时，则可以看到我们熟悉的 Linux 命令提示符。\n12345678910111213141516$ docker run -dit ubuntu69d137adef7a8a689cbcb059e94da5489d3cddd240ff675c640c8d96e84fe1f6$ docker container lsCONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES69d137adef7a        ubuntu:latest       &quot;/bin/bash&quot;         18 seconds ago      Up 17 seconds                           zealous_swirles$ docker exec -i 69d1 bashlsbinbootdev...$ docker exec -it 69d1 bashroot@69d137adef7a:/#\n如果从这个 stdin 中 exit，不会导致容器的停止。这就是为什么推荐大家使用 docker exec 的原因。\n更多参数说明请使用 docker exec --help 查看。\n# 导出和导入容器\n# 导出容器\n如果要导出本地某个容器，可以使用 docker export 命令。\n1234$ docker container ls -aCONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                    PORTS               NAMES7691a814370e        ubuntu:18.04        &quot;/bin/bash&quot;         36 hours ago        Exited (0) 21 hours ago                       test$ docker export 7691a814370e &gt; ubuntu.tar\n这样将导出容器快照到本地文件。\n# 导入容器快照\n可以使用 docker import 从容器快照文件中再导入为镜像，例如\n1234$ cat ubuntu.tar | docker import - test/ubuntu:v1.0$ docker image lsREPOSITORY          TAG                 IMAGE ID            CREATED              VIRTUAL SIZEtest/ubuntu         v1.0                9d37a6082e97        About a minute ago   171.3 MB\n此外，也可以通过指定 URL 或者某个目录来导入，例如\n1$ docker import http://example.com/exampleimage.tgz example/imagerepo\n注：用户既可以使用 docker load 来导入镜像存储文件到本地镜像库，也可以使用 docker import 来导入一个容器快照到本地镜像库。这两者的区别在于容器快照文件将丢弃所有的历史记录和元数据信息（即仅保存容器当时的快照状态），而镜像存储文件将保存完整记录，体积也要大。此外，从容器快照文件导入时可以重新指定标签等元数据信息。\n# 删除容器\n可以使用 docker container rm 来删除一个处于终止状态的容器。例如\n12$ docker container rm trusting_newtontrusting_newton\n如果要删除一个运行中的容器，可以添加 -f 参数。Docker 会发送 SIGKILL 信号给容器。\n# 清理所有处于终止状态的容器\n用 docker container ls -a 命令可以查看所有已经创建的包括终止状态的容器，如果数量太多要一个个删除可能会很麻烦，用下面的命令可以清理掉所有处于终止状态的容器。\n1$ docker container prune\n","dateCreated":"2018-04-06T16:02:39+08:00","dateModified":"2025-06-16T10:22:16+08:00","datePublished":"2018-04-06T16:02:39+08:00","description":"","headline":"5.Docker 操作Docker容器(Docker详细教程)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/","keywords":"Docker"}</script>
     <meta name="description" content="# 操作 Docker 容器 容器是 Docker 又一核心概念。 简单的说，容器是独立运行的一个或一组应用，以及它们的运行态环境。对应的，虚拟机可以理解为模拟运行的一整套操作系统（提供了运行态环境和其他系统环境）和跑在上面的应用。 本章将具体介绍如何来管理一个容器，包括创建、启动和停止等。 # 启动容器 启动容器有两种方式，一种是基于镜像新建一个容器并启动，另外一个是将在终止状态（exited）">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="5.Docker 操作Docker容器(Docker详细教程)">
-<meta property="og:url" content="https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/index.html">
+<meta property="og:url" content="https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="# 操作 Docker 容器 容器是 Docker 又一核心概念。 简单的说，容器是独立运行的一个或一组应用，以及它们的运行态环境。对应的，虚拟机可以理解为模拟运行的一整套操作系统（提供了运行态环境和其他系统环境）和跑在上面的应用。 本章将具体介绍如何来管理一个容器，包括创建、启动和停止等。 # 启动容器 启动容器有两种方式，一种是基于镜像新建一个容器并启动，另外一个是将在终止状态（exited）">
 <meta property="og:locale" content="zh_TW">
@@ -50,7 +50,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -470,7 +470,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -481,7 +481,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -494,7 +494,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -507,7 +507,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -520,7 +520,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -533,7 +533,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -598,7 +598,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -609,7 +609,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -622,7 +622,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -635,7 +635,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -648,7 +648,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -661,7 +661,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -682,7 +682,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -695,7 +695,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -708,7 +708,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -721,7 +721,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/04/06/docker/5.Docker%20%E6%93%8D%E4%BD%9CDocker%E5%AE%B9%E5%99%A8(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -797,7 +797,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -820,7 +820,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -843,7 +843,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -866,7 +866,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -889,7 +889,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -912,7 +912,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -935,7 +935,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -958,7 +958,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -981,7 +981,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1004,7 +1004,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

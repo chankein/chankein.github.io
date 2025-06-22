@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"13. 红黑树\n二叉搜索树的各种操作时间复杂度为\\Omicron(h)\\Omicron(h)\\Omicron(h)，但是树的高度h不可控，最差的情况为n。\n而平衡搜索树能将树的高度控制在\\Omicron(lg(n))\\Omicron(\\lg(n))\\Omicron(lg(n))。\n常见的平衡搜索树有：\n\nAVL树\n红黑树\ntreap （tree + heap，给每个元素随机的priority，从而间接的实现随机插入，使得树的期望高度为\\Omicron(lg(n))\\Omicron(\\lg(n))\\Omicron(lg(n))）\nB树 （十八章介绍）\n\n2-3-4树\n\n\n\n本章重点讨论红黑树，以及习题中出现的AVL树。AVL树较为简单所以先介绍AVL树。\nAVL树\nAVL树由Adel’son-Vel’skii &amp; Landis 在1962年发明，由他们的名字命名。\n比较一般的二叉搜索树，每个结点额外存储它的高度，nil的高度为0，其他节点的高度为Height(x) = max(Height(x-&gt;left), Height(x-&gt;right)) + 1。每个结点两个孩子的高度差不能超过1。\n当右子树的高度比左子树的高度高时，我们称right-heavy（如下图），反之这称left-heavy。\n\nAVL树的各种查询操作都和普通二叉搜索树无异，所以我们只需关注会改变树结构的Insert操作和Delete操作。\n在一般的Insert或者Delete操作后，结点的高度会变，所以有可能会违反AVL树的性质，这时候我们需要引入一个操作Rotate（旋转）\nRotate\n旋转分为两种，左旋（LEFT-ROTATE）和右旋（RIGHT-ROTATE）。下图右测变为左侧的情况称为对x结点左旋，左侧变为右侧的情况称为对y结点做右旋。\n\n我们可以发现旋转操作并不会影响二叉搜索树的性质。\n旋转前后都会保持α &lt;= x &lt;= β &lt;= y &lt;= γ\n下面是左旋的伪代码，右旋的操作和左旋对称，不再赘述。\n\nRef：AVLTree::LeftRotate &amp; AVLTree::RightRotate in AVLTree.h\nAVL树平衡调整（ADJUST_FROM(x)）\n当Insert或者Delete一个元素后，平衡有可能被破坏，假设x是最底层被破坏性质的节点，而且是right-heavy时（left-heavy是对称的）：\n\nBalance\n\n如果x的右孩子y是平衡的或者right-heavy的（Figure 5）\n\n我们对x做LEFT-ROTATE操作可使其恢复平衡\n然后重新计算x和y的高度\n\n\n如果x的右孩子z是left-heavy的（Figure 6）\n\n我们先对z做RIGHT_ROTATE，然后对x做LEFT-ROTATE，可使其恢复平衡\n然后重新计算x，y，z的高度\n\n\n\n\nLoop\n\n重新计算x的高度，并使得x=x-&gt;p继续循环，直到根节点\n若图中发现某节点不平衡的用1. Balance\n\n\n\n\nRef：AVLTree::AdjustFrom in AVLTree.h\nAVL树 Insert\n因为插入的节点肯定是叶子节点，所以直接对插入节点调用ADJUST_FROM(x)即可。\nRef：AVLTree::Insert in AVLTree.h\nAVL树 Delete\n删除操作略为复杂，可能会影响子节点的平衡。\n\n当被删除节点只有一个孩子，或者没有孩子时，被删除节点的孩子不会被应用\n\n这时对删除节点原来的父节点调用ADJUST_FROM(x)即可\n\n\n当被删除节点有两个孩子时\n\n如果被删除节点右子树的最小节点min的父节点为被删除节点，这时对min调用ADJUST_FROM(x)\n其他情况，对min原来的父节点调用ADJUST_FROM(x)\n\n\n\nRef：AVLTree::Delete in AVLTree.h\n红黑树\n红黑树也是一种平衡二叉树。它在每个节点上增加一个存储位color来表示节点的颜色，节点的颜色为RED或者BLACK。通过对任何一条从根节点到叶子节点的颜色进行约束，红黑树确保没有一条路径会比其他路径长出2倍，所以是近似于平衡的。\n红黑树还定义一种NIL节点，NIL节点是红黑树的叶子结点（外部节点），真实的数据组成树的内部节点（如下图a所示）。\n红黑树的具体性质如下：\n\n每个节点不是红色的就是黑色的\n根节点是黑色的\n每个叶结点（NIL）是黑色的\n如果一个结点是红色的，那么它的两个孩子都是黑色的\n对于每个结点，从该结点到其所有后代叶结点的简单路径上，黑色结点的数量相同\n\n为了方便处理，使用一个哨兵来替代NIL结点。对于一颗红黑树T，哨兵T.nil是一个普通结点。它的color为BLACK，用哨兵T.nil替换图a中的所有NIL，这样就形如下图b所示，T.nil的p, left, right, key属性我们并不关心，所以方便起见程序中可以对其值随意设定。\n\n为了方便起见，我们在图中省去T.nil，这样就变成了图c的样子。\nNULL -&gt; T.nil\n红黑树与普通二叉搜索树相比，用T.nil替代了空指针。\n所以所有操作中用到空指针的地方，需要换成T.nil。后面不做赘述。\n红黑树 Insert\n红黑树的插入操作，除了一般的操作外，还需要把插入结点的颜色设为RED。因为插入了一个红色的结点，所以有可能触犯红黑树的一些性质（1,4），所以我们要调用RB-INSERT-FIXUP将其修正。\n\n\nRB-INSERT-FIXUP会循环的查看z的父结点是否违反性质4，如果违反，则将其修正。如果修正后仍然有可能违反性质4，则继续循环查看其爷结点。（本文只讨论插入结点的父结点为爷结点的左孩子的情况，右孩子的情况与其对称，不再赘述。）\n修正过程有三种情况：\n\nCase 1. z的叔结点为红色\nCase 2. z的叔结点为黑色，且z是父亲的右孩子\nCase 3. z的叔结点为黑色，且z是父亲的左孩子\n\n\n上图插入4之后的处理过程。下面我们详细讨论下三种情况的处理方式：\n\n\nCase 1\n这种情况只需改变着色，将父节点和叔结点染成黑色，爷结点染成红色。\n因为爷结点以前是黑色，却染成了红色，如果爷结点的父结点为红色，这时仍会触犯性质4，所以我们将爷结点赋给z，下次循环时再修正它。\n如果z的爷结点为root结点，我们修正后root结点变成了红色，并且让z指向root结点然后跳出了循环。在循环外边我们会将z重新染成黑色，所以保持了性质1。\n\n\n\nCase 2/3\n当z是父结点的左孩子时，符合Case 3，这时我们只需把爷结点做右旋，然后交换之前父结点和爷结点的颜色。这时局部的根节点颜色没有改变，仍然是黑色，所以整个树都满足了红黑树的特性，无需继续循环。\n\n当z是父结点的右孩子时，符合Case 2，这时只需要对父结点做左旋，使其变为Case 3的情况。\n\n\n由上可知，一旦循环进入Case 2或者Case 3，就会结束循环。所以一次插入操作最多只会有两次旋转操作。尽量少的循环操作是非常有益的，因为改变结点颜色并不会影响查找功能，当多线程处理时我们只需给旋转操作加锁。\n红黑树 Delete\n删除操作比插入操作略微复杂，当删除一个黑色结点，或者删除过程中移动了一个黑色结点时，都有可能破坏红黑树的性质（2,4,5）。\n当被删除的结点只有一个孩子，或者没有孩子，这时我们只需关心被删除结点的颜色，如果被删除的结点为红色，则无需修正，如果被删除结点为黑色，则需要从被删除结点的孩子开始修正。\n当被删除的结点有两个孩子时，我们会找右子树的最小结点来替代被删除结点的位置和颜色，所以这是我们需要关注这个最小结点的颜色，如果最小结点的颜色为红色，则无需修整，如果这个最小结点为黑色，则需要从最小结点的右孩子开始修正。\n\n\n从x开始修正时，有五种情况：\n\nCase 0. x为红色\n\n这时23行会将其设为黑色，可直接满足所有红黑树性质\n\n\nCase 1. x的兄弟结点w为红色\nCase 2. x的兄弟节点w为黑色，且w的两个孩子都是黑色\nCase 3. x的兄弟节点w为黑色，且w的右孩子为黑色，左孩子有红色\nCase 4. x的兄弟节点w为黑色，且w的右孩子为红色\n\n\n\n\nCase 1\n这种情况我们将其转换为Case2/3/4\n\n设置兄弟节点w为黑色，父结点为红色\n左旋父结点\n重新设置w为x的兄弟结点\n\n\n\nCase 2\n这种情况将兄弟结点w设置为红色，并且x=x.p，继续循环。\n我们会发现，如果是从Case 1转换到Case 2，那么x.p一定是红色，所以会直接退出循环。\n\n\nCase 3\n这种情况我们将其转换为Case4\n\n设置兄弟节点w为红色，w的左孩子为黑色\n右旋w结点\n重新设置w为x的兄弟结点\n\n\n\nCase 4\n这种情况可以做一些修改，然后结束修正\n\n设置w的颜色为x父结点的颜色\nx父结点的颜色设置为黑色\nw右孩子的颜色设置为黑色\n左旋x的父结点\n使x指向root结点，从而结束修正\n\n\n\n由上可知，一旦循环进入Case 1, Case 3，Case 4，就会结束循环。所以一次插入操作最多只会有三次旋转操作（Case 1 -&gt; Case 3 -&gt; Case 4）。\n性质维护:\n插入过程中维护性质的分析：\n12Case1 转换后，局部的黑高与之前相同但是由于将局部根节点C从黑色变成红色，所以需要继续考虑C是否违反性质4\n12Case2/3 转换后，局部的黑高与之前相同并且局部根节点B的颜色没有改变，所以直接Done\n删除过程中维护性质的分析：\n需要修正时，被修正结点x以前的父节点肯定为黑色，x替代了x以前父节点的位置\n所以这时这个子树（x为根节点）的黑高减少了1\n1234Case1 转换后，ABCDE的黑高都没有变所以这时仍然是x为根节点的子树黑高少1根本情况没有变化，变化的只是x的兄弟节点的颜色\n12345Case2 转换后，以x的父节点c为根节点的子树已经满足红黑树的性质但是c为根节点的子树的黑高比之前少1所以令c为新的x，继续调整\n12345Case3 转换后，ABCDE的黑高都没有变所以这时仍然是x为根节点的子树黑高少1根本情况没有变化，变化的只是w的右孩子的颜色\n12345Case4 转换后，以c为根节点子树满足红黑树性质并且根节点的颜色没有变化，子树的黑高也没有变化所以Done\n涉及数据结构\n\n点击查看实现\n\n\nAVL树\n红黑树\n\n","dateCreated":"2015-03-07T18:20:08+08:00","dateModified":"2025-06-02T23:16:32+08:00","datePublished":"2015-03-07T18:20:08+08:00","description":"","headline":"13. 红黑树","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/","keywords":"算法"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"13. 红黑树\n二叉搜索树的各种操作时间复杂度为\\Omicron(h)\\Omicron(h)\\Omicron(h)，但是树的高度h不可控，最差的情况为n。\n而平衡搜索树能将树的高度控制在\\Omicron(lg(n))\\Omicron(\\lg(n))\\Omicron(lg(n))。\n常见的平衡搜索树有：\n\nAVL树\n红黑树\ntreap （tree + heap，给每个元素随机的priority，从而间接的实现随机插入，使得树的期望高度为\\Omicron(lg(n))\\Omicron(\\lg(n))\\Omicron(lg(n))）\nB树 （十八章介绍）\n\n2-3-4树\n\n\n\n本章重点讨论红黑树，以及习题中出现的AVL树。AVL树较为简单所以先介绍AVL树。\nAVL树\nAVL树由Adel’son-Vel’skii &amp; Landis 在1962年发明，由他们的名字命名。\n比较一般的二叉搜索树，每个结点额外存储它的高度，nil的高度为0，其他节点的高度为Height(x) = max(Height(x-&gt;left), Height(x-&gt;right)) + 1。每个结点两个孩子的高度差不能超过1。\n当右子树的高度比左子树的高度高时，我们称right-heavy（如下图），反之这称left-heavy。\n\nAVL树的各种查询操作都和普通二叉搜索树无异，所以我们只需关注会改变树结构的Insert操作和Delete操作。\n在一般的Insert或者Delete操作后，结点的高度会变，所以有可能会违反AVL树的性质，这时候我们需要引入一个操作Rotate（旋转）\nRotate\n旋转分为两种，左旋（LEFT-ROTATE）和右旋（RIGHT-ROTATE）。下图右测变为左侧的情况称为对x结点左旋，左侧变为右侧的情况称为对y结点做右旋。\n\n我们可以发现旋转操作并不会影响二叉搜索树的性质。\n旋转前后都会保持α &lt;= x &lt;= β &lt;= y &lt;= γ\n下面是左旋的伪代码，右旋的操作和左旋对称，不再赘述。\n\nRef：AVLTree::LeftRotate &amp; AVLTree::RightRotate in AVLTree.h\nAVL树平衡调整（ADJUST_FROM(x)）\n当Insert或者Delete一个元素后，平衡有可能被破坏，假设x是最底层被破坏性质的节点，而且是right-heavy时（left-heavy是对称的）：\n\nBalance\n\n如果x的右孩子y是平衡的或者right-heavy的（Figure 5）\n\n我们对x做LEFT-ROTATE操作可使其恢复平衡\n然后重新计算x和y的高度\n\n\n如果x的右孩子z是left-heavy的（Figure 6）\n\n我们先对z做RIGHT_ROTATE，然后对x做LEFT-ROTATE，可使其恢复平衡\n然后重新计算x，y，z的高度\n\n\n\n\nLoop\n\n重新计算x的高度，并使得x=x-&gt;p继续循环，直到根节点\n若图中发现某节点不平衡的用1. Balance\n\n\n\n\nRef：AVLTree::AdjustFrom in AVLTree.h\nAVL树 Insert\n因为插入的节点肯定是叶子节点，所以直接对插入节点调用ADJUST_FROM(x)即可。\nRef：AVLTree::Insert in AVLTree.h\nAVL树 Delete\n删除操作略为复杂，可能会影响子节点的平衡。\n\n当被删除节点只有一个孩子，或者没有孩子时，被删除节点的孩子不会被应用\n\n这时对删除节点原来的父节点调用ADJUST_FROM(x)即可\n\n\n当被删除节点有两个孩子时\n\n如果被删除节点右子树的最小节点min的父节点为被删除节点，这时对min调用ADJUST_FROM(x)\n其他情况，对min原来的父节点调用ADJUST_FROM(x)\n\n\n\nRef：AVLTree::Delete in AVLTree.h\n红黑树\n红黑树也是一种平衡二叉树。它在每个节点上增加一个存储位color来表示节点的颜色，节点的颜色为RED或者BLACK。通过对任何一条从根节点到叶子节点的颜色进行约束，红黑树确保没有一条路径会比其他路径长出2倍，所以是近似于平衡的。\n红黑树还定义一种NIL节点，NIL节点是红黑树的叶子结点（外部节点），真实的数据组成树的内部节点（如下图a所示）。\n红黑树的具体性质如下：\n\n每个节点不是红色的就是黑色的\n根节点是黑色的\n每个叶结点（NIL）是黑色的\n如果一个结点是红色的，那么它的两个孩子都是黑色的\n对于每个结点，从该结点到其所有后代叶结点的简单路径上，黑色结点的数量相同\n\n为了方便处理，使用一个哨兵来替代NIL结点。对于一颗红黑树T，哨兵T.nil是一个普通结点。它的color为BLACK，用哨兵T.nil替换图a中的所有NIL，这样就形如下图b所示，T.nil的p, left, right, key属性我们并不关心，所以方便起见程序中可以对其值随意设定。\n\n为了方便起见，我们在图中省去T.nil，这样就变成了图c的样子。\nNULL -&gt; T.nil\n红黑树与普通二叉搜索树相比，用T.nil替代了空指针。\n所以所有操作中用到空指针的地方，需要换成T.nil。后面不做赘述。\n红黑树 Insert\n红黑树的插入操作，除了一般的操作外，还需要把插入结点的颜色设为RED。因为插入了一个红色的结点，所以有可能触犯红黑树的一些性质（1,4），所以我们要调用RB-INSERT-FIXUP将其修正。\n\n\nRB-INSERT-FIXUP会循环的查看z的父结点是否违反性质4，如果违反，则将其修正。如果修正后仍然有可能违反性质4，则继续循环查看其爷结点。（本文只讨论插入结点的父结点为爷结点的左孩子的情况，右孩子的情况与其对称，不再赘述。）\n修正过程有三种情况：\n\nCase 1. z的叔结点为红色\nCase 2. z的叔结点为黑色，且z是父亲的右孩子\nCase 3. z的叔结点为黑色，且z是父亲的左孩子\n\n\n上图插入4之后的处理过程。下面我们详细讨论下三种情况的处理方式：\n\n\nCase 1\n这种情况只需改变着色，将父节点和叔结点染成黑色，爷结点染成红色。\n因为爷结点以前是黑色，却染成了红色，如果爷结点的父结点为红色，这时仍会触犯性质4，所以我们将爷结点赋给z，下次循环时再修正它。\n如果z的爷结点为root结点，我们修正后root结点变成了红色，并且让z指向root结点然后跳出了循环。在循环外边我们会将z重新染成黑色，所以保持了性质1。\n\n\n\nCase 2/3\n当z是父结点的左孩子时，符合Case 3，这时我们只需把爷结点做右旋，然后交换之前父结点和爷结点的颜色。这时局部的根节点颜色没有改变，仍然是黑色，所以整个树都满足了红黑树的特性，无需继续循环。\n\n当z是父结点的右孩子时，符合Case 2，这时只需要对父结点做左旋，使其变为Case 3的情况。\n\n\n由上可知，一旦循环进入Case 2或者Case 3，就会结束循环。所以一次插入操作最多只会有两次旋转操作。尽量少的循环操作是非常有益的，因为改变结点颜色并不会影响查找功能，当多线程处理时我们只需给旋转操作加锁。\n红黑树 Delete\n删除操作比插入操作略微复杂，当删除一个黑色结点，或者删除过程中移动了一个黑色结点时，都有可能破坏红黑树的性质（2,4,5）。\n当被删除的结点只有一个孩子，或者没有孩子，这时我们只需关心被删除结点的颜色，如果被删除的结点为红色，则无需修正，如果被删除结点为黑色，则需要从被删除结点的孩子开始修正。\n当被删除的结点有两个孩子时，我们会找右子树的最小结点来替代被删除结点的位置和颜色，所以这是我们需要关注这个最小结点的颜色，如果最小结点的颜色为红色，则无需修整，如果这个最小结点为黑色，则需要从最小结点的右孩子开始修正。\n\n\n从x开始修正时，有五种情况：\n\nCase 0. x为红色\n\n这时23行会将其设为黑色，可直接满足所有红黑树性质\n\n\nCase 1. x的兄弟结点w为红色\nCase 2. x的兄弟节点w为黑色，且w的两个孩子都是黑色\nCase 3. x的兄弟节点w为黑色，且w的右孩子为黑色，左孩子有红色\nCase 4. x的兄弟节点w为黑色，且w的右孩子为红色\n\n\n\n\nCase 1\n这种情况我们将其转换为Case2/3/4\n\n设置兄弟节点w为黑色，父结点为红色\n左旋父结点\n重新设置w为x的兄弟结点\n\n\n\nCase 2\n这种情况将兄弟结点w设置为红色，并且x=x.p，继续循环。\n我们会发现，如果是从Case 1转换到Case 2，那么x.p一定是红色，所以会直接退出循环。\n\n\nCase 3\n这种情况我们将其转换为Case4\n\n设置兄弟节点w为红色，w的左孩子为黑色\n右旋w结点\n重新设置w为x的兄弟结点\n\n\n\nCase 4\n这种情况可以做一些修改，然后结束修正\n\n设置w的颜色为x父结点的颜色\nx父结点的颜色设置为黑色\nw右孩子的颜色设置为黑色\n左旋x的父结点\n使x指向root结点，从而结束修正\n\n\n\n由上可知，一旦循环进入Case 1, Case 3，Case 4，就会结束循环。所以一次插入操作最多只会有三次旋转操作（Case 1 -&gt; Case 3 -&gt; Case 4）。\n性质维护:\n插入过程中维护性质的分析：\n12Case1 转换后，局部的黑高与之前相同但是由于将局部根节点C从黑色变成红色，所以需要继续考虑C是否违反性质4\n12Case2/3 转换后，局部的黑高与之前相同并且局部根节点B的颜色没有改变，所以直接Done\n删除过程中维护性质的分析：\n需要修正时，被修正结点x以前的父节点肯定为黑色，x替代了x以前父节点的位置\n所以这时这个子树（x为根节点）的黑高减少了1\n1234Case1 转换后，ABCDE的黑高都没有变所以这时仍然是x为根节点的子树黑高少1根本情况没有变化，变化的只是x的兄弟节点的颜色\n12345Case2 转换后，以x的父节点c为根节点的子树已经满足红黑树的性质但是c为根节点的子树的黑高比之前少1所以令c为新的x，继续调整\n12345Case3 转换后，ABCDE的黑高都没有变所以这时仍然是x为根节点的子树黑高少1根本情况没有变化，变化的只是w的右孩子的颜色\n12345Case4 转换后，以c为根节点子树满足红黑树性质并且根节点的颜色没有变化，子树的黑高也没有变化所以Done\n涉及数据结构\n\n点击查看实现\n\n\nAVL树\n红黑树\n\n","dateCreated":"2015-03-07T18:20:08+08:00","dateModified":"2025-06-02T23:16:32+08:00","datePublished":"2015-03-07T18:20:08+08:00","description":"","headline":"13. 红黑树","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/","keywords":"算法"}</script>
     <meta name="description" content="13. 红黑树 二叉搜索树的各种操作时间复杂度为\Omicron(h)\Omicron(h)\Omicron(h)，但是树的高度h不可控，最差的情况为n。 而平衡搜索树能将树的高度控制在\Omicron(lg(n))\Omicron(\lg(n))\Omicron(lg(n))。 常见的平衡搜索树有：  AVL树 红黑树 treap （tree + heap，给每个元素随机的priority，从而">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="13. 红黑树">
-<meta property="og:url" content="https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/index.html">
+<meta property="og:url" content="https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="13. 红黑树 二叉搜索树的各种操作时间复杂度为\Omicron(h)\Omicron(h)\Omicron(h)，但是树的高度h不可控，最差的情况为n。 而平衡搜索树能将树的高度控制在\Omicron(lg(n))\Omicron(\lg(n))\Omicron(lg(n))。 常见的平衡搜索树有：  AVL树 红黑树 treap （tree + heap，给每个元素随机的priority，从而">
 <meta property="og:locale" content="zh_TW">
@@ -64,7 +64,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -595,7 +595,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -606,7 +606,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -619,7 +619,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -632,7 +632,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -645,7 +645,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -658,7 +658,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -723,7 +723,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -734,7 +734,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -747,7 +747,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -760,7 +760,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -773,7 +773,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -786,7 +786,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -807,7 +807,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -820,7 +820,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -833,7 +833,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -846,7 +846,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/07/Algorithms/13.%E7%BA%A2%E9%BB%91%E6%A0%91/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -922,7 +922,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -945,7 +945,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -968,7 +968,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -991,7 +991,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -1014,7 +1014,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -1037,7 +1037,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1060,7 +1060,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1083,7 +1083,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1106,7 +1106,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1129,7 +1129,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

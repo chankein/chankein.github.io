@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"R CSV 文件\nR 作为统计学专业工具，如果只能人工的导入和导出数据将使其功能变得没有意义，所以 R 支持批量的从主流的表格存储格式文件（例如 CSV、Excel、XML 等）中获取数据。\nCSV 表格交互\nCSV（Comma-Separated Values，CSV，有时也称为字符分隔值，因为分隔字符也可以不是逗号） 是一种非常流行的表格存储文件格式，这种格式适合储存中型或小型数据规模的数据。\n由于大多数软件支持这个文件格式，所以常用于数据的储存与交互。\nCSV 本质是文本，它的文件格式极度简单：数据一行一行的用文本保存起来而已，每条记录被分隔符分隔为字段，每条记录都有同样的字段序列。\n以下是一个简单的 sites.csv 文件（存储在测试程序的相同目录下）：\n12345id,name,url,likes1,Google,www.google.com,1112,Runoob,www.runoob.com,2223,Taobao,www.taobao.com,333\nCSV 用逗号来分割列，如果数据中含有逗号，就要用双引号将整个数据块包括起来。\n**注意：**包含非英文字符的文本要注意保存的编码，由于很多计算机普遍使用 UTF-8 编码，所以我是用 UTF-8 进行保存的。\n注意： CSV 文件最后一行需要保留一个空行，不然执行程序会有警告信息。\n123Warning message:In read.table(file = file, header = header, sep = sep, quote = quote,  :  incomplete final line found by readTableHeader on &#x27;sites.csv&#x27;\n\n读取 CSV 文件\n接下来我们就可以使用 read.csv() 函数来读取 CSV 文件的数据：\n实例\n12data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)  print(data)  \n如果不设置 encoding 属性，read.csv 函数将默认以操作系统默认的文字编码进行读取，如果你使用的是 Windows 中文版系统且没有设置过系统的默认编码，那系统的默认编码应该是 GBK。所以大家请尽可能地统一文字编码以防出错。\n执行以上代码输出结果为：\n1234  id   name            url likes1  1 Google www.google.com   1112  2 Runoob www.runoob.com   2223  3 Taobao www.taobao.com   333\nread.csv() 函数返回的是数据框，我们可以很方便的对数据进行统计处理，以下实例我们查看行数和列数：\n实例\n12345data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)print(is.data.frame(data))  \\# 查看是否是数据框  print(ncol(data))  \\# 列数  print(nrow(data))  \\# 行数\n执行以上代码输出结果为：\n123[1] TRUE[1] 4[1] 3\n以下统计数据框中 likes 字段最大对数据：\n实例\n12345data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)\\# likes 最大的数据  like &lt;- max(data$likes)  print(like)\n执行以上代码输出结果为：\n1[1] 333\n我们也可以指定查找条件，类似 SQL where 子句一样查询数据，需要用到到函数是 subset()。\n以下实例查找 likes 为 222 到数据：\n实例\n12345data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)\\# likes 为 222 的数据  retval &lt;- subset(data, likes \\== 222)  print(retval)\n执行以上代码输出结果为：\n12  id   name            url likes2  2 Runoob www.runoob.com   222\n注意：条件语句等于使用 ==。\n多个条件使用 &amp; 分隔符，以下实例查找 likes 大于 1 name 为 Runoob 的数据：\n实例\n12345data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)\\# likes 大于 1 name 为 Runoob 的数据  retval &lt;- subset(data, likes \\&gt; 1 &amp; name\\==&quot;Runoob&quot;)  print(retval)\n执行以上代码输出结果为：\n12  id   name            url likes2  2 Runoob www.runoob.com   222\n保存为 CSV 文件\nR 语言可以使用 write.csv() 函数将数据保存为 CSV 文件。\n接着以上实例，我们将 likes 为 222 的数据 保存到 runoob.csv 文件：\n实例\n123456789data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)\\# likes 为 222 的数据  retval &lt;- subset(data, likes \\== 222)\\# 写入新的文件  write.csv(retval,&quot;runoob.csv&quot;)  newdata &lt;- read.csv(&quot;runoob.csv&quot;)  print(newdata)\n执行以上代码输出结果为：\n12 X id   name            url likes1 2  2 Runoob www.runoob.com   222\nX 来自数据集 newper，可以通过参数 row.names = FALSE 来删除它：\n实例\n123456789data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)\\# likes 为 222 的数据  retval &lt;- subset(data, likes \\== 222)\\# 写入新的文件  write.csv(retval,&quot;runoob.csv&quot;, row.names \\= FALSE)  newdata &lt;- read.csv(&quot;runoob.csv&quot;)  print(newdata)\n执行以上代码输出结果为：\n12  id   name            url likes1  2 Runoob www.runoob.com   222\n执行完后，我们就可以看到 runoob.csv 文件生存：\n\nR Excel 文件\nExcel 格式的文件主要是 xls 或 xlsx，这两种文件可以在 R 语言中导入 xlsx 库来实现直接的读取。\nR 语言读写 Excel 文件需要安装扩展包，我们可以在 R 到控制台输入以下命令来安装：\n1install.packages(&quot;xlsx&quot;, repos = &quot;https://mirrors.ustc.edu.cn/CRAN/&quot;)\n安装过程如下：\n\n事实上，几乎所有的 Excel 软件与大多数表格软件一样支持 CSV 格式的数据，所以完全可以通过 CSV 与 R 交互，没必要再使用 Excel。\n查看 xlsx 是否安装成功：\n实例\n12345\\# 验证包是否安装  any(grepl(&quot;xlsx&quot;,installed.packages()))  \\# 载入包  library(&quot;xlsx&quot;)  library(&quot;xlsx&quot;)  \n执行以上代码输出结果为：\n1234[1] TRUELoading required package: rJavaLoading required package: methodsLoading required package: xlsxjars\nExcel 文件数据：\n\n点击链接下载 Excel 测试数据：https://static.jyshare.com/download/sites.xlsx\n接下来，我们可以使用 read.xlsx() 函数来读取 Excel 数据：\n实例\n123\\# 读取 sites.xlsx 第一个工作表数据  data &lt;- read.xlsx(&quot;sites.xlsx&quot;, sheetIndex \\= 1)  print(data)\nR XML 文件\nXML 指的是可扩展标记语言（eXtensible Markup Language），XML 被设计用来传输和存储数据。\n如果你对 XML 还不了解，可以先查阅：XML 教程\nR 语言读写 XML 文件需要安装扩展包，我们可以在 R 到控制台输入以下命令来安装：\n1install.packages(&quot;XML&quot;, repos = &quot;https://mirrors.ustc.edu.cn/CRAN/&quot;)\n查看是否安装成功：\n12&gt; any(grepl(&quot;XML&quot;,installed.packages()))[1] TRUE\n创建 sites.xml 文件，xml 文件与测试脚本同一目录下，代码如下：\n实例\n1&lt;sites\\&gt; &lt;site\\&gt; &lt;id\\&gt;1&lt;/id\\&gt; &lt;name\\&gt;Google&lt;/name\\&gt; &lt;url\\&gt;www.google.com&lt;/url\\&gt; &lt;likes\\&gt;111&lt;/likes\\&gt; &lt;/site\\&gt; &lt;site\\&gt; &lt;id\\&gt;2&lt;/id\\&gt; &lt;name\\&gt;Runoob&lt;/name\\&gt; &lt;url\\&gt;www.runoob.com&lt;/url\\&gt; &lt;likes\\&gt;222&lt;/likes\\&gt; &lt;/site\\&gt; &lt;site\\&gt; &lt;id\\&gt;3&lt;/id\\&gt; &lt;name\\&gt;Taobao&lt;/name\\&gt; &lt;url\\&gt;www.taobao.com&lt;/url\\&gt; &lt;likes\\&gt;333&lt;/likes\\&gt; &lt;/site\\&gt; &lt;/sites\\&gt;\n接下来我们可以使用 XML 包来载入 xml 文件的数据：\n实例\n12345678\\# 载入 XML 包  library(&quot;XML&quot;)\\# 设置文件名  result &lt;- xmlParse(file \\= &quot;sites.xml&quot;)\\# 输出结果  print(result)\n统计 xml 数据量：\n实例\n1234567891011121314\\# 载入 XML 包  library(&quot;XML&quot;)\\# 设置文件名  result &lt;- xmlParse(file \\= &quot;sites.xml&quot;)\\# 提取根节点  rootnode &lt;- xmlRoot(result)\\# 统计数据量  rootsize &lt;- xmlSize(rootnode)\\# 输出结果  print(rootsize)\n执行以上代码输出结果为：\n1[1] 3\n查看节点数据，某一行使用 [ ], 指定的行和列使用 [[ ]]:\n实例\n123456789101112131415161718\\# 载入 XML 包  library(&quot;XML&quot;)\\# 设置文件名  result &lt;- xmlParse(file \\= &quot;sites.xml&quot;)\\# 提取根节点  rootnode &lt;- xmlRoot(result)\\# 查看第 2 个节点数据  print(rootnode\\[2\\])\\# 查看第 2 个节点的第  1 个数据  print(rootnode\\[\\[2\\]\\]\\[\\[1\\]\\])\\# 查看第 2 个节点的第 3 个数据print(rootnode\\[\\[2\\]\\]\\[\\[3\\]\\])\n执行以上代码输出结果为：\n123456789101112$site&lt;site&gt;  &lt;id&gt;2&lt;/id&gt;  &lt;name&gt;Runoob&lt;/name&gt;  &lt;url&gt;www.runoob.com&lt;/url&gt;  &lt;likes&gt;222&lt;/likes&gt;&lt;/site&gt; attr(,&quot;class&quot;)[1] &quot;XMLInternalNodeList&quot; &quot;XMLNodeList&quot;        &lt;id&gt;2&lt;/id&gt; &lt;url&gt;www.runoob.com&lt;/url&gt; \nXML 转为数据列表\n以上代码对输出都是 xml 格式，我们使用 xmlToList() 函数可以将文件对数据转为列表格式，更方便读取：\n实例\n1234567891011121314\\# 载入 XML 包  library(&quot;XML&quot;)\\# 设置文件名  result &lt;- xmlParse(file \\= &quot;sites.xml&quot;)\\# 转为列表  xml\\_data &lt;- xmlToList(result)print(xml\\_data)  print(&quot;============================&quot;)\\# 输出第一行第二列的数据  print(xml\\_data\\[\\[1\\]\\]\\[\\[2\\]\\])\n执行以上代码输出结果为：\n1234567891011121314151617181920212223242526272829303132333435363738394041424344$site$site$id[1] &quot;1&quot;$site$name[1] &quot;Google&quot;$site$url[1] &quot;www.google.com&quot;$site$likes[1] &quot;111&quot;$site$site$id[1] &quot;2&quot;$site$name[1] &quot;Runoob&quot;$site$url[1] &quot;www.runoob.com&quot;$site$likes[1] &quot;222&quot;$site$site$id[1] &quot;3&quot;$site$name[1] &quot;Taobao&quot;$site$url[1] &quot;www.taobao.com&quot;$site$likes[1] &quot;333&quot;[1] &quot;============================&quot;[1] &quot;Google&quot;\nXML 转为数据框\nXML 文件数据可以转为数据框类型，这样我们就更方便对数据进行操作：\n实例\n123456\\# 载入 XML 包  library(&quot;XML&quot;)\\# xml 文件数据转为数据框  xmldataframe &lt;- xmlToDataFrame(&quot;sites.xml&quot;)  print(xmldataframe)\n执行以上代码输出结果为：\n1234  id   name            url likes1  1 Google www.google.com   1112  2 Runoob www.runoob.com   2223  3 Taobao www.taobao.com   333\nR JSON 文件\nJSON: JavaScript Object Notation(JavaScript 对象表示法)。\nJSON 是存储和交换文本信息的语法。\nJSON 类似 XML，但比 XML 更小、更快，更易解析。\n如果你对 JSON 还不了解，可以先查阅：JSON 教程\nR 语言读写 JSON 文件需要安装扩展包，我们可以在 R 到控制台输入以下命令来安装：\n1install.packages(&quot;rjson&quot;, repos = &quot;https://mirrors.ustc.edu.cn/CRAN/&quot;)\n查看是否安装成功：\n12&gt; any(grepl(&quot;rjson&quot;,installed.packages()))[1] TRUE\n创建 sites.json 文件，json 文件与测试脚本同一目录下，代码如下：\n实例\n1&#123; &quot;id&quot;:\\[&quot;1&quot;,&quot;2&quot;,&quot;3&quot;\\], &quot;name&quot;:\\[&quot;Google&quot;,&quot;Runoob&quot;,&quot;Taobao&quot;\\], &quot;url&quot;:\\[&quot;www.google.com&quot;,&quot;www.runoob.com&quot;,&quot;www.taobao.com&quot;\\], &quot;likes&quot;:\\[ 111,222,333\\] &#125;\n接下来我们可以使用 rjson 包来载入 json 文件的数据。\n查看数据，某一行使用 [ ], 指定的行和列使用 [[ ]]:\n实例\n1234567891011121314151617\\# 载入 rjson 包  library(&quot;rjson&quot;)\\# 获取 json 数据  result &lt;- fromJSON(file \\= &quot;sites.json&quot;)\\# 输出结果  print(result)print(&quot;===============&quot;)\\# 输出第 1 列的结果  print(result\\[1\\])print(&quot;===============&quot;)  \\# 输出第 2 行第 2 列的结果  print(result\\[\\[2\\]\\]\\[\\[2\\]\\])\n执行以上代码输出结果为：\n123456789101112131415161718$id[1] &quot;1&quot; &quot;2&quot; &quot;3&quot;$name[1] &quot;Google&quot; &quot;Runoob&quot; &quot;Taobao&quot;$url[1] &quot;www.google.com&quot; &quot;www.runoob.com&quot; &quot;www.taobao.com&quot;$likes[1] 111 222 333[1] &quot;===============&quot;$id[1] &quot;1&quot; &quot;2&quot; &quot;3&quot;[1] &quot;===============&quot;[1] &quot;Runoob&quot;\n我们也可以使用 as.data.frame() 函数将 json 文件数据可以转为数据框类型，这样我们就更方便对数据进行操作：\n实例\n12345678910\\# 载入 rjson 包  library(&quot;rjson&quot;)\\# 获取 json 数据  result &lt;- fromJSON(file \\= &quot;sites.json&quot;)\\# 转为数据框  json\\_data\\_frame &lt;- as.data.frame(result)print(json\\_data\\_frame)\n执行以上代码输出结果为：\n1234  id   name            url likes1  1 Google www.google.com   1112  2 Runoob www.runoob.com   2223  3 Taobao www.taobao.com   333\nR MySQL 连接\nMySQL 是最流行的关系型数据库管理系统，在 WEB 应用方面 MySQL 是最好的 RDBMS(Relational Database Management System：关系数据库管理系统)应用软件之一。\n如果你对 MySQL 还不了解，可以先查阅：MySQL 教程\nR 语言读写 MySQL 文件需要安装扩展包，我们可以在 R 到控制台输入以下命令来安装：\n1install.packages(&quot;RMySQL&quot;, repos = &quot;https://mirrors.ustc.edu.cn/CRAN/&quot;)\n查看是否安装成功：\n12&gt; any(grepl(&quot;RMySQL&quot;,installed.packages()))[1] TRUE\nMySQL 目前被甲骨文收购，所以很多人使用来它的复制版本 MariaDB，MariaDB 在 GNU GPL下开源，MariaDB 的开发是由 MySQL 的一些原始开发者领导的，所以语法操作都差不多：\n1install.packages(&quot;RMariaDB&quot;, repos = &quot;https://mirrors.ustc.edu.cn/CRAN/&quot;)\n在 test 数据库中创建数据表 runoob，表结构及数据代码如下：\n实例\n1\\-- -- 表的结构 \\`runoob\\` \\-- CREATE TABLE \\`runoob\\` ( \\`id\\` int(11) NOT NULL, \\`name\\` char(20) NOT NULL, \\`url\\` varchar(255) NOT NULL, \\`likes\\` int(11) NOT NULL ) ENGINE\\=InnoDB DEFAULT CHARSET\\=utf8mb4; \\-- -- 转存表中的数据 \\`runoob\\` \\-- INSERT INTO \\`runoob\\` (\\`id\\`, \\`name\\`, \\`url\\`, \\`likes\\`) VALUES (1, &#x27;Google&#x27;, &#x27;www.google.com&#x27;, 111), (2, &#x27;Runoob&#x27;, &#x27;www.runoob.com&#x27;, 222), (3, &#x27;Taobao&#x27;, &#x27;www.taobao.com&#x27;, 333);\n接下来我们可以使用 RMySQL 包来读取数据：\n实例\n1234567library(RMySQL)\\# dbname 为数据库名，这边的参数请根据自己实际情况填写  mysqlconnection \\= dbConnect(MySQL(), user \\= &#x27;root&#x27;, password \\= &#x27;&#x27;, dbname \\= &#x27;test&#x27;,host \\= &#x27;localhost&#x27;)\\# 查看数据  dbListTables(mysqlconnection)\n接下来我们可以使用 dbSendQuery 来读取数据库的表，结果集通过 fetch() 函数来获取：\n实例\n1234567library(RMySQL)  \\# 查询 sites 表，增删改查操作可以通过第二个参数的 SQL 语句来实现  result \\= dbSendQuery(mysqlconnection, &quot;select \\* from sites&quot;)\\# 获取前面两行数据  data.frame \\= fetch(result, n \\= 2)  print(data.frame)\n","dateCreated":"2013-05-01T22:06:40+08:00","dateModified":"2025-05-20T17:25:12+08:00","datePublished":"2013-05-01T22:06:40+08:00","description":"","headline":"R语言-读取数据","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/","keywords":"R语言"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"R CSV 文件\nR 作为统计学专业工具，如果只能人工的导入和导出数据将使其功能变得没有意义，所以 R 支持批量的从主流的表格存储格式文件（例如 CSV、Excel、XML 等）中获取数据。\nCSV 表格交互\nCSV（Comma-Separated Values，CSV，有时也称为字符分隔值，因为分隔字符也可以不是逗号） 是一种非常流行的表格存储文件格式，这种格式适合储存中型或小型数据规模的数据。\n由于大多数软件支持这个文件格式，所以常用于数据的储存与交互。\nCSV 本质是文本，它的文件格式极度简单：数据一行一行的用文本保存起来而已，每条记录被分隔符分隔为字段，每条记录都有同样的字段序列。\n以下是一个简单的 sites.csv 文件（存储在测试程序的相同目录下）：\n12345id,name,url,likes1,Google,www.google.com,1112,Runoob,www.runoob.com,2223,Taobao,www.taobao.com,333\nCSV 用逗号来分割列，如果数据中含有逗号，就要用双引号将整个数据块包括起来。\n**注意：**包含非英文字符的文本要注意保存的编码，由于很多计算机普遍使用 UTF-8 编码，所以我是用 UTF-8 进行保存的。\n注意： CSV 文件最后一行需要保留一个空行，不然执行程序会有警告信息。\n123Warning message:In read.table(file = file, header = header, sep = sep, quote = quote,  :  incomplete final line found by readTableHeader on &#x27;sites.csv&#x27;\n\n读取 CSV 文件\n接下来我们就可以使用 read.csv() 函数来读取 CSV 文件的数据：\n实例\n12data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)  print(data)  \n如果不设置 encoding 属性，read.csv 函数将默认以操作系统默认的文字编码进行读取，如果你使用的是 Windows 中文版系统且没有设置过系统的默认编码，那系统的默认编码应该是 GBK。所以大家请尽可能地统一文字编码以防出错。\n执行以上代码输出结果为：\n1234  id   name            url likes1  1 Google www.google.com   1112  2 Runoob www.runoob.com   2223  3 Taobao www.taobao.com   333\nread.csv() 函数返回的是数据框，我们可以很方便的对数据进行统计处理，以下实例我们查看行数和列数：\n实例\n12345data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)print(is.data.frame(data))  \\# 查看是否是数据框  print(ncol(data))  \\# 列数  print(nrow(data))  \\# 行数\n执行以上代码输出结果为：\n123[1] TRUE[1] 4[1] 3\n以下统计数据框中 likes 字段最大对数据：\n实例\n12345data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)\\# likes 最大的数据  like &lt;- max(data$likes)  print(like)\n执行以上代码输出结果为：\n1[1] 333\n我们也可以指定查找条件，类似 SQL where 子句一样查询数据，需要用到到函数是 subset()。\n以下实例查找 likes 为 222 到数据：\n实例\n12345data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)\\# likes 为 222 的数据  retval &lt;- subset(data, likes \\== 222)  print(retval)\n执行以上代码输出结果为：\n12  id   name            url likes2  2 Runoob www.runoob.com   222\n注意：条件语句等于使用 ==。\n多个条件使用 &amp; 分隔符，以下实例查找 likes 大于 1 name 为 Runoob 的数据：\n实例\n12345data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)\\# likes 大于 1 name 为 Runoob 的数据  retval &lt;- subset(data, likes \\&gt; 1 &amp; name\\==&quot;Runoob&quot;)  print(retval)\n执行以上代码输出结果为：\n12  id   name            url likes2  2 Runoob www.runoob.com   222\n保存为 CSV 文件\nR 语言可以使用 write.csv() 函数将数据保存为 CSV 文件。\n接着以上实例，我们将 likes 为 222 的数据 保存到 runoob.csv 文件：\n实例\n123456789data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)\\# likes 为 222 的数据  retval &lt;- subset(data, likes \\== 222)\\# 写入新的文件  write.csv(retval,&quot;runoob.csv&quot;)  newdata &lt;- read.csv(&quot;runoob.csv&quot;)  print(newdata)\n执行以上代码输出结果为：\n12 X id   name            url likes1 2  2 Runoob www.runoob.com   222\nX 来自数据集 newper，可以通过参数 row.names = FALSE 来删除它：\n实例\n123456789data &lt;- read.csv(&quot;sites.csv&quot;, encoding\\=&quot;UTF-8&quot;)\\# likes 为 222 的数据  retval &lt;- subset(data, likes \\== 222)\\# 写入新的文件  write.csv(retval,&quot;runoob.csv&quot;, row.names \\= FALSE)  newdata &lt;- read.csv(&quot;runoob.csv&quot;)  print(newdata)\n执行以上代码输出结果为：\n12  id   name            url likes1  2 Runoob www.runoob.com   222\n执行完后，我们就可以看到 runoob.csv 文件生存：\n\nR Excel 文件\nExcel 格式的文件主要是 xls 或 xlsx，这两种文件可以在 R 语言中导入 xlsx 库来实现直接的读取。\nR 语言读写 Excel 文件需要安装扩展包，我们可以在 R 到控制台输入以下命令来安装：\n1install.packages(&quot;xlsx&quot;, repos = &quot;https://mirrors.ustc.edu.cn/CRAN/&quot;)\n安装过程如下：\n\n事实上，几乎所有的 Excel 软件与大多数表格软件一样支持 CSV 格式的数据，所以完全可以通过 CSV 与 R 交互，没必要再使用 Excel。\n查看 xlsx 是否安装成功：\n实例\n12345\\# 验证包是否安装  any(grepl(&quot;xlsx&quot;,installed.packages()))  \\# 载入包  library(&quot;xlsx&quot;)  library(&quot;xlsx&quot;)  \n执行以上代码输出结果为：\n1234[1] TRUELoading required package: rJavaLoading required package: methodsLoading required package: xlsxjars\nExcel 文件数据：\n\n点击链接下载 Excel 测试数据：https://static.jyshare.com/download/sites.xlsx\n接下来，我们可以使用 read.xlsx() 函数来读取 Excel 数据：\n实例\n123\\# 读取 sites.xlsx 第一个工作表数据  data &lt;- read.xlsx(&quot;sites.xlsx&quot;, sheetIndex \\= 1)  print(data)\nR XML 文件\nXML 指的是可扩展标记语言（eXtensible Markup Language），XML 被设计用来传输和存储数据。\n如果你对 XML 还不了解，可以先查阅：XML 教程\nR 语言读写 XML 文件需要安装扩展包，我们可以在 R 到控制台输入以下命令来安装：\n1install.packages(&quot;XML&quot;, repos = &quot;https://mirrors.ustc.edu.cn/CRAN/&quot;)\n查看是否安装成功：\n12&gt; any(grepl(&quot;XML&quot;,installed.packages()))[1] TRUE\n创建 sites.xml 文件，xml 文件与测试脚本同一目录下，代码如下：\n实例\n1&lt;sites\\&gt; &lt;site\\&gt; &lt;id\\&gt;1&lt;/id\\&gt; &lt;name\\&gt;Google&lt;/name\\&gt; &lt;url\\&gt;www.google.com&lt;/url\\&gt; &lt;likes\\&gt;111&lt;/likes\\&gt; &lt;/site\\&gt; &lt;site\\&gt; &lt;id\\&gt;2&lt;/id\\&gt; &lt;name\\&gt;Runoob&lt;/name\\&gt; &lt;url\\&gt;www.runoob.com&lt;/url\\&gt; &lt;likes\\&gt;222&lt;/likes\\&gt; &lt;/site\\&gt; &lt;site\\&gt; &lt;id\\&gt;3&lt;/id\\&gt; &lt;name\\&gt;Taobao&lt;/name\\&gt; &lt;url\\&gt;www.taobao.com&lt;/url\\&gt; &lt;likes\\&gt;333&lt;/likes\\&gt; &lt;/site\\&gt; &lt;/sites\\&gt;\n接下来我们可以使用 XML 包来载入 xml 文件的数据：\n实例\n12345678\\# 载入 XML 包  library(&quot;XML&quot;)\\# 设置文件名  result &lt;- xmlParse(file \\= &quot;sites.xml&quot;)\\# 输出结果  print(result)\n统计 xml 数据量：\n实例\n1234567891011121314\\# 载入 XML 包  library(&quot;XML&quot;)\\# 设置文件名  result &lt;- xmlParse(file \\= &quot;sites.xml&quot;)\\# 提取根节点  rootnode &lt;- xmlRoot(result)\\# 统计数据量  rootsize &lt;- xmlSize(rootnode)\\# 输出结果  print(rootsize)\n执行以上代码输出结果为：\n1[1] 3\n查看节点数据，某一行使用 [ ], 指定的行和列使用 [[ ]]:\n实例\n123456789101112131415161718\\# 载入 XML 包  library(&quot;XML&quot;)\\# 设置文件名  result &lt;- xmlParse(file \\= &quot;sites.xml&quot;)\\# 提取根节点  rootnode &lt;- xmlRoot(result)\\# 查看第 2 个节点数据  print(rootnode\\[2\\])\\# 查看第 2 个节点的第  1 个数据  print(rootnode\\[\\[2\\]\\]\\[\\[1\\]\\])\\# 查看第 2 个节点的第 3 个数据print(rootnode\\[\\[2\\]\\]\\[\\[3\\]\\])\n执行以上代码输出结果为：\n123456789101112$site&lt;site&gt;  &lt;id&gt;2&lt;/id&gt;  &lt;name&gt;Runoob&lt;/name&gt;  &lt;url&gt;www.runoob.com&lt;/url&gt;  &lt;likes&gt;222&lt;/likes&gt;&lt;/site&gt; attr(,&quot;class&quot;)[1] &quot;XMLInternalNodeList&quot; &quot;XMLNodeList&quot;        &lt;id&gt;2&lt;/id&gt; &lt;url&gt;www.runoob.com&lt;/url&gt; \nXML 转为数据列表\n以上代码对输出都是 xml 格式，我们使用 xmlToList() 函数可以将文件对数据转为列表格式，更方便读取：\n实例\n1234567891011121314\\# 载入 XML 包  library(&quot;XML&quot;)\\# 设置文件名  result &lt;- xmlParse(file \\= &quot;sites.xml&quot;)\\# 转为列表  xml\\_data &lt;- xmlToList(result)print(xml\\_data)  print(&quot;============================&quot;)\\# 输出第一行第二列的数据  print(xml\\_data\\[\\[1\\]\\]\\[\\[2\\]\\])\n执行以上代码输出结果为：\n1234567891011121314151617181920212223242526272829303132333435363738394041424344$site$site$id[1] &quot;1&quot;$site$name[1] &quot;Google&quot;$site$url[1] &quot;www.google.com&quot;$site$likes[1] &quot;111&quot;$site$site$id[1] &quot;2&quot;$site$name[1] &quot;Runoob&quot;$site$url[1] &quot;www.runoob.com&quot;$site$likes[1] &quot;222&quot;$site$site$id[1] &quot;3&quot;$site$name[1] &quot;Taobao&quot;$site$url[1] &quot;www.taobao.com&quot;$site$likes[1] &quot;333&quot;[1] &quot;============================&quot;[1] &quot;Google&quot;\nXML 转为数据框\nXML 文件数据可以转为数据框类型，这样我们就更方便对数据进行操作：\n实例\n123456\\# 载入 XML 包  library(&quot;XML&quot;)\\# xml 文件数据转为数据框  xmldataframe &lt;- xmlToDataFrame(&quot;sites.xml&quot;)  print(xmldataframe)\n执行以上代码输出结果为：\n1234  id   name            url likes1  1 Google www.google.com   1112  2 Runoob www.runoob.com   2223  3 Taobao www.taobao.com   333\nR JSON 文件\nJSON: JavaScript Object Notation(JavaScript 对象表示法)。\nJSON 是存储和交换文本信息的语法。\nJSON 类似 XML，但比 XML 更小、更快，更易解析。\n如果你对 JSON 还不了解，可以先查阅：JSON 教程\nR 语言读写 JSON 文件需要安装扩展包，我们可以在 R 到控制台输入以下命令来安装：\n1install.packages(&quot;rjson&quot;, repos = &quot;https://mirrors.ustc.edu.cn/CRAN/&quot;)\n查看是否安装成功：\n12&gt; any(grepl(&quot;rjson&quot;,installed.packages()))[1] TRUE\n创建 sites.json 文件，json 文件与测试脚本同一目录下，代码如下：\n实例\n1&#123; &quot;id&quot;:\\[&quot;1&quot;,&quot;2&quot;,&quot;3&quot;\\], &quot;name&quot;:\\[&quot;Google&quot;,&quot;Runoob&quot;,&quot;Taobao&quot;\\], &quot;url&quot;:\\[&quot;www.google.com&quot;,&quot;www.runoob.com&quot;,&quot;www.taobao.com&quot;\\], &quot;likes&quot;:\\[ 111,222,333\\] &#125;\n接下来我们可以使用 rjson 包来载入 json 文件的数据。\n查看数据，某一行使用 [ ], 指定的行和列使用 [[ ]]:\n实例\n1234567891011121314151617\\# 载入 rjson 包  library(&quot;rjson&quot;)\\# 获取 json 数据  result &lt;- fromJSON(file \\= &quot;sites.json&quot;)\\# 输出结果  print(result)print(&quot;===============&quot;)\\# 输出第 1 列的结果  print(result\\[1\\])print(&quot;===============&quot;)  \\# 输出第 2 行第 2 列的结果  print(result\\[\\[2\\]\\]\\[\\[2\\]\\])\n执行以上代码输出结果为：\n123456789101112131415161718$id[1] &quot;1&quot; &quot;2&quot; &quot;3&quot;$name[1] &quot;Google&quot; &quot;Runoob&quot; &quot;Taobao&quot;$url[1] &quot;www.google.com&quot; &quot;www.runoob.com&quot; &quot;www.taobao.com&quot;$likes[1] 111 222 333[1] &quot;===============&quot;$id[1] &quot;1&quot; &quot;2&quot; &quot;3&quot;[1] &quot;===============&quot;[1] &quot;Runoob&quot;\n我们也可以使用 as.data.frame() 函数将 json 文件数据可以转为数据框类型，这样我们就更方便对数据进行操作：\n实例\n12345678910\\# 载入 rjson 包  library(&quot;rjson&quot;)\\# 获取 json 数据  result &lt;- fromJSON(file \\= &quot;sites.json&quot;)\\# 转为数据框  json\\_data\\_frame &lt;- as.data.frame(result)print(json\\_data\\_frame)\n执行以上代码输出结果为：\n1234  id   name            url likes1  1 Google www.google.com   1112  2 Runoob www.runoob.com   2223  3 Taobao www.taobao.com   333\nR MySQL 连接\nMySQL 是最流行的关系型数据库管理系统，在 WEB 应用方面 MySQL 是最好的 RDBMS(Relational Database Management System：关系数据库管理系统)应用软件之一。\n如果你对 MySQL 还不了解，可以先查阅：MySQL 教程\nR 语言读写 MySQL 文件需要安装扩展包，我们可以在 R 到控制台输入以下命令来安装：\n1install.packages(&quot;RMySQL&quot;, repos = &quot;https://mirrors.ustc.edu.cn/CRAN/&quot;)\n查看是否安装成功：\n12&gt; any(grepl(&quot;RMySQL&quot;,installed.packages()))[1] TRUE\nMySQL 目前被甲骨文收购，所以很多人使用来它的复制版本 MariaDB，MariaDB 在 GNU GPL下开源，MariaDB 的开发是由 MySQL 的一些原始开发者领导的，所以语法操作都差不多：\n1install.packages(&quot;RMariaDB&quot;, repos = &quot;https://mirrors.ustc.edu.cn/CRAN/&quot;)\n在 test 数据库中创建数据表 runoob，表结构及数据代码如下：\n实例\n1\\-- -- 表的结构 \\`runoob\\` \\-- CREATE TABLE \\`runoob\\` ( \\`id\\` int(11) NOT NULL, \\`name\\` char(20) NOT NULL, \\`url\\` varchar(255) NOT NULL, \\`likes\\` int(11) NOT NULL ) ENGINE\\=InnoDB DEFAULT CHARSET\\=utf8mb4; \\-- -- 转存表中的数据 \\`runoob\\` \\-- INSERT INTO \\`runoob\\` (\\`id\\`, \\`name\\`, \\`url\\`, \\`likes\\`) VALUES (1, &#x27;Google&#x27;, &#x27;www.google.com&#x27;, 111), (2, &#x27;Runoob&#x27;, &#x27;www.runoob.com&#x27;, 222), (3, &#x27;Taobao&#x27;, &#x27;www.taobao.com&#x27;, 333);\n接下来我们可以使用 RMySQL 包来读取数据：\n实例\n1234567library(RMySQL)\\# dbname 为数据库名，这边的参数请根据自己实际情况填写  mysqlconnection \\= dbConnect(MySQL(), user \\= &#x27;root&#x27;, password \\= &#x27;&#x27;, dbname \\= &#x27;test&#x27;,host \\= &#x27;localhost&#x27;)\\# 查看数据  dbListTables(mysqlconnection)\n接下来我们可以使用 dbSendQuery 来读取数据库的表，结果集通过 fetch() 函数来获取：\n实例\n1234567library(RMySQL)  \\# 查询 sites 表，增删改查操作可以通过第二个参数的 SQL 语句来实现  result \\= dbSendQuery(mysqlconnection, &quot;select \\* from sites&quot;)\\# 获取前面两行数据  data.frame \\= fetch(result, n \\= 2)  print(data.frame)\n","dateCreated":"2013-05-01T22:06:40+08:00","dateModified":"2025-05-20T17:25:12+08:00","datePublished":"2013-05-01T22:06:40+08:00","description":"","headline":"R语言-读取数据","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/","keywords":"R语言"}</script>
     <meta name="description" content="R CSV 文件 R 作为统计学专业工具，如果只能人工的导入和导出数据将使其功能变得没有意义，所以 R 支持批量的从主流的表格存储格式文件（例如 CSV、Excel、XML 等）中获取数据。 CSV 表格交互 CSV（Comma-Separated Values，CSV，有时也称为字符分隔值，因为分隔字符也可以不是逗号） 是一种非常流行的表格存储文件格式，这种格式适合储存中型或小型数据规模的数据。">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="R语言-读取数据">
-<meta property="og:url" content="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/index.html">
+<meta property="og:url" content="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="R CSV 文件 R 作为统计学专业工具，如果只能人工的导入和导出数据将使其功能变得没有意义，所以 R 支持批量的从主流的表格存储格式文件（例如 CSV、Excel、XML 等）中获取数据。 CSV 表格交互 CSV（Comma-Separated Values，CSV，有时也称为字符分隔值，因为分隔字符也可以不是逗号） 是一种非常流行的表格存储文件格式，这种格式适合储存中型或小型数据规模的数据。">
 <meta property="og:locale" content="zh_TW">
@@ -55,7 +55,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -538,7 +538,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -549,7 +549,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -562,7 +562,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -575,7 +575,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -588,7 +588,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -601,7 +601,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -666,7 +666,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -677,7 +677,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -690,7 +690,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -703,7 +703,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -716,7 +716,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -729,7 +729,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -750,7 +750,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -763,7 +763,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -776,7 +776,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -789,7 +789,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -865,7 +865,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -888,7 +888,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -911,7 +911,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -934,7 +934,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -957,7 +957,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -980,7 +980,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1003,7 +1003,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1026,7 +1026,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1049,7 +1049,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1072,7 +1072,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

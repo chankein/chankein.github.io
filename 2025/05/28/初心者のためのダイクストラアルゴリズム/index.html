@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"ダイクストラのアルゴリズムってあるじゃないですか？名前も覚えにくいしそもそも重み付きグラフの最短経路問題とか実務で実装することそうそうないのですぐ忘れちゃうんですよね。。。\nダイクストラアルゴリズムとは\nダイクストラアルゴリズムとはグラフの最短経路を求めるアルゴリズムです。名前だけは聞いたことのある方も多いかと思います。やってることはイージーでシンプルなんですが少しとっつきにくいですが一つ一つ理解していけば割とわかりやすいアルゴリズムです。\n重み付き出ない、迷路の探索などは幅優先探索で解けるのですが、各辺に重みがついてる場合は結局全通りを計算しないといけないことになります。全ての頂点を一回だけ通るとして、辺E個あるとすればO(E!)となり計算量は爆発してしまします。\nこれだと計算するにも少し厳しいです。\nそんな問題を効率的にといてくれるアルゴリズムそれがダイクストラアルゴリズムです。\nちなみに各辺のコストは非負の値(0以上)でなければなりません。負の数が含まれてる場合はベルマン-フォード法などを使用することになります。\n手順\nダイクストラ法の手順はかなり単純です。\n\n始点に最短距離0を設定する\nまだ辿ってない点の中から最短距離が分かっていて最も距離が短い頂点に移動する\nその頂点から繋がっている頂点の最短距離を設定する。この時にその頂点の最短距離を更新できるなら更新する。\nこれを全ての頂点の最短距離をわかるまで行う\n\nさてと言われても少し難しいと思いますので、実例をみていきましょう。\n例\nなんともアナログな手法ですが一番表現できたので。。。\n以下のような図の最短経路を考えていきます。\n\n緑が最短経路が確定して移動ずみの頂点となります。赤が起点となる頂点です。各頂点の数字はその時の最短経路となります\n\nさてみていただくと分かるようにスタート地点から順番にその時点での最短の頂点に移動してそこからまた隣り合う頂点の最短経路を計算しているのが分かるかと思います。\n実装\nさて実装に入っていきましょう。\n上の手順を愚直に実装してみます。\n1234567891011121314151617181920212223242526272829303132333435363738function main(nodes) &#123;    const start = nodes[0]    // 訪問済みの頂点を記録    const visited = new Set()    const routesFromStart = new Map()     // 始点からの距離の記録    routesFromStart.set(start, &#123;distance: 0&#125;)    for(const n of nodes) &#123;        if(n != start) &#123;            // スタート以外の全ての頂点に無限大を代入            routesFromStart.set(n, &#123;distance: Number.MAX_VALUE&#125;)        &#125;    &#125;    let current = start    let routes = new Map()    while(current != null) &#123;        visited.add(current)        for(const edge of current.edges) &#123;             // その頂点から隣り合う頂点の最短距離を計算して、計算済みの値より低ければ更新            if(edge.cost + routesFromStart.get(current).distance &lt; routesFromStart.get(edge.to).distance) &#123;                routesFromStart.set(edge.to, &#123;distance: edge.cost + routesFromStart.get(current).distance&#125;)                routes.set(current, edge.to)            &#125;        &#125;        let cheapestNodeDistance = Number.MAX_VALUE        current = null        // 訪問してない最短距離を計算済みの頂点の中から最小の頂点を選ぶ        for(const city of routesFromStart.keys()) &#123;            if(!visited.has(city) &amp;&amp; cheapestNodeDistance &gt; routesFromStart.get(city).distance)&#123;                cheapestNodeDistance = routesFromStart.get(city).distance                current = city            &#125;        &#125;    &#125;    return routesFromStart.get(nodes[nodes.length - 1]).distance&#125;\nこのコードは各頂点をVとすると最大で各辺の個数を回るループの中で中で最小の頂点を選ぶためのループを回してるので計算量はO(V^2 + E)メモリについては各頂点分の記録を行わないといけないのでO(V)となります。\nPriority Queueを用いた実装について\nさて感のいい人ならお気づきになったかもしれませんが、このコード実は最小の頂点を決めるロジックを最適化することができます。それが優先度付きキューです。\n優先度付きキューは挿入、取り出しにO(logN)の計算量が必要となりますが、最小の頂点を決める際の計算量が線形の探索より早くなります。\nPriority QueueはJavaScriptには標準で実装はされてないので、Pythonでの実装です。\n1234567891011121314151617181920212223242526272829def dijkstra(nodes):    start_node = nodes[0]    routes_from_start = &#123;n: math.inf for n in nodes&#125;    # 最初の頂点にゼロを設定    routes_from_start[start_node] = 0        minHeap = []    # 最初の頂点を追加    heappush(minHeap, (0, start_node))    # ヒープがなくなるまで探索    while minHeap:        (cost, current_node) = heappop(minHeap)        # priority keyは重複するのでここでチェックする        if cost &gt; routes_from_start[current_node]:            continue        for node in current_node.routes:            price_info = current_node.routes[node]            if routes_from_start[node] &gt; price_info + routes_from_start[current_node]:                routes_from_start[node] = price_info + routes_from_start[current_node]                # 更新されたらpriorityに値を追加                heappush(minHeap, (price_info + routes_from_start[current_node], node))    return routes_from_start[nodes[-1]]\nPriority Queueの説明はまたの機会にしましょう。\nより計算効率がよく各頂点V, 各辺をVとするとVをmapに設定するO(V)とEの回数分heapを操作するのでO(ElogE)。の合計O(V + ElogE)で求まることがわかります。これは最初のアルゴリズムより効率的です。\n経路を記憶する\nさて最短のコストはわかりました。しかしこの問題は&quot;最短経路&quot;問題です。最短のコストが求まったらその経路も知りたくなるのが普通です。\n上のコードを改善してみましょう。\n123456789101112131415161718192021222324252627282930313233343536373839404142def dijkstra(nodes):    start_node = nodes[0]    routes_from_start = &#123;n: math.inf for n in nodes&#125;    # 最初の頂点にゼロを設定    routes_from_start[start_node] = 0        minHeap = []    # 最初の頂点を追加    heappush(minHeap, (0, start_node))    path = collections.defaultdict(Node)    # ヒープがなくなるまで探索    while minHeap:        (cost, current_node) = heappop(minHeap)        # priority keyは重複するのでここでチェックする        if cost &gt; routes_from_start[current_node]:            continue        for node in current_node.routes:            price_info = current_node.routes[node]            if routes_from_start[node] &gt; price_info + routes_from_start[current_node]:                routes_from_start[node] = price_info + routes_from_start[current_node]                # 最短距離を更新するノードを記録する                path[node.id] = current_node.id                # 更新されたらpriorityに値を追加                heappush(minHeap, (price_info + routes_from_start[current_node], node))    current_node = nodes[-1].id    path_array = []    #最短距離を記録したノードをゴールからたどる    while current_node:        path_array.append(current_node)        if current_node not in path:            break        current_node = path[current_node]    return routes_from_start[nodes[-1]], path_array[::-1]\nダイクストラアルゴリズムでは最短距離を更新するノードが分かるのでそれを記録して最後に辿ればよいことになります。\n計算量は最短距離のノードの数分増えてしまうことになります。\nところでなんでこれで最短経路が求まるのか\nさてここまでみてきて多くの人はこう思ったのではないでしょうか？確かにアルゴリズムは簡単だしそれを実装するのもそんなに難しくはない。でもなんで最短距離が求まるの？軽く確認していきましょう\n\nLに入っている頂点はスタートSからの最短距離であると仮定して、そこから繋がる最短の頂点がまたSから最短距離であることを言えたら良さそうですね。\n\n\nさてTに含まれるうちの最短の頂点に移動するので、最小の点をiとするとd[i] = min(T)ですよね。\nさてここで各頂点をkとすると最短距離d[k] は d[k] &gt;= d[i]であることは確定しますよね。d[i] は最小の点であり、各頂点は非負なので。\nと次々やっていくと帰納法的に証明できます。\nさてこれってよく考えたら漸化式ですよね。\nd[i] = min(k ⊂ T) + iに隣接するLの頂点の最短距離\n漸化式の時には動的計画法が\n漸化式ときたらDPですよね。DPについてはこの記事がすごく参考になります(https://qiita.com/drken/items/a5e6fe22863b7992efdb)\nではDPならどういう風に値が更新されていくかというと\n\nこのような感じで値が更新されていきます。縦軸は試行の回数。横軸は頂点です。\nなんだダイクストラアルゴリズムはDPの一種だったんだ。\nまとめ\nさてみてきましたダイクストラのアルゴリズムですが、一回理解してしまうと結構簡単に理解できます。あとは実装してみてアルゴリズムの問題で類似の問題に当たった時にあこれはあの時の！！という感じで解いていきたいものです。\n*余談ですが僕もDPの記事書きたい\n解説したyoutubeチャンネルはこちら\nhttps://youtu.be/jz8b0q5R1Ss\n参考\nhttp://www.lab2.kuis.kyoto-u.ac.jp/~shuichi/algintro/alg-6s.pdf\nhttps://www.youtube.com/watch?v=X1AsMlJdiok\n","dateCreated":"2025-05-28T14:52:10+08:00","dateModified":"2025-05-28T14:52:38+08:00","datePublished":"2025-05-28T14:52:10+08:00","description":"","headline":"初心者のためのダイクストラアルゴリズム","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/","keywords":"算法"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"ダイクストラのアルゴリズムってあるじゃないですか？名前も覚えにくいしそもそも重み付きグラフの最短経路問題とか実務で実装することそうそうないのですぐ忘れちゃうんですよね。。。\nダイクストラアルゴリズムとは\nダイクストラアルゴリズムとはグラフの最短経路を求めるアルゴリズムです。名前だけは聞いたことのある方も多いかと思います。やってることはイージーでシンプルなんですが少しとっつきにくいですが一つ一つ理解していけば割とわかりやすいアルゴリズムです。\n重み付き出ない、迷路の探索などは幅優先探索で解けるのですが、各辺に重みがついてる場合は結局全通りを計算しないといけないことになります。全ての頂点を一回だけ通るとして、辺E個あるとすればO(E!)となり計算量は爆発してしまします。\nこれだと計算するにも少し厳しいです。\nそんな問題を効率的にといてくれるアルゴリズムそれがダイクストラアルゴリズムです。\nちなみに各辺のコストは非負の値(0以上)でなければなりません。負の数が含まれてる場合はベルマン-フォード法などを使用することになります。\n手順\nダイクストラ法の手順はかなり単純です。\n\n始点に最短距離0を設定する\nまだ辿ってない点の中から最短距離が分かっていて最も距離が短い頂点に移動する\nその頂点から繋がっている頂点の最短距離を設定する。この時にその頂点の最短距離を更新できるなら更新する。\nこれを全ての頂点の最短距離をわかるまで行う\n\nさてと言われても少し難しいと思いますので、実例をみていきましょう。\n例\nなんともアナログな手法ですが一番表現できたので。。。\n以下のような図の最短経路を考えていきます。\n\n緑が最短経路が確定して移動ずみの頂点となります。赤が起点となる頂点です。各頂点の数字はその時の最短経路となります\n\nさてみていただくと分かるようにスタート地点から順番にその時点での最短の頂点に移動してそこからまた隣り合う頂点の最短経路を計算しているのが分かるかと思います。\n実装\nさて実装に入っていきましょう。\n上の手順を愚直に実装してみます。\n1234567891011121314151617181920212223242526272829303132333435363738function main(nodes) &#123;    const start = nodes[0]    // 訪問済みの頂点を記録    const visited = new Set()    const routesFromStart = new Map()     // 始点からの距離の記録    routesFromStart.set(start, &#123;distance: 0&#125;)    for(const n of nodes) &#123;        if(n != start) &#123;            // スタート以外の全ての頂点に無限大を代入            routesFromStart.set(n, &#123;distance: Number.MAX_VALUE&#125;)        &#125;    &#125;    let current = start    let routes = new Map()    while(current != null) &#123;        visited.add(current)        for(const edge of current.edges) &#123;             // その頂点から隣り合う頂点の最短距離を計算して、計算済みの値より低ければ更新            if(edge.cost + routesFromStart.get(current).distance &lt; routesFromStart.get(edge.to).distance) &#123;                routesFromStart.set(edge.to, &#123;distance: edge.cost + routesFromStart.get(current).distance&#125;)                routes.set(current, edge.to)            &#125;        &#125;        let cheapestNodeDistance = Number.MAX_VALUE        current = null        // 訪問してない最短距離を計算済みの頂点の中から最小の頂点を選ぶ        for(const city of routesFromStart.keys()) &#123;            if(!visited.has(city) &amp;&amp; cheapestNodeDistance &gt; routesFromStart.get(city).distance)&#123;                cheapestNodeDistance = routesFromStart.get(city).distance                current = city            &#125;        &#125;    &#125;    return routesFromStart.get(nodes[nodes.length - 1]).distance&#125;\nこのコードは各頂点をVとすると最大で各辺の個数を回るループの中で中で最小の頂点を選ぶためのループを回してるので計算量はO(V^2 + E)メモリについては各頂点分の記録を行わないといけないのでO(V)となります。\nPriority Queueを用いた実装について\nさて感のいい人ならお気づきになったかもしれませんが、このコード実は最小の頂点を決めるロジックを最適化することができます。それが優先度付きキューです。\n優先度付きキューは挿入、取り出しにO(logN)の計算量が必要となりますが、最小の頂点を決める際の計算量が線形の探索より早くなります。\nPriority QueueはJavaScriptには標準で実装はされてないので、Pythonでの実装です。\n1234567891011121314151617181920212223242526272829def dijkstra(nodes):    start_node = nodes[0]    routes_from_start = &#123;n: math.inf for n in nodes&#125;    # 最初の頂点にゼロを設定    routes_from_start[start_node] = 0        minHeap = []    # 最初の頂点を追加    heappush(minHeap, (0, start_node))    # ヒープがなくなるまで探索    while minHeap:        (cost, current_node) = heappop(minHeap)        # priority keyは重複するのでここでチェックする        if cost &gt; routes_from_start[current_node]:            continue        for node in current_node.routes:            price_info = current_node.routes[node]            if routes_from_start[node] &gt; price_info + routes_from_start[current_node]:                routes_from_start[node] = price_info + routes_from_start[current_node]                # 更新されたらpriorityに値を追加                heappush(minHeap, (price_info + routes_from_start[current_node], node))    return routes_from_start[nodes[-1]]\nPriority Queueの説明はまたの機会にしましょう。\nより計算効率がよく各頂点V, 各辺をVとするとVをmapに設定するO(V)とEの回数分heapを操作するのでO(ElogE)。の合計O(V + ElogE)で求まることがわかります。これは最初のアルゴリズムより効率的です。\n経路を記憶する\nさて最短のコストはわかりました。しかしこの問題は&quot;最短経路&quot;問題です。最短のコストが求まったらその経路も知りたくなるのが普通です。\n上のコードを改善してみましょう。\n123456789101112131415161718192021222324252627282930313233343536373839404142def dijkstra(nodes):    start_node = nodes[0]    routes_from_start = &#123;n: math.inf for n in nodes&#125;    # 最初の頂点にゼロを設定    routes_from_start[start_node] = 0        minHeap = []    # 最初の頂点を追加    heappush(minHeap, (0, start_node))    path = collections.defaultdict(Node)    # ヒープがなくなるまで探索    while minHeap:        (cost, current_node) = heappop(minHeap)        # priority keyは重複するのでここでチェックする        if cost &gt; routes_from_start[current_node]:            continue        for node in current_node.routes:            price_info = current_node.routes[node]            if routes_from_start[node] &gt; price_info + routes_from_start[current_node]:                routes_from_start[node] = price_info + routes_from_start[current_node]                # 最短距離を更新するノードを記録する                path[node.id] = current_node.id                # 更新されたらpriorityに値を追加                heappush(minHeap, (price_info + routes_from_start[current_node], node))    current_node = nodes[-1].id    path_array = []    #最短距離を記録したノードをゴールからたどる    while current_node:        path_array.append(current_node)        if current_node not in path:            break        current_node = path[current_node]    return routes_from_start[nodes[-1]], path_array[::-1]\nダイクストラアルゴリズムでは最短距離を更新するノードが分かるのでそれを記録して最後に辿ればよいことになります。\n計算量は最短距離のノードの数分増えてしまうことになります。\nところでなんでこれで最短経路が求まるのか\nさてここまでみてきて多くの人はこう思ったのではないでしょうか？確かにアルゴリズムは簡単だしそれを実装するのもそんなに難しくはない。でもなんで最短距離が求まるの？軽く確認していきましょう\n\nLに入っている頂点はスタートSからの最短距離であると仮定して、そこから繋がる最短の頂点がまたSから最短距離であることを言えたら良さそうですね。\n\n\nさてTに含まれるうちの最短の頂点に移動するので、最小の点をiとするとd[i] = min(T)ですよね。\nさてここで各頂点をkとすると最短距離d[k] は d[k] &gt;= d[i]であることは確定しますよね。d[i] は最小の点であり、各頂点は非負なので。\nと次々やっていくと帰納法的に証明できます。\nさてこれってよく考えたら漸化式ですよね。\nd[i] = min(k ⊂ T) + iに隣接するLの頂点の最短距離\n漸化式の時には動的計画法が\n漸化式ときたらDPですよね。DPについてはこの記事がすごく参考になります(https://qiita.com/drken/items/a5e6fe22863b7992efdb)\nではDPならどういう風に値が更新されていくかというと\n\nこのような感じで値が更新されていきます。縦軸は試行の回数。横軸は頂点です。\nなんだダイクストラアルゴリズムはDPの一種だったんだ。\nまとめ\nさてみてきましたダイクストラのアルゴリズムですが、一回理解してしまうと結構簡単に理解できます。あとは実装してみてアルゴリズムの問題で類似の問題に当たった時にあこれはあの時の！！という感じで解いていきたいものです。\n*余談ですが僕もDPの記事書きたい\n解説したyoutubeチャンネルはこちら\nhttps://youtu.be/jz8b0q5R1Ss\n参考\nhttp://www.lab2.kuis.kyoto-u.ac.jp/~shuichi/algintro/alg-6s.pdf\nhttps://www.youtube.com/watch?v=X1AsMlJdiok\n","dateCreated":"2025-05-28T14:52:10+08:00","dateModified":"2025-05-28T14:52:38+08:00","datePublished":"2025-05-28T14:52:10+08:00","description":"","headline":"初心者のためのダイクストラアルゴリズム","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/","keywords":"算法"}</script>
     <meta name="description" content="ダイクストラのアルゴリズムってあるじゃないですか？名前も覚えにくいしそもそも重み付きグラフの最短経路問題とか実務で実装することそうそうないのですぐ忘れちゃうんですよね。。。 ダイクストラアルゴリズムとは ダイクストラアルゴリズムとはグラフの最短経路を求めるアルゴリズムです。名前だけは聞いたことのある方も多いかと思います。やってることはイージーでシンプルなんですが少しとっつきにくいですが一つ一つ理解">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="初心者のためのダイクストラアルゴリズム">
-<meta property="og:url" content="https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/index.html">
+<meta property="og:url" content="https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="ダイクストラのアルゴリズムってあるじゃないですか？名前も覚えにくいしそもそも重み付きグラフの最短経路問題とか実務で実装することそうそうないのですぐ忘れちゃうんですよね。。。 ダイクストラアルゴリズムとは ダイクストラアルゴリズムとはグラフの最短経路を求めるアルゴリズムです。名前だけは聞いたことのある方も多いかと思います。やってることはイージーでシンプルなんですが少しとっつきにくいですが一つ一つ理解">
 <meta property="og:locale" content="zh_TW">
@@ -57,7 +57,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../assets/images/profile.jpg"/>
     
     
     
@@ -456,7 +456,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -467,7 +467,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -480,7 +480,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -493,7 +493,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -506,7 +506,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -519,7 +519,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -584,7 +584,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -595,7 +595,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -608,7 +608,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -621,7 +621,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -634,7 +634,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -647,7 +647,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -668,7 +668,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -681,7 +681,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -694,7 +694,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -707,7 +707,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2025/05/28/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E3%81%9F%E3%82%81%E3%81%AE%E3%83%80%E3%82%A4%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -783,7 +783,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -806,7 +806,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -829,7 +829,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -852,7 +852,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -875,7 +875,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -898,7 +898,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -921,7 +921,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -944,7 +944,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -967,7 +967,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -990,7 +990,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

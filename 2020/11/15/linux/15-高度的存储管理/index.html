@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. RAID (冗余磁盘阵列)\nRAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。\nLinux 上的 RAID\n在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。\nRAID 各个等级：\n\n\nRAID 0 (条带化)\n\n多个硬盘组合成一个大磁盘，没有备份，提供较好的性能但没有容灾能力。\n示例：三台 100GB 硬盘组成一个 300GB 的 RAID 0。\n\n\n\nRAID 1 (镜像)\n\n多台硬盘写入相同数据，提供冗余备份。\n示例：三个 100GB 硬盘组成一个 100GB 的 RAID 1。\n\n\n\nRAID 4\n\n至少需要 3 台硬盘，其中一台用作备份分区。性能瓶颈在于备份分区。\n示例：三个 100GB 硬盘组成一个 200GB 的 RAID 4。\n\n\n\nRAID 5\n\n使用分布式备份技术，性能较 RAID 4 好，且不需要专门的备份硬盘。\n示例：三个 100GB 硬盘组成一个 200GB 的 RAID 5。\n\n\n\n其他 RAID 等级：\n\nRAID LINEAR：类似 RAID 0。\nRAID 0+1 (RAID01)：RAID 0 组成的 RAID 1。\nRAID 10 (RAID+0)：RAID 1 组成的 RAID 0。\nRAID 6：比 RAID 5 多一台备份区。\n\n\n\nmdadm 命令控制 RAID 阵列\nmdadm [option] [设备名]\n常用选项：\n\n\n\n选项\n描述\n\n\n\n\n-C, --create\n创建 RAID 阵列并生成相关设备\n\n\n-a\n自动生成必要的设备文件\n\n\n-c\n指定 Chunk 大小\n\n\n-l, --level\n指定 RAID 级别\n\n\n-n, --raid-devices\n指定 RAID 阵列中的设备数量\n\n\n-x, --spare-devices\n指定备用设备数量\n\n\n--manage\n管理 RAID 阵列\n\n\n-a, --add\n添加设备\n\n\n-r, --remove\n删除设备\n\n\n-f, --fail\n标记设备为失效\n\n\n--query\n查询 RAID 状态\n\n\n--detail\n查看 RAID 详细状态\n\n\n--stop\n停止指定的 RAID 阵列\n\n\n--stop --scan\n停止所有 RAID 阵列\n\n\n\n\n2. LVM (逻辑卷管理)\nLVM 是 Linux 下的一种磁盘管理工具，可以灵活地管理硬盘、分区和逻辑卷。\nLVM 结构：\n\nPV (Physical Volume)：一个硬盘或一个分区作为物理空间。\nPE (Physical Extent)：PV 组成 PE。\nVG (Volume Group)：PE 组成 VG。\nLV (Logical Volume)：VG 内的 PE 分配为 LV。\n\n创建 LVM：\n\n\n准备 LVM 用的分区：\n12fdisk /dev/sdafdisk /dev/sdb\n\n\n初始化 PV：\n1pvcreate /dev/sda1 /dev/sdb1\n\n\n创建 VG：\n1vgcreate testvg /dev/sda1 /dev/sdb1\n\n\n创建 LV：\n1lvcreate -L 1G -n lv01 testvg\n\n\n创建文件系统并挂载：\n12mke2fs -j /dev/testvg/lv01mount /dev/testvg/lv01 /mnt\n\n\n管理 LVM：\n\n\n\n命令\n说明\n\n\n\n\npvdisplay\n显示物理 PV 信息\n\n\npvscan\n显示 PV 状态\n\n\npvmove\n移动 PV 中的 PE\n\n\npvremove\n删除 PV\n\n\nvgextend\n扩展 VG\n\n\nvgreduce\n缩小 VG\n\n\nvgdisplay\n显示 VG 详情\n\n\nlvdisplay\n显示 LV 详情\n\n\nlvextend\n扩展 LV\n\n\nlvreduce\n缩小 LV\n\n\nlvremove\n删除 LV\n\n\nlvcreate -s\n创建快照\n\n\n\n\n3. 访问记忆装置\n设备文件说明：\n\n\n\n设备文件\n说明\n\n\n\n\n/dev/hda\nIDE 主硬盘\n\n\n/dev/hdb\nIDE 从硬盘\n\n\n/dev/sda\n第一个 SCSI/STAT/USB 硬盘\n\n\n/dev/sdb\n第二个 SCSI/STAT/USB 硬盘\n\n\n/dev/sr0\n第一个 SCSI/STAT/USB CD/DVD\n\n\n/dev/st0\n第一个 SCSI 磁带设备\n\n\n\n硬盘管理：\nLinux 将 IDE 以外的硬盘识别为 SCSI 设备。硬盘的数据传送模式有 PIO（Programmed I/O）和 DMA（Direct Memory Access）模式。通常使用 DMA 模式。\n检查 DMA 模式：\n1hdparm -i /dev/sda\n硬盘控制：\n1hdparm -d1 /dev/sda  # 启用 DMA 模式\n使用 SCSI/STAT/USB：\n1sdparm [option] [设备文件]\n\n4. iSCSI (Internet Small Computer System Interface)\niSCSI 是基于 TCP/IP 的 SCSI 协议，可以使远程存储设备像本地设备一样使用。\niSCSI 配置步骤：\n\n\n配置 targets.conf 文件：\n123456&lt;target iqn.2014.01.com.example.lpic:target0&gt;   backing-store /dev/sdb2   initiator-address 192.168.11.2   initiator-address 192.168.11.4   incominguser centuser password&lt;/target&gt;\n\n\n启动 iSCSI target 服务：\n1service tgtd start\n\n\n使用 tgtadm 命令查看 target 状态：\n1tgtadm --mode target --op show\n\n\n使用 iscsiadm 从 initiator 查询 target：\n1iscsiadm -m discovery -t sendtargets -p 192.168.11.3\n\n\n配置认证方式：\n修改 /etc/iscsi/iscid.conf：\n123node.session.auth.authmethod = CHAPnode.session.auth.username = centusernode.session.auth.password = password\n\n\n登录 iSCSI：\n1iscsiadm -m node --login\n登录后，使用 cat /proc/partitions 查看 iSCSI 目标是否添加成功。\n\n\n","dateCreated":"2020-11-15T14:01:30+08:00","dateModified":"2025-05-12T15:05:38+08:00","datePublished":"2020-11-15T14:01:30+08:00","description":"","headline":"15.高度的存储管理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/","keywords":"linux, LPIC"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. RAID (冗余磁盘阵列)\nRAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。\nLinux 上的 RAID\n在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。\nRAID 各个等级：\n\n\nRAID 0 (条带化)\n\n多个硬盘组合成一个大磁盘，没有备份，提供较好的性能但没有容灾能力。\n示例：三台 100GB 硬盘组成一个 300GB 的 RAID 0。\n\n\n\nRAID 1 (镜像)\n\n多台硬盘写入相同数据，提供冗余备份。\n示例：三个 100GB 硬盘组成一个 100GB 的 RAID 1。\n\n\n\nRAID 4\n\n至少需要 3 台硬盘，其中一台用作备份分区。性能瓶颈在于备份分区。\n示例：三个 100GB 硬盘组成一个 200GB 的 RAID 4。\n\n\n\nRAID 5\n\n使用分布式备份技术，性能较 RAID 4 好，且不需要专门的备份硬盘。\n示例：三个 100GB 硬盘组成一个 200GB 的 RAID 5。\n\n\n\n其他 RAID 等级：\n\nRAID LINEAR：类似 RAID 0。\nRAID 0+1 (RAID01)：RAID 0 组成的 RAID 1。\nRAID 10 (RAID+0)：RAID 1 组成的 RAID 0。\nRAID 6：比 RAID 5 多一台备份区。\n\n\n\nmdadm 命令控制 RAID 阵列\nmdadm [option] [设备名]\n常用选项：\n\n\n\n选项\n描述\n\n\n\n\n-C, --create\n创建 RAID 阵列并生成相关设备\n\n\n-a\n自动生成必要的设备文件\n\n\n-c\n指定 Chunk 大小\n\n\n-l, --level\n指定 RAID 级别\n\n\n-n, --raid-devices\n指定 RAID 阵列中的设备数量\n\n\n-x, --spare-devices\n指定备用设备数量\n\n\n--manage\n管理 RAID 阵列\n\n\n-a, --add\n添加设备\n\n\n-r, --remove\n删除设备\n\n\n-f, --fail\n标记设备为失效\n\n\n--query\n查询 RAID 状态\n\n\n--detail\n查看 RAID 详细状态\n\n\n--stop\n停止指定的 RAID 阵列\n\n\n--stop --scan\n停止所有 RAID 阵列\n\n\n\n\n2. LVM (逻辑卷管理)\nLVM 是 Linux 下的一种磁盘管理工具，可以灵活地管理硬盘、分区和逻辑卷。\nLVM 结构：\n\nPV (Physical Volume)：一个硬盘或一个分区作为物理空间。\nPE (Physical Extent)：PV 组成 PE。\nVG (Volume Group)：PE 组成 VG。\nLV (Logical Volume)：VG 内的 PE 分配为 LV。\n\n创建 LVM：\n\n\n准备 LVM 用的分区：\n12fdisk /dev/sdafdisk /dev/sdb\n\n\n初始化 PV：\n1pvcreate /dev/sda1 /dev/sdb1\n\n\n创建 VG：\n1vgcreate testvg /dev/sda1 /dev/sdb1\n\n\n创建 LV：\n1lvcreate -L 1G -n lv01 testvg\n\n\n创建文件系统并挂载：\n12mke2fs -j /dev/testvg/lv01mount /dev/testvg/lv01 /mnt\n\n\n管理 LVM：\n\n\n\n命令\n说明\n\n\n\n\npvdisplay\n显示物理 PV 信息\n\n\npvscan\n显示 PV 状态\n\n\npvmove\n移动 PV 中的 PE\n\n\npvremove\n删除 PV\n\n\nvgextend\n扩展 VG\n\n\nvgreduce\n缩小 VG\n\n\nvgdisplay\n显示 VG 详情\n\n\nlvdisplay\n显示 LV 详情\n\n\nlvextend\n扩展 LV\n\n\nlvreduce\n缩小 LV\n\n\nlvremove\n删除 LV\n\n\nlvcreate -s\n创建快照\n\n\n\n\n3. 访问记忆装置\n设备文件说明：\n\n\n\n设备文件\n说明\n\n\n\n\n/dev/hda\nIDE 主硬盘\n\n\n/dev/hdb\nIDE 从硬盘\n\n\n/dev/sda\n第一个 SCSI/STAT/USB 硬盘\n\n\n/dev/sdb\n第二个 SCSI/STAT/USB 硬盘\n\n\n/dev/sr0\n第一个 SCSI/STAT/USB CD/DVD\n\n\n/dev/st0\n第一个 SCSI 磁带设备\n\n\n\n硬盘管理：\nLinux 将 IDE 以外的硬盘识别为 SCSI 设备。硬盘的数据传送模式有 PIO（Programmed I/O）和 DMA（Direct Memory Access）模式。通常使用 DMA 模式。\n检查 DMA 模式：\n1hdparm -i /dev/sda\n硬盘控制：\n1hdparm -d1 /dev/sda  # 启用 DMA 模式\n使用 SCSI/STAT/USB：\n1sdparm [option] [设备文件]\n\n4. iSCSI (Internet Small Computer System Interface)\niSCSI 是基于 TCP/IP 的 SCSI 协议，可以使远程存储设备像本地设备一样使用。\niSCSI 配置步骤：\n\n\n配置 targets.conf 文件：\n123456&lt;target iqn.2014.01.com.example.lpic:target0&gt;   backing-store /dev/sdb2   initiator-address 192.168.11.2   initiator-address 192.168.11.4   incominguser centuser password&lt;/target&gt;\n\n\n启动 iSCSI target 服务：\n1service tgtd start\n\n\n使用 tgtadm 命令查看 target 状态：\n1tgtadm --mode target --op show\n\n\n使用 iscsiadm 从 initiator 查询 target：\n1iscsiadm -m discovery -t sendtargets -p 192.168.11.3\n\n\n配置认证方式：\n修改 /etc/iscsi/iscid.conf：\n123node.session.auth.authmethod = CHAPnode.session.auth.username = centusernode.session.auth.password = password\n\n\n登录 iSCSI：\n1iscsiadm -m node --login\n登录后，使用 cat /proc/partitions 查看 iSCSI 目标是否添加成功。\n\n\n","dateCreated":"2020-11-15T14:01:30+08:00","dateModified":"2025-05-12T15:05:38+08:00","datePublished":"2020-11-15T14:01:30+08:00","description":"","headline":"15.高度的存储管理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/","keywords":"linux, LPIC"}</script>
     <meta name="description" content="1. RAID (冗余磁盘阵列) RAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。 Linux 上的 RAID 在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。 RAID 各个等级：   RAID 0 (条带化)  多个硬盘组合成一个大磁">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="15.高度的存储管理">
-<meta property="og:url" content="https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/index.html">
+<meta property="og:url" content="https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="1. RAID (冗余磁盘阵列) RAID（Redundant Arrays of Inexpensive Disks）是一种将多个硬盘组合以提高性能或数据冗余的技术。 Linux 上的 RAID 在 Linux 上应用 RAID，有软件 RAID 和硬件 RAID 之分。通常，硬件 RAID 会被视作 SCSI 设备。 RAID 各个等级：   RAID 0 (条带化)  多个硬盘组合成一个大磁">
 <meta property="og:locale" content="zh_TW">
@@ -51,7 +51,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -666,7 +666,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -677,7 +677,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -690,7 +690,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -703,7 +703,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -716,7 +716,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -729,7 +729,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -794,7 +794,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -805,7 +805,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -818,7 +818,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -831,7 +831,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -844,7 +844,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -857,7 +857,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -878,7 +878,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -891,7 +891,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -904,7 +904,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -917,7 +917,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/11/15/linux/15-%E9%AB%98%E5%BA%A6%E7%9A%84%E5%AD%98%E5%82%A8%E7%AE%A1%E7%90%86/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -993,7 +993,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -1016,7 +1016,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -1039,7 +1039,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -1062,7 +1062,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -1085,7 +1085,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -1108,7 +1108,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1131,7 +1131,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1154,7 +1154,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1177,7 +1177,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1200,7 +1200,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

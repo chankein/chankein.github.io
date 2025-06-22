@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"# Docker 数据管理\n\n这一章介绍如何在 Docker 内部以及容器之间管理数据，在容器中管理数据主要有两种方式：\n\n\n数据卷（Volumes）\n\n\n挂载主机目录 (Bind mounts)\n\n\n# 数据卷\n数据卷 是一个可供一个或多个容器使用的特殊目录，它绕过 UFS，可以提供很多有用的特性：\n\n\n数据卷 可以在容器之间共享和重用\n\n\n对 数据卷 的修改会立马生效\n\n\n对 数据卷 的更新，不会影响镜像\n\n\n数据卷 默认会一直存在，即使容器被删除\n\n\n\n注意：数据卷 的使用，类似于 Linux 下对目录或文件进行 mount，镜像中的被指定为挂载点的目录中的文件会复制到数据卷中（仅数据卷为空时会复制）。\n\n# 创建一个数据卷\n1$ docker volume create my-vol\n查看所有的 数据卷\n1234$ docker volume lsDRIVER              VOLUME NAMElocal               my-vol\n在主机里使用以下命令可以查看指定 数据卷 的信息\n1234567891011$ docker volume inspect my-vol[    &#123;        &quot;Driver&quot;: &quot;local&quot;,        &quot;Labels&quot;: &#123;&#125;,        &quot;Mountpoint&quot;: &quot;/var/lib/docker/volumes/my-vol/_data&quot;,        &quot;Name&quot;: &quot;my-vol&quot;,        &quot;Options&quot;: &#123;&#125;,        &quot;Scope&quot;: &quot;local&quot;    &#125;]\n# 启动一个挂载数据卷的容器\n在用 docker run 命令的时候，使用 --mount 标记来将 数据卷 挂载到容器里。在一次 docker run 中可以挂载多个 数据卷。\n下面创建一个名为 web 的容器，并加载一个 数据卷 到容器的 /usr/share/nginx/html 目录。\n12345$ docker run -d -P \\    --name web \\    # -v my-vol:/usr/share/nginx/html \\    --mount source=my-vol,target=/usr/share/nginx/html \\    nginx:alpine\n# 查看数据卷的具体信息\n在主机里使用以下命令可以查看 web 容器的信息\n数据卷 信息在 “Mounts” Key 下面\n123456789101112&quot;Mounts&quot;: [    &#123;        &quot;Type&quot;: &quot;volume&quot;,        &quot;Name&quot;: &quot;my-vol&quot;,        &quot;Source&quot;: &quot;/var/lib/docker/volumes/my-vol/_data&quot;,        &quot;Destination&quot;: &quot;/usr/share/nginx/html&quot;,        &quot;Driver&quot;: &quot;local&quot;,        &quot;Mode&quot;: &quot;&quot;,        &quot;RW&quot;: true,        &quot;Propagation&quot;: &quot;&quot;    &#125;],\n# 删除数据卷\n1$ docker volume rm my-vol\n数据卷 是被设计用来持久化数据的，它的生命周期独立于容器，Docker 不会在容器被删除后自动删除 数据卷，并且也不存在垃圾回收这样的机制来处理没有任何容器引用的 数据卷。如果需要在删除容器的同时移除数据卷。可以在删除容器的时候使用 docker rm -v 这个命令。\n无主的数据卷可能会占据很多空间，要清理请使用以下命令\n# 挂载主机目录\n# 挂载一个主机目录作为数据卷\n使用 --mount 标记可以指定挂载一个本地主机的目录到容器中去。\n12345$ docker run -d -P \\    --name web \\    # -v /src/webapp:/usr/share/nginx/html \\    --mount type=bind,source=/src/webapp,target=/usr/share/nginx/html \\    nginx:alpine\n上面的命令加载主机的 /src/webapp 目录到容器的 /usr/share/nginx/html目录。这个功能在进行测试的时候十分方便，比如用户可以放置一些程序到本地目录中，来查看容器是否正常工作。本地目录的路径必须是绝对路径，以前使用 -v 参数时如果本地目录不存在 Docker 会自动为你创建一个文件夹，现在使用 --mount 参数时如果本地目录不存在，Docker 会报错。\nDocker 挂载主机目录的默认权限是 读写，用户也可以通过增加 readonly 指定为 只读。\n12345$ docker run -d -P \\    --name web \\    # -v /src/webapp:/usr/share/nginx/html:ro \\    --mount type=bind,source=/src/webapp,target=/usr/share/nginx/html,readonly \\    nginx:alpine\n加了 readonly 之后，就挂载为 只读 了。如果你在容器内 /usr/share/nginx/html 目录新建文件，会显示如下错误\n12/usr/share/nginx/html # touch new.txttouch: new.txt: Read-only file system\n# 查看数据卷的具体信息\n在主机里使用以下命令可以查看 web 容器的信息\n挂载主机目录 的配置信息在 “Mounts” Key 下面\n12345678910&quot;Mounts&quot;: [    &#123;        &quot;Type&quot;: &quot;bind&quot;,        &quot;Source&quot;: &quot;/src/webapp&quot;,        &quot;Destination&quot;: &quot;/usr/share/nginx/html&quot;,        &quot;Mode&quot;: &quot;&quot;,        &quot;RW&quot;: true,        &quot;Propagation&quot;: &quot;rprivate&quot;    &#125;],\n# 挂载一个本地主机文件作为数据卷\n--mount 标记也可以从主机挂载单个文件到容器中\n123456789$ docker run --rm -it \\   # -v $HOME/.bash_history:/root/.bash_history \\   --mount type=bind,source=$HOME/.bash_history,target=/root/.bash_history \\   ubuntu:18.04 \\   bashroot@2affd44b4667:/# history1  ls2  diskutil list\n这样就可以记录在容器输入过的命令了。\n","dateCreated":"2018-04-08T16:02:39+08:00","dateModified":"2025-06-16T10:22:24+08:00","datePublished":"2018-04-08T16:02:39+08:00","description":"","headline":"7.Docker 数据管理(Docker详细教程)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/","keywords":"Docker"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"# Docker 数据管理\n\n这一章介绍如何在 Docker 内部以及容器之间管理数据，在容器中管理数据主要有两种方式：\n\n\n数据卷（Volumes）\n\n\n挂载主机目录 (Bind mounts)\n\n\n# 数据卷\n数据卷 是一个可供一个或多个容器使用的特殊目录，它绕过 UFS，可以提供很多有用的特性：\n\n\n数据卷 可以在容器之间共享和重用\n\n\n对 数据卷 的修改会立马生效\n\n\n对 数据卷 的更新，不会影响镜像\n\n\n数据卷 默认会一直存在，即使容器被删除\n\n\n\n注意：数据卷 的使用，类似于 Linux 下对目录或文件进行 mount，镜像中的被指定为挂载点的目录中的文件会复制到数据卷中（仅数据卷为空时会复制）。\n\n# 创建一个数据卷\n1$ docker volume create my-vol\n查看所有的 数据卷\n1234$ docker volume lsDRIVER              VOLUME NAMElocal               my-vol\n在主机里使用以下命令可以查看指定 数据卷 的信息\n1234567891011$ docker volume inspect my-vol[    &#123;        &quot;Driver&quot;: &quot;local&quot;,        &quot;Labels&quot;: &#123;&#125;,        &quot;Mountpoint&quot;: &quot;/var/lib/docker/volumes/my-vol/_data&quot;,        &quot;Name&quot;: &quot;my-vol&quot;,        &quot;Options&quot;: &#123;&#125;,        &quot;Scope&quot;: &quot;local&quot;    &#125;]\n# 启动一个挂载数据卷的容器\n在用 docker run 命令的时候，使用 --mount 标记来将 数据卷 挂载到容器里。在一次 docker run 中可以挂载多个 数据卷。\n下面创建一个名为 web 的容器，并加载一个 数据卷 到容器的 /usr/share/nginx/html 目录。\n12345$ docker run -d -P \\    --name web \\    # -v my-vol:/usr/share/nginx/html \\    --mount source=my-vol,target=/usr/share/nginx/html \\    nginx:alpine\n# 查看数据卷的具体信息\n在主机里使用以下命令可以查看 web 容器的信息\n数据卷 信息在 “Mounts” Key 下面\n123456789101112&quot;Mounts&quot;: [    &#123;        &quot;Type&quot;: &quot;volume&quot;,        &quot;Name&quot;: &quot;my-vol&quot;,        &quot;Source&quot;: &quot;/var/lib/docker/volumes/my-vol/_data&quot;,        &quot;Destination&quot;: &quot;/usr/share/nginx/html&quot;,        &quot;Driver&quot;: &quot;local&quot;,        &quot;Mode&quot;: &quot;&quot;,        &quot;RW&quot;: true,        &quot;Propagation&quot;: &quot;&quot;    &#125;],\n# 删除数据卷\n1$ docker volume rm my-vol\n数据卷 是被设计用来持久化数据的，它的生命周期独立于容器，Docker 不会在容器被删除后自动删除 数据卷，并且也不存在垃圾回收这样的机制来处理没有任何容器引用的 数据卷。如果需要在删除容器的同时移除数据卷。可以在删除容器的时候使用 docker rm -v 这个命令。\n无主的数据卷可能会占据很多空间，要清理请使用以下命令\n# 挂载主机目录\n# 挂载一个主机目录作为数据卷\n使用 --mount 标记可以指定挂载一个本地主机的目录到容器中去。\n12345$ docker run -d -P \\    --name web \\    # -v /src/webapp:/usr/share/nginx/html \\    --mount type=bind,source=/src/webapp,target=/usr/share/nginx/html \\    nginx:alpine\n上面的命令加载主机的 /src/webapp 目录到容器的 /usr/share/nginx/html目录。这个功能在进行测试的时候十分方便，比如用户可以放置一些程序到本地目录中，来查看容器是否正常工作。本地目录的路径必须是绝对路径，以前使用 -v 参数时如果本地目录不存在 Docker 会自动为你创建一个文件夹，现在使用 --mount 参数时如果本地目录不存在，Docker 会报错。\nDocker 挂载主机目录的默认权限是 读写，用户也可以通过增加 readonly 指定为 只读。\n12345$ docker run -d -P \\    --name web \\    # -v /src/webapp:/usr/share/nginx/html:ro \\    --mount type=bind,source=/src/webapp,target=/usr/share/nginx/html,readonly \\    nginx:alpine\n加了 readonly 之后，就挂载为 只读 了。如果你在容器内 /usr/share/nginx/html 目录新建文件，会显示如下错误\n12/usr/share/nginx/html # touch new.txttouch: new.txt: Read-only file system\n# 查看数据卷的具体信息\n在主机里使用以下命令可以查看 web 容器的信息\n挂载主机目录 的配置信息在 “Mounts” Key 下面\n12345678910&quot;Mounts&quot;: [    &#123;        &quot;Type&quot;: &quot;bind&quot;,        &quot;Source&quot;: &quot;/src/webapp&quot;,        &quot;Destination&quot;: &quot;/usr/share/nginx/html&quot;,        &quot;Mode&quot;: &quot;&quot;,        &quot;RW&quot;: true,        &quot;Propagation&quot;: &quot;rprivate&quot;    &#125;],\n# 挂载一个本地主机文件作为数据卷\n--mount 标记也可以从主机挂载单个文件到容器中\n123456789$ docker run --rm -it \\   # -v $HOME/.bash_history:/root/.bash_history \\   --mount type=bind,source=$HOME/.bash_history,target=/root/.bash_history \\   ubuntu:18.04 \\   bashroot@2affd44b4667:/# history1  ls2  diskutil list\n这样就可以记录在容器输入过的命令了。\n","dateCreated":"2018-04-08T16:02:39+08:00","dateModified":"2025-06-16T10:22:24+08:00","datePublished":"2018-04-08T16:02:39+08:00","description":"","headline":"7.Docker 数据管理(Docker详细教程)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/","keywords":"Docker"}</script>
     <meta name="description" content="# Docker 数据管理  这一章介绍如何在 Docker 内部以及容器之间管理数据，在容器中管理数据主要有两种方式：   数据卷（Volumes）   挂载主机目录 (Bind mounts)   # 数据卷 数据卷 是一个可供一个或多个容器使用的特殊目录，它绕过 UFS，可以提供很多有用的特性：   数据卷 可以在容器之间共享和重用   对 数据卷 的修改会立马生效   对 数据卷 的更新，">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="7.Docker 数据管理(Docker详细教程)">
-<meta property="og:url" content="https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/index.html">
+<meta property="og:url" content="https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="# Docker 数据管理  这一章介绍如何在 Docker 内部以及容器之间管理数据，在容器中管理数据主要有两种方式：   数据卷（Volumes）   挂载主机目录 (Bind mounts)   # 数据卷 数据卷 是一个可供一个或多个容器使用的特殊目录，它绕过 UFS，可以提供很多有用的特性：   数据卷 可以在容器之间共享和重用   对 数据卷 的修改会立马生效   对 数据卷 的更新，">
 <meta property="og:locale" content="zh_TW">
@@ -52,7 +52,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -450,7 +450,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -461,7 +461,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -474,7 +474,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -487,7 +487,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -500,7 +500,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -513,7 +513,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -578,7 +578,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -589,7 +589,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -602,7 +602,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -615,7 +615,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -628,7 +628,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -641,7 +641,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -662,7 +662,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -675,7 +675,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -688,7 +688,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -701,7 +701,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/04/08/docker/7.Docker%20%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -777,7 +777,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -800,7 +800,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -823,7 +823,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -846,7 +846,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -869,7 +869,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -892,7 +892,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -915,7 +915,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -938,7 +938,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -961,7 +961,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -984,7 +984,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

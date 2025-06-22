@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"查看是否支持 SSL\n首先在 MySQL 上执行如下命令, 查询是否 MySQL 支持 SSL:\n1234567mysql&gt; SHOW VARIABLES LIKE &#x27;have_ssl&#x27;;+---------------+-------+| Variable_name | Value |+---------------+-------+| have_ssl      | YES   |+---------------+-------+1 row in set (0.02 sec)\n当 have_ssl 为 YES 时, 表示此时 MySQL 服务已经支持 SSL 了. 如果是 DESABLE, 则需要在启动 MySQL 服务时, 使能 SSL 功能.\n使用 OpenSSL 创建 SSL 证书和私钥\n首先我们需要使用 openssl 来创建服务器端的证书和私钥. 我使用的 openssl 版本为:\n12&gt;&gt;&gt; /usr/local/Cellar/openssl/1.0.2j/bin/openssl versionOpenSSL 1.0.2j  26 Sep 2016\n新建一个 ~/temp/cert 目录, 用于存放生成的证书和私钥\n12mkdir ~/temp/certcd ~/temp/cert\n创建 CA 私钥和 CA 证书\n然后, 我们先来生成一个 CA 私钥:\n1openssl genrsa 2048 &gt; ca-key.pem\n当有了一个 CA 私钥, 我们接下来就可以使用这个私钥生成一个新的数字证书:\n1openssl req -sha1 -new -x509 -nodes -days 3650 -key ca-key.pem &gt; ca-cert.pem\n执行这个命令时, 会需要填写一些问题, 随便填写就可以了. 例如:\n12345678910111213141516&gt;&gt;&gt; openssl req -sha1 -new -x509 -nodes -days 3650 -key ca-key.pem &gt; ca-cert.pemYou are about to be asked to enter information that will be incorporatedinto your certificate request.What you are about to enter is what is called a Distinguished Name or a DN.There are quite a few fields but you can leave some blankFor some fields there will be a default value,If you enter &#x27;.&#x27;, the field will be left blank.-----Country Name (2 letter code) [AU]:CNState or Province Name (full name) [Some-State]:BeijingLocality Name (eg, city) []:BeijingOrganization Name (eg, company) [Internet Widgits Pty Ltd]:xysOrganizational Unit Name (eg, section) []:xysCommon Name (e.g. server FQDN or YOUR name) []:xysEmail Address []:yongshun1228@gmail.com\n执行上述命令后, 我们就有了一个 CA 私钥和一个 CA 证书.\n创建服务器端的 RSA 私钥和数字证书\n接着, 我们需要创建服务器端的私钥和一个证书请求文件, 命令如下:\n1openssl req -sha1 -newkey rsa:2048 -days 3650 -nodes -keyout server-key.pem &gt; server-req.pem\n上面这个命令会生成一个新的私钥(server-key.pem), 同时会使用这个新私钥来生成一个证书请求文件(server-req.pem).\n上面这个命令同样需要回答几个问题, 随便填写即可. 不过需要注意的是, A challenge password 这一项需要为空.\n即:\n1234567891011121314151617181920212223242526&gt;&gt;&gt; openssl req -sha1 -newkey rsa:2048 -days 3650 -nodes -keyout server-key.pem &gt; server-req.pemGenerating a 2048 bit RSA private key.................+++..+++writing new private key to &#x27;server-key.pem&#x27;-----You are about to be asked to enter information that will be incorporatedinto your certificate request.What you are about to enter is what is called a Distinguished Name or a DN.There are quite a few fields but you can leave some blankFor some fields there will be a default value,If you enter &#x27;.&#x27;, the field will be left blank.-----Country Name (2 letter code) [AU]:CNState or Province Name (full name) [Some-State]:BeijingLocality Name (eg, city) []:BeijingOrganization Name (eg, company) [Internet Widgits Pty Ltd]:xysOrganizational Unit Name (eg, section) []:xysCommon Name (e.g. server FQDN or YOUR name) []:xysEmail Address []:yongshun1228@gmail.comPlease enter the following &#x27;extra&#x27; attributesto be sent with your certificate requestA challenge password []:An optional company name []:\n下一步, 我们需要将生成的私钥转换为 RSA 私钥文件格式:\n1openssl rsa -in server-key.pem -out server-key.pem\n最后一步, 我们需要使用原先生成的 CA 证书来生成一个服务器端的数字证书:\n1openssl x509 -sha1 -req -in server-req.pem -days 3650 -CA ca-cert.pem -CAkey ca-key.pem -set_serial 01 &gt; server-cert.pem\n上面的命令会创建以服务器端的数字证书文件.\n创建客户端的 RSA 私钥和数字证书\n和服务器端所执行的命令类似, 我们也需要为客户端生成一个私钥和证书请求文件, 命令如下:\n1openssl req -sha1 -newkey rsa:2048 -days 3650 -nodes -keyout client-key.pem &gt; client-req.pem\n同样地, 我们需要将生成的私钥转换为 RSA 私钥文件格式:\n1openssl rsa -in client-key.pem -out client-key.pem\n最后, 我们也需要为客户端创建一个数字证书:\n1openssl x509 -sha1 -req -in client-req.pem -days 3650 -CA ca-cert.pem -CAkey ca-key.pem -set_serial 01 &gt; client-cert.pem\n使用工具创建证书与私钥\n前面我们介绍了如何使用 OpenSSL 来创建 SSL 连接的私钥和证书文件, 现在我们来看一个更简单的方法.\n在 MySQL 5.7 中, 提供了一个名为 mysql_ssl_rsa_setup 的工具, 通过它, 我们可以很方便地创建 SSL 连接所需要的各种文件:\n123mkdir ~/temp/certcd ~/temp/certmysql_ssl_rsa_setup --datadir ./\n上面的命令中, --datadir 表示生成的文件的目录.\n当执行了上述命令后, 也会生成八个文件:\n12345678ca-key.pemca.pemclient-cert.pemclient-key.pemprivate_key.pempublic_key.pemserver-cert.pemserver-key.pem\n这些文件和我们使用 OpenSSL 所创建的那八个文件的作用是一样的, 这里就不再详述了.\nSSL 配置\n在前面的步骤中, 我们已经生成了8个文件, 分别是:\n\n\nca-cert.pem: CA 证书, 用于生成服务器端/客户端的数字证书.\n\n\nca-key.pem: CA 私钥, 用于生成服务器端/客户端的数字证书.\n\n\nserver-key.pem: 服务器端的 RSA 私钥\n\n\nserver-req.pem: 服务器端的证书请求文件, 用于生成服务器端的数字证书.\n\n\nserver-cert.pem: 服务器端的数字证书.\n\n\nclient-key.pem: 客户端的 RSA 私钥\n\n\nclient-req.pem: 客户端的证书请求文件, 用于生成客户端的数字证书.\n\n\nclient-cert.pem: 客户端的数字证书.\n\n\n接下来我们就需要分别配置服务器端和客户端.\n服务器端配置\n服务器端需要用到三个文件, 分别是: CA 证书, 服务器端的 RSA 私钥, 服务器端的数字证书, 我们需要在 [mysqld] 配置域下添加如下内容:\n1234[mysqld]ssl-ca=/etc/mysql/ca-cert.pemssl-cert=/etc/mysql/server-cert.pemssl-key=/etc/mysql/server-key.pem\n接着我们还可以更改 bind-address, 使 MySQL 服务可以接收来自所有 ip 地址的客户端, 即:\n1bind-address = *\n当配置好后, 我们需要重启 MySQL 服务, 使能配置.\n最后一步, 我们添加一个需要使用 SSL 才可以登录的帐号, 来验证一下我们所配置的 SSL 是否生效:\n12GRANT ALL PRIVILEGES ON *.* TO &#x27;ssl_test&#x27;@&#x27;%&#x27; IDENTIFIED BY &#x27;ssl_test&#x27; REQUIRE SSL;FLUSH PRIVILEGES;\n当配置好后, 使用 root 登录 MySQL, 执行 show variables like '%ssl%' 语句会有如下输出:\n123456789101112131415mysql&gt; show variables like &#x27;%ssl%&#x27;;+---------------+-----------------+| Variable_name | Value           |+---------------+-----------------+| have_openssl  | YES             || have_ssl      | YES             || ssl_ca        | ca.pem          || ssl_capath    |                 || ssl_cert      | server-cert.pem || ssl_cipher    |                 || ssl_crl       |                 || ssl_crlpath   |                 || ssl_key       | server-key.pem  |+---------------+-----------------+9 rows in set (0.01 sec)\n客户端配置\n客户端配置相对简单一些. 首先我们需要拷贝 ca-cert.pem, client-cert.pem 和 client-key.pem 这三个文件到客户端主机中, 然后我们可以执行如下命令来使用 SSL 连接 MySQL 服务:\n1mysql --ssl-ca=/path/to/ca-cert.pem --ssl-cert=/path/to/client-cert.pem --ssl-key=/path/to/client-key.pem -h host_name -u ssl_test -p\n除了上述的使用命令行方式配置 SSL 外, 我们也可以使用配置文件的方式. 即在 ~/.my.cnf 文件中添加如下内容即可:\n1234[client]ssl-ca=/path/to/ca-cert.pemssl-cert=/path/to/client-cert.pemssl-key=/path/to/client-key.pem\n当连接成功后, 我们执行如下指令\n1234567891011121314151617181920212223mysql&gt; \\s--------------mysql  Ver 14.14 Distrib 5.7.17, for Linux (x86_64) using  EditLine wrapperConnection id:        14Current database:Current user:        ssl_test@172.17.0.4SSL:            Cipher in use is DHE-RSA-AES256-SHACurrent pager:        stdoutUsing outfile:        &#x27;&#x27;Using delimiter:    ;Server version:        5.7.17 MySQL Community Server (GPL)Protocol version:    10Connection:        test_db via TCP/IPServer characterset:    latin1Db     characterset:    latin1Client characterset:    latin1Conn.  characterset:    latin1TCP port:        3306Uptime:            1 hour 2 min 9 secThreads: 1  Questions: 23  Slow queries: 0  Opens: 126  Flush tables: 3  Open tables: 0  Queries per second avg: 0.006--------------\n如果输出中有 SSL: Cipher in use is DHE-RSA-AES256-SHA 之类的信息, 则表示已经使用 SSL 来连接了.\n在 Docker 中使能 MySQL SSL 连接\n上面我们简单介绍了一下如果使能 MySQL SSL 连接, 那么现在我们使用 Docker 来具体的实战一把吧!\n首先拉取最新的 MySQL 镜像:\n1docker pull mysql\n然后需要准备一下挂载到 Docker 容器的目录结构:\n1234567891011121314151617&gt;&gt;&gt; cd ~/temp&gt;&gt;&gt; tree.├── cert│   ├── ca-key.pem│   ├── ca.pem│   ├── client-cert.pem│   ├── client-key.pem│   ├── private_key.pem│   ├── public_key.pem│   ├── server-cert.pem│   └── server-key.pem├── config│   └── my.cnf└── db3 directories, 9 files\n在 temp 目录下有三个子目录:\n\n\ncert 目录用于存放我们先前生成的证书和私钥信息;\n\n\nconfig 目录用于存放 MySQL 服务的配置文件\n\n\ndb 目录是用于存放 MySQL 的数据.\n\n\n下一步我们需要使用如下命令启动 MySQL 容器:\n1docker run --rm --name test_db -p 10000:3306 -e MYSQL_ROOT_PASSWORD=root -v /Users/xiongyongshun/temp/db:/var/lib/mysql -v /Users/xiongyongshun/temp/config:/etc/mysql/conf.d -v /Users/xiongyongshun/temp/cert:/etc/mysql/cert mysql:latest\n我们在上面的命令中, 我们分别挂载了 cert, config, db 这三个宿主机上的目录到 MySQL 容器中.\n启动了 MySQL 服务后, 可以先使用 root 帐号登录 MySQL, 来检查 MySQL 服务此时是否已经开启了 SSL 功能:\n1docker run -it --link test_db:test_db --rm  mysql sh -c &#x27;exec mysql -u root -p -h test_db&#x27;\n登录成功后, 我们在 MySQL 中执行如下指令:\n123456789101112131415mysql&gt; show variables like &#x27;%ssl%&#x27;;+---------------+---------------------------------+| Variable_name | Value                           |+---------------+---------------------------------+| have_openssl  | YES                             || have_ssl      | YES                             || ssl_ca        | /etc/mysql/cert/ca-cert.pem     || ssl_capath    |                                 || ssl_cert      | /etc/mysql/cert/server-cert.pem || ssl_cipher    |                                 || ssl_crl       |                                 || ssl_crlpath   |                                 || ssl_key       | /etc/mysql/cert/server-key.pem  |+---------------+---------------------------------+9 rows in set (0.01 sec)\n有上面的输出后, 表明此时 MySQL 服务已经使用 SSL 功能了.\n接着下一步, 我们按照前面所提到的, 创建一个仅仅可以使用 SSL 登录的帐号, 来检验我们的配置是否有效:\n12GRANT ALL PRIVILEGES ON *.* TO &#x27;ssl_test&#x27;@&#x27;%&#x27; IDENTIFIED BY &#x27;ssl_test&#x27; REQUIRE SSL;FLUSH PRIVILEGES;\n上面的命令创建了一个帐号名为 ssl_test, 密码为 ssl_test, 并且不限制登录主机 ip 的帐号.\n这些都配置成功后, 我们再启动一个 MySQL 客户端容器:\n1docker run -it --link test_db:test_db --rm -v /Users/xiongyongshun/temp/cert:/etc/mysql/cert mysql sh -c &#x27;exec mysql --ssl-ca=/etc/mysql/cert/ca-cert.pem --ssl-cert=/etc/mysql/cert/client-cert.pem --ssl-key=/etc/mysql/cert/client-key.pem -h test_db -u ssl_test -p&#x27;\n从上面的这个命令中我们可以看到, 启动 MySQL 客户端容器时, 我们挂载了宿主机的 cert 目录到容器内的 /etc/mysql/cert 目录, 这样在容器中就可以访问到 SSL 私钥和证书文件了. 接着我们在 MySQL 客户端命令行中, 使用 --ssl-ca, --ssl-cert, --ssl-key 这三个参数来指定 SSL 连接所需要的 CA 证书, RSA 私钥和客户端证书.\n登录成功后, 我们执行 s 命令:\n1234567891011121314151617181920212223mysql&gt; \\s--------------mysql  Ver 14.14 Distrib 5.7.17, for Linux (x86_64) using  EditLine wrapperConnection id:        5Current database:Current user:        ssl_test@172.17.0.5SSL:            Cipher in use is DHE-RSA-AES256-SHACurrent pager:        stdoutUsing outfile:        &#x27;&#x27;Using delimiter:    ;Server version:        5.7.17 MySQL Community Server (GPL)Protocol version:    10Connection:        test_db via TCP/IPServer characterset:    latin1Db     characterset:    latin1Client characterset:    latin1Conn.  characterset:    latin1TCP port:        3306Uptime:            6 min 8 secThreads: 2  Questions: 10  Slow queries: 0  Opens: 113  Flush tables: 1  Open tables: 106  Queries per second avg: 0.027--------------\n输出中有 SSL: Cipher in use is DHE-RSA-AES256-SHA 信息则说明我们确实是使用了 SSL 连接的 MySQL 服务器.\n","dateCreated":"2017-08-17T22:55:08+08:00","dateModified":"2025-06-17T10:21:43+08:00","datePublished":"2017-08-17T22:55:08+08:00","description":"","headline":"MySQL 使用 SSL 连接(附 Docker 例子)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/","keywords":"mysql"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"查看是否支持 SSL\n首先在 MySQL 上执行如下命令, 查询是否 MySQL 支持 SSL:\n1234567mysql&gt; SHOW VARIABLES LIKE &#x27;have_ssl&#x27;;+---------------+-------+| Variable_name | Value |+---------------+-------+| have_ssl      | YES   |+---------------+-------+1 row in set (0.02 sec)\n当 have_ssl 为 YES 时, 表示此时 MySQL 服务已经支持 SSL 了. 如果是 DESABLE, 则需要在启动 MySQL 服务时, 使能 SSL 功能.\n使用 OpenSSL 创建 SSL 证书和私钥\n首先我们需要使用 openssl 来创建服务器端的证书和私钥. 我使用的 openssl 版本为:\n12&gt;&gt;&gt; /usr/local/Cellar/openssl/1.0.2j/bin/openssl versionOpenSSL 1.0.2j  26 Sep 2016\n新建一个 ~/temp/cert 目录, 用于存放生成的证书和私钥\n12mkdir ~/temp/certcd ~/temp/cert\n创建 CA 私钥和 CA 证书\n然后, 我们先来生成一个 CA 私钥:\n1openssl genrsa 2048 &gt; ca-key.pem\n当有了一个 CA 私钥, 我们接下来就可以使用这个私钥生成一个新的数字证书:\n1openssl req -sha1 -new -x509 -nodes -days 3650 -key ca-key.pem &gt; ca-cert.pem\n执行这个命令时, 会需要填写一些问题, 随便填写就可以了. 例如:\n12345678910111213141516&gt;&gt;&gt; openssl req -sha1 -new -x509 -nodes -days 3650 -key ca-key.pem &gt; ca-cert.pemYou are about to be asked to enter information that will be incorporatedinto your certificate request.What you are about to enter is what is called a Distinguished Name or a DN.There are quite a few fields but you can leave some blankFor some fields there will be a default value,If you enter &#x27;.&#x27;, the field will be left blank.-----Country Name (2 letter code) [AU]:CNState or Province Name (full name) [Some-State]:BeijingLocality Name (eg, city) []:BeijingOrganization Name (eg, company) [Internet Widgits Pty Ltd]:xysOrganizational Unit Name (eg, section) []:xysCommon Name (e.g. server FQDN or YOUR name) []:xysEmail Address []:yongshun1228@gmail.com\n执行上述命令后, 我们就有了一个 CA 私钥和一个 CA 证书.\n创建服务器端的 RSA 私钥和数字证书\n接着, 我们需要创建服务器端的私钥和一个证书请求文件, 命令如下:\n1openssl req -sha1 -newkey rsa:2048 -days 3650 -nodes -keyout server-key.pem &gt; server-req.pem\n上面这个命令会生成一个新的私钥(server-key.pem), 同时会使用这个新私钥来生成一个证书请求文件(server-req.pem).\n上面这个命令同样需要回答几个问题, 随便填写即可. 不过需要注意的是, A challenge password 这一项需要为空.\n即:\n1234567891011121314151617181920212223242526&gt;&gt;&gt; openssl req -sha1 -newkey rsa:2048 -days 3650 -nodes -keyout server-key.pem &gt; server-req.pemGenerating a 2048 bit RSA private key.................+++..+++writing new private key to &#x27;server-key.pem&#x27;-----You are about to be asked to enter information that will be incorporatedinto your certificate request.What you are about to enter is what is called a Distinguished Name or a DN.There are quite a few fields but you can leave some blankFor some fields there will be a default value,If you enter &#x27;.&#x27;, the field will be left blank.-----Country Name (2 letter code) [AU]:CNState or Province Name (full name) [Some-State]:BeijingLocality Name (eg, city) []:BeijingOrganization Name (eg, company) [Internet Widgits Pty Ltd]:xysOrganizational Unit Name (eg, section) []:xysCommon Name (e.g. server FQDN or YOUR name) []:xysEmail Address []:yongshun1228@gmail.comPlease enter the following &#x27;extra&#x27; attributesto be sent with your certificate requestA challenge password []:An optional company name []:\n下一步, 我们需要将生成的私钥转换为 RSA 私钥文件格式:\n1openssl rsa -in server-key.pem -out server-key.pem\n最后一步, 我们需要使用原先生成的 CA 证书来生成一个服务器端的数字证书:\n1openssl x509 -sha1 -req -in server-req.pem -days 3650 -CA ca-cert.pem -CAkey ca-key.pem -set_serial 01 &gt; server-cert.pem\n上面的命令会创建以服务器端的数字证书文件.\n创建客户端的 RSA 私钥和数字证书\n和服务器端所执行的命令类似, 我们也需要为客户端生成一个私钥和证书请求文件, 命令如下:\n1openssl req -sha1 -newkey rsa:2048 -days 3650 -nodes -keyout client-key.pem &gt; client-req.pem\n同样地, 我们需要将生成的私钥转换为 RSA 私钥文件格式:\n1openssl rsa -in client-key.pem -out client-key.pem\n最后, 我们也需要为客户端创建一个数字证书:\n1openssl x509 -sha1 -req -in client-req.pem -days 3650 -CA ca-cert.pem -CAkey ca-key.pem -set_serial 01 &gt; client-cert.pem\n使用工具创建证书与私钥\n前面我们介绍了如何使用 OpenSSL 来创建 SSL 连接的私钥和证书文件, 现在我们来看一个更简单的方法.\n在 MySQL 5.7 中, 提供了一个名为 mysql_ssl_rsa_setup 的工具, 通过它, 我们可以很方便地创建 SSL 连接所需要的各种文件:\n123mkdir ~/temp/certcd ~/temp/certmysql_ssl_rsa_setup --datadir ./\n上面的命令中, --datadir 表示生成的文件的目录.\n当执行了上述命令后, 也会生成八个文件:\n12345678ca-key.pemca.pemclient-cert.pemclient-key.pemprivate_key.pempublic_key.pemserver-cert.pemserver-key.pem\n这些文件和我们使用 OpenSSL 所创建的那八个文件的作用是一样的, 这里就不再详述了.\nSSL 配置\n在前面的步骤中, 我们已经生成了8个文件, 分别是:\n\n\nca-cert.pem: CA 证书, 用于生成服务器端/客户端的数字证书.\n\n\nca-key.pem: CA 私钥, 用于生成服务器端/客户端的数字证书.\n\n\nserver-key.pem: 服务器端的 RSA 私钥\n\n\nserver-req.pem: 服务器端的证书请求文件, 用于生成服务器端的数字证书.\n\n\nserver-cert.pem: 服务器端的数字证书.\n\n\nclient-key.pem: 客户端的 RSA 私钥\n\n\nclient-req.pem: 客户端的证书请求文件, 用于生成客户端的数字证书.\n\n\nclient-cert.pem: 客户端的数字证书.\n\n\n接下来我们就需要分别配置服务器端和客户端.\n服务器端配置\n服务器端需要用到三个文件, 分别是: CA 证书, 服务器端的 RSA 私钥, 服务器端的数字证书, 我们需要在 [mysqld] 配置域下添加如下内容:\n1234[mysqld]ssl-ca=/etc/mysql/ca-cert.pemssl-cert=/etc/mysql/server-cert.pemssl-key=/etc/mysql/server-key.pem\n接着我们还可以更改 bind-address, 使 MySQL 服务可以接收来自所有 ip 地址的客户端, 即:\n1bind-address = *\n当配置好后, 我们需要重启 MySQL 服务, 使能配置.\n最后一步, 我们添加一个需要使用 SSL 才可以登录的帐号, 来验证一下我们所配置的 SSL 是否生效:\n12GRANT ALL PRIVILEGES ON *.* TO &#x27;ssl_test&#x27;@&#x27;%&#x27; IDENTIFIED BY &#x27;ssl_test&#x27; REQUIRE SSL;FLUSH PRIVILEGES;\n当配置好后, 使用 root 登录 MySQL, 执行 show variables like '%ssl%' 语句会有如下输出:\n123456789101112131415mysql&gt; show variables like &#x27;%ssl%&#x27;;+---------------+-----------------+| Variable_name | Value           |+---------------+-----------------+| have_openssl  | YES             || have_ssl      | YES             || ssl_ca        | ca.pem          || ssl_capath    |                 || ssl_cert      | server-cert.pem || ssl_cipher    |                 || ssl_crl       |                 || ssl_crlpath   |                 || ssl_key       | server-key.pem  |+---------------+-----------------+9 rows in set (0.01 sec)\n客户端配置\n客户端配置相对简单一些. 首先我们需要拷贝 ca-cert.pem, client-cert.pem 和 client-key.pem 这三个文件到客户端主机中, 然后我们可以执行如下命令来使用 SSL 连接 MySQL 服务:\n1mysql --ssl-ca=/path/to/ca-cert.pem --ssl-cert=/path/to/client-cert.pem --ssl-key=/path/to/client-key.pem -h host_name -u ssl_test -p\n除了上述的使用命令行方式配置 SSL 外, 我们也可以使用配置文件的方式. 即在 ~/.my.cnf 文件中添加如下内容即可:\n1234[client]ssl-ca=/path/to/ca-cert.pemssl-cert=/path/to/client-cert.pemssl-key=/path/to/client-key.pem\n当连接成功后, 我们执行如下指令\n1234567891011121314151617181920212223mysql&gt; \\s--------------mysql  Ver 14.14 Distrib 5.7.17, for Linux (x86_64) using  EditLine wrapperConnection id:        14Current database:Current user:        ssl_test@172.17.0.4SSL:            Cipher in use is DHE-RSA-AES256-SHACurrent pager:        stdoutUsing outfile:        &#x27;&#x27;Using delimiter:    ;Server version:        5.7.17 MySQL Community Server (GPL)Protocol version:    10Connection:        test_db via TCP/IPServer characterset:    latin1Db     characterset:    latin1Client characterset:    latin1Conn.  characterset:    latin1TCP port:        3306Uptime:            1 hour 2 min 9 secThreads: 1  Questions: 23  Slow queries: 0  Opens: 126  Flush tables: 3  Open tables: 0  Queries per second avg: 0.006--------------\n如果输出中有 SSL: Cipher in use is DHE-RSA-AES256-SHA 之类的信息, 则表示已经使用 SSL 来连接了.\n在 Docker 中使能 MySQL SSL 连接\n上面我们简单介绍了一下如果使能 MySQL SSL 连接, 那么现在我们使用 Docker 来具体的实战一把吧!\n首先拉取最新的 MySQL 镜像:\n1docker pull mysql\n然后需要准备一下挂载到 Docker 容器的目录结构:\n1234567891011121314151617&gt;&gt;&gt; cd ~/temp&gt;&gt;&gt; tree.├── cert│   ├── ca-key.pem│   ├── ca.pem│   ├── client-cert.pem│   ├── client-key.pem│   ├── private_key.pem│   ├── public_key.pem│   ├── server-cert.pem│   └── server-key.pem├── config│   └── my.cnf└── db3 directories, 9 files\n在 temp 目录下有三个子目录:\n\n\ncert 目录用于存放我们先前生成的证书和私钥信息;\n\n\nconfig 目录用于存放 MySQL 服务的配置文件\n\n\ndb 目录是用于存放 MySQL 的数据.\n\n\n下一步我们需要使用如下命令启动 MySQL 容器:\n1docker run --rm --name test_db -p 10000:3306 -e MYSQL_ROOT_PASSWORD=root -v /Users/xiongyongshun/temp/db:/var/lib/mysql -v /Users/xiongyongshun/temp/config:/etc/mysql/conf.d -v /Users/xiongyongshun/temp/cert:/etc/mysql/cert mysql:latest\n我们在上面的命令中, 我们分别挂载了 cert, config, db 这三个宿主机上的目录到 MySQL 容器中.\n启动了 MySQL 服务后, 可以先使用 root 帐号登录 MySQL, 来检查 MySQL 服务此时是否已经开启了 SSL 功能:\n1docker run -it --link test_db:test_db --rm  mysql sh -c &#x27;exec mysql -u root -p -h test_db&#x27;\n登录成功后, 我们在 MySQL 中执行如下指令:\n123456789101112131415mysql&gt; show variables like &#x27;%ssl%&#x27;;+---------------+---------------------------------+| Variable_name | Value                           |+---------------+---------------------------------+| have_openssl  | YES                             || have_ssl      | YES                             || ssl_ca        | /etc/mysql/cert/ca-cert.pem     || ssl_capath    |                                 || ssl_cert      | /etc/mysql/cert/server-cert.pem || ssl_cipher    |                                 || ssl_crl       |                                 || ssl_crlpath   |                                 || ssl_key       | /etc/mysql/cert/server-key.pem  |+---------------+---------------------------------+9 rows in set (0.01 sec)\n有上面的输出后, 表明此时 MySQL 服务已经使用 SSL 功能了.\n接着下一步, 我们按照前面所提到的, 创建一个仅仅可以使用 SSL 登录的帐号, 来检验我们的配置是否有效:\n12GRANT ALL PRIVILEGES ON *.* TO &#x27;ssl_test&#x27;@&#x27;%&#x27; IDENTIFIED BY &#x27;ssl_test&#x27; REQUIRE SSL;FLUSH PRIVILEGES;\n上面的命令创建了一个帐号名为 ssl_test, 密码为 ssl_test, 并且不限制登录主机 ip 的帐号.\n这些都配置成功后, 我们再启动一个 MySQL 客户端容器:\n1docker run -it --link test_db:test_db --rm -v /Users/xiongyongshun/temp/cert:/etc/mysql/cert mysql sh -c &#x27;exec mysql --ssl-ca=/etc/mysql/cert/ca-cert.pem --ssl-cert=/etc/mysql/cert/client-cert.pem --ssl-key=/etc/mysql/cert/client-key.pem -h test_db -u ssl_test -p&#x27;\n从上面的这个命令中我们可以看到, 启动 MySQL 客户端容器时, 我们挂载了宿主机的 cert 目录到容器内的 /etc/mysql/cert 目录, 这样在容器中就可以访问到 SSL 私钥和证书文件了. 接着我们在 MySQL 客户端命令行中, 使用 --ssl-ca, --ssl-cert, --ssl-key 这三个参数来指定 SSL 连接所需要的 CA 证书, RSA 私钥和客户端证书.\n登录成功后, 我们执行 s 命令:\n1234567891011121314151617181920212223mysql&gt; \\s--------------mysql  Ver 14.14 Distrib 5.7.17, for Linux (x86_64) using  EditLine wrapperConnection id:        5Current database:Current user:        ssl_test@172.17.0.5SSL:            Cipher in use is DHE-RSA-AES256-SHACurrent pager:        stdoutUsing outfile:        &#x27;&#x27;Using delimiter:    ;Server version:        5.7.17 MySQL Community Server (GPL)Protocol version:    10Connection:        test_db via TCP/IPServer characterset:    latin1Db     characterset:    latin1Client characterset:    latin1Conn.  characterset:    latin1TCP port:        3306Uptime:            6 min 8 secThreads: 2  Questions: 10  Slow queries: 0  Opens: 113  Flush tables: 1  Open tables: 106  Queries per second avg: 0.027--------------\n输出中有 SSL: Cipher in use is DHE-RSA-AES256-SHA 信息则说明我们确实是使用了 SSL 连接的 MySQL 服务器.\n","dateCreated":"2017-08-17T22:55:08+08:00","dateModified":"2025-06-17T10:21:43+08:00","datePublished":"2017-08-17T22:55:08+08:00","description":"","headline":"MySQL 使用 SSL 连接(附 Docker 例子)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/","keywords":"mysql"}</script>
     <meta name="description" content="查看是否支持 SSL 首先在 MySQL 上执行如下命令, 查询是否 MySQL 支持 SSL: 1234567mysql&gt; SHOW VARIABLES LIKE &#x27;have_ssl&#x27;;+---------------+-------+| Variable_name | Value |+---------------+-------+| have_ssl      |">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="MySQL 使用 SSL 连接(附 Docker 例子)">
-<meta property="og:url" content="https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/index.html">
+<meta property="og:url" content="https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="查看是否支持 SSL 首先在 MySQL 上执行如下命令, 查询是否 MySQL 支持 SSL: 1234567mysql&gt; SHOW VARIABLES LIKE &#x27;have_ssl&#x27;;+---------------+-------+| Variable_name | Value |+---------------+-------+| have_ssl      |">
 <meta property="og:locale" content="zh_TW">
@@ -50,7 +50,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -509,7 +509,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -520,7 +520,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -533,7 +533,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -546,7 +546,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -559,7 +559,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -572,7 +572,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -637,7 +637,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -648,7 +648,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -661,7 +661,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -674,7 +674,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -687,7 +687,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -700,7 +700,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -721,7 +721,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -734,7 +734,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -747,7 +747,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -760,7 +760,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -836,7 +836,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -859,7 +859,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -882,7 +882,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -905,7 +905,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -928,7 +928,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -951,7 +951,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -974,7 +974,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -997,7 +997,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1020,7 +1020,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1043,7 +1043,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

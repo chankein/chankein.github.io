@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"17. 摊还分析\n在摊还分析中，我们求数据结构的一个操作序列中所执行的所有操作的平均时间，来评价操作的代价。这样，我们就可以说明一个操作的平均代价是很低的，即使序列中某个单一操作的代价很高。摊还分析不同于平均情况分析，它并不涉及概率，它可以保证最坏情况下每个操作的平均性能。\n本章介绍三种摊还分析方法：\n\n聚合分析\n核算法\n势能法\n\n首先我们先看两个小问题\n栈操作\n对传统的栈操作MULTIPOP(S, k)扩展，伪代码如下，相当于做k次POP(S)\n1234MULTIPOP(S, k)1   while not STACK-EMPTY(S) and k &gt; 02       POP(S)3       k = k - 1\n如果在一个包含s个对象的栈上做MULTIPOP(S, k)操作，POP的次数为min(s, k)。\n我们来分析一个由n个PUSH/POP/MULTIPOP组成的操作序列在一个空栈上的执行情况。\nMULTIPOP的最坏代价为O(n)O(n)O(n)，那么n个操作的最坏代价是O(n2)O(n^2)O(n​2​​)吗？\n二进制计数器递增\nk位二进制计数器递增，初始值为0。用一个位数组A[0…k-1]作为计数器。当计数器保存二级制数x时，x的最低位保存在A[0]中，最高位保存在A[k-1]中，因此x=∑i=0k−1A[i]⋅2ix = \\sum\\limits_{i=0}^{k-1}A[i]\\cdot 2^ix=​i=0​∑​k−1​​A[i]⋅2​i​​。INCREMENT的伪代码如下：\n1234567INCREMENT(A)1   i = 02   while i &lt; A.length and A[i] == 13       A[i] = 04       i = i + 15   if i &lt; A.length6       A[i] = 1\n可以想象，最坏情况当k位全部是1时，INCREMENT操作要做k次翻转操作，也就是要花费Θ(k)\\Theta(k)Θ(k)时间，所以对初值为0的计数器，做n次操作的最坏情况花费O(nk)O(nk)O(nk)次操作？\n从上两个问题，我们都根据一个操作最坏情况的时间消耗推测，整个操作序列的时间消耗，显然不是一个确界。下面我们通过三种摊还分析方法来分析这两个问题中每个操作的平均代价（摊还代价）。\n聚合分析\n聚合分析——确定n个操作最坏情况的总代价T(n)T(n)T(n)，所以每个操作的平均代价为T(n)/nT(n)/nT(n)/n。\n栈操作：\n虽然单独的MULTIPOP操作可能代价很高，但在一个空栈上实行n个操作，POP和MULTIPOP操作的总消耗最多为O(n)，因为只有push进去数据，POP和MULTIPOP才会有消耗，而且PUSH操作每次只能push一个数据进来。所以n个操作最坏情况的总代价为O(n)，除以n得到每个操作的平均代价为O(1)。\n二进制计数器递增：\n下图展示了二进制计数器从0递增到16的过程，阴影部分表示递增后需要翻转的位。我们可以发现A[0]每次递增时都发生翻转，A[1]每两次递增发生一次翻转，A[2]每四次递增发生一次翻转，以此类推第i位每2i2^i2​i​​次递增发生一次翻转。也就是说n次INCREMENT操作后，第i位会翻转⌊n/2i⌋\\lfloor n/2^i\\rfloor⌊n/2​i​​⌋ 次。\n执行n次INCREMENT操作产生的总翻转次数为：\n∑i=0k−1⌊n/2i⌋&lt;n∑i=0∞12i=2n\\sum_{i=0}^{k-1}\\lfloor n/2^i\\rfloor &lt; n\\sum_{i=0}^\\infty \\frac{1}{2^i} = 2n\n​i=0​∑​k−1​​⌊n/2​i​​⌋&lt;n​i=0​∑​∞​​​2​i​​​​1​​=2n\n所以，n个INCREMENT操作的最坏情况用时为O(n)，除以n得到每个操作的平均代价为O(1)。\n\n核算法\n核算法——对不同的操作赋予不同的费用（可以大于或者小于实际的代价，但不能为负值），称其为摊还代价。当一个操作摊还代价大于实际代价时，我们将差额存起来，称其为信用/存款。后续操作如果有摊还代价小于实际代价时，我们将之前存的信用拿出一部分来抵消这里的差值。如果用cic_ic​i​​表示第i个操作的实际代价，用c^i\\hat{c}_i​c​^​​​i​​表示第i个操作的摊还代价，则对任意n个操作的序列，要求：\n∑i=1nc^i≥∑i=1nci\\sum_{i=1}^n \\hat{c}_i \\ge \\sum_{i=1}^n c_i\n​i=1​∑​n​​​c​^​​​i​​≥​i=1​∑​n​​c​i​​\n信用总能刚好抵债或者有剩余，从而使得总的摊还代价为总实际代价的上界。\n栈操作：\n栈操作的实际代价如下：\n123PUSH       1POP        1MULTIPOP   min(k, s)\n我们将栈操作的摊还代价设置为：\n123PUSH       2POP        0MULTIPOP   0\n每次PUSH操作支付1的实际代价，剩下的1存起来。存起来的钱和堆栈里的数据量相同，而POP或MULTIPOP操作的实际代价为要pop的数据量，所以存款总能保证大于等于零。\n每个操作的摊还代价都是常数，所以总的摊还代价为O(n)。\n二进制计数器递增：\n将INCREMENT中的操作分为置位操作（第6行，0-&gt;1）和复位操作（while循环中的操作，1-&gt;0）。令置位操作的摊还代价为2，复位操作的摊还代价为0。每次置位操作可以多出1存起来（存起来的钱和计数器中1的个数相同），复位操作需要预支存款，但复位操作只有当某一位是1的时候才会执行，由于计数器中1的个数永远不会为负，所以存款总能保证大于等于零。\n每个操作的摊还代价都是常数，所以总的摊还代价为O(n)。\n势能法\n势能法将数据结构和势能关联起来——对一个初始化数据结构D0D_0D​0​​执行n个操作。cic_ic​i​​为第i个操作的实际代价，DiD_iD​i​​为第i次操作后的数据结构。势函数Φ\\PhiΦ将每个数据结构DiD_iD​i​​映射到一个实数Φ(Di)\\Phi(D_i)Φ(D​i​​)，为数据结构DiD_iD​i​​的势。第i个操作的摊还代价c^i\\hat{c}_i​c​^​​​i​​用势函数D0D_0D​0​​定义为：\n\\textrm{公式1：} \\hat{c}_i = c_i + \\Phi(D_i) - \\Phi(D_{i-1})\n\n即，每个操作的摊还代价为实际代价加上操作引起的势变化。所以总摊还代价为：\n\\textrm{公式2：}\\sum_{i=1}^n \\hat{c}_i = \\sum_{i=1}^n (c_i + \\Phi(D_i) - \\Phi(D_{i-1})) = \\sum_{i=1}^n c_i + \\Phi(D_n) - \\Phi(D_{0})\n\n根据公式1可以得到每个步骤的摊还代价，从而算出总的摊还代价，然后根据公式2可以得出总实际代价的上界/下界（Φ(Dn)−Φ(D0)\\Phi(D_n) - \\Phi(D_{0})Φ(D​n​​)−Φ(D​0​​)为正数则得到上界，Φ(Dn)−Φ(D0)\\Phi(D_n) - \\Phi(D_{0})Φ(D​n​​)−Φ(D​0​​)为负数则得到下界）。\n\n\n\n``````````````\n核算法\n势能法\n\n\n\n\n摊还代价\n猜想/推测得到\n通过实际代价加势能变化得到\n\n\n思想\n较为简单\n较为抽象\n\n\n难点\n需要证明存款足以抵债\n需要考虑一个好的势函数\n\n\n优势\n考虑起来较为容易\n应用范围广，适用的场景更多\n\n\n联系\n核算法的存款往往能和势能法的势函数相对应\n势能法中计算摊还代价时，当势差为正数时相当于将势差作为存款存起来，当势差为负数时相当于要用存款中拿出部分来抵债，所以两种方法的内涵是一致的\n\n\n\n栈操作：\n将势函数定义为当前栈中的数据量。\nPUSH操作会压入一个数据，所以势差为1，而且实际代价为1，所以PUSH操作的摊还代价为2。\nPOP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x，所以POP/MULTIPOP操作的摊还代价为0。\n栈每个操作的摊还代价都是O(1)，所以n个操作的总摊还代价为O(n)。由于初始的栈为空，而结束时栈的数据量大于等于0，也就是说Φ(Dn)−Φ(D0)\\Phi(D_n) - \\Phi(D_{0})Φ(D​n​​)−Φ(D​0​​)为正数，所以n个操作的总摊还代价为总实际代价的上界O(n)。\n二进制计数器递增：\n将势函数定义为计数器中1的个数bib_ib​i​​。\n假设第i个操作将tit_it​i​​个位复位，则实际代价为ti+1t_i + 1t​i​​+1，因为还有一次置位操作。\n再来考虑摊还代价，如果bib_ib​i​​为0，则将k位都复位了，因此bi−1=ti=kb_{i-1} = t_i = kb​i−1​​=t​i​​=k。\n如果bi&gt;0b_i&gt;0b​i​​&gt;0，则bi=bi−1−ti+1b_i = b_{i-1} - t_i + 1b​i​​=b​i−1​​−t​i​​+1。无论那种情况都有bi≤bi−1−ti+1b_i \\le b_{i-1} - t_i + 1b​i​​≤b​i−1​​−t​i​​+1，所以摊还代价为：\nc^i=ci+Φ(Di)−Φ(Di−1)≤(ti+1)+(−ti+1)=2\\hat{c}_i = c_i + \\Phi(D_i) - \\Phi(D_{i-1}) \\le (t_i + 1) + (-t_i + 1) = 2\n​c​^​​​i​​=c​i​​+Φ(D​i​​)−Φ(D​i−1​​)≤(t​i​​+1)+(−t​i​​+1)=2\n所以总摊还代价的上界为O(n)，由于计数器初始状态为0，而1的个数不会为负数，所以n个操作的总摊还代价为总实际代价的上界O(n)。\n势能法的还有个优势就是，我们可以简单的得出当初始状态不是0时实际代价的上界。由公式2可得：\n∑i=1nci≤∑i=1n2−bn+b0=2n−bn+b0≤2n+b0≤2n+k\\sum_{i=1}^n c_i \\le \\sum_{i=1}^n 2 - b_n + b_0 = 2n -b_n + b_0 \\le 2n + b_0 \\le 2n + k\n​i=1​∑​n​​c​i​​≤​i=1​∑​n​​2−b​n​​+b​0​​=2n−b​n​​+b​0​​≤2n+b​0​​≤2n+k\n所以只要k=O(n)k=O(n)k=O(n)那么总实际代价就是O(n)。\n动态表\n11章介绍了散列表，我们知道散列表的大小和数据量应该是线性相关的，数据太稀疏会浪费空间，数据太稠密会浪费时间。当我们不知道会有多少数据插入时，就没办法确定散列表的大小，所以要引进动态表。\n表扩张——当插入数据时发现散列表的装载因子为1（表的大小和数据量相同），对表进行扩张，比如扩张为两倍大小，首先创建一个两倍大小的表，将原来散列表中的数据插入新创建的表中，然后插入新的数据，最后不能忘了把老的表析构。\n表收缩——当删除数据时发现散列包的装载因子小于某个值，对表进行收缩，与表的扩张类似，比如收缩为原来表大小的一半，首先删除这个数据并创建一般大小的新表，将原来散列表中的数据插入新创建的表中，然后把老的表析构。\n表收缩时判断的装载因子的选择很重要，如果表扩张选择的两倍大小，而表收缩是选择装载因子为二分之一，这时如果在表扩张后立马删除数据，又反复的插入，删除数据，这样会导致表大小的震荡。这种情况下时间机器浪费时间。\n所以我们通常可以选择该装载因子为四分之一来避免这个问题。\n无论是表扩张还是表收缩，我们都可以用平摊分析来证明动态表的插入和删除操作的平均代价还是O(1)。详细情况参考书中内容，这里不做赘述。\n","dateCreated":"2015-03-12T18:20:08+08:00","dateModified":"2025-06-02T23:17:26+08:00","datePublished":"2015-03-12T18:20:08+08:00","description":"","headline":"17. 摊还分析","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/","keywords":"算法"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"17. 摊还分析\n在摊还分析中，我们求数据结构的一个操作序列中所执行的所有操作的平均时间，来评价操作的代价。这样，我们就可以说明一个操作的平均代价是很低的，即使序列中某个单一操作的代价很高。摊还分析不同于平均情况分析，它并不涉及概率，它可以保证最坏情况下每个操作的平均性能。\n本章介绍三种摊还分析方法：\n\n聚合分析\n核算法\n势能法\n\n首先我们先看两个小问题\n栈操作\n对传统的栈操作MULTIPOP(S, k)扩展，伪代码如下，相当于做k次POP(S)\n1234MULTIPOP(S, k)1   while not STACK-EMPTY(S) and k &gt; 02       POP(S)3       k = k - 1\n如果在一个包含s个对象的栈上做MULTIPOP(S, k)操作，POP的次数为min(s, k)。\n我们来分析一个由n个PUSH/POP/MULTIPOP组成的操作序列在一个空栈上的执行情况。\nMULTIPOP的最坏代价为O(n)O(n)O(n)，那么n个操作的最坏代价是O(n2)O(n^2)O(n​2​​)吗？\n二进制计数器递增\nk位二进制计数器递增，初始值为0。用一个位数组A[0…k-1]作为计数器。当计数器保存二级制数x时，x的最低位保存在A[0]中，最高位保存在A[k-1]中，因此x=∑i=0k−1A[i]⋅2ix = \\sum\\limits_{i=0}^{k-1}A[i]\\cdot 2^ix=​i=0​∑​k−1​​A[i]⋅2​i​​。INCREMENT的伪代码如下：\n1234567INCREMENT(A)1   i = 02   while i &lt; A.length and A[i] == 13       A[i] = 04       i = i + 15   if i &lt; A.length6       A[i] = 1\n可以想象，最坏情况当k位全部是1时，INCREMENT操作要做k次翻转操作，也就是要花费Θ(k)\\Theta(k)Θ(k)时间，所以对初值为0的计数器，做n次操作的最坏情况花费O(nk)O(nk)O(nk)次操作？\n从上两个问题，我们都根据一个操作最坏情况的时间消耗推测，整个操作序列的时间消耗，显然不是一个确界。下面我们通过三种摊还分析方法来分析这两个问题中每个操作的平均代价（摊还代价）。\n聚合分析\n聚合分析——确定n个操作最坏情况的总代价T(n)T(n)T(n)，所以每个操作的平均代价为T(n)/nT(n)/nT(n)/n。\n栈操作：\n虽然单独的MULTIPOP操作可能代价很高，但在一个空栈上实行n个操作，POP和MULTIPOP操作的总消耗最多为O(n)，因为只有push进去数据，POP和MULTIPOP才会有消耗，而且PUSH操作每次只能push一个数据进来。所以n个操作最坏情况的总代价为O(n)，除以n得到每个操作的平均代价为O(1)。\n二进制计数器递增：\n下图展示了二进制计数器从0递增到16的过程，阴影部分表示递增后需要翻转的位。我们可以发现A[0]每次递增时都发生翻转，A[1]每两次递增发生一次翻转，A[2]每四次递增发生一次翻转，以此类推第i位每2i2^i2​i​​次递增发生一次翻转。也就是说n次INCREMENT操作后，第i位会翻转⌊n/2i⌋\\lfloor n/2^i\\rfloor⌊n/2​i​​⌋ 次。\n执行n次INCREMENT操作产生的总翻转次数为：\n∑i=0k−1⌊n/2i⌋&lt;n∑i=0∞12i=2n\\sum_{i=0}^{k-1}\\lfloor n/2^i\\rfloor &lt; n\\sum_{i=0}^\\infty \\frac{1}{2^i} = 2n\n​i=0​∑​k−1​​⌊n/2​i​​⌋&lt;n​i=0​∑​∞​​​2​i​​​​1​​=2n\n所以，n个INCREMENT操作的最坏情况用时为O(n)，除以n得到每个操作的平均代价为O(1)。\n\n核算法\n核算法——对不同的操作赋予不同的费用（可以大于或者小于实际的代价，但不能为负值），称其为摊还代价。当一个操作摊还代价大于实际代价时，我们将差额存起来，称其为信用/存款。后续操作如果有摊还代价小于实际代价时，我们将之前存的信用拿出一部分来抵消这里的差值。如果用cic_ic​i​​表示第i个操作的实际代价，用c^i\\hat{c}_i​c​^​​​i​​表示第i个操作的摊还代价，则对任意n个操作的序列，要求：\n∑i=1nc^i≥∑i=1nci\\sum_{i=1}^n \\hat{c}_i \\ge \\sum_{i=1}^n c_i\n​i=1​∑​n​​​c​^​​​i​​≥​i=1​∑​n​​c​i​​\n信用总能刚好抵债或者有剩余，从而使得总的摊还代价为总实际代价的上界。\n栈操作：\n栈操作的实际代价如下：\n123PUSH       1POP        1MULTIPOP   min(k, s)\n我们将栈操作的摊还代价设置为：\n123PUSH       2POP        0MULTIPOP   0\n每次PUSH操作支付1的实际代价，剩下的1存起来。存起来的钱和堆栈里的数据量相同，而POP或MULTIPOP操作的实际代价为要pop的数据量，所以存款总能保证大于等于零。\n每个操作的摊还代价都是常数，所以总的摊还代价为O(n)。\n二进制计数器递增：\n将INCREMENT中的操作分为置位操作（第6行，0-&gt;1）和复位操作（while循环中的操作，1-&gt;0）。令置位操作的摊还代价为2，复位操作的摊还代价为0。每次置位操作可以多出1存起来（存起来的钱和计数器中1的个数相同），复位操作需要预支存款，但复位操作只有当某一位是1的时候才会执行，由于计数器中1的个数永远不会为负，所以存款总能保证大于等于零。\n每个操作的摊还代价都是常数，所以总的摊还代价为O(n)。\n势能法\n势能法将数据结构和势能关联起来——对一个初始化数据结构D0D_0D​0​​执行n个操作。cic_ic​i​​为第i个操作的实际代价，DiD_iD​i​​为第i次操作后的数据结构。势函数Φ\\PhiΦ将每个数据结构DiD_iD​i​​映射到一个实数Φ(Di)\\Phi(D_i)Φ(D​i​​)，为数据结构DiD_iD​i​​的势。第i个操作的摊还代价c^i\\hat{c}_i​c​^​​​i​​用势函数D0D_0D​0​​定义为：\n\\textrm{公式1：} \\hat{c}_i = c_i + \\Phi(D_i) - \\Phi(D_{i-1})\n\n即，每个操作的摊还代价为实际代价加上操作引起的势变化。所以总摊还代价为：\n\\textrm{公式2：}\\sum_{i=1}^n \\hat{c}_i = \\sum_{i=1}^n (c_i + \\Phi(D_i) - \\Phi(D_{i-1})) = \\sum_{i=1}^n c_i + \\Phi(D_n) - \\Phi(D_{0})\n\n根据公式1可以得到每个步骤的摊还代价，从而算出总的摊还代价，然后根据公式2可以得出总实际代价的上界/下界（Φ(Dn)−Φ(D0)\\Phi(D_n) - \\Phi(D_{0})Φ(D​n​​)−Φ(D​0​​)为正数则得到上界，Φ(Dn)−Φ(D0)\\Phi(D_n) - \\Phi(D_{0})Φ(D​n​​)−Φ(D​0​​)为负数则得到下界）。\n\n\n\n``````````````\n核算法\n势能法\n\n\n\n\n摊还代价\n猜想/推测得到\n通过实际代价加势能变化得到\n\n\n思想\n较为简单\n较为抽象\n\n\n难点\n需要证明存款足以抵债\n需要考虑一个好的势函数\n\n\n优势\n考虑起来较为容易\n应用范围广，适用的场景更多\n\n\n联系\n核算法的存款往往能和势能法的势函数相对应\n势能法中计算摊还代价时，当势差为正数时相当于将势差作为存款存起来，当势差为负数时相当于要用存款中拿出部分来抵债，所以两种方法的内涵是一致的\n\n\n\n栈操作：\n将势函数定义为当前栈中的数据量。\nPUSH操作会压入一个数据，所以势差为1，而且实际代价为1，所以PUSH操作的摊还代价为2。\nPOP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x，所以POP/MULTIPOP操作的摊还代价为0。\n栈每个操作的摊还代价都是O(1)，所以n个操作的总摊还代价为O(n)。由于初始的栈为空，而结束时栈的数据量大于等于0，也就是说Φ(Dn)−Φ(D0)\\Phi(D_n) - \\Phi(D_{0})Φ(D​n​​)−Φ(D​0​​)为正数，所以n个操作的总摊还代价为总实际代价的上界O(n)。\n二进制计数器递增：\n将势函数定义为计数器中1的个数bib_ib​i​​。\n假设第i个操作将tit_it​i​​个位复位，则实际代价为ti+1t_i + 1t​i​​+1，因为还有一次置位操作。\n再来考虑摊还代价，如果bib_ib​i​​为0，则将k位都复位了，因此bi−1=ti=kb_{i-1} = t_i = kb​i−1​​=t​i​​=k。\n如果bi&gt;0b_i&gt;0b​i​​&gt;0，则bi=bi−1−ti+1b_i = b_{i-1} - t_i + 1b​i​​=b​i−1​​−t​i​​+1。无论那种情况都有bi≤bi−1−ti+1b_i \\le b_{i-1} - t_i + 1b​i​​≤b​i−1​​−t​i​​+1，所以摊还代价为：\nc^i=ci+Φ(Di)−Φ(Di−1)≤(ti+1)+(−ti+1)=2\\hat{c}_i = c_i + \\Phi(D_i) - \\Phi(D_{i-1}) \\le (t_i + 1) + (-t_i + 1) = 2\n​c​^​​​i​​=c​i​​+Φ(D​i​​)−Φ(D​i−1​​)≤(t​i​​+1)+(−t​i​​+1)=2\n所以总摊还代价的上界为O(n)，由于计数器初始状态为0，而1的个数不会为负数，所以n个操作的总摊还代价为总实际代价的上界O(n)。\n势能法的还有个优势就是，我们可以简单的得出当初始状态不是0时实际代价的上界。由公式2可得：\n∑i=1nci≤∑i=1n2−bn+b0=2n−bn+b0≤2n+b0≤2n+k\\sum_{i=1}^n c_i \\le \\sum_{i=1}^n 2 - b_n + b_0 = 2n -b_n + b_0 \\le 2n + b_0 \\le 2n + k\n​i=1​∑​n​​c​i​​≤​i=1​∑​n​​2−b​n​​+b​0​​=2n−b​n​​+b​0​​≤2n+b​0​​≤2n+k\n所以只要k=O(n)k=O(n)k=O(n)那么总实际代价就是O(n)。\n动态表\n11章介绍了散列表，我们知道散列表的大小和数据量应该是线性相关的，数据太稀疏会浪费空间，数据太稠密会浪费时间。当我们不知道会有多少数据插入时，就没办法确定散列表的大小，所以要引进动态表。\n表扩张——当插入数据时发现散列表的装载因子为1（表的大小和数据量相同），对表进行扩张，比如扩张为两倍大小，首先创建一个两倍大小的表，将原来散列表中的数据插入新创建的表中，然后插入新的数据，最后不能忘了把老的表析构。\n表收缩——当删除数据时发现散列包的装载因子小于某个值，对表进行收缩，与表的扩张类似，比如收缩为原来表大小的一半，首先删除这个数据并创建一般大小的新表，将原来散列表中的数据插入新创建的表中，然后把老的表析构。\n表收缩时判断的装载因子的选择很重要，如果表扩张选择的两倍大小，而表收缩是选择装载因子为二分之一，这时如果在表扩张后立马删除数据，又反复的插入，删除数据，这样会导致表大小的震荡。这种情况下时间机器浪费时间。\n所以我们通常可以选择该装载因子为四分之一来避免这个问题。\n无论是表扩张还是表收缩，我们都可以用平摊分析来证明动态表的插入和删除操作的平均代价还是O(1)。详细情况参考书中内容，这里不做赘述。\n","dateCreated":"2015-03-12T18:20:08+08:00","dateModified":"2025-06-02T23:17:26+08:00","datePublished":"2015-03-12T18:20:08+08:00","description":"","headline":"17. 摊还分析","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/","keywords":"算法"}</script>
     <meta name="description" content="17. 摊还分析 在摊还分析中，我们求数据结构的一个操作序列中所执行的所有操作的平均时间，来评价操作的代价。这样，我们就可以说明一个操作的平均代价是很低的，即使序列中某个单一操作的代价很高。摊还分析不同于平均情况分析，它并不涉及概率，它可以保证最坏情况下每个操作的平均性能。 本章介绍三种摊还分析方法：  聚合分析 核算法 势能法  首先我们先看两个小问题 栈操作 对传统的栈操作MULTIPOP(S">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="17. 摊还分析">
-<meta property="og:url" content="https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/index.html">
+<meta property="og:url" content="https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="17. 摊还分析 在摊还分析中，我们求数据结构的一个操作序列中所执行的所有操作的平均时间，来评价操作的代价。这样，我们就可以说明一个操作的平均代价是很低的，即使序列中某个单一操作的代价很高。摊还分析不同于平均情况分析，它并不涉及概率，它可以保证最坏情况下每个操作的平均性能。 本章介绍三种摊还分析方法：  聚合分析 核算法 势能法  首先我们先看两个小问题 栈操作 对传统的栈操作MULTIPOP(S">
 <meta property="og:locale" content="zh_TW">
@@ -52,7 +52,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -499,7 +499,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -510,7 +510,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -523,7 +523,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -536,7 +536,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -549,7 +549,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -562,7 +562,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -627,7 +627,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -638,7 +638,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -651,7 +651,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -664,7 +664,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -677,7 +677,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -690,7 +690,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -711,7 +711,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -724,7 +724,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -737,7 +737,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -750,7 +750,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/12/Algorithms/17.%E6%91%8A%E8%BF%98%E5%88%86%E6%9E%90/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -826,7 +826,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -849,7 +849,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -872,7 +872,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -895,7 +895,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -918,7 +918,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -941,7 +941,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -964,7 +964,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -987,7 +987,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1010,7 +1010,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1033,7 +1033,7 @@ POP/MULTIPOP操作会弹出x个对象，所以势差为-x，而实际代价为x�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

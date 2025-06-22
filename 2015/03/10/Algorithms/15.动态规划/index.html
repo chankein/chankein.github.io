@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"15. 动态规划\n动态规划和分治法相似，都是通过组合子问题的解来求解原问题的解。但不同的是分治法将问题划分为不相交的子问题，递归的求解子问题，再将它们的解组合起来，求出原问题的解。相反，动态规划应用于子问题相互重叠的情况，即不同的子问题具有公共的子子问题。这种情况下，用分治法会反复的求解相同的子问题，造成时间浪费。动态规划对每个子问题只求解一次，并且保存在表格中，从而避免重复计算。\n动态规划通常用于求解最优化问题。\n我们通常按照如下步骤设计一个动态规划算法：\n\n刻画一个最优解的结构特点\n递归的定义最优解的值\n计算最优解的值，通常采用自底而上的方法\n利用计算出的信息构造一个最优解\n\n如果只需要最优解的值，而非最优解本身，可忽略第四步。如果需要做第四步，往往需要在执行第三步时维护一些额外信息。\n钢条切割\n钢条切割问题：给定一段长度为n英寸的钢条和一个价格表pi(i=1,2…n)，求切割方案使得收益rn最大。\n\n考虑当n=4时，所有的切割方案如下，我们发现当把4英寸的钢条切割为两段2英寸长的钢条时产生的收益最大。\n\n当区分1+3切法和3+1切法时，n英寸的钢条有2n-1种切割方案。\n我们可以手动得到ri，及对应切割方案：\n\n对于rn，我们可以用更短的钢条的最优切割收益来描述它：\nrn=max(pn,r1+rn−1,r2+rn−2,...,rn−1+r1).r_n = max(p_n, r_1+r_{n-1}, r_2+r_{n-2},...,r_{n-1}+r_1) .r​n​​=max(p​n​​,r​1​​+r​n−1​​,r​2​​+r​n−2​​,...,r​n−1​​+r​1​​).\n这时我们找到了钢条切割问题的最优子结构。每次切割后我们可以把切开的两段钢条看做独立的钢条切歌问题。一段钢条的最优解为所有切割方案中最大的。\n我们可以将rn的式子简化为：rn=max1≤i≤n(pi+in−i)r_n=\\max\\limits_{1\\le i\\le n}(p_i+i_{n-i})r​n​​=​1≤i≤n​max​​(p​i​​+i​n−i​​) .\n自顶而下的递归实现\n根据上面的式子，我们可以得到下面这种自顶而下的递归实现（p为价格数组）：\n\n这种实现的递归式为：T(n)=1+∑j=0n−1T(j).T(n) = 1 + \\sum\\limits_{j=0}^{n-1}T(j).T(n)=1+​j=0​∑​n−1​​T(j).\n我们可以求得T(n)=2iT(n) = 2^iT(n)=2​i​​，这个时间是非常惊人的，而这么大的原因就是因为包含了非常多的重复计算。下图是递归树，红线圈起来的都是重复计算部分。\n\n使用动态规划方法\n\n带备忘的自顶而下法\n与前面的递归方法类似，但是用了一个数组r[1…n]记录最优解，如果发现r[n]已经有记录，则无需重复计算，直接返回该值。\n\n自底而上法\n自底而上法采用子问题的自然顺序，依次求解规模为j=1,2…,n的子问题。\n\n\n无论是带备忘的自顶而下法还是自底而上法，其中都是用了一个额外数组来存储子问题的最优解，从而避免重复计算子问题的解。动态规划付出额外的内存空间来节省时间，是典型的时空权衡的例子。\n子问题图\n当思考动态规划问题时，弄清所涉及子问题及子问题之间的依赖关系很关键。\n问题的子问题图准确的表达了这些信息：\n\n途中结点表示钢条切割的子问题规模，箭头表示子问题之间的依赖关系。\n有了子问题图，我们便可轻易的得知自底而上的顺序应该如何。\n而且子问题图G=(V, E)还可以帮助我们确定动态规划算法的运行时间。由于每个子问题只求解一次，因此算法运行时间等于每个子问题求解时间之和。通常，一个子问题的求解时间与子问题图中对应顶点的度（射出边的数目）成正比，而子问题的数目等于子问题图的顶点数。因此，通常情况下，动态规划算法的运行时间与顶点和边数量呈线性关系。\n重构解\n前面的方法只给出的如何求出最优解的值，但并未返回解本身。\n下面是基于自底而上动态规划算法的扩展，其中用数组s[0…n]存储n英寸钢条的最优切割方案，s[i]存储的数字表示，i英寸的钢条切割为s[i]英寸和i-s[i]英寸时最优，其中s[i]英寸部分不再切割，i-s[i]英寸部分的最优解需要递归查看。\n所以可以通过PRINT-CUT-ROD-SOLUTION来打印出n英寸钢条的一个最优切割方案。\n\n矩阵链乘法\n给定一个n个矩阵的序列（矩阵链）&lt;A1,A2,...,An&gt;&lt;A_1, A_2, ..., A_n&gt;&lt;A​1​​,A​2​​,...,A​n​​&gt;，我们希望求他们的乘积A1A2...AnA_1A_2...A_nA​1​​A​2​​...A​n​​，由矩阵乘法的结合律我们可知给乘积链随意的加上括号不会改变最终的结果，但是不同的括号会影响矩阵链乘法的时间。\n以矩阵链&lt;A1,A2,A3&gt;&lt;A_1, A_2, A_3&gt;&lt;A​1​​,A​2​​,A​3​​&gt;为例，三个矩阵的规模分别是10×100、100×5和5×50。如果按照((A1A2)A3)((A_1A_2)A_3)((A​1​​A​2​​)A​3​​)的顺序计算，A1A2A_1A_2A​1​​A​2​​（规模10×5）需要做10×100×5=5000次标量乘法，再与A3A_3A​3​​相乘又需要10×5×50=2500次标量乘法，总共需要7500次标量乘法。如果按照(A1(A2A3))(A_1(A_2A_3))(A​1​​(A​2​​A​3​​))的顺序计算，A2A3A_2A_3A​2​​A​3​​（规模100×50）需要做100×5×50=25000次标量乘法，A1再与之相乘又需要10×100×50=50000次标量乘法，总共需要75000次标量乘法。因此，按照((A1A2)A3)((A_1A_2)A_3)((A​1​​A​2​​)A​3​​)的顺序比按照(A1(A2A3))(A_1(A_2A_3))(A​1​​(A​2​​A​3​​))的顺序快了10倍。\n所以引入了矩阵链乘法问题：给定n个矩阵的链&lt;A1,A2,...,An&gt;&lt;A_1, A_2, ..., A_n&gt;&lt;A​1​​,A​2​​,...,A​n​​&gt;，矩阵i的规模为pi−1×pip_{i-1} \\times p_ip​i−1​​×p​i​​，求一个完全括号化方案，使得计算乘积A1A2...AnA_1A_2...A_nA​1​​A​2​​...A​n​​所需的标量乘法次数最少。\n我们可以用下面这个递归式表示矩阵链完全括号化方案的个数，这个递归式的解为Θ(2n)\\Theta(2^n)Θ(2​n​​)，所以穷举法是不可行的。\nP(n)={1ifn=1,∑k=1n−1P(k)P(n−k)ifn≥2,P(n) = \\left \\{\n    \\begin{aligned}\n    &amp; 1 &amp;                            if \\quad n = 1, \\\\\n    &amp; \\sum_{k=1}^{n-1}P(k)P(n-k) &amp;   if \\quad n \\ge 2,\n    \\end{aligned}\n\\right.\nP(n)=​⎩​⎪​⎨​⎪​⎧​​​​​​​1​​k=1​∑​n−1​​P(k)P(n−k)​​​ifn=1,​ifn≥2,​​\n动态规划法\n\n刻画一个最优解的结构特点\n用Ai..jA_{i..j}A​i..j​​表示AiAi+1...AjA_iA_{i+1}...A_jA​i​​A​i+1​​...A​j​​。我们可以将Ai..jA_{i..j}A​i..j​​分解为子问题Ai..kA_{i..k}A​i..k​​和Ak+1..jA_{k+1..j}A​k+1..j​​，即AiAi+1...Aj−&gt;(AiAi+1...Ak)(Ak+1Ak+2...Aj)A_iA_{i+1}...A_j -&gt; (A_iA_{i+1}...A_k)(A_{k+1}A_{k+2}...A_j)A​i​​A​i+1​​...A​j​​−&gt;(A​i​​A​i+1​​...A​k​​)(A​k+1​​A​k+2​​...A​j​​)。然后在对子问题递归求解。\n递归的定义最优解的值\n用m[i,j]m[i,j]m[i,j]表示Ai..jA_{i..j}A​i..j​​所需标量乘法次数的最优值。假设Ai..jA_{i..j}A​i..j​​的最优分割点为k(i&lt;=k&lt;j)k(i&lt;=k&lt;j)k(i&lt;=k&lt;j)，那么m[i,j]=m[i,k]+m[k+1,j]+pi−1pkpjm[i,j] = m[i,k] + m[k+1,j] + p_{i-1} p_{k} p_{j}m[i,j]=m[i,k]+m[k+1,j]+p​i−1​​p​k​​p​j​​，然而这个分割点我们是不知道的，但是肯定在i和j之间，我们只需找到所有可能中的最小值，所以我们有如下递归式：\n\nm[i,j]={0ifi=j,mini≤k≤j{m[i,k]+m[k+1,j]+pi−1pkpj}ifi&lt;j,m[i,j] = \\left\\{  \n    \\begin{aligned}\n    &amp; 0 &amp;                                                          if \\quad i = j, \\\\\n    &amp; \\min_{i\\le k\\le j}\\{m[i,k] + m[k+1, j] + p_{i-1}p_kp_j\\} &amp;   if \\quad i &lt; j,\n    \\end{aligned}\n\\right.m[i,j]={​​​​​0​​i≤k≤j​min​​{m[i,k]+m[k+1,j]+p​i−1​​p​k​​p​j​​}​​​ifi=j,​ifi&lt;j,​​\n\n计算最优解的值，通常采用自底而上的方法\n从上面的递归式能推测出自底而上法的顺序，或者使用子问题图辅助。可以从链长为2的子问题开始求解，一直递增到链长为n的子问题，Done。伪代码如下：\n\n使用m[i,j]存储Ai…j的最优解的值，s[i,j]存储Ai…j的最优分割点k。\n\n利用计算出的信息构造一个最优解\n利用s数组存储的最优分割点，我们可以递归的构造出一个最优解，伪代码如下：\n\n\n动态规划原理\n虽然已经介绍了两个动态规划问题，但可能还会疑惑到底什么样的问题可以使用动态规划方法解决？\n适合用动态规划的最优化问题应该具备两个要素：最优子结构和子问题重叠\n最优子结构\n动态规划法的第一步便是刻画最优解的结构。如果一个问题的最优解包括子问题的最优解，我们称此问题具有最优子结构性质。\n发掘最优子结构性质的过程遵循如下通用模式：\n\n证明问题最优解的第一个组成部分是做出一个选择\n对于一个给定问题，假定已经知道哪种选择会得到最优解\n给定可获得最优解的选择后，确定这次选择会产生哪些子问题，以及如何最好的刻画子问题空间\n利用“剪切-粘贴”技术证明：作为构成原问题最优解的组成部分，每个子问题的解就是它本身的最优解。\n\n利用反证法：假设子问题的解不是其最优解，那么我们可以“剪切”掉这个非最优解，将最优解“粘贴”进去，从而得到一个更优的解，这与最初的解是原问题最优解的前提假设矛盾。\n\n\n\n对于不同问题领域，最优子结构的不同体现在：\n\n原问题的最优解涉及多少个子问题（一个问题分解为多少个子问题）\n在确定最优解使用那些子问题时，我们需要考虑多少种选择（有多少种分解方式）\n\n重叠子问题\n如果递归算法反复求解相同的子问题，我们就称最优化问题具有重叠子问题性质。与之相对的，适合用分治法求解的问题通常在递归的每一步都生成全新的子问题。\n动态规划通常这样利用重叠子问题的性质：对每个子问题只求解一次，将解存入一个表中，当再次需要这个子问题时直接查表，查表的代价为常数时间。\n最长公共子序列\n一个给定序列的子序列是降给定序列中零个或者多个元素去掉后的结果。\n给定两个序列X和Y，如果Z既是X的子序列，又是Y的子序列，那么Z为X和Y的公共子序列。\n最长公共子序列问题给定两个序列X={x1, x2, …, xm}和Y={y1, y2, …, yn}，求X和Y长度最长的公共子序列。\n\n刻画一个最优解的结构特点\n\n递归的定义最优解的值\n\nc[i,j]={0ifi=0orj=0,c[i−1,j−1]+1ifi,j&gt;0andxi=yj,max(c[i,j−1],c[i−1,j])ifi,j&gt;0andxi≠yj,c[i,j] = \\left\\{  \n    \\begin{aligned}\n    &amp; 0                         &amp; &amp; if \\quad i = 0 \\quad or \\quad j = 0, \\\\\n    &amp; c[i-1,j-1]+1              &amp; &amp; if \\quad i,j &gt; 0 \\quad and \\quad x_i = y_j, \\\\\n    &amp; max(c[i,j-1], c[i-1, j])  &amp; &amp; if \\quad i,j &gt; 0 \\quad and \\quad x_i \\neq y_j,\n    \\end{aligned}\n\\right.c[i,j]=​⎩​⎨​⎧​​​​​​​​0​c[i−1,j−1]+1​max(c[i,j−1],c[i−1,j])​​​​​​​​ifi=0orj=0,​ifi,j&gt;0andx​i​​=y​j​​,​ifi,j&gt;0andx​i​​≠y​j​​,​​\n\n计算最优解的值，通常采用自底而上的方法\n\nc[i, j] 存储序列X1-&gt;i和Y1-&gt;j最长公共子序列的长度\nb[i, j] 存储序列X1-&gt;i和Y1-&gt;j最优解依赖的子问题的方向\n利用计算出的信息构造一个最优解\n\n当b[i, j]存储的是“↖”时，表示xi和yj相同。\n所以从b[m, i]开始，训着箭头方向查找“↖”，便可以找到一个最长公共子序列。\n伪代码如下：\n\n\n涉及算法\n\n点击查看实现\n\n\n钢条切割\n矩阵链乘法\n最长公共子序列\n\n","dateCreated":"2015-03-10T18:20:08+08:00","dateModified":"2025-06-02T23:18:05+08:00","datePublished":"2015-03-10T18:20:08+08:00","description":"","headline":"15. 动态规划","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/","keywords":"算法"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"15. 动态规划\n动态规划和分治法相似，都是通过组合子问题的解来求解原问题的解。但不同的是分治法将问题划分为不相交的子问题，递归的求解子问题，再将它们的解组合起来，求出原问题的解。相反，动态规划应用于子问题相互重叠的情况，即不同的子问题具有公共的子子问题。这种情况下，用分治法会反复的求解相同的子问题，造成时间浪费。动态规划对每个子问题只求解一次，并且保存在表格中，从而避免重复计算。\n动态规划通常用于求解最优化问题。\n我们通常按照如下步骤设计一个动态规划算法：\n\n刻画一个最优解的结构特点\n递归的定义最优解的值\n计算最优解的值，通常采用自底而上的方法\n利用计算出的信息构造一个最优解\n\n如果只需要最优解的值，而非最优解本身，可忽略第四步。如果需要做第四步，往往需要在执行第三步时维护一些额外信息。\n钢条切割\n钢条切割问题：给定一段长度为n英寸的钢条和一个价格表pi(i=1,2…n)，求切割方案使得收益rn最大。\n\n考虑当n=4时，所有的切割方案如下，我们发现当把4英寸的钢条切割为两段2英寸长的钢条时产生的收益最大。\n\n当区分1+3切法和3+1切法时，n英寸的钢条有2n-1种切割方案。\n我们可以手动得到ri，及对应切割方案：\n\n对于rn，我们可以用更短的钢条的最优切割收益来描述它：\nrn=max(pn,r1+rn−1,r2+rn−2,...,rn−1+r1).r_n = max(p_n, r_1+r_{n-1}, r_2+r_{n-2},...,r_{n-1}+r_1) .r​n​​=max(p​n​​,r​1​​+r​n−1​​,r​2​​+r​n−2​​,...,r​n−1​​+r​1​​).\n这时我们找到了钢条切割问题的最优子结构。每次切割后我们可以把切开的两段钢条看做独立的钢条切歌问题。一段钢条的最优解为所有切割方案中最大的。\n我们可以将rn的式子简化为：rn=max1≤i≤n(pi+in−i)r_n=\\max\\limits_{1\\le i\\le n}(p_i+i_{n-i})r​n​​=​1≤i≤n​max​​(p​i​​+i​n−i​​) .\n自顶而下的递归实现\n根据上面的式子，我们可以得到下面这种自顶而下的递归实现（p为价格数组）：\n\n这种实现的递归式为：T(n)=1+∑j=0n−1T(j).T(n) = 1 + \\sum\\limits_{j=0}^{n-1}T(j).T(n)=1+​j=0​∑​n−1​​T(j).\n我们可以求得T(n)=2iT(n) = 2^iT(n)=2​i​​，这个时间是非常惊人的，而这么大的原因就是因为包含了非常多的重复计算。下图是递归树，红线圈起来的都是重复计算部分。\n\n使用动态规划方法\n\n带备忘的自顶而下法\n与前面的递归方法类似，但是用了一个数组r[1…n]记录最优解，如果发现r[n]已经有记录，则无需重复计算，直接返回该值。\n\n自底而上法\n自底而上法采用子问题的自然顺序，依次求解规模为j=1,2…,n的子问题。\n\n\n无论是带备忘的自顶而下法还是自底而上法，其中都是用了一个额外数组来存储子问题的最优解，从而避免重复计算子问题的解。动态规划付出额外的内存空间来节省时间，是典型的时空权衡的例子。\n子问题图\n当思考动态规划问题时，弄清所涉及子问题及子问题之间的依赖关系很关键。\n问题的子问题图准确的表达了这些信息：\n\n途中结点表示钢条切割的子问题规模，箭头表示子问题之间的依赖关系。\n有了子问题图，我们便可轻易的得知自底而上的顺序应该如何。\n而且子问题图G=(V, E)还可以帮助我们确定动态规划算法的运行时间。由于每个子问题只求解一次，因此算法运行时间等于每个子问题求解时间之和。通常，一个子问题的求解时间与子问题图中对应顶点的度（射出边的数目）成正比，而子问题的数目等于子问题图的顶点数。因此，通常情况下，动态规划算法的运行时间与顶点和边数量呈线性关系。\n重构解\n前面的方法只给出的如何求出最优解的值，但并未返回解本身。\n下面是基于自底而上动态规划算法的扩展，其中用数组s[0…n]存储n英寸钢条的最优切割方案，s[i]存储的数字表示，i英寸的钢条切割为s[i]英寸和i-s[i]英寸时最优，其中s[i]英寸部分不再切割，i-s[i]英寸部分的最优解需要递归查看。\n所以可以通过PRINT-CUT-ROD-SOLUTION来打印出n英寸钢条的一个最优切割方案。\n\n矩阵链乘法\n给定一个n个矩阵的序列（矩阵链）&lt;A1,A2,...,An&gt;&lt;A_1, A_2, ..., A_n&gt;&lt;A​1​​,A​2​​,...,A​n​​&gt;，我们希望求他们的乘积A1A2...AnA_1A_2...A_nA​1​​A​2​​...A​n​​，由矩阵乘法的结合律我们可知给乘积链随意的加上括号不会改变最终的结果，但是不同的括号会影响矩阵链乘法的时间。\n以矩阵链&lt;A1,A2,A3&gt;&lt;A_1, A_2, A_3&gt;&lt;A​1​​,A​2​​,A​3​​&gt;为例，三个矩阵的规模分别是10×100、100×5和5×50。如果按照((A1A2)A3)((A_1A_2)A_3)((A​1​​A​2​​)A​3​​)的顺序计算，A1A2A_1A_2A​1​​A​2​​（规模10×5）需要做10×100×5=5000次标量乘法，再与A3A_3A​3​​相乘又需要10×5×50=2500次标量乘法，总共需要7500次标量乘法。如果按照(A1(A2A3))(A_1(A_2A_3))(A​1​​(A​2​​A​3​​))的顺序计算，A2A3A_2A_3A​2​​A​3​​（规模100×50）需要做100×5×50=25000次标量乘法，A1再与之相乘又需要10×100×50=50000次标量乘法，总共需要75000次标量乘法。因此，按照((A1A2)A3)((A_1A_2)A_3)((A​1​​A​2​​)A​3​​)的顺序比按照(A1(A2A3))(A_1(A_2A_3))(A​1​​(A​2​​A​3​​))的顺序快了10倍。\n所以引入了矩阵链乘法问题：给定n个矩阵的链&lt;A1,A2,...,An&gt;&lt;A_1, A_2, ..., A_n&gt;&lt;A​1​​,A​2​​,...,A​n​​&gt;，矩阵i的规模为pi−1×pip_{i-1} \\times p_ip​i−1​​×p​i​​，求一个完全括号化方案，使得计算乘积A1A2...AnA_1A_2...A_nA​1​​A​2​​...A​n​​所需的标量乘法次数最少。\n我们可以用下面这个递归式表示矩阵链完全括号化方案的个数，这个递归式的解为Θ(2n)\\Theta(2^n)Θ(2​n​​)，所以穷举法是不可行的。\nP(n)={1ifn=1,∑k=1n−1P(k)P(n−k)ifn≥2,P(n) = \\left \\{\n    \\begin{aligned}\n    &amp; 1 &amp;                            if \\quad n = 1, \\\\\n    &amp; \\sum_{k=1}^{n-1}P(k)P(n-k) &amp;   if \\quad n \\ge 2,\n    \\end{aligned}\n\\right.\nP(n)=​⎩​⎪​⎨​⎪​⎧​​​​​​​1​​k=1​∑​n−1​​P(k)P(n−k)​​​ifn=1,​ifn≥2,​​\n动态规划法\n\n刻画一个最优解的结构特点\n用Ai..jA_{i..j}A​i..j​​表示AiAi+1...AjA_iA_{i+1}...A_jA​i​​A​i+1​​...A​j​​。我们可以将Ai..jA_{i..j}A​i..j​​分解为子问题Ai..kA_{i..k}A​i..k​​和Ak+1..jA_{k+1..j}A​k+1..j​​，即AiAi+1...Aj−&gt;(AiAi+1...Ak)(Ak+1Ak+2...Aj)A_iA_{i+1}...A_j -&gt; (A_iA_{i+1}...A_k)(A_{k+1}A_{k+2}...A_j)A​i​​A​i+1​​...A​j​​−&gt;(A​i​​A​i+1​​...A​k​​)(A​k+1​​A​k+2​​...A​j​​)。然后在对子问题递归求解。\n递归的定义最优解的值\n用m[i,j]m[i,j]m[i,j]表示Ai..jA_{i..j}A​i..j​​所需标量乘法次数的最优值。假设Ai..jA_{i..j}A​i..j​​的最优分割点为k(i&lt;=k&lt;j)k(i&lt;=k&lt;j)k(i&lt;=k&lt;j)，那么m[i,j]=m[i,k]+m[k+1,j]+pi−1pkpjm[i,j] = m[i,k] + m[k+1,j] + p_{i-1} p_{k} p_{j}m[i,j]=m[i,k]+m[k+1,j]+p​i−1​​p​k​​p​j​​，然而这个分割点我们是不知道的，但是肯定在i和j之间，我们只需找到所有可能中的最小值，所以我们有如下递归式：\n\nm[i,j]={0ifi=j,mini≤k≤j{m[i,k]+m[k+1,j]+pi−1pkpj}ifi&lt;j,m[i,j] = \\left\\{  \n    \\begin{aligned}\n    &amp; 0 &amp;                                                          if \\quad i = j, \\\\\n    &amp; \\min_{i\\le k\\le j}\\{m[i,k] + m[k+1, j] + p_{i-1}p_kp_j\\} &amp;   if \\quad i &lt; j,\n    \\end{aligned}\n\\right.m[i,j]={​​​​​0​​i≤k≤j​min​​{m[i,k]+m[k+1,j]+p​i−1​​p​k​​p​j​​}​​​ifi=j,​ifi&lt;j,​​\n\n计算最优解的值，通常采用自底而上的方法\n从上面的递归式能推测出自底而上法的顺序，或者使用子问题图辅助。可以从链长为2的子问题开始求解，一直递增到链长为n的子问题，Done。伪代码如下：\n\n使用m[i,j]存储Ai…j的最优解的值，s[i,j]存储Ai…j的最优分割点k。\n\n利用计算出的信息构造一个最优解\n利用s数组存储的最优分割点，我们可以递归的构造出一个最优解，伪代码如下：\n\n\n动态规划原理\n虽然已经介绍了两个动态规划问题，但可能还会疑惑到底什么样的问题可以使用动态规划方法解决？\n适合用动态规划的最优化问题应该具备两个要素：最优子结构和子问题重叠\n最优子结构\n动态规划法的第一步便是刻画最优解的结构。如果一个问题的最优解包括子问题的最优解，我们称此问题具有最优子结构性质。\n发掘最优子结构性质的过程遵循如下通用模式：\n\n证明问题最优解的第一个组成部分是做出一个选择\n对于一个给定问题，假定已经知道哪种选择会得到最优解\n给定可获得最优解的选择后，确定这次选择会产生哪些子问题，以及如何最好的刻画子问题空间\n利用“剪切-粘贴”技术证明：作为构成原问题最优解的组成部分，每个子问题的解就是它本身的最优解。\n\n利用反证法：假设子问题的解不是其最优解，那么我们可以“剪切”掉这个非最优解，将最优解“粘贴”进去，从而得到一个更优的解，这与最初的解是原问题最优解的前提假设矛盾。\n\n\n\n对于不同问题领域，最优子结构的不同体现在：\n\n原问题的最优解涉及多少个子问题（一个问题分解为多少个子问题）\n在确定最优解使用那些子问题时，我们需要考虑多少种选择（有多少种分解方式）\n\n重叠子问题\n如果递归算法反复求解相同的子问题，我们就称最优化问题具有重叠子问题性质。与之相对的，适合用分治法求解的问题通常在递归的每一步都生成全新的子问题。\n动态规划通常这样利用重叠子问题的性质：对每个子问题只求解一次，将解存入一个表中，当再次需要这个子问题时直接查表，查表的代价为常数时间。\n最长公共子序列\n一个给定序列的子序列是降给定序列中零个或者多个元素去掉后的结果。\n给定两个序列X和Y，如果Z既是X的子序列，又是Y的子序列，那么Z为X和Y的公共子序列。\n最长公共子序列问题给定两个序列X={x1, x2, …, xm}和Y={y1, y2, …, yn}，求X和Y长度最长的公共子序列。\n\n刻画一个最优解的结构特点\n\n递归的定义最优解的值\n\nc[i,j]={0ifi=0orj=0,c[i−1,j−1]+1ifi,j&gt;0andxi=yj,max(c[i,j−1],c[i−1,j])ifi,j&gt;0andxi≠yj,c[i,j] = \\left\\{  \n    \\begin{aligned}\n    &amp; 0                         &amp; &amp; if \\quad i = 0 \\quad or \\quad j = 0, \\\\\n    &amp; c[i-1,j-1]+1              &amp; &amp; if \\quad i,j &gt; 0 \\quad and \\quad x_i = y_j, \\\\\n    &amp; max(c[i,j-1], c[i-1, j])  &amp; &amp; if \\quad i,j &gt; 0 \\quad and \\quad x_i \\neq y_j,\n    \\end{aligned}\n\\right.c[i,j]=​⎩​⎨​⎧​​​​​​​​0​c[i−1,j−1]+1​max(c[i,j−1],c[i−1,j])​​​​​​​​ifi=0orj=0,​ifi,j&gt;0andx​i​​=y​j​​,​ifi,j&gt;0andx​i​​≠y​j​​,​​\n\n计算最优解的值，通常采用自底而上的方法\n\nc[i, j] 存储序列X1-&gt;i和Y1-&gt;j最长公共子序列的长度\nb[i, j] 存储序列X1-&gt;i和Y1-&gt;j最优解依赖的子问题的方向\n利用计算出的信息构造一个最优解\n\n当b[i, j]存储的是“↖”时，表示xi和yj相同。\n所以从b[m, i]开始，训着箭头方向查找“↖”，便可以找到一个最长公共子序列。\n伪代码如下：\n\n\n涉及算法\n\n点击查看实现\n\n\n钢条切割\n矩阵链乘法\n最长公共子序列\n\n","dateCreated":"2015-03-10T18:20:08+08:00","dateModified":"2025-06-02T23:18:05+08:00","datePublished":"2015-03-10T18:20:08+08:00","description":"","headline":"15. 动态规划","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/","keywords":"算法"}</script>
     <meta name="description" content="15. 动态规划 动态规划和分治法相似，都是通过组合子问题的解来求解原问题的解。但不同的是分治法将问题划分为不相交的子问题，递归的求解子问题，再将它们的解组合起来，求出原问题的解。相反，动态规划应用于子问题相互重叠的情况，即不同的子问题具有公共的子子问题。这种情况下，用分治法会反复的求解相同的子问题，造成时间浪费。动态规划对每个子问题只求解一次，并且保存在表格中，从而避免重复计算。 动态规划通常用">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="15. 动态规划">
-<meta property="og:url" content="https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/index.html">
+<meta property="og:url" content="https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="15. 动态规划 动态规划和分治法相似，都是通过组合子问题的解来求解原问题的解。但不同的是分治法将问题划分为不相交的子问题，递归的求解子问题，再将它们的解组合起来，求出原问题的解。相反，动态规划应用于子问题相互重叠的情况，即不同的子问题具有公共的子子问题。这种情况下，用分治法会反复的求解相同的子问题，造成时间浪费。动态规划对每个子问题只求解一次，并且保存在表格中，从而避免重复计算。 动态规划通常用">
 <meta property="og:locale" content="zh_TW">
@@ -67,7 +67,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -547,7 +547,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -558,7 +558,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -571,7 +571,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -584,7 +584,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -597,7 +597,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -610,7 +610,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -675,7 +675,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -686,7 +686,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -699,7 +699,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -712,7 +712,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -725,7 +725,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -738,7 +738,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -759,7 +759,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -772,7 +772,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -785,7 +785,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -798,7 +798,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/10/Algorithms/15.%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -874,7 +874,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -897,7 +897,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -920,7 +920,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -943,7 +943,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -966,7 +966,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -989,7 +989,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1012,7 +1012,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1035,7 +1035,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1058,7 +1058,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1081,7 +1081,7 @@ b[i, j] 存储序列X<sub>1-&gt;i</sub>和Y<sub>1-&gt;j</sub>最优解依赖的�
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. 内核版本管理\n版本号说明\n\n\n2.X.Y 旧版本格式：\n\nX：偶数表示稳定版，奇数表示开发版\nY：修订版本号\n后缀说明：\n\n-rcN：Release Candidate（候选版本）\n-gitN：开发中的Git版本\n\n\n\n\n\n3.0+ 新版本分类：\n\n\n\n类型\n说明\n\n\n\n\nPrepatch\n稳定版前的测试版本\n\n\nMainline\n包含新特性的主线开发版本\n\n\nStable\n稳定版本\n\n\nLongterm\n长期支持版本(LTS)\n\n\n\n\n\n版本查询命令\n1uname [选项]\n常用选项\n\n\n\n选项\n说明\n\n\n\n\n-a\n显示全部系统信息\n\n\n-r\n显示内核版本\n\n\n-m\n显示硬件架构\n\n\n\n其他查询方式\n12345# 查看/proc版本信息cat /proc/version# 通过Makefile查看head -4 /usr/src/linux/Makefile\n2. 内核模块管理\n核心命令对比\n\n\n\n命令\n功能说明\n特点\n\n\n\n\nlsmod\n显示已加载模块\n读取/proc/modules\n\n\ninsmod\n加载单个模块\n不处理依赖关系\n\n\nrmmod\n卸载模块\n需确保无依赖\n\n\nmodprobe\n智能加载/卸载模块\n自动处理依赖关系\n\n\ndepmod\n生成模块依赖关系文件\n创建modules.dep\n\n\n\n命令详解\nlsmod 输出说明\n1Module                  Size  Used by    Dependent modules\n\n显示模块名、大小、引用计数和被哪些模块使用\n\nmodinfo 模块信息\n1modinfo [选项] 模块名\n\n\n\n选项\n说明\n\n\n\n\n-a\n显示作者信息\n\n\n-d\n显示描述信息\n\n\n-l\n显示许可证信息\n\n\n-n\n显示模块文件路径\n\n\n\nmodprobe 高级用法\n1modprobe [选项] 模块名\n\n\n\n选项\n说明\n\n\n\n\n-a\n加载所有匹配模块\n\n\n-c\n显示当前配置\n\n\n-l\n列出所有可用模块\n\n\n-r\n递归卸载模块及依赖\n\n\n-t 类型\n仅操作指定类型模块\n\n\n–show-depends\n显示模块依赖关系\n\n\n\n配置文件\n\n/etc/modprobe.conf：模块别名和参数配置12alias eth0 e1000options e1000 speed=1000 duplex=full\n\n\n3. 内核编译流程\n编译步骤\n\n准备源代码\n配置内核：1234make oldconfig    # 基于旧配置更新make menuconfig  # 文本界面配置make xconfig     # Qt图形界面配置make gconfig     # GTK图形界面配置\n\n编译内核：123make           # 编译内核和模块make bzImage   # 仅编译内核make modules   # 仅编译模块\n\n安装组件：12make modules_install  # 安装模块到/lib/modules/make install          # 自动安装内核\n\n\n手动安装示例\n12345678910# 复制内核文件cp arch/x86/boot/bzImage /boot/vmlinuz-2.6.32cp System.map /boot/System.map-2.6.32# 创建链接ln -s /boot/vmlinuz-2.6.32 /boot/vmlinuzln -s /boot/System.map-2.6.32 /boot/System.map# 生成initramfsmkinitramfs -o /boot/initrd-2.6.32.img 2.6.32\n其他make目标\n\n\n\n目标\n说明\n\n\n\n\nclean\n清除编译文件\n\n\nmrproper\n彻底清除(含配置)\n\n\nrpm-pkg\n生成RPM包\n\n\ndeb-pkg\n生成Debian包\n\n\n\n4. 内核参数调优\n/proc/sys 关键参数\n\n\n\n路径\n说明\n\n\n\n\nkernel/ctrl-alt-del\nCtrl+Alt+Del行为\n\n\nkernel/shmall\n共享内存页数上限\n\n\nkernel/shmmax\n共享内存段最大大小\n\n\nnet/ipv4/ip_forward\nIP转发开关(1/0)\n\n\nfs/file-max\n系统最大文件句柄数\n\n\n\nsysctl 工具\n1sysctl [选项] [参数=值]\n\n\n\n选项\n说明\n\n\n\n\n-a\n显示所有可用参数\n\n\n-p\n从/etc/sysctl.conf加载配置\n\n\n-w\n临时修改参数\n\n\n\ninitramfs 管理\n123456# 创建initramfsmkinitramfs -o initrd.img 3.16.0-4-amd64# 解压分析mkdir initrd &amp;&amp; cd initrdzcat ../initrd.img | cpio -id\n5. 内核调试与设备管理\n/proc 关键文件\n\n\n\n文件\n内容说明\n\n\n\n\n/proc/cpuinfo\nCPU详细信息\n\n\n/proc/meminfo\n内存使用情况\n\n\n/proc/modules\n已加载模块列表\n\n\n/proc/partitions\n分区信息\n\n\n\n硬件信息工具\nlspci\n1lspci [选项]\n\n\n\n选项\n说明\n\n\n\n\n-vv\n超详细输出\n\n\n-t\n树状显示设备层级\n\n\n\nlsusb\n1lsusb [选项]\n\n\n\n选项\n说明\n\n\n\n\n-v\n详细输出设备描述符\n\n\n-t\n树状显示USB设备拓扑\n\n\n\nudev 设备管理\n规则文件示例\n/etc/udev/rules.d/70-persistent-net.rules：\n12SUBSYSTEM==&quot;net&quot;, ACTION==&quot;add&quot;, DRIVERS==&quot;?*&quot;, ATTR&#123;address&#125;==&quot;08:00:27:aa:11:3c&quot;, NAME=&quot;eth0&quot;\nudevadm 工具\n1udevadm info [选项]\n\n\n\n选项\n说明\n\n\n\n\n-a\n显示父设备属性\n\n\n-n\n指定设备节点路径\n\n\n\n实时监控\n1udevadm monitor","dateCreated":"2020-11-08T21:06:24+08:00","dateModified":"2025-05-12T14:28:43+08:00","datePublished":"2020-11-08T21:06:24+08:00","description":"","headline":"12.内核","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/","keywords":"linux, LPIC"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. 内核版本管理\n版本号说明\n\n\n2.X.Y 旧版本格式：\n\nX：偶数表示稳定版，奇数表示开发版\nY：修订版本号\n后缀说明：\n\n-rcN：Release Candidate（候选版本）\n-gitN：开发中的Git版本\n\n\n\n\n\n3.0+ 新版本分类：\n\n\n\n类型\n说明\n\n\n\n\nPrepatch\n稳定版前的测试版本\n\n\nMainline\n包含新特性的主线开发版本\n\n\nStable\n稳定版本\n\n\nLongterm\n长期支持版本(LTS)\n\n\n\n\n\n版本查询命令\n1uname [选项]\n常用选项\n\n\n\n选项\n说明\n\n\n\n\n-a\n显示全部系统信息\n\n\n-r\n显示内核版本\n\n\n-m\n显示硬件架构\n\n\n\n其他查询方式\n12345# 查看/proc版本信息cat /proc/version# 通过Makefile查看head -4 /usr/src/linux/Makefile\n2. 内核模块管理\n核心命令对比\n\n\n\n命令\n功能说明\n特点\n\n\n\n\nlsmod\n显示已加载模块\n读取/proc/modules\n\n\ninsmod\n加载单个模块\n不处理依赖关系\n\n\nrmmod\n卸载模块\n需确保无依赖\n\n\nmodprobe\n智能加载/卸载模块\n自动处理依赖关系\n\n\ndepmod\n生成模块依赖关系文件\n创建modules.dep\n\n\n\n命令详解\nlsmod 输出说明\n1Module                  Size  Used by    Dependent modules\n\n显示模块名、大小、引用计数和被哪些模块使用\n\nmodinfo 模块信息\n1modinfo [选项] 模块名\n\n\n\n选项\n说明\n\n\n\n\n-a\n显示作者信息\n\n\n-d\n显示描述信息\n\n\n-l\n显示许可证信息\n\n\n-n\n显示模块文件路径\n\n\n\nmodprobe 高级用法\n1modprobe [选项] 模块名\n\n\n\n选项\n说明\n\n\n\n\n-a\n加载所有匹配模块\n\n\n-c\n显示当前配置\n\n\n-l\n列出所有可用模块\n\n\n-r\n递归卸载模块及依赖\n\n\n-t 类型\n仅操作指定类型模块\n\n\n–show-depends\n显示模块依赖关系\n\n\n\n配置文件\n\n/etc/modprobe.conf：模块别名和参数配置12alias eth0 e1000options e1000 speed=1000 duplex=full\n\n\n3. 内核编译流程\n编译步骤\n\n准备源代码\n配置内核：1234make oldconfig    # 基于旧配置更新make menuconfig  # 文本界面配置make xconfig     # Qt图形界面配置make gconfig     # GTK图形界面配置\n\n编译内核：123make           # 编译内核和模块make bzImage   # 仅编译内核make modules   # 仅编译模块\n\n安装组件：12make modules_install  # 安装模块到/lib/modules/make install          # 自动安装内核\n\n\n手动安装示例\n12345678910# 复制内核文件cp arch/x86/boot/bzImage /boot/vmlinuz-2.6.32cp System.map /boot/System.map-2.6.32# 创建链接ln -s /boot/vmlinuz-2.6.32 /boot/vmlinuzln -s /boot/System.map-2.6.32 /boot/System.map# 生成initramfsmkinitramfs -o /boot/initrd-2.6.32.img 2.6.32\n其他make目标\n\n\n\n目标\n说明\n\n\n\n\nclean\n清除编译文件\n\n\nmrproper\n彻底清除(含配置)\n\n\nrpm-pkg\n生成RPM包\n\n\ndeb-pkg\n生成Debian包\n\n\n\n4. 内核参数调优\n/proc/sys 关键参数\n\n\n\n路径\n说明\n\n\n\n\nkernel/ctrl-alt-del\nCtrl+Alt+Del行为\n\n\nkernel/shmall\n共享内存页数上限\n\n\nkernel/shmmax\n共享内存段最大大小\n\n\nnet/ipv4/ip_forward\nIP转发开关(1/0)\n\n\nfs/file-max\n系统最大文件句柄数\n\n\n\nsysctl 工具\n1sysctl [选项] [参数=值]\n\n\n\n选项\n说明\n\n\n\n\n-a\n显示所有可用参数\n\n\n-p\n从/etc/sysctl.conf加载配置\n\n\n-w\n临时修改参数\n\n\n\ninitramfs 管理\n123456# 创建initramfsmkinitramfs -o initrd.img 3.16.0-4-amd64# 解压分析mkdir initrd &amp;&amp; cd initrdzcat ../initrd.img | cpio -id\n5. 内核调试与设备管理\n/proc 关键文件\n\n\n\n文件\n内容说明\n\n\n\n\n/proc/cpuinfo\nCPU详细信息\n\n\n/proc/meminfo\n内存使用情况\n\n\n/proc/modules\n已加载模块列表\n\n\n/proc/partitions\n分区信息\n\n\n\n硬件信息工具\nlspci\n1lspci [选项]\n\n\n\n选项\n说明\n\n\n\n\n-vv\n超详细输出\n\n\n-t\n树状显示设备层级\n\n\n\nlsusb\n1lsusb [选项]\n\n\n\n选项\n说明\n\n\n\n\n-v\n详细输出设备描述符\n\n\n-t\n树状显示USB设备拓扑\n\n\n\nudev 设备管理\n规则文件示例\n/etc/udev/rules.d/70-persistent-net.rules：\n12SUBSYSTEM==&quot;net&quot;, ACTION==&quot;add&quot;, DRIVERS==&quot;?*&quot;, ATTR&#123;address&#125;==&quot;08:00:27:aa:11:3c&quot;, NAME=&quot;eth0&quot;\nudevadm 工具\n1udevadm info [选项]\n\n\n\n选项\n说明\n\n\n\n\n-a\n显示父设备属性\n\n\n-n\n指定设备节点路径\n\n\n\n实时监控\n1udevadm monitor","dateCreated":"2020-11-08T21:06:24+08:00","dateModified":"2025-05-12T14:28:43+08:00","datePublished":"2020-11-08T21:06:24+08:00","description":"","headline":"12.内核","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/","keywords":"linux, LPIC"}</script>
     <meta name="description" content="1. 内核版本管理 版本号说明   2.X.Y 旧版本格式：  X：偶数表示稳定版，奇数表示开发版 Y：修订版本号 后缀说明：  -rcN：Release Candidate（候选版本） -gitN：开发中的Git版本      3.0+ 新版本分类：    类型 说明     Prepatch 稳定版前的测试版本   Mainline 包含新特性的主线开发版本   Stable 稳定版本   L">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="12.内核">
-<meta property="og:url" content="https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/index.html">
+<meta property="og:url" content="https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="1. 内核版本管理 版本号说明   2.X.Y 旧版本格式：  X：偶数表示稳定版，奇数表示开发版 Y：修订版本号 后缀说明：  -rcN：Release Candidate（候选版本） -gitN：开发中的Git版本      3.0+ 新版本分类：    类型 说明     Prepatch 稳定版前的测试版本   Mainline 包含新特性的主线开发版本   Stable 稳定版本   L">
 <meta property="og:locale" content="zh_TW">
@@ -51,7 +51,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -762,7 +762,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -773,7 +773,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -786,7 +786,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -799,7 +799,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -812,7 +812,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -825,7 +825,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -890,7 +890,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -901,7 +901,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -914,7 +914,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -927,7 +927,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -940,7 +940,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -953,7 +953,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -974,7 +974,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -987,7 +987,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -1000,7 +1000,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -1013,7 +1013,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/11/08/linux/12-%E5%86%85%E6%A0%B8/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -1089,7 +1089,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -1112,7 +1112,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -1135,7 +1135,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -1158,7 +1158,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -1181,7 +1181,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -1204,7 +1204,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1227,7 +1227,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1250,7 +1250,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1273,7 +1273,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1296,7 +1296,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

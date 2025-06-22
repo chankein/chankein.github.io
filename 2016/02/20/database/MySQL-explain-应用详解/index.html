@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"\n什么是explain\n\n使用explain可以模拟优化器执行SQL查询语句，从而知道MySQL怎么处理你的SQL语句的，分析你的查询语句和表结构的性能瓶颈。\n\nexplain能够干什么\n\n\n读取表的顺序\n哪些索引能够被使用\n数据读取操作的操作类型\n哪些索引能够被实际使用\n表之间的引用\n每张表有多少行被物理查询\n\n\n创建一个学习用的数据库\n\n1234567891011121314151617181920212223242526272829303132333435363738394041424344454647484950515253CREATE DATABASE /*!32312 IF NOT EXISTS*/`mydb` /*!40100 DEFAULT CHARACTER SET utf8 */;USE `mydb`;/*Table structure for table `course` */DROP TABLE IF EXISTS `course`;CREATE TABLE `course` (  `id` int(10) NOT NULL AUTO_INCREMENT,  `name` varchar(20) DEFAULT NULL,  PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8;/*Data for the table `course` */insert  into `course`(`id`,`name`) values (1,&#x27;语文&#x27;),(2,&#x27;高等数学&#x27;),(3,&#x27;视听说&#x27;),(4,&#x27;体育&#x27;),(5,&#x27;马克思概况&#x27;),(6,&#x27;民族理论&#x27;),(7,&#x27;毛中特&#x27;),(8,&#x27;计算机基础&#x27;),(9,&#x27;深度学习&#x27;),(10,&#x27;Java程序设计&#x27;),(11,&#x27;c语言程序设计&#x27;),(12,&#x27;操作系统&#x27;),(13,&#x27;计算机网络&#x27;),(14,&#x27;计算机组成原理&#x27;),(15,&#x27;数据结构&#x27;),(16,&#x27;数据分析&#x27;),(17,&#x27;大学物理&#x27;),(18,&#x27;数字逻辑&#x27;),(19,&#x27;嵌入式开发&#x27;),(20,&#x27;需求工程&#x27;);/*Table structure for table `stu_course` */DROP TABLE IF EXISTS `stu_course`;CREATE TABLE `stu_course` (  `sid` int(10) NOT NULL,  `cid` int(10) NOT NULL,  PRIMARY KEY (`sid`,`cid`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;/*Data for the table `stu_course` */insert  into `stu_course`(`sid`,`cid`) values (1,2),(1,4),(1,14),(1,16),(1,19),(2,4),(2,8),(2,9),(2,14),(3,13),(3,14),(3,20),(4,5),(4,8),(4,9),(4,11),(4,16),(5,4),(5,8),(5,9),(5,11),(5,12),(5,16),(6,2),(6,14),(6,17),(7,1),(7,8),(7,15),(8,2),(8,3),(8,7),(8,17),(9,1),(9,7),(9,16),(9,20),(10,4),(10,12),(10,14),(10,20),(11,3),(11,9),(11,16),(12,3),(12,7),(12,9),(12,12),(13,1),(13,5),(13,13),(14,1),(14,3),(14,18),(15,1),(15,9),(15,15),(16,2),(16,7);/*Table structure for table `student` */DROP TABLE IF EXISTS `student`;CREATE TABLE `student` (  `id` int(10) NOT NULL AUTO_INCREMENT,  `name` varchar(20) DEFAULT NULL,  `age` int(2) DEFAULT NULL,  PRIMARY KEY (`id`),  KEY `name` (`name`),  KEY `name_age` (`name`,`age`),  KEY `id_name_age` (`id`,`name`,`age`)) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8;/*Data for the table `student` */insert  into `student`(`id`,`name`,`age`) values (25,&#x27;乾隆&#x27;,17),(14,&#x27;关羽&#x27;,43),(13,&#x27;刘备&#x27;,12),(28,&#x27;刘永&#x27;,12),(21,&#x27;后裔&#x27;,12),(30,&#x27;吕子乔&#x27;,28),(18,&#x27;嬴政&#x27;,76),(22,&#x27;孙悟空&#x27;,21),(4,&#x27;安其拉&#x27;,24),(6,&#x27;宋江&#x27;,22),(26,&#x27;康熙&#x27;,51),(29,&#x27;张伟&#x27;,26),(20,&#x27;张郃&#x27;,12),(12,&#x27;张飞&#x27;,32),(27,&#x27;朱元璋&#x27;,19),(11,&#x27;李世民&#x27;,54),(9,&#x27;李逵&#x27;,12),(8,&#x27;林冲&#x27;,43),(5,&#x27;橘右京&#x27;,43),(24,&#x27;沙和尚&#x27;,25),(23,&#x27;猪八戒&#x27;,22),(15,&#x27;王与&#x27;,21),(19,&#x27;王建&#x27;,23),(10,&#x27;王莽&#x27;,43),(16,&#x27;秦叔宝&#x27;,43),(17,&#x27;程咬金&#x27;,65),(3,&#x27;荆轲&#x27;,21),(2,&#x27;诸葛亮&#x27;,71),(7,&#x27;钟馗&#x27;,23),(1,&#x27;鲁班&#x27;,21);\n这个数据库实际上的业务是:学生表 - 选课表 - 课程表\n\n如何使用explain\n\n使用而explain很简单就是，在你书写的SQL语句加一个单词 - explain，然后将 explain + SQL执行后会出现一个表，这个表会告诉你MySQL优化器是怎样执行你的SQL的。\n就比如执行下面一句语句：\n1EXPLAIN SELECT * FROM student\nMySQL会给你反馈下面一个信息：\n123    id  select_type  table    partitions  type    possible_keys  key       key_len  ref       rows  filtered  Extra        ------  -----------  -------  ----------  ------  -------------  --------  -------  ------  ------  --------  -------------     1  SIMPLE       student  (NULL)      index   (NULL)         name_age  68       (NULL)      30    100.00  Using index  \n具体这些信息是干什么的，会对你有什么帮助，会在下面告诉你。\n\nexplain各个字段代表的意思\n\n\nid ：select查询的序列号，包含一组数字，表示查询中执行select子句或操作表的顺序\nselect_type ：查询类型 或者是 其他操作类型\ntable ：正在访问哪个表\npartitions ：匹配的分区\ntype ：访问的类型\npossible_keys ：显示可能应用在这张表中的索引，一个或多个，但不一定实际使用到\nkey ：实际使用到的索引，如果为NULL，则没有使用索引\nkey_len ：表示索引中使用的字节数，可通过该列计算查询中使用的索引的长度\nref ：显示索引的哪一列被使用了，如果可能的话，是一个常数，哪些列或常量被用于查找索引列上的值\nrows ：根据表统计信息及索引选用情况，大致估算出找到所需的记录所需读取的行数\nfiltered ：查询的表行占表的百分比\nExtra ：包含不适合在其它列中显示但十分重要的额外信息\n\n上面介绍了每个字段的意思，可以大体看一下，下面会逐一介绍每个字段表示的啥？该关注什么？\n\nid与table字段\n\n为什么要将id和table放在一起讲呢？因为通过这两个字段可以完全判断出你的每一条SQL语句的执行顺序和表的查询顺序。\n先看id后看table，id和table在SQL执行判断过程中的关系就像是足球联赛的积分榜，首先一个联赛的球队排名应该先看积分，积分越高的球队排名越靠前，当两支或多只球队的积分一样高怎么办呢？那我们就看净胜球，净胜球越多的球队，排在前面。而在explain中你可以把id看作是球队积分，table当作是净胜球。\n比如说我们explain一下这一条SQL：\n12345EXPLAINSELECT     S.id,S.name,S.age,C.id,C.nameFROM course C JOIN stu_course SC ON C.id = SC.cidJOIN student S ON S.id = SC.sid\n结果是这样：\n12345    id  select_type  table   partitions  type    possible_keys        key      key_len  ref      ------  -----------  ------  ----------  ------  -------------------  -------  -------  -----------      1  SIMPLE       SC      (NULL)      index   PRIMARY              PRIMARY  8        (NULL)          1  SIMPLE       C       (NULL)      eq_ref  PRIMARY              PRIMARY  4        mydb.SC.cid      1  SIMPLE       S       (NULL)      eq_ref  PRIMARY,id_name_age  PRIMARY  4        mydb.SC.sid \n我们看到id全是1，那就说明光看id这个值是看不出来每个表的读取顺序的，那我们就来看table这一行，它的读取顺序是自上向下的，所以，这三个表的读取顺序应当是：SC - C - S。\n再来看一条SQL\n1234567891011121314EXPLAINSELECT * FROM course AS C WHERE C.`id` = (    SELECT SC.`cid`     FROM stu_course AS SC     WHERE SC.`sid` =     (        SELECT             S.`id`         FROM student AS S        WHERE  S.`name` = &quot;安其拉&quot;    ) ORDER BY SC.`cid` LIMIT 1)\n这条语句是查询结果是：一个叫安其拉的学生选的课里面，课程id最小的一门课的信息，然后来看一下explain的结果吧！\n12345    id  select_type  table   partitions  type    possible_keys  key      key_len  ref    ------  -----------  ------  ----------  ------  -------------  -------  -------  ------       1  PRIMARY      C       (NULL)      const   PRIMARY        PRIMARY  4        const        2  SUBQUERY     SC      (NULL)      ref     PRIMARY        PRIMARY  4        const       3  SUBQUERY     S       (NULL)      ref     name,name_age  name     63       const \n此时我们发现id是不相同的，所以我们很容易就看出表读取的顺序了是吧！C - SC - S\n注意！！！！！！你仔细看一下最里面的子查询是查询的哪个表，是S这张表，然后外面一层呢？是SC这张表，最外面这一层呢？是C这张表，所以执行顺序应该是啥呢？是…是…难道是S - SC - C吗？是id越大的table读取越在前面吗？是的！这就像刚才说的足球联赛积分，分数越高的球队的排序越靠前。\n当然还有下面这种情况\n1234567891011121314EXPLAINSELECT * FROM course AS C WHERE C.`id` IN (    SELECT SC.`cid`     FROM stu_course AS SC     WHERE SC.`sid` =     (        SELECT             S.`id`         FROM student AS S        WHERE  S.`name` = &quot;安其拉&quot;    ))\n这个查询是：查询安其拉选课的课程信息\n12345    id  select_type  table   partitions  type    possible_keys  key      key_len  ref           ------  -----------  ------  ----------  ------  -------------  -------  -------  -----------      1  PRIMARY      SC      (NULL)      ref     PRIMARY        PRIMARY  4        const            1  PRIMARY      C       (NULL)      eq_ref  PRIMARY        PRIMARY  4        mydb.SC.cid      3  SUBQUERY     S       (NULL)      ref     name,name_age  name     63       const        \n结果很明确：先看id应该是S表最先被读取，SC和C表id相同，然后table中SC更靠上，所以第二张读取的表应当是SC，最后读取C。\n\nselect_type字段\n\n\n\nSIMPLE 简单查询，不包括子查询和union查询\n12EXPLAIN SELECT * FROM student JOIN stu_course ON student.`id` = sid\n1234    id  select_type  table       partitions  type    possible_keys        key      ------  -----------  ----------  ----------  ------  -------------------  --------       1  SIMPLE       student     (NULL)      index   PRIMARY,id_name_age  name_age       1  SIMPLE       stu_course  (NULL)      ref     PRIMARY              PRIMARY  \n\n\nPRIMARY 当存在子查询时，最外面的查询被标记为主查询\n\n\nSUBQUERY 子查询\n12345678910EXPLAINSELECT SC.`cid` FROM stu_course AS SC WHERE SC.`sid` = (    SELECT         S.`id`     FROM student AS S    WHERE  S.`name` = &quot;安其拉&quot;)\n1234    id  select_type  table   partitions  type    possible_keys  key      key_len  ref      ------  -----------  ------  ----------  ------  -------------  -------  -------  ------      1  PRIMARY      SC      (NULL)      ref     PRIMARY        PRIMARY  4        const       2  SUBQUERY     S       (NULL)      ref     name,name_age  name     63       const   \n\n\nUNION 当一个查询在UNION关键字之后就会出现UNION\n\n\nUNION RESULT 连接几个表查询后的结果\n1234EXPLAINSELECT * FROM student WHERE id = 1UNIONSELECT * FROM student WHERE id = 2\n12345    id  select_type   table       partitions  type    possible_keys        key      ------  ------------  ----------  ----------  ------  -------------------  -------      1  PRIMARY       student     (NULL)      const   PRIMARY,id_name_age  PRIMARY       2  UNION         student     (NULL)      const   PRIMARY,id_name_age  PRIMARY (NULL)  UNION RESULT  &lt;union1,2&gt;  (NULL)      ALL     (NULL)               (NULL)   \n上面可以看到第三行table的值是&lt;union1,2&gt;\n\n\nDERIVED 在FROM列表中包含的子查询被标记为DERIVED（衍生），MySQL\n会递归执行这些子查询，把结果放在临时表中\nMySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开启，可加快查询效率\n如果你想了解更详细的派生合并请点击这里\n当你的MySQL是5.7及以上版本时你要将derived_merge关闭后才能看到DERIVED 状态\n12set session optimizer_switch=&#x27;derived_merge=off&#x27;;set global optimizer_switch=&#x27;derived_merge=off&#x27;; \n1234567EXPLAINSELECT * FROM (    SELECT *     FROM student AS S JOIN stu_course AS SC     ON S.`id` = SC.`sid`) AS SSC\n12345    id  select_type  table       partitions  type    possible_keys        key       ------  -----------  ----------  ----------  ------  -------------------  --------      1  PRIMARY      &lt;derived2&gt;  (NULL)      ALL     (NULL)               (NULL)         2  DERIVED      S           (NULL)      index   PRIMARY,id_name_age  name_age      2  DERIVED      SC          (NULL)      ref     PRIMARY              PRIMARY  \n上面我们观察，最外层的主查询的表是,而S和SC表的select_type都是DERIVED,这说明S和SC都被用来做衍生查询，而这两张表查询的结果组成了名为的衍生表，而衍生表的命名就是&lt;select_type + id&gt;。\n\n\n\npartitions字段\n\n该列显示的为分区表命中的分区情况。非分区表该字段为空（null）。\n\ntype字段\n\n注意！！！注意！！！重点来了！\n首先说一下这个字段，要记住以下10个状态，（从左往右，越靠左边的越优秀）\n1NULL &gt; system &gt; const &gt; eq_ref &gt; ref &gt; ref_or_null &gt; index_merge &gt; range &gt; index &gt; ALL\n\n\nNULL MySQL能够在优化阶段分解查询语句，在执行阶段用不着再访问表或索引\n有没有这样一种疑惑，不查询索引也不查询表那你的数据是从哪里来的啊？谁说SELECT语句必须查询某样东西了？\n1EXPLAIN SELECT 5*7\n123    id  select_type  table   partitions  type    possible_keys  key     ------  -----------  ------  ----------  ------  -------------  ------      1  SIMPLE       (NULL)  (NULL)      (NULL)  (NULL)         (NULL) \n我就简简单单算个数不好吗？好啊😊。。。\n但是！！如果只是这样的话我们还explain个毛线啊！我很闲吗？\n存在这样一种情况，大家都知道索引是将数据在B+Tree中进行排序了，所以你的查询速率才这么高，那么B+树的最边上的叶子节点是不是要么是最大值要么是最小值啊？既然你都知道了，那MySQL比你更知道啊！当你要查询最大值或者最小值时，MySQL会直接到你的索引得分叶子节点上直接拿，所以不用访问表或者索引。\n1EXPLAIN SELECT MAX(id) FROM student\n123    id  select_type  table   partitions  type    possible_keys  key    ------  -----------  ------  ----------  ------  -------------  ------      1  SIMPLE       (NULL)  (NULL)      (NULL)  (NULL)         (NULL) \n但是！你要记住，NULL的前提是你已经建立了索引。\n\n\nSYSTEM 表只有一行记录（等于系统表），这是const类型的特列，平时不大会出现，可以忽略。\n\n\nconst 表示通过索引一次就找到了，const用于比较primary key或uique索引，因为只匹配一行数据，所以很快，如主键置于where列表中，MySQL就能将该查询转换为一个常量。\n简单来说，const是直接按主键或唯一键读取。\n12EXPLAINSELECT * FROM student AS S WHERE id = 10\n123    id  select_type  table   partitions  type    possible_keys  key      ------  -----------  ------  ----------  ------  -------------  -------       1  SIMPLE       S       (NULL)      const   PRIMARY        PRIMARY  \n\n\neq_ref 用于联表查询的情况，按联表的主键或唯一键联合查询。\n多表join时，对于来自前面表的每一行，在当前表中只能找到一行。这可能是除了system和const之外最好的类型。当主键或唯一非NULL索引的所有字段都被用作join联接时会使用此类型。\n12EXPLAINSELECT * FROM student AS S JOIN stu_course AS SC ON  S.`id` = SC.`cid`\n1234    id  select_type  table   partitions  type    possible_keys  key     ------  -----------  ------  ----------  ------  -------------  -------       1  SIMPLE       SC      (NULL)      index   (NULL)         PRIMARY       1  SIMPLE       S       (NULL)      eq_ref  PRIMARY        PRIMARY \n以上面查询为例，我们观察id和table会知道，先是从SC表中取出一行数据，然后再S表查找匹配的数据，我们观察，SC中取出cid和S表中的id比较，毫无疑问因为id是S表中的主键（不重复），所以只能出现一个id与cid的值相同。所以！满足条件 S 表的 type为eq_ref。\n\n\nref 可以用于单表扫描或者连接。如果是连接的话，驱动表的一条记录能够在被驱动表中通过非唯一（主键）属性所在索引中匹配多行数据，或者是在单表查询的时候通过非唯一（主键）属性所在索引中查到一行数据。\n12EXPLAIN SELECT * FROM student AS S JOIN stu_course AS SC ON S.id = SC.`sid`\n不要在意SQL，以上SQL没有实际查询的意义只是用于表达用例\n1234    id  select_type  table   partitions  type    possible_keys  key      ------  -----------  ------  ----------  ------  -------------  -------       1  SIMPLE       S       (NULL)      ALL     PRIMARY        (NULL)        1  SIMPLE       SC      (NULL)      ref     PRIMARY        PRIMARY  \nSC的主键索引是（cid,sid）所以sid列中肯定是重复的数据，虽然在后面的key中显示使用了主键索引。然后，就很明确了S.id一行能在SC表中通过索引查询到多行数据。\n下面是单表了，写一个例子，但是不细讲了\n12EXPLAINSELECT * FROM student AS S WHERE S.`name` = &quot;张飞&quot;\n123    id  select_type  table   partitions  type    possible_keys  key        ------  -----------  ------  ----------  ------  -------------  ----------      1  SIMPLE       S       (NULL)      ref     index_name     index_name\n注意name字段是有索引的哈！！！\n\n\nref_or_null 类似ref，但是可以搜索值为NULL的行\n12EXPLAINSELECT * FROM student AS S WHERE S.`name` = &quot;张飞&quot; OR S.`name` IS NULL\n123    id  select_type  table   partitions  type         possible_keys  key        ------  -----------  ------  ----------  -----------  -------------  ----------       1  SIMPLE       S       (NULL)      ref_or_null  index_name     index_name  \n\n\nindex_merge 表示查询使用了两个以上的索引，最后取交集或者并集，常见and ，or的条件使用了不同的索引，官方排序这个在ref_or_null之后，但是实际上由于要读取多个索引，性能可能大部分时间都不如range。\n12EXPLAINSELECT * FROM student AS S WHERE S.`name` LIKE &quot;张%&quot; OR S.`age` = 30\n123    id  select_type  table   partitions  type         possible_keys         key                   ------  -----------  ------  ----------  -----------  --------------------  --------------------      1  SIMPLE       S       (NULL)      index_merge  index_name,index_age  index_name,index_age \n\n\nrange 索引范围查询，常见于使用 =, &lt;&gt;, &gt;, &gt;=, &lt;, &lt;=, IS NULL, &lt;=&gt;, BETWEEN, IN()或者like等运算符的查询中。\n12EXPLAINSELECT S.`age` FROM student  AS S WHERE S.`age` &gt; 30\n123    id  select_type  table   partitions  type    possible_keys         key         ------  -----------  ------  ----------  ------  --------------------  ----------       1  SIMPLE       S       (NULL)      range   index_name,index_age  index_name  \n\n\nindex index只遍历索引树，通常比All快。因为，索引文件通常比数据文件小，也就是虽然all和index都是读全表，但index是从索引中读取的，而all是从硬盘读的。\n12EXPLAINSELECT S.`name` FROM student AS S \n123    id  select_type  table   partitions  type    possible_keys  key         ------  -----------  ------  ----------  ------  -------------  ----------       1  SIMPLE       S       (NULL)      index   (NULL)         index_name  \n\n\nALL 如果一个查询的type是All,并且表的数据量很大，那么请解决它！！！\n\n\n\npossible_keys字段\n\n这个表里面存在且可能会被使用的索引，可能会在这个字段下面出现，但是一般都以key为准。\n\nkey字段\n\n实际使用的索引，如果为null,则没有使用索引，否则会显示你使用了哪些索引，查询中若使用了覆盖索引（查询的列刚好是索引），则该索引仅出现在key列表。\n\nref字段\n\n显示哪些列被使用了，如果可能的话，最好是一个常数。哪些列或常量被用于查找索引列上的值。\n\nrows字段和Filter字段\n\nrows是根据表的统计信息和索引的选用情况，优化器大概帮你估算出你执行这行函数所需要查询的行数。\nFilter是查询的行数与总行数的比值。其实作用与rows差不多，都是数值越小，效率越高。\n\nExtra字段\n\n这一字段包含不适合在其他列显示，但是也非常重要的额外信息。\n\n\nUsing filesort 表示当SQL中有一个地方需要对一些数据进行排序的时候，优化器找不到能够使用的索引，所以只能使用外部的索引排序，外部排序就不断的在磁盘和内存中交换数据，这样就摆脱不了很多次磁盘IO，以至于SQL执行的效率很低。反之呢？由于索引的底层是B+Tree实现的，他的叶子节点本来就是有序的，这样的查询能不爽吗？\n12EXPLAINSELECT * FROM course AS C ORDER BY C.`name` \n123type    possible_keys  key     key_len  ref       rows  filtered  Extra           ------  -------------  ------  -------  ------  ------  --------  ----------------ALL     (NULL)         (NULL)  (NULL)   (NULL)      20    100.00  Using filesort  \n没有给C.name建立索引，所以在根据C.name排序的时候，他就使用了外部排序\n\n\nUsing tempporary 表示在对MySQL查询结果进行排序时，使用了临时表,这样的查询效率是比外部排序更低的，常见于order by和group by。\n12EXPLAINSELECT C.`name` FROM course AS C GROUP BY C.`name`\n123possible_keys  key     key_len  ref       rows  filtered  Extra                            -------------  ------  -------  ------  ------  --------  ---------------------------------(NULL)         (NULL)  (NULL)   (NULL)      20    100.00  Using temporary; Using filesort  \n上面这个查询就是同时触发了Using temporary和Using filesort，可谓是雪上加霜。\n\n\nUsing index 表示使用了索引，很优秀👍。\n\n\nUsing where 使用了where但是好像没啥用。\n\n\nUsing join buffer 表明使用了连接缓存,比如说在查询的时候，多表join的次数非常多，那么将配置文件中的缓冲区的join buffer调大一些。\n\n\nimpossible where 筛选条件没能筛选出任何东西\n\n\ndistinct 优化distinct操作，在找到第一匹配的元组后即停止找同样值的动作\n\n\n","dateCreated":"2016-02-20T11:11:11+08:00","dateModified":"2025-06-16T18:49:06+08:00","datePublished":"2016-02-20T11:11:11+08:00","description":"","headline":"MySQL explain 应用详解","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/","keywords":"mysql"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"\n什么是explain\n\n使用explain可以模拟优化器执行SQL查询语句，从而知道MySQL怎么处理你的SQL语句的，分析你的查询语句和表结构的性能瓶颈。\n\nexplain能够干什么\n\n\n读取表的顺序\n哪些索引能够被使用\n数据读取操作的操作类型\n哪些索引能够被实际使用\n表之间的引用\n每张表有多少行被物理查询\n\n\n创建一个学习用的数据库\n\n1234567891011121314151617181920212223242526272829303132333435363738394041424344454647484950515253CREATE DATABASE /*!32312 IF NOT EXISTS*/`mydb` /*!40100 DEFAULT CHARACTER SET utf8 */;USE `mydb`;/*Table structure for table `course` */DROP TABLE IF EXISTS `course`;CREATE TABLE `course` (  `id` int(10) NOT NULL AUTO_INCREMENT,  `name` varchar(20) DEFAULT NULL,  PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8;/*Data for the table `course` */insert  into `course`(`id`,`name`) values (1,&#x27;语文&#x27;),(2,&#x27;高等数学&#x27;),(3,&#x27;视听说&#x27;),(4,&#x27;体育&#x27;),(5,&#x27;马克思概况&#x27;),(6,&#x27;民族理论&#x27;),(7,&#x27;毛中特&#x27;),(8,&#x27;计算机基础&#x27;),(9,&#x27;深度学习&#x27;),(10,&#x27;Java程序设计&#x27;),(11,&#x27;c语言程序设计&#x27;),(12,&#x27;操作系统&#x27;),(13,&#x27;计算机网络&#x27;),(14,&#x27;计算机组成原理&#x27;),(15,&#x27;数据结构&#x27;),(16,&#x27;数据分析&#x27;),(17,&#x27;大学物理&#x27;),(18,&#x27;数字逻辑&#x27;),(19,&#x27;嵌入式开发&#x27;),(20,&#x27;需求工程&#x27;);/*Table structure for table `stu_course` */DROP TABLE IF EXISTS `stu_course`;CREATE TABLE `stu_course` (  `sid` int(10) NOT NULL,  `cid` int(10) NOT NULL,  PRIMARY KEY (`sid`,`cid`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;/*Data for the table `stu_course` */insert  into `stu_course`(`sid`,`cid`) values (1,2),(1,4),(1,14),(1,16),(1,19),(2,4),(2,8),(2,9),(2,14),(3,13),(3,14),(3,20),(4,5),(4,8),(4,9),(4,11),(4,16),(5,4),(5,8),(5,9),(5,11),(5,12),(5,16),(6,2),(6,14),(6,17),(7,1),(7,8),(7,15),(8,2),(8,3),(8,7),(8,17),(9,1),(9,7),(9,16),(9,20),(10,4),(10,12),(10,14),(10,20),(11,3),(11,9),(11,16),(12,3),(12,7),(12,9),(12,12),(13,1),(13,5),(13,13),(14,1),(14,3),(14,18),(15,1),(15,9),(15,15),(16,2),(16,7);/*Table structure for table `student` */DROP TABLE IF EXISTS `student`;CREATE TABLE `student` (  `id` int(10) NOT NULL AUTO_INCREMENT,  `name` varchar(20) DEFAULT NULL,  `age` int(2) DEFAULT NULL,  PRIMARY KEY (`id`),  KEY `name` (`name`),  KEY `name_age` (`name`,`age`),  KEY `id_name_age` (`id`,`name`,`age`)) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8;/*Data for the table `student` */insert  into `student`(`id`,`name`,`age`) values (25,&#x27;乾隆&#x27;,17),(14,&#x27;关羽&#x27;,43),(13,&#x27;刘备&#x27;,12),(28,&#x27;刘永&#x27;,12),(21,&#x27;后裔&#x27;,12),(30,&#x27;吕子乔&#x27;,28),(18,&#x27;嬴政&#x27;,76),(22,&#x27;孙悟空&#x27;,21),(4,&#x27;安其拉&#x27;,24),(6,&#x27;宋江&#x27;,22),(26,&#x27;康熙&#x27;,51),(29,&#x27;张伟&#x27;,26),(20,&#x27;张郃&#x27;,12),(12,&#x27;张飞&#x27;,32),(27,&#x27;朱元璋&#x27;,19),(11,&#x27;李世民&#x27;,54),(9,&#x27;李逵&#x27;,12),(8,&#x27;林冲&#x27;,43),(5,&#x27;橘右京&#x27;,43),(24,&#x27;沙和尚&#x27;,25),(23,&#x27;猪八戒&#x27;,22),(15,&#x27;王与&#x27;,21),(19,&#x27;王建&#x27;,23),(10,&#x27;王莽&#x27;,43),(16,&#x27;秦叔宝&#x27;,43),(17,&#x27;程咬金&#x27;,65),(3,&#x27;荆轲&#x27;,21),(2,&#x27;诸葛亮&#x27;,71),(7,&#x27;钟馗&#x27;,23),(1,&#x27;鲁班&#x27;,21);\n这个数据库实际上的业务是:学生表 - 选课表 - 课程表\n\n如何使用explain\n\n使用而explain很简单就是，在你书写的SQL语句加一个单词 - explain，然后将 explain + SQL执行后会出现一个表，这个表会告诉你MySQL优化器是怎样执行你的SQL的。\n就比如执行下面一句语句：\n1EXPLAIN SELECT * FROM student\nMySQL会给你反馈下面一个信息：\n123    id  select_type  table    partitions  type    possible_keys  key       key_len  ref       rows  filtered  Extra        ------  -----------  -------  ----------  ------  -------------  --------  -------  ------  ------  --------  -------------     1  SIMPLE       student  (NULL)      index   (NULL)         name_age  68       (NULL)      30    100.00  Using index  \n具体这些信息是干什么的，会对你有什么帮助，会在下面告诉你。\n\nexplain各个字段代表的意思\n\n\nid ：select查询的序列号，包含一组数字，表示查询中执行select子句或操作表的顺序\nselect_type ：查询类型 或者是 其他操作类型\ntable ：正在访问哪个表\npartitions ：匹配的分区\ntype ：访问的类型\npossible_keys ：显示可能应用在这张表中的索引，一个或多个，但不一定实际使用到\nkey ：实际使用到的索引，如果为NULL，则没有使用索引\nkey_len ：表示索引中使用的字节数，可通过该列计算查询中使用的索引的长度\nref ：显示索引的哪一列被使用了，如果可能的话，是一个常数，哪些列或常量被用于查找索引列上的值\nrows ：根据表统计信息及索引选用情况，大致估算出找到所需的记录所需读取的行数\nfiltered ：查询的表行占表的百分比\nExtra ：包含不适合在其它列中显示但十分重要的额外信息\n\n上面介绍了每个字段的意思，可以大体看一下，下面会逐一介绍每个字段表示的啥？该关注什么？\n\nid与table字段\n\n为什么要将id和table放在一起讲呢？因为通过这两个字段可以完全判断出你的每一条SQL语句的执行顺序和表的查询顺序。\n先看id后看table，id和table在SQL执行判断过程中的关系就像是足球联赛的积分榜，首先一个联赛的球队排名应该先看积分，积分越高的球队排名越靠前，当两支或多只球队的积分一样高怎么办呢？那我们就看净胜球，净胜球越多的球队，排在前面。而在explain中你可以把id看作是球队积分，table当作是净胜球。\n比如说我们explain一下这一条SQL：\n12345EXPLAINSELECT     S.id,S.name,S.age,C.id,C.nameFROM course C JOIN stu_course SC ON C.id = SC.cidJOIN student S ON S.id = SC.sid\n结果是这样：\n12345    id  select_type  table   partitions  type    possible_keys        key      key_len  ref      ------  -----------  ------  ----------  ------  -------------------  -------  -------  -----------      1  SIMPLE       SC      (NULL)      index   PRIMARY              PRIMARY  8        (NULL)          1  SIMPLE       C       (NULL)      eq_ref  PRIMARY              PRIMARY  4        mydb.SC.cid      1  SIMPLE       S       (NULL)      eq_ref  PRIMARY,id_name_age  PRIMARY  4        mydb.SC.sid \n我们看到id全是1，那就说明光看id这个值是看不出来每个表的读取顺序的，那我们就来看table这一行，它的读取顺序是自上向下的，所以，这三个表的读取顺序应当是：SC - C - S。\n再来看一条SQL\n1234567891011121314EXPLAINSELECT * FROM course AS C WHERE C.`id` = (    SELECT SC.`cid`     FROM stu_course AS SC     WHERE SC.`sid` =     (        SELECT             S.`id`         FROM student AS S        WHERE  S.`name` = &quot;安其拉&quot;    ) ORDER BY SC.`cid` LIMIT 1)\n这条语句是查询结果是：一个叫安其拉的学生选的课里面，课程id最小的一门课的信息，然后来看一下explain的结果吧！\n12345    id  select_type  table   partitions  type    possible_keys  key      key_len  ref    ------  -----------  ------  ----------  ------  -------------  -------  -------  ------       1  PRIMARY      C       (NULL)      const   PRIMARY        PRIMARY  4        const        2  SUBQUERY     SC      (NULL)      ref     PRIMARY        PRIMARY  4        const       3  SUBQUERY     S       (NULL)      ref     name,name_age  name     63       const \n此时我们发现id是不相同的，所以我们很容易就看出表读取的顺序了是吧！C - SC - S\n注意！！！！！！你仔细看一下最里面的子查询是查询的哪个表，是S这张表，然后外面一层呢？是SC这张表，最外面这一层呢？是C这张表，所以执行顺序应该是啥呢？是…是…难道是S - SC - C吗？是id越大的table读取越在前面吗？是的！这就像刚才说的足球联赛积分，分数越高的球队的排序越靠前。\n当然还有下面这种情况\n1234567891011121314EXPLAINSELECT * FROM course AS C WHERE C.`id` IN (    SELECT SC.`cid`     FROM stu_course AS SC     WHERE SC.`sid` =     (        SELECT             S.`id`         FROM student AS S        WHERE  S.`name` = &quot;安其拉&quot;    ))\n这个查询是：查询安其拉选课的课程信息\n12345    id  select_type  table   partitions  type    possible_keys  key      key_len  ref           ------  -----------  ------  ----------  ------  -------------  -------  -------  -----------      1  PRIMARY      SC      (NULL)      ref     PRIMARY        PRIMARY  4        const            1  PRIMARY      C       (NULL)      eq_ref  PRIMARY        PRIMARY  4        mydb.SC.cid      3  SUBQUERY     S       (NULL)      ref     name,name_age  name     63       const        \n结果很明确：先看id应该是S表最先被读取，SC和C表id相同，然后table中SC更靠上，所以第二张读取的表应当是SC，最后读取C。\n\nselect_type字段\n\n\n\nSIMPLE 简单查询，不包括子查询和union查询\n12EXPLAIN SELECT * FROM student JOIN stu_course ON student.`id` = sid\n1234    id  select_type  table       partitions  type    possible_keys        key      ------  -----------  ----------  ----------  ------  -------------------  --------       1  SIMPLE       student     (NULL)      index   PRIMARY,id_name_age  name_age       1  SIMPLE       stu_course  (NULL)      ref     PRIMARY              PRIMARY  \n\n\nPRIMARY 当存在子查询时，最外面的查询被标记为主查询\n\n\nSUBQUERY 子查询\n12345678910EXPLAINSELECT SC.`cid` FROM stu_course AS SC WHERE SC.`sid` = (    SELECT         S.`id`     FROM student AS S    WHERE  S.`name` = &quot;安其拉&quot;)\n1234    id  select_type  table   partitions  type    possible_keys  key      key_len  ref      ------  -----------  ------  ----------  ------  -------------  -------  -------  ------      1  PRIMARY      SC      (NULL)      ref     PRIMARY        PRIMARY  4        const       2  SUBQUERY     S       (NULL)      ref     name,name_age  name     63       const   \n\n\nUNION 当一个查询在UNION关键字之后就会出现UNION\n\n\nUNION RESULT 连接几个表查询后的结果\n1234EXPLAINSELECT * FROM student WHERE id = 1UNIONSELECT * FROM student WHERE id = 2\n12345    id  select_type   table       partitions  type    possible_keys        key      ------  ------------  ----------  ----------  ------  -------------------  -------      1  PRIMARY       student     (NULL)      const   PRIMARY,id_name_age  PRIMARY       2  UNION         student     (NULL)      const   PRIMARY,id_name_age  PRIMARY (NULL)  UNION RESULT  &lt;union1,2&gt;  (NULL)      ALL     (NULL)               (NULL)   \n上面可以看到第三行table的值是&lt;union1,2&gt;\n\n\nDERIVED 在FROM列表中包含的子查询被标记为DERIVED（衍生），MySQL\n会递归执行这些子查询，把结果放在临时表中\nMySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开启，可加快查询效率\n如果你想了解更详细的派生合并请点击这里\n当你的MySQL是5.7及以上版本时你要将derived_merge关闭后才能看到DERIVED 状态\n12set session optimizer_switch=&#x27;derived_merge=off&#x27;;set global optimizer_switch=&#x27;derived_merge=off&#x27;; \n1234567EXPLAINSELECT * FROM (    SELECT *     FROM student AS S JOIN stu_course AS SC     ON S.`id` = SC.`sid`) AS SSC\n12345    id  select_type  table       partitions  type    possible_keys        key       ------  -----------  ----------  ----------  ------  -------------------  --------      1  PRIMARY      &lt;derived2&gt;  (NULL)      ALL     (NULL)               (NULL)         2  DERIVED      S           (NULL)      index   PRIMARY,id_name_age  name_age      2  DERIVED      SC          (NULL)      ref     PRIMARY              PRIMARY  \n上面我们观察，最外层的主查询的表是,而S和SC表的select_type都是DERIVED,这说明S和SC都被用来做衍生查询，而这两张表查询的结果组成了名为的衍生表，而衍生表的命名就是&lt;select_type + id&gt;。\n\n\n\npartitions字段\n\n该列显示的为分区表命中的分区情况。非分区表该字段为空（null）。\n\ntype字段\n\n注意！！！注意！！！重点来了！\n首先说一下这个字段，要记住以下10个状态，（从左往右，越靠左边的越优秀）\n1NULL &gt; system &gt; const &gt; eq_ref &gt; ref &gt; ref_or_null &gt; index_merge &gt; range &gt; index &gt; ALL\n\n\nNULL MySQL能够在优化阶段分解查询语句，在执行阶段用不着再访问表或索引\n有没有这样一种疑惑，不查询索引也不查询表那你的数据是从哪里来的啊？谁说SELECT语句必须查询某样东西了？\n1EXPLAIN SELECT 5*7\n123    id  select_type  table   partitions  type    possible_keys  key     ------  -----------  ------  ----------  ------  -------------  ------      1  SIMPLE       (NULL)  (NULL)      (NULL)  (NULL)         (NULL) \n我就简简单单算个数不好吗？好啊😊。。。\n但是！！如果只是这样的话我们还explain个毛线啊！我很闲吗？\n存在这样一种情况，大家都知道索引是将数据在B+Tree中进行排序了，所以你的查询速率才这么高，那么B+树的最边上的叶子节点是不是要么是最大值要么是最小值啊？既然你都知道了，那MySQL比你更知道啊！当你要查询最大值或者最小值时，MySQL会直接到你的索引得分叶子节点上直接拿，所以不用访问表或者索引。\n1EXPLAIN SELECT MAX(id) FROM student\n123    id  select_type  table   partitions  type    possible_keys  key    ------  -----------  ------  ----------  ------  -------------  ------      1  SIMPLE       (NULL)  (NULL)      (NULL)  (NULL)         (NULL) \n但是！你要记住，NULL的前提是你已经建立了索引。\n\n\nSYSTEM 表只有一行记录（等于系统表），这是const类型的特列，平时不大会出现，可以忽略。\n\n\nconst 表示通过索引一次就找到了，const用于比较primary key或uique索引，因为只匹配一行数据，所以很快，如主键置于where列表中，MySQL就能将该查询转换为一个常量。\n简单来说，const是直接按主键或唯一键读取。\n12EXPLAINSELECT * FROM student AS S WHERE id = 10\n123    id  select_type  table   partitions  type    possible_keys  key      ------  -----------  ------  ----------  ------  -------------  -------       1  SIMPLE       S       (NULL)      const   PRIMARY        PRIMARY  \n\n\neq_ref 用于联表查询的情况，按联表的主键或唯一键联合查询。\n多表join时，对于来自前面表的每一行，在当前表中只能找到一行。这可能是除了system和const之外最好的类型。当主键或唯一非NULL索引的所有字段都被用作join联接时会使用此类型。\n12EXPLAINSELECT * FROM student AS S JOIN stu_course AS SC ON  S.`id` = SC.`cid`\n1234    id  select_type  table   partitions  type    possible_keys  key     ------  -----------  ------  ----------  ------  -------------  -------       1  SIMPLE       SC      (NULL)      index   (NULL)         PRIMARY       1  SIMPLE       S       (NULL)      eq_ref  PRIMARY        PRIMARY \n以上面查询为例，我们观察id和table会知道，先是从SC表中取出一行数据，然后再S表查找匹配的数据，我们观察，SC中取出cid和S表中的id比较，毫无疑问因为id是S表中的主键（不重复），所以只能出现一个id与cid的值相同。所以！满足条件 S 表的 type为eq_ref。\n\n\nref 可以用于单表扫描或者连接。如果是连接的话，驱动表的一条记录能够在被驱动表中通过非唯一（主键）属性所在索引中匹配多行数据，或者是在单表查询的时候通过非唯一（主键）属性所在索引中查到一行数据。\n12EXPLAIN SELECT * FROM student AS S JOIN stu_course AS SC ON S.id = SC.`sid`\n不要在意SQL，以上SQL没有实际查询的意义只是用于表达用例\n1234    id  select_type  table   partitions  type    possible_keys  key      ------  -----------  ------  ----------  ------  -------------  -------       1  SIMPLE       S       (NULL)      ALL     PRIMARY        (NULL)        1  SIMPLE       SC      (NULL)      ref     PRIMARY        PRIMARY  \nSC的主键索引是（cid,sid）所以sid列中肯定是重复的数据，虽然在后面的key中显示使用了主键索引。然后，就很明确了S.id一行能在SC表中通过索引查询到多行数据。\n下面是单表了，写一个例子，但是不细讲了\n12EXPLAINSELECT * FROM student AS S WHERE S.`name` = &quot;张飞&quot;\n123    id  select_type  table   partitions  type    possible_keys  key        ------  -----------  ------  ----------  ------  -------------  ----------      1  SIMPLE       S       (NULL)      ref     index_name     index_name\n注意name字段是有索引的哈！！！\n\n\nref_or_null 类似ref，但是可以搜索值为NULL的行\n12EXPLAINSELECT * FROM student AS S WHERE S.`name` = &quot;张飞&quot; OR S.`name` IS NULL\n123    id  select_type  table   partitions  type         possible_keys  key        ------  -----------  ------  ----------  -----------  -------------  ----------       1  SIMPLE       S       (NULL)      ref_or_null  index_name     index_name  \n\n\nindex_merge 表示查询使用了两个以上的索引，最后取交集或者并集，常见and ，or的条件使用了不同的索引，官方排序这个在ref_or_null之后，但是实际上由于要读取多个索引，性能可能大部分时间都不如range。\n12EXPLAINSELECT * FROM student AS S WHERE S.`name` LIKE &quot;张%&quot; OR S.`age` = 30\n123    id  select_type  table   partitions  type         possible_keys         key                   ------  -----------  ------  ----------  -----------  --------------------  --------------------      1  SIMPLE       S       (NULL)      index_merge  index_name,index_age  index_name,index_age \n\n\nrange 索引范围查询，常见于使用 =, &lt;&gt;, &gt;, &gt;=, &lt;, &lt;=, IS NULL, &lt;=&gt;, BETWEEN, IN()或者like等运算符的查询中。\n12EXPLAINSELECT S.`age` FROM student  AS S WHERE S.`age` &gt; 30\n123    id  select_type  table   partitions  type    possible_keys         key         ------  -----------  ------  ----------  ------  --------------------  ----------       1  SIMPLE       S       (NULL)      range   index_name,index_age  index_name  \n\n\nindex index只遍历索引树，通常比All快。因为，索引文件通常比数据文件小，也就是虽然all和index都是读全表，但index是从索引中读取的，而all是从硬盘读的。\n12EXPLAINSELECT S.`name` FROM student AS S \n123    id  select_type  table   partitions  type    possible_keys  key         ------  -----------  ------  ----------  ------  -------------  ----------       1  SIMPLE       S       (NULL)      index   (NULL)         index_name  \n\n\nALL 如果一个查询的type是All,并且表的数据量很大，那么请解决它！！！\n\n\n\npossible_keys字段\n\n这个表里面存在且可能会被使用的索引，可能会在这个字段下面出现，但是一般都以key为准。\n\nkey字段\n\n实际使用的索引，如果为null,则没有使用索引，否则会显示你使用了哪些索引，查询中若使用了覆盖索引（查询的列刚好是索引），则该索引仅出现在key列表。\n\nref字段\n\n显示哪些列被使用了，如果可能的话，最好是一个常数。哪些列或常量被用于查找索引列上的值。\n\nrows字段和Filter字段\n\nrows是根据表的统计信息和索引的选用情况，优化器大概帮你估算出你执行这行函数所需要查询的行数。\nFilter是查询的行数与总行数的比值。其实作用与rows差不多，都是数值越小，效率越高。\n\nExtra字段\n\n这一字段包含不适合在其他列显示，但是也非常重要的额外信息。\n\n\nUsing filesort 表示当SQL中有一个地方需要对一些数据进行排序的时候，优化器找不到能够使用的索引，所以只能使用外部的索引排序，外部排序就不断的在磁盘和内存中交换数据，这样就摆脱不了很多次磁盘IO，以至于SQL执行的效率很低。反之呢？由于索引的底层是B+Tree实现的，他的叶子节点本来就是有序的，这样的查询能不爽吗？\n12EXPLAINSELECT * FROM course AS C ORDER BY C.`name` \n123type    possible_keys  key     key_len  ref       rows  filtered  Extra           ------  -------------  ------  -------  ------  ------  --------  ----------------ALL     (NULL)         (NULL)  (NULL)   (NULL)      20    100.00  Using filesort  \n没有给C.name建立索引，所以在根据C.name排序的时候，他就使用了外部排序\n\n\nUsing tempporary 表示在对MySQL查询结果进行排序时，使用了临时表,这样的查询效率是比外部排序更低的，常见于order by和group by。\n12EXPLAINSELECT C.`name` FROM course AS C GROUP BY C.`name`\n123possible_keys  key     key_len  ref       rows  filtered  Extra                            -------------  ------  -------  ------  ------  --------  ---------------------------------(NULL)         (NULL)  (NULL)   (NULL)      20    100.00  Using temporary; Using filesort  \n上面这个查询就是同时触发了Using temporary和Using filesort，可谓是雪上加霜。\n\n\nUsing index 表示使用了索引，很优秀👍。\n\n\nUsing where 使用了where但是好像没啥用。\n\n\nUsing join buffer 表明使用了连接缓存,比如说在查询的时候，多表join的次数非常多，那么将配置文件中的缓冲区的join buffer调大一些。\n\n\nimpossible where 筛选条件没能筛选出任何东西\n\n\ndistinct 优化distinct操作，在找到第一匹配的元组后即停止找同样值的动作\n\n\n","dateCreated":"2016-02-20T11:11:11+08:00","dateModified":"2025-06-16T18:49:06+08:00","datePublished":"2016-02-20T11:11:11+08:00","description":"","headline":"MySQL explain 应用详解","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/","keywords":"mysql"}</script>
     <meta name="description" content="什么是explain  使用explain可以模拟优化器执行SQL查询语句，从而知道MySQL怎么处理你的SQL语句的，分析你的查询语句和表结构的性能瓶颈。  explain能够干什么   读取表的顺序 哪些索引能够被使用 数据读取操作的操作类型 哪些索引能够被实际使用 表之间的引用 每张表有多少行被物理查询   创建一个学习用的数据库  1234567891011121314151617181">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="MySQL explain 应用详解">
-<meta property="og:url" content="https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:url" content="https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="什么是explain  使用explain可以模拟优化器执行SQL查询语句，从而知道MySQL怎么处理你的SQL语句的，分析你的查询语句和表结构的性能瓶颈。  explain能够干什么   读取表的顺序 哪些索引能够被使用 数据读取操作的操作类型 哪些索引能够被实际使用 表之间的引用 每张表有多少行被物理查询   创建一个学习用的数据库  1234567891011121314151617181">
 <meta property="og:locale" content="zh_TW">
@@ -50,7 +50,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -613,7 +613,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -624,7 +624,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -637,7 +637,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -650,7 +650,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -663,7 +663,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -676,7 +676,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -741,7 +741,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -752,7 +752,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -765,7 +765,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -778,7 +778,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -791,7 +791,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -804,7 +804,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -825,7 +825,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -838,7 +838,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -851,7 +851,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -864,7 +864,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2016/02/20/database/MySQL-explain-%E5%BA%94%E7%94%A8%E8%AF%A6%E8%A7%A3/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -940,7 +940,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -963,7 +963,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -986,7 +986,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -1009,7 +1009,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -1032,7 +1032,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -1055,7 +1055,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1078,7 +1078,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1101,7 +1101,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1124,7 +1124,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1147,7 +1147,7 @@ MySQL5.7+ 进行优化了，增加了derived_merge（派生合并），默认开
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"11. 散列表（哈希表）\n许多应用都需要一种动态集合，至少支持Insert，Search和Delete的字典操作。\n散列表（Hash Table）是实现字典操作的一种有效数据结构。尽管最坏情况下散列表查询一个元素的时间和链表的查询时间相同，为Θ(n)。但是在实际应用中，散列表的查询性能是极好的。在一些合理的假设下，散列表中扎寻一个元素的平均时间能为Ο(1)。\n假设某应用需要用到一个动态集合，其中每个元素的KEY都是取自全域U={0, 1, …, m-1}。本章讨论方法都是基于这样的动态集合。\n直接寻址表\n当KEY的全域U较小时，直接寻址表是一种简单而有效的技术。\n为了表示这个动态集合，我们用一个数组作为直接寻址表，记为T[0…m-1]，其中数组的每个位置称为槽，与全域U中的KEY一一对应。\nK集合表示实际存在的元素的KEY集合。\n槽k指向KEY为k的元素，如果K集合中没有k，那么T[k] = nil。\n\n散列表\n直接寻址表的缺点很明显：\n\n如果全域U非常大，则计算机无法存储\n如果K集合相对于全域U非常小，那么将非常浪费空间\n\n如果直接寻址表占用的存储空间为Θ(∣U∣)\\Theta(|U|)Θ(∣U∣)，那么散列表能将存储需求降至Θ(∣K∣)\\Theta(|K|)Θ(∣K∣)，同时散列表中查找一个元素的时间为\\Omicron(1)\\Omicron(1)\\Omicron(1)，不过是平均时间。\n散列方式不同于直接寻址表的地方是，元素存储在散列表中的位置由散列函数决定，即k元素存储在散列表的h(k)位置。h(k)叫做k的散列值。\n散列表T的大小比|U|小很多，所以肯定会有冲突的情况。\n\n冲突最简单的解决方式是使用链接法，后面还介绍一种开放寻址法。\n下图是链接法的图示，当有两个k值映射到了同一个散列值时，将它们保存在一个链表内。\n\n链接法散列分析\n如果要将n个数据存储在m大小的散列表中，我们称α = n/m为装载因子，即散列表的每个槽平均存放的数据。\n假设散列函数能等可能的把数据散列到m个槽中，我们称这个假设为简单均匀散列。\n这时每个槽存放元素个数的期望值为α。\n所以，一次不成功查找的平均时间为Θ(1+α)\\Theta(1+\\alpha)Θ(1+α)。（1 表示散列函数消耗的时间）\n1因为每个槽的期望为α，而不成功的情况下，查找的期望时间就是从槽链表的头遍历到链表尾，所以期望时间就是槽链表的长度α。\n一次成功查找的平均时间为Θ(1+α)\\Theta(1+\\alpha)Θ(1+α)。\n12具体证明参考公开课中老师的推理，或者书中推理。自我理解：一个元素在槽中的位置是等概率随机的(1/α)，而且期望时间为元素在槽中位置的期望。期望位置为(1+2+..+α)*(1/α) = (α+1)/2\n散列函数\n最好的散列函数便是能达到简单均匀散列。\n下面介绍一些的散列函数。其中全域散列能够达到这样的要求。\n除法散列\n1h(k) = k mod m\nm最好是一个素数，并且不能太接近2或者10的乘方。\n乘法散列\n1h(k) = [(a * k) mod 2^w] &gt;&gt; (w − r)\nk是w bits的数\nm = 2^r\na最好是一个奇数，并且不能太接近2或者10的乘方。\n\n全域散列\n随机的选择散列函数，称为全域散列\nExample：\n12h(k) = [(ak+b) mod p] mod m where a and b are random ∈ &#123;0, 1, . . . p−1&#125;, and p is a large prime (&gt; |U|).\n证明全域散列为简单均匀散列的过程，参考公开课中老师的推理，或者书中推理。\n开放寻址法\n\n无链表，所有的元素都保存在table中\n每个槽存储一个元素，m&gt;=n\n散列函数为h(k, i)，i从0开始，当有冲突后i++，直到找到一个空的位置，所以散列函数需要有如下性质：\n\n12345对同一个KEY做m次探查，能把散列表填满h : U × &#123;0, 1,...,m − 1&#125; → &#123;0, 1,...,m − 1&#125;&#123;h(k, 0), h(k, 1), . . . , h(k, m − 1)&#125; == &#123;0, 1,...,m − 1&#125;\n删除时，不能直接删除！删除后需要标记此位为删除位。\n线性探查\n1h(k, i) = (h1(k) +i) mod m\n双重探查\n1234h(k, i) =(h1(k) + i·h2(k)) mod mh2(k) 需要和 m 互为质数e.g. m = 2^r, h2(k) 永远为奇数\n开放寻址法分析\n给定一个装载因子α = n/m < 1的开放寻址散列表，并假设是均匀散列的：\n对于一次不成功的查找，期望的探查次数至多为1/(1-α)\n对于一次成功的查找，期望的探查次数至多为\\frac{1}{α}\\ln(1/(1-α))\n完全散列\n基于全域散列，完全没看。。。\n涉及数据结构\n\n点击查看实现\n\n\n使用链接法的散列表\n\n","dateCreated":"2015-03-05T18:20:08+08:00","dateModified":"2025-06-02T23:16:03+08:00","datePublished":"2015-03-05T18:20:08+08:00","description":"","headline":"11. 散列表（哈希表）","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/","keywords":"算法"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"11. 散列表（哈希表）\n许多应用都需要一种动态集合，至少支持Insert，Search和Delete的字典操作。\n散列表（Hash Table）是实现字典操作的一种有效数据结构。尽管最坏情况下散列表查询一个元素的时间和链表的查询时间相同，为Θ(n)。但是在实际应用中，散列表的查询性能是极好的。在一些合理的假设下，散列表中扎寻一个元素的平均时间能为Ο(1)。\n假设某应用需要用到一个动态集合，其中每个元素的KEY都是取自全域U={0, 1, …, m-1}。本章讨论方法都是基于这样的动态集合。\n直接寻址表\n当KEY的全域U较小时，直接寻址表是一种简单而有效的技术。\n为了表示这个动态集合，我们用一个数组作为直接寻址表，记为T[0…m-1]，其中数组的每个位置称为槽，与全域U中的KEY一一对应。\nK集合表示实际存在的元素的KEY集合。\n槽k指向KEY为k的元素，如果K集合中没有k，那么T[k] = nil。\n\n散列表\n直接寻址表的缺点很明显：\n\n如果全域U非常大，则计算机无法存储\n如果K集合相对于全域U非常小，那么将非常浪费空间\n\n如果直接寻址表占用的存储空间为Θ(∣U∣)\\Theta(|U|)Θ(∣U∣)，那么散列表能将存储需求降至Θ(∣K∣)\\Theta(|K|)Θ(∣K∣)，同时散列表中查找一个元素的时间为\\Omicron(1)\\Omicron(1)\\Omicron(1)，不过是平均时间。\n散列方式不同于直接寻址表的地方是，元素存储在散列表中的位置由散列函数决定，即k元素存储在散列表的h(k)位置。h(k)叫做k的散列值。\n散列表T的大小比|U|小很多，所以肯定会有冲突的情况。\n\n冲突最简单的解决方式是使用链接法，后面还介绍一种开放寻址法。\n下图是链接法的图示，当有两个k值映射到了同一个散列值时，将它们保存在一个链表内。\n\n链接法散列分析\n如果要将n个数据存储在m大小的散列表中，我们称α = n/m为装载因子，即散列表的每个槽平均存放的数据。\n假设散列函数能等可能的把数据散列到m个槽中，我们称这个假设为简单均匀散列。\n这时每个槽存放元素个数的期望值为α。\n所以，一次不成功查找的平均时间为Θ(1+α)\\Theta(1+\\alpha)Θ(1+α)。（1 表示散列函数消耗的时间）\n1因为每个槽的期望为α，而不成功的情况下，查找的期望时间就是从槽链表的头遍历到链表尾，所以期望时间就是槽链表的长度α。\n一次成功查找的平均时间为Θ(1+α)\\Theta(1+\\alpha)Θ(1+α)。\n12具体证明参考公开课中老师的推理，或者书中推理。自我理解：一个元素在槽中的位置是等概率随机的(1/α)，而且期望时间为元素在槽中位置的期望。期望位置为(1+2+..+α)*(1/α) = (α+1)/2\n散列函数\n最好的散列函数便是能达到简单均匀散列。\n下面介绍一些的散列函数。其中全域散列能够达到这样的要求。\n除法散列\n1h(k) = k mod m\nm最好是一个素数，并且不能太接近2或者10的乘方。\n乘法散列\n1h(k) = [(a * k) mod 2^w] &gt;&gt; (w − r)\nk是w bits的数\nm = 2^r\na最好是一个奇数，并且不能太接近2或者10的乘方。\n\n全域散列\n随机的选择散列函数，称为全域散列\nExample：\n12h(k) = [(ak+b) mod p] mod m where a and b are random ∈ &#123;0, 1, . . . p−1&#125;, and p is a large prime (&gt; |U|).\n证明全域散列为简单均匀散列的过程，参考公开课中老师的推理，或者书中推理。\n开放寻址法\n\n无链表，所有的元素都保存在table中\n每个槽存储一个元素，m&gt;=n\n散列函数为h(k, i)，i从0开始，当有冲突后i++，直到找到一个空的位置，所以散列函数需要有如下性质：\n\n12345对同一个KEY做m次探查，能把散列表填满h : U × &#123;0, 1,...,m − 1&#125; → &#123;0, 1,...,m − 1&#125;&#123;h(k, 0), h(k, 1), . . . , h(k, m − 1)&#125; == &#123;0, 1,...,m − 1&#125;\n删除时，不能直接删除！删除后需要标记此位为删除位。\n线性探查\n1h(k, i) = (h1(k) +i) mod m\n双重探查\n1234h(k, i) =(h1(k) + i·h2(k)) mod mh2(k) 需要和 m 互为质数e.g. m = 2^r, h2(k) 永远为奇数\n开放寻址法分析\n给定一个装载因子α = n/m < 1的开放寻址散列表，并假设是均匀散列的：\n对于一次不成功的查找，期望的探查次数至多为1/(1-α)\n对于一次成功的查找，期望的探查次数至多为\\frac{1}{α}\\ln(1/(1-α))\n完全散列\n基于全域散列，完全没看。。。\n涉及数据结构\n\n点击查看实现\n\n\n使用链接法的散列表\n\n","dateCreated":"2015-03-05T18:20:08+08:00","dateModified":"2025-06-02T23:16:03+08:00","datePublished":"2015-03-05T18:20:08+08:00","description":"","headline":"11. 散列表（哈希表）","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/","keywords":"算法"}</script>
     <meta name="description" content="11. 散列表（哈希表） 许多应用都需要一种动态集合，至少支持Insert，Search和Delete的字典操作。 散列表（Hash Table）是实现字典操作的一种有效数据结构。尽管最坏情况下散列表查询一个元素的时间和链表的查询时间相同，为Θ(n)。但是在实际应用中，散列表的查询性能是极好的。在一些合理的假设下，散列表中扎寻一个元素的平均时间能为Ο(1)。 假设某应用需要用到一个动态集合，其中每">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="11. 散列表（哈希表）">
-<meta property="og:url" content="https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/index.html">
+<meta property="og:url" content="https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="11. 散列表（哈希表） 许多应用都需要一种动态集合，至少支持Insert，Search和Delete的字典操作。 散列表（Hash Table）是实现字典操作的一种有效数据结构。尽管最坏情况下散列表查询一个元素的时间和链表的查询时间相同，为Θ(n)。但是在实际应用中，散列表的查询性能是极好的。在一些合理的假设下，散列表中扎寻一个元素的平均时间能为Ο(1)。 假设某应用需要用到一个动态集合，其中每">
 <meta property="og:locale" content="zh_TW">
@@ -55,7 +55,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -461,7 +461,7 @@ Example：</p>
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -472,7 +472,7 @@ Example：</p>
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -485,7 +485,7 @@ Example：</p>
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -498,7 +498,7 @@ Example：</p>
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -511,7 +511,7 @@ Example：</p>
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -524,7 +524,7 @@ Example：</p>
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -589,7 +589,7 @@ Example：</p>
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -600,7 +600,7 @@ Example：</p>
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -613,7 +613,7 @@ Example：</p>
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -626,7 +626,7 @@ Example：</p>
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -639,7 +639,7 @@ Example：</p>
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -652,7 +652,7 @@ Example：</p>
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -673,7 +673,7 @@ Example：</p>
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -686,7 +686,7 @@ Example：</p>
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -699,7 +699,7 @@ Example：</p>
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -712,7 +712,7 @@ Example：</p>
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/05/Algorithms/11.%E6%95%A3%E5%88%97%E8%A1%A8/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -788,7 +788,7 @@ Example：</p>
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -811,7 +811,7 @@ Example：</p>
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -834,7 +834,7 @@ Example：</p>
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -857,7 +857,7 @@ Example：</p>
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -880,7 +880,7 @@ Example：</p>
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -903,7 +903,7 @@ Example：</p>
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -926,7 +926,7 @@ Example：</p>
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -949,7 +949,7 @@ Example：</p>
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -972,7 +972,7 @@ Example：</p>
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -995,7 +995,7 @@ Example：</p>
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

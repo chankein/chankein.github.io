@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"环境\n三台虚拟机(IP)：\n\n192.168.252.121\n192.168.252.122\n192.168.252.123\n\n1.修改主机名\n修改三台主机名，以此类推，node1，node3，node3\n命令格式\n1hostnamectl set-hostname &lt;hostname&gt;\n1sudo hostnamectl set-hostname node1\n剩下的虚拟机依次修改hostnamectl set-hostname[1-3]\n重启操作系统\n1$ reboot\n2.修改映射关系\n1.在 node1 的 /etc/hosts 文件下添加如下内容\n12su hadoopvi /etc/hosts\n2.查看修改后的/etc/hosts 文件内容\n1234567$ cat /etc/hosts127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4::1         localhost localhost.localdomain localhost6 localhost6.localdomain6# 以下是添加的192.168.252.121 node1192.168.252.122 node2192.168.252.123 node3\n2.将集群node1 上的文件hosts文件 通过 scp 命令复制发送到集群的每一个节点\n1for a in &#123;1..3&#125; ; do sudo scp /etc/hosts hadoop@node$a:/etc/hosts ; done\n3.检查是否集群每一个节点的 hosts 文件都已经修改过来了\n1for a in &#123;1..3&#125; ; do sudo ssh hadoop@node$a cat /etc/hosts ; done\n3.启动 ssh 无密登录\n1.在集群node1的 /etc/ssh/sshd_config 文件去掉以下选项的注释\n1sudo vi /etc/ssh/sshd_config \n12RSAAuthentication yes      #开启私钥验证PubkeyAuthentication yes   #开启公钥验证\n2.将集群node1 修改后的 /etc/ssh/sshd_config 通过 scp 命令复制发送到集群的每一个节点\n1for a in &#123;1..3&#125; ; do  sudo scp /etc/ssh/sshd_config hadoop@node$a:/etc/ssh/sshd_config ; done\n4.生成公钥、私钥\n1.在集群的每一个节点节点输入命令 ssh-keygen -t rsa -P ''，生成 key，一律回车\n1ssh-keygen -t rsa -P &#x27;&#x27;\n12345678910111213141516171819Generating public/private rsa key pair.Enter file in which to save the key (/home/hadoop/.ssh/id_rsa): Created directory &#x27;/home/hadoop/.ssh&#x27;.Your identification has been saved in /home/hadoop/.ssh/id_rsa.Your public key has been saved in /home/hadoop/.ssh/id_rsa.pub.The key fingerprint is:aa:be:0e:46:9a:e8:d5:dc:79:ea:5a:b8:9b:08:e2:dd hadoop@node2The key&#x27;s randomart image is:+--[ RSA 2048]----+|                 ||                 ||                 ||                 ||  .     S        ||.+  o o..        ||=.o. +.+ .       ||+.+.o.+ o        || o ==E+o         |+-----------------+\n2.在集群的node1 节点输入命令\n将集群每一个节点的公钥id_rsa.pub放入到自己的认证文件中authorized_keys;\n1for a in &#123;1..3&#125;; do sudo ssh hadoop@node$a cat /home/hadoop/.ssh/id_rsa.pub &gt;&gt; /home/hadoop/.ssh/authorized_keys; done\n3.在集群的node1 节点输入命令\n将自己的认证文件 authorized_keys 通过 scp 命令复制发送到每一个节点上去: /home/hadoop/.ssh/authorized_keys`\n1for a in &#123;1..3&#125;; do sudo scp /home/hadoop/.ssh/authorized_keys hadoop@node$a:/home/hadoop/.ssh/authorized_keys ; done\n4.非ROOT 用户需赋权限\n123chmod 700 /home/hadoop/.ssh/chmod 700 /home/hadoop/chmod 600 /home/hadoop/.ssh/authorized_keys \n5.在集群的每一个节点节点输入命令\n接重启ssh服务\n1sudo systemctl restart sshd.service\n6.验证 ssh 无密登录\n开一个其他窗口测试下能否免密登陆\n例如：在node3\n1ssh hadoop@node2\nexit 退出\n123[hadoop@node1 ~]# exitlogoutConnection to node1 closed.\n注意：开新的其他窗口测试下能否免密登陆，把当前窗口都关了\n","dateCreated":"2017-11-16T18:42:22+08:00","dateModified":"2025-06-16T18:43:30+08:00","datePublished":"2017-11-16T18:42:22+08:00","description":"","headline":"CentOs7.3 hadoop ssh 免密登录","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/","keywords":"hadoop"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"环境\n三台虚拟机(IP)：\n\n192.168.252.121\n192.168.252.122\n192.168.252.123\n\n1.修改主机名\n修改三台主机名，以此类推，node1，node3，node3\n命令格式\n1hostnamectl set-hostname &lt;hostname&gt;\n1sudo hostnamectl set-hostname node1\n剩下的虚拟机依次修改hostnamectl set-hostname[1-3]\n重启操作系统\n1$ reboot\n2.修改映射关系\n1.在 node1 的 /etc/hosts 文件下添加如下内容\n12su hadoopvi /etc/hosts\n2.查看修改后的/etc/hosts 文件内容\n1234567$ cat /etc/hosts127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4::1         localhost localhost.localdomain localhost6 localhost6.localdomain6# 以下是添加的192.168.252.121 node1192.168.252.122 node2192.168.252.123 node3\n2.将集群node1 上的文件hosts文件 通过 scp 命令复制发送到集群的每一个节点\n1for a in &#123;1..3&#125; ; do sudo scp /etc/hosts hadoop@node$a:/etc/hosts ; done\n3.检查是否集群每一个节点的 hosts 文件都已经修改过来了\n1for a in &#123;1..3&#125; ; do sudo ssh hadoop@node$a cat /etc/hosts ; done\n3.启动 ssh 无密登录\n1.在集群node1的 /etc/ssh/sshd_config 文件去掉以下选项的注释\n1sudo vi /etc/ssh/sshd_config \n12RSAAuthentication yes      #开启私钥验证PubkeyAuthentication yes   #开启公钥验证\n2.将集群node1 修改后的 /etc/ssh/sshd_config 通过 scp 命令复制发送到集群的每一个节点\n1for a in &#123;1..3&#125; ; do  sudo scp /etc/ssh/sshd_config hadoop@node$a:/etc/ssh/sshd_config ; done\n4.生成公钥、私钥\n1.在集群的每一个节点节点输入命令 ssh-keygen -t rsa -P ''，生成 key，一律回车\n1ssh-keygen -t rsa -P &#x27;&#x27;\n12345678910111213141516171819Generating public/private rsa key pair.Enter file in which to save the key (/home/hadoop/.ssh/id_rsa): Created directory &#x27;/home/hadoop/.ssh&#x27;.Your identification has been saved in /home/hadoop/.ssh/id_rsa.Your public key has been saved in /home/hadoop/.ssh/id_rsa.pub.The key fingerprint is:aa:be:0e:46:9a:e8:d5:dc:79:ea:5a:b8:9b:08:e2:dd hadoop@node2The key&#x27;s randomart image is:+--[ RSA 2048]----+|                 ||                 ||                 ||                 ||  .     S        ||.+  o o..        ||=.o. +.+ .       ||+.+.o.+ o        || o ==E+o         |+-----------------+\n2.在集群的node1 节点输入命令\n将集群每一个节点的公钥id_rsa.pub放入到自己的认证文件中authorized_keys;\n1for a in &#123;1..3&#125;; do sudo ssh hadoop@node$a cat /home/hadoop/.ssh/id_rsa.pub &gt;&gt; /home/hadoop/.ssh/authorized_keys; done\n3.在集群的node1 节点输入命令\n将自己的认证文件 authorized_keys 通过 scp 命令复制发送到每一个节点上去: /home/hadoop/.ssh/authorized_keys`\n1for a in &#123;1..3&#125;; do sudo scp /home/hadoop/.ssh/authorized_keys hadoop@node$a:/home/hadoop/.ssh/authorized_keys ; done\n4.非ROOT 用户需赋权限\n123chmod 700 /home/hadoop/.ssh/chmod 700 /home/hadoop/chmod 600 /home/hadoop/.ssh/authorized_keys \n5.在集群的每一个节点节点输入命令\n接重启ssh服务\n1sudo systemctl restart sshd.service\n6.验证 ssh 无密登录\n开一个其他窗口测试下能否免密登陆\n例如：在node3\n1ssh hadoop@node2\nexit 退出\n123[hadoop@node1 ~]# exitlogoutConnection to node1 closed.\n注意：开新的其他窗口测试下能否免密登陆，把当前窗口都关了\n","dateCreated":"2017-11-16T18:42:22+08:00","dateModified":"2025-06-16T18:43:30+08:00","datePublished":"2017-11-16T18:42:22+08:00","description":"","headline":"CentOs7.3 hadoop ssh 免密登录","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/","keywords":"hadoop"}</script>
     <meta name="description" content="环境 三台虚拟机(IP)：  192.168.252.121 192.168.252.122 192.168.252.123  1.修改主机名 修改三台主机名，以此类推，node1，node3，node3 命令格式 1hostnamectl set-hostname &lt;hostname&gt; 1sudo hostnamectl set-hostname node1 剩下的虚拟机依次修改ho">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="CentOs7.3 hadoop ssh 免密登录">
-<meta property="og:url" content="https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/index.html">
+<meta property="og:url" content="https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="环境 三台虚拟机(IP)：  192.168.252.121 192.168.252.122 192.168.252.123  1.修改主机名 修改三台主机名，以此类推，node1，node3，node3 命令格式 1hostnamectl set-hostname &lt;hostname&gt; 1sudo hostnamectl set-hostname node1 剩下的虚拟机依次修改ho">
 <meta property="og:locale" content="zh_TW">
@@ -50,7 +50,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -435,7 +435,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -446,7 +446,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -459,7 +459,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -472,7 +472,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -485,7 +485,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -498,7 +498,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -563,7 +563,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -574,7 +574,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -587,7 +587,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -600,7 +600,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -613,7 +613,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -626,7 +626,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -647,7 +647,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -660,7 +660,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -673,7 +673,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -686,7 +686,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2017/11/16/database/CentOs7-3-Hadoop-ssh-%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -762,7 +762,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -785,7 +785,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -808,7 +808,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -831,7 +831,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -854,7 +854,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -877,7 +877,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -900,7 +900,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -923,7 +923,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -946,7 +946,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -969,7 +969,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

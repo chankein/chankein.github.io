@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"OracleDB 笔记整理\n1. SQL 分类\n\n\n\n分类\n说明\n关键字\n\n\n\n\nDML (Data Manipulation Language)\n数据操作语言\nSELECT, INSERT, UPDATE, DELETE, MERGE\n\n\nDDL (Data Definition Language)\n数据定义语言\nCREATE, ALTER, DROP, RENAME, TRUNCATE, COMMENT\n\n\nDCL (Data Control Language)\n数据控制语言\nGRANT, REVOKE\n\n\n事务 (Transaction)\n事务控制\nCOMMIT, ROLLBACK, SAVEPOINT\n\n\n\n2. OracleDB 构成\n2.1 基本构成\nOracleDB 由 Oracle实例(instance) 和 Database 构成：\n\n实例(Instance) 由：\n\nSGA(System Global Area)：内存区域\nBackground Process：后台进程\n\n\nDatabase 由：\n\n控制文件（制御ファイル）\nREDO 文件（REDO ログ）\n数据文件（データファイル）\n\n\n\n2.2 进程视角\n除了实例中的 Background Process，还包括：\n\n用户进程\n服务器进程\n监听进程\n\n2.3 工具列表\n安装和升级相关工具\n\n\n\n工具名\n用途\n\n\n\n\nOracle Universal Installer (OUI)\n安装 Oracle 软件\n\n\nOracle Database Configuration Assistant (DBCA)\n创建数据库\n\n\nOracle Database Upgrade Assistant (DBUA)\n升级现有数据库到新版本\n\n\n\n网络相关工具\n\n\n\n工具名\n用途\n\n\n\n\nOracle Net Manager (netmgr)\n配置 Oracle 网络\n\n\nOracle Net Configuration Assistant (netca)\n配置 Oracle 网络\n\n\n\n实例和数据库管理工具\n\n\n\n工具名\n用途\n\n\n\n\nOracle Enterprise Manager (EM)\n管理 Oracle DB\n\n\nSQL*Plus\nSQL 命令行工具\n\n\nSQL Developer\n图形化数据库管理工具\n\n\nRecovery Manager (RMAN)\n数据库备份、恢复、复原\n\n\nOracle Secure Backup\n备份管理\n\n\nData Pump\n数据库间高速数据传输\n\n\nSQL*Loader\n外部文件数据批量导入\n\n\n\n3. 安装\n3.1 OUI 功能\n\n显示已安装的 Oracle 软件\n安装新软件\n删除软件\n查看在线帮助\n检查安装需求\n\n3.2 系统要求\n\n内存：1GB\nSWAP：1.5GB\n硬盘空间：\n\n最小 1GB\n一般需要 6.1GB\n\n\n\n3.3 创建用户和组\n\n软件所有者：Oracle 用户\nOracle Inventory Group：用于管理 Oracle 软件\nDB 管理组：\n\nOSDBA：数据库管理员组\nOSOPER：受限制的数据库管理员组\n\n\n\n3.4 环境变量\n\n\n\n变量名\n说明\n\n\n\n\nORACLE_BASE\nOracle 主目录\n\n\nORACLE_HOME\nOracle 软件安装位置\n\n\nORACLE_SID\n系统标识（实例名）\n\n\nLD_LIBRARY_PATH\n共享库路径（如 $ORACLE_HOME/lib）\n\n\n\n3.5 安装脚本\n\n\n\n脚本名\n用途\n\n\n\n\norainstRoot.sh\n生成 inventory pointer 文件\n\n\nroot.sh\n生成 oratab 并设置环境变量 (oraenv 和 coraenv)，指定 dbstart 和 dbshut 脚本\n\n\n\n3.6 创建数据库（DBCA）\n3.6.1 指定 Global DB 名\n格式：database_name.domain_name\n3.6.2 Enterprise Manager 选项\n\nDatabase Express：单数据库管理\nCloud Control：集中管理多个数据库（需预先安装 Cloud Control）\n\n3.6.3 存储类型\n\n\n\n类型\n说明\n\n\n\n\n文件系统\n使用操作系统文件\n\n\nASM (Automatic Storage Management)\n文件存储在 ASM 磁盘组，需额外实例\n\n\n\n3.6.4 数据库文件位置\n\n使用模板的文件位置\n所有数据库文件共享文件夹\nOracle Managed Files：由 Oracle 直接管理文件\n\n3.6.5 模板\n模板包含以下信息：\n\n数据库选项\n初始化参数\n存储属性（数据文件、表空间、控制文件、REDO 日志属性）\n\n模板分类\n\n\n\n模板类型\n说明\n\n\n\n\n通用事务处理（默认）\n适用于 OLTP 场景\n\n\n数据仓库 (Data Warehouse)\n适用于复杂查询和大数据处理\n\n\n自定义模板\n用户自定义配置\n\n\n\n模板形式\n\n\n\n形式\n说明\n\n\n\n\nSheet Template\n包含现有数据库结构和物理文件\n\n\nNon-Sheet Template\n仅包含数据库特性\n\n\n\n4. EM Express\n4.1 功能\n\n提供数据库管理功能（不包括启动/停止数据库）\n如需启动/停止数据库，需使用 Oracle Enterprise Manager Cloud Control\n\n4.2 手动配置 EM Express\n\n启动监听进程\n初始化 DISPATCHERS 参数（设置 PROTOCOL=TCP）：1dispatchers=&quot;(PROTOCOL=TCP)(SERVICE=&lt;sid&gt;XDB)&quot;\n\n设置端口（需 SYSDBA 权限）：1EXEC DBMS_XDB_CONFIG.setHTTPSPORT(5500);\n\n\n4.3 使用 EM Express\n4.3.1 查询 EM Express 端口\n1SELECT DBMS_XDB_CONFIG.getHTTPSPort FROM DUAL;\n4.3.2 权限分配\n\n\n\n权限\n说明\n\n\n\n\nEM_EXPRESS_BASIC\n只读模式\n\n\nEM_EXPRESS_ALL\n完全权限\n\n\n\n4.4 连接数据库\n4.4.1 SQL*Plus 连接方式\n\n运行 oraenv 设置环境变量：1. oraenv\n\n启动 SQL*Plus（/nolog 表示不登录数据库）：1sqlplus /nolog\n\n连接数据库：1CONNECT &lt;用户名&gt;/&lt;密码&gt; [AS SYSDBA | AS SYSOPER]\n\n其他功能：\n\n执行 SQL 脚本：1@&lt;sql文件名&gt;\n\n执行操作系统命令：1HOST &lt;命令&gt;  # 例如：HOST ls\n\n\n\n\n4.4.2 SQL Developer 连接方式\n\n运行 oraenv 设置环境变量：1. oraenv\n\n启动 SQL Developer：12cd $ORACLE_HOME/sqldevelopersh sqldeveloper.sh\n\n功能：\n\n普通模式：查看、创建、编辑、删除表、视图等对象\nDBA Navigator：连接 DBA 用户后可启动/停止数据库\n\n\n\n5. Oracle 网络构成\n5.1 Oracle Net 概述\n\n功能：提供网络服务\n安装方式：随 Oracle 数据库软件或客户端一同安装\n通信模式：\n\n客户端-服务端模式：两端均需安装 Oracle Net\n客户端-Web 服务器-DB 服务器模式：客户端和 Web 服务器需安装 Oracle Net\n\n\n\n5.2 通信条件\n\n\n\n角色\n要求\n\n\n\n\nDB 服务端\n1. 网络服务器在线2. 已安装 Oracle DB3. 支持 TCP/IP 协议4. 监听进程已启动\n\n\n客户端\n1. 网络服务器在线2. 已安装 Oracle 客户端3. 支持 TCP/IP 协议\n\n\n\n5.3 监听进程\n\n\n自动安装：通过 OUI 初始化 DB 时，NetCA 会默认安装监听进程\n\n\n作用：处理客户端连接请求（连接建立后不再参与通信）\n\n\n关键命令：\n\n\n\n命令\n功能\n\n\n\n\nlsnrctl start &lt;监听进程名&gt;\n启动监听进程\n\n\nlsnrctl stop &lt;监听进程名&gt;\n停止监听进程\n\n\nlsnrctl status &lt;监听进程名&gt;\n查看状态\n\n\nlsnrctl services &lt;监听进程名&gt;\n查看支持的服务\n\n\nLSNRCTL&gt; set current_listener &lt;名称&gt;\n切换监听进程（需交互模式）\n\n\n\n\n\n5.4 客户端构成\n\n数据库连接示例：123CONNECT hr@(DESCRIPTION =   (ADDRESS = (PROTOCOL = TCP)(HOST = proj1-sv)(PORT = 1521))  (CONNECT_DATA = (SERVICE_NAME = sales.edifist.com)))\n\n\n5.5 命名方法\n\n\n\n类型\n存储位置\n说明\n\n\n\n\n本地命名\n客户端 tnsnames.ora\n网络服务名映射存储在本地文件\n\n\nLDAP 基准\nLDAP 服务器\n集中管理服务名映射\n\n\n简易连接命名\n无\n直接使用 TCP/IP 连接字符串（如 connect scott@host名/服务名）\n\n\n外部命名\n第三方命名服务（如 NIS）\n依赖非 Oracle 服务\n\n\n\n本地命名配置方法\n1netca  # 启动图形化配置工具\n简易连接示例\n12sqlplus /nologSQL&gt; CONNECT hr/hr@oracle_sv/orcl.edifist.com\n\n6. 数据库服务器架构概要\n6.1 核心组件\n\nOracle 实例：内存结构（SGA） + 后台进程\nOracle 数据库：物理文件集合\n\n6.2 SGA (System Global Area) 构成\n\n\n\n组件\n功能\n\n\n\n\n数据库缓存\n存储数据块（Buffer Cache）\n\n\nREDO 日志 Buffer\n记录数据变更历史\n\n\n共享池\n缓存 SQL/PLSQL 解析结果、执行计划、数据字典\n\n\nLarge Pool\n可选，用于共享服务器模式、并行查询、RMAN 备份等\n\n\nJava Pool\n支持 Java 虚拟机（JVM）\n\n\nStream Pool\n支持 Oracle Stream 数据复制\n\n\n\n6.3 关键后台进程\n\n\n\n进程\n名称\n功能\n\n\n\n\nSMON\nSystem Monitor\n实例恢复（如崩溃后自动修复）\n\n\nPMON\nProcess Monitor\n清理异常终止的用户进程资源\n\n\nDBWn\nDatabase Writer\n将脏缓冲区写入数据文件\n\n\nCKPT\nCheckpoint\n触发 DBWn 写入，更新控制文件（用于灾难恢复）\n\n\nLGWR\nLog Writer\n将 REDO 日志缓冲区写入磁盘\n\n\nARCn\nArchiver\n归档 REDO 日志\n\n\nMMON\nManageability Monitor\n执行 AWR（自动工作负载仓库）相关任务\n\n\n\n6.4 用户与服务器进程\n\n用户进程：运行应用程序（如 SQL*Plus）\n服务器进程：处理用户提交的 SQL 查询\n\n6.5 PGA (Program Global Area)\n\n特点：非共享内存，仅限单个进程访问\n用途：存储 SQL 执行时的排序区、会话信息等\n\n\n7. 实例启停\n7.1 启动方法\n\nSQL*Plus（STARTUP 命令）\nWindows 服务管理器\nSQL Developer\nEnterprise Manager Cloud Control\n\n7.2 启动状态迁移\n\n\n\n状态\n描述\n\n\n\n\nNOMOUNT\n读取参数文件，分配 SGA，启动后台进程（控制文件未打开）\n\n\nMOUNT\n打开控制文件（获知数据文件/日志文件路径，但未打开文件）\n\n\nOPEN\n打开所有数据文件和 REDO 日志，数据库可用\n\n\n\n7.3 权限要求\n\n\n\n权限\n能力\n\n\n\n\nSYSDBA\n完全控制（包括启停实例、用户授权）\n\n\nSYSOPER\n仅限启停实例（无权管理用户对象）\n\n\n\n连接示例\n1234CONNECT 用户名/密码 AS &#123;SYSOPER | SYSDBA&#125;sqlplus /nologCONNECT sys AS sysdbaSTARTUP\n7.4 停止流程\n\n关闭数据库（OPEN → CLOSED）\n\n执行 Checkpoint，写入数据文件和 REDO 日志\n关闭数据文件和 REDO 日志（控制文件仍打开）\n\n\n卸载数据库（CLOSED → DISMOUNT）\n\n实例与数据库分离\n\n\n停止实例（DISMOUNT → SHUTDOWN）\n\n终止后台进程，释放 SGA 内存\n\n\n\n7.5 停止模式对比\n\n\n\n行为\nNORMAL\nTRANSACTIONAL\nIMMEDIATE\nABORT\n\n\n\n\n接受新连接\n×\n×\n×\n×\n\n\n等待当前会话结束\n✓\n✓\n×\n×\n\n\n等待当前事务结束\n✓\n✓\n✓\n×\n\n\n执行 Checkpoint 后关闭\n✓\n✓\n✓\n×\n\n\n\n7.6 初始化参数文件\n\n\n\n类型\n名称\n特点\n\n\n\n\n静态\nPFILE（文本文件）\n手动编辑，需重启生效\n\n\n动态\nSPFILE（二进制文件）\n支持在线修改（ALTER SYSTEM），优先使用\n\n\n\n","dateCreated":"2021-05-09T07:15:08+08:00","dateModified":"2025-06-16T11:38:56+08:00","datePublished":"2021-05-09T07:15:08+08:00","description":"","headline":"oracelDB基础","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/","keywords":"oracleDB, database"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"OracleDB 笔记整理\n1. SQL 分类\n\n\n\n分类\n说明\n关键字\n\n\n\n\nDML (Data Manipulation Language)\n数据操作语言\nSELECT, INSERT, UPDATE, DELETE, MERGE\n\n\nDDL (Data Definition Language)\n数据定义语言\nCREATE, ALTER, DROP, RENAME, TRUNCATE, COMMENT\n\n\nDCL (Data Control Language)\n数据控制语言\nGRANT, REVOKE\n\n\n事务 (Transaction)\n事务控制\nCOMMIT, ROLLBACK, SAVEPOINT\n\n\n\n2. OracleDB 构成\n2.1 基本构成\nOracleDB 由 Oracle实例(instance) 和 Database 构成：\n\n实例(Instance) 由：\n\nSGA(System Global Area)：内存区域\nBackground Process：后台进程\n\n\nDatabase 由：\n\n控制文件（制御ファイル）\nREDO 文件（REDO ログ）\n数据文件（データファイル）\n\n\n\n2.2 进程视角\n除了实例中的 Background Process，还包括：\n\n用户进程\n服务器进程\n监听进程\n\n2.3 工具列表\n安装和升级相关工具\n\n\n\n工具名\n用途\n\n\n\n\nOracle Universal Installer (OUI)\n安装 Oracle 软件\n\n\nOracle Database Configuration Assistant (DBCA)\n创建数据库\n\n\nOracle Database Upgrade Assistant (DBUA)\n升级现有数据库到新版本\n\n\n\n网络相关工具\n\n\n\n工具名\n用途\n\n\n\n\nOracle Net Manager (netmgr)\n配置 Oracle 网络\n\n\nOracle Net Configuration Assistant (netca)\n配置 Oracle 网络\n\n\n\n实例和数据库管理工具\n\n\n\n工具名\n用途\n\n\n\n\nOracle Enterprise Manager (EM)\n管理 Oracle DB\n\n\nSQL*Plus\nSQL 命令行工具\n\n\nSQL Developer\n图形化数据库管理工具\n\n\nRecovery Manager (RMAN)\n数据库备份、恢复、复原\n\n\nOracle Secure Backup\n备份管理\n\n\nData Pump\n数据库间高速数据传输\n\n\nSQL*Loader\n外部文件数据批量导入\n\n\n\n3. 安装\n3.1 OUI 功能\n\n显示已安装的 Oracle 软件\n安装新软件\n删除软件\n查看在线帮助\n检查安装需求\n\n3.2 系统要求\n\n内存：1GB\nSWAP：1.5GB\n硬盘空间：\n\n最小 1GB\n一般需要 6.1GB\n\n\n\n3.3 创建用户和组\n\n软件所有者：Oracle 用户\nOracle Inventory Group：用于管理 Oracle 软件\nDB 管理组：\n\nOSDBA：数据库管理员组\nOSOPER：受限制的数据库管理员组\n\n\n\n3.4 环境变量\n\n\n\n变量名\n说明\n\n\n\n\nORACLE_BASE\nOracle 主目录\n\n\nORACLE_HOME\nOracle 软件安装位置\n\n\nORACLE_SID\n系统标识（实例名）\n\n\nLD_LIBRARY_PATH\n共享库路径（如 $ORACLE_HOME/lib）\n\n\n\n3.5 安装脚本\n\n\n\n脚本名\n用途\n\n\n\n\norainstRoot.sh\n生成 inventory pointer 文件\n\n\nroot.sh\n生成 oratab 并设置环境变量 (oraenv 和 coraenv)，指定 dbstart 和 dbshut 脚本\n\n\n\n3.6 创建数据库（DBCA）\n3.6.1 指定 Global DB 名\n格式：database_name.domain_name\n3.6.2 Enterprise Manager 选项\n\nDatabase Express：单数据库管理\nCloud Control：集中管理多个数据库（需预先安装 Cloud Control）\n\n3.6.3 存储类型\n\n\n\n类型\n说明\n\n\n\n\n文件系统\n使用操作系统文件\n\n\nASM (Automatic Storage Management)\n文件存储在 ASM 磁盘组，需额外实例\n\n\n\n3.6.4 数据库文件位置\n\n使用模板的文件位置\n所有数据库文件共享文件夹\nOracle Managed Files：由 Oracle 直接管理文件\n\n3.6.5 模板\n模板包含以下信息：\n\n数据库选项\n初始化参数\n存储属性（数据文件、表空间、控制文件、REDO 日志属性）\n\n模板分类\n\n\n\n模板类型\n说明\n\n\n\n\n通用事务处理（默认）\n适用于 OLTP 场景\n\n\n数据仓库 (Data Warehouse)\n适用于复杂查询和大数据处理\n\n\n自定义模板\n用户自定义配置\n\n\n\n模板形式\n\n\n\n形式\n说明\n\n\n\n\nSheet Template\n包含现有数据库结构和物理文件\n\n\nNon-Sheet Template\n仅包含数据库特性\n\n\n\n4. EM Express\n4.1 功能\n\n提供数据库管理功能（不包括启动/停止数据库）\n如需启动/停止数据库，需使用 Oracle Enterprise Manager Cloud Control\n\n4.2 手动配置 EM Express\n\n启动监听进程\n初始化 DISPATCHERS 参数（设置 PROTOCOL=TCP）：1dispatchers=&quot;(PROTOCOL=TCP)(SERVICE=&lt;sid&gt;XDB)&quot;\n\n设置端口（需 SYSDBA 权限）：1EXEC DBMS_XDB_CONFIG.setHTTPSPORT(5500);\n\n\n4.3 使用 EM Express\n4.3.1 查询 EM Express 端口\n1SELECT DBMS_XDB_CONFIG.getHTTPSPort FROM DUAL;\n4.3.2 权限分配\n\n\n\n权限\n说明\n\n\n\n\nEM_EXPRESS_BASIC\n只读模式\n\n\nEM_EXPRESS_ALL\n完全权限\n\n\n\n4.4 连接数据库\n4.4.1 SQL*Plus 连接方式\n\n运行 oraenv 设置环境变量：1. oraenv\n\n启动 SQL*Plus（/nolog 表示不登录数据库）：1sqlplus /nolog\n\n连接数据库：1CONNECT &lt;用户名&gt;/&lt;密码&gt; [AS SYSDBA | AS SYSOPER]\n\n其他功能：\n\n执行 SQL 脚本：1@&lt;sql文件名&gt;\n\n执行操作系统命令：1HOST &lt;命令&gt;  # 例如：HOST ls\n\n\n\n\n4.4.2 SQL Developer 连接方式\n\n运行 oraenv 设置环境变量：1. oraenv\n\n启动 SQL Developer：12cd $ORACLE_HOME/sqldevelopersh sqldeveloper.sh\n\n功能：\n\n普通模式：查看、创建、编辑、删除表、视图等对象\nDBA Navigator：连接 DBA 用户后可启动/停止数据库\n\n\n\n5. Oracle 网络构成\n5.1 Oracle Net 概述\n\n功能：提供网络服务\n安装方式：随 Oracle 数据库软件或客户端一同安装\n通信模式：\n\n客户端-服务端模式：两端均需安装 Oracle Net\n客户端-Web 服务器-DB 服务器模式：客户端和 Web 服务器需安装 Oracle Net\n\n\n\n5.2 通信条件\n\n\n\n角色\n要求\n\n\n\n\nDB 服务端\n1. 网络服务器在线2. 已安装 Oracle DB3. 支持 TCP/IP 协议4. 监听进程已启动\n\n\n客户端\n1. 网络服务器在线2. 已安装 Oracle 客户端3. 支持 TCP/IP 协议\n\n\n\n5.3 监听进程\n\n\n自动安装：通过 OUI 初始化 DB 时，NetCA 会默认安装监听进程\n\n\n作用：处理客户端连接请求（连接建立后不再参与通信）\n\n\n关键命令：\n\n\n\n命令\n功能\n\n\n\n\nlsnrctl start &lt;监听进程名&gt;\n启动监听进程\n\n\nlsnrctl stop &lt;监听进程名&gt;\n停止监听进程\n\n\nlsnrctl status &lt;监听进程名&gt;\n查看状态\n\n\nlsnrctl services &lt;监听进程名&gt;\n查看支持的服务\n\n\nLSNRCTL&gt; set current_listener &lt;名称&gt;\n切换监听进程（需交互模式）\n\n\n\n\n\n5.4 客户端构成\n\n数据库连接示例：123CONNECT hr@(DESCRIPTION =   (ADDRESS = (PROTOCOL = TCP)(HOST = proj1-sv)(PORT = 1521))  (CONNECT_DATA = (SERVICE_NAME = sales.edifist.com)))\n\n\n5.5 命名方法\n\n\n\n类型\n存储位置\n说明\n\n\n\n\n本地命名\n客户端 tnsnames.ora\n网络服务名映射存储在本地文件\n\n\nLDAP 基准\nLDAP 服务器\n集中管理服务名映射\n\n\n简易连接命名\n无\n直接使用 TCP/IP 连接字符串（如 connect scott@host名/服务名）\n\n\n外部命名\n第三方命名服务（如 NIS）\n依赖非 Oracle 服务\n\n\n\n本地命名配置方法\n1netca  # 启动图形化配置工具\n简易连接示例\n12sqlplus /nologSQL&gt; CONNECT hr/hr@oracle_sv/orcl.edifist.com\n\n6. 数据库服务器架构概要\n6.1 核心组件\n\nOracle 实例：内存结构（SGA） + 后台进程\nOracle 数据库：物理文件集合\n\n6.2 SGA (System Global Area) 构成\n\n\n\n组件\n功能\n\n\n\n\n数据库缓存\n存储数据块（Buffer Cache）\n\n\nREDO 日志 Buffer\n记录数据变更历史\n\n\n共享池\n缓存 SQL/PLSQL 解析结果、执行计划、数据字典\n\n\nLarge Pool\n可选，用于共享服务器模式、并行查询、RMAN 备份等\n\n\nJava Pool\n支持 Java 虚拟机（JVM）\n\n\nStream Pool\n支持 Oracle Stream 数据复制\n\n\n\n6.3 关键后台进程\n\n\n\n进程\n名称\n功能\n\n\n\n\nSMON\nSystem Monitor\n实例恢复（如崩溃后自动修复）\n\n\nPMON\nProcess Monitor\n清理异常终止的用户进程资源\n\n\nDBWn\nDatabase Writer\n将脏缓冲区写入数据文件\n\n\nCKPT\nCheckpoint\n触发 DBWn 写入，更新控制文件（用于灾难恢复）\n\n\nLGWR\nLog Writer\n将 REDO 日志缓冲区写入磁盘\n\n\nARCn\nArchiver\n归档 REDO 日志\n\n\nMMON\nManageability Monitor\n执行 AWR（自动工作负载仓库）相关任务\n\n\n\n6.4 用户与服务器进程\n\n用户进程：运行应用程序（如 SQL*Plus）\n服务器进程：处理用户提交的 SQL 查询\n\n6.5 PGA (Program Global Area)\n\n特点：非共享内存，仅限单个进程访问\n用途：存储 SQL 执行时的排序区、会话信息等\n\n\n7. 实例启停\n7.1 启动方法\n\nSQL*Plus（STARTUP 命令）\nWindows 服务管理器\nSQL Developer\nEnterprise Manager Cloud Control\n\n7.2 启动状态迁移\n\n\n\n状态\n描述\n\n\n\n\nNOMOUNT\n读取参数文件，分配 SGA，启动后台进程（控制文件未打开）\n\n\nMOUNT\n打开控制文件（获知数据文件/日志文件路径，但未打开文件）\n\n\nOPEN\n打开所有数据文件和 REDO 日志，数据库可用\n\n\n\n7.3 权限要求\n\n\n\n权限\n能力\n\n\n\n\nSYSDBA\n完全控制（包括启停实例、用户授权）\n\n\nSYSOPER\n仅限启停实例（无权管理用户对象）\n\n\n\n连接示例\n1234CONNECT 用户名/密码 AS &#123;SYSOPER | SYSDBA&#125;sqlplus /nologCONNECT sys AS sysdbaSTARTUP\n7.4 停止流程\n\n关闭数据库（OPEN → CLOSED）\n\n执行 Checkpoint，写入数据文件和 REDO 日志\n关闭数据文件和 REDO 日志（控制文件仍打开）\n\n\n卸载数据库（CLOSED → DISMOUNT）\n\n实例与数据库分离\n\n\n停止实例（DISMOUNT → SHUTDOWN）\n\n终止后台进程，释放 SGA 内存\n\n\n\n7.5 停止模式对比\n\n\n\n行为\nNORMAL\nTRANSACTIONAL\nIMMEDIATE\nABORT\n\n\n\n\n接受新连接\n×\n×\n×\n×\n\n\n等待当前会话结束\n✓\n✓\n×\n×\n\n\n等待当前事务结束\n✓\n✓\n✓\n×\n\n\n执行 Checkpoint 后关闭\n✓\n✓\n✓\n×\n\n\n\n7.6 初始化参数文件\n\n\n\n类型\n名称\n特点\n\n\n\n\n静态\nPFILE（文本文件）\n手动编辑，需重启生效\n\n\n动态\nSPFILE（二进制文件）\n支持在线修改（ALTER SYSTEM），优先使用\n\n\n\n","dateCreated":"2021-05-09T07:15:08+08:00","dateModified":"2025-06-16T11:38:56+08:00","datePublished":"2021-05-09T07:15:08+08:00","description":"","headline":"oracelDB基础","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/","keywords":"oracleDB, database"}</script>
     <meta name="description" content="OracleDB 笔记整理 1. SQL 分类    分类 说明 关键字     DML (Data Manipulation Language) 数据操作语言 SELECT, INSERT, UPDATE, DELETE, MERGE   DDL (Data Definition Language) 数据定义语言 CREATE, ALTER, DROP, RENAME, TRUNCATE, CO">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="oracelDB基础">
-<meta property="og:url" content="https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/index.html">
+<meta property="og:url" content="https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="OracleDB 笔记整理 1. SQL 分类    分类 说明 关键字     DML (Data Manipulation Language) 数据操作语言 SELECT, INSERT, UPDATE, DELETE, MERGE   DDL (Data Definition Language) 数据定义语言 CREATE, ALTER, DROP, RENAME, TRUNCATE, CO">
 <meta property="og:locale" content="zh_TW">
@@ -51,7 +51,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -1099,7 +1099,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -1110,7 +1110,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -1123,7 +1123,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -1136,7 +1136,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -1149,7 +1149,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -1162,7 +1162,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -1227,7 +1227,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -1238,7 +1238,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -1251,7 +1251,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -1264,7 +1264,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -1277,7 +1277,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -1290,7 +1290,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -1311,7 +1311,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -1324,7 +1324,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -1337,7 +1337,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -1350,7 +1350,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2021/05/09/database/oracelDB%E5%9F%BA%E7%A1%80/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -1426,7 +1426,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -1449,7 +1449,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -1472,7 +1472,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -1495,7 +1495,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -1518,7 +1518,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -1541,7 +1541,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1564,7 +1564,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1587,7 +1587,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1610,7 +1610,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1633,7 +1633,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"函数式编程最近几年越炒越热，有函数式编程的语言鄙视没有函数式编程的语言，纯函数式编程的语言鄙视不纯的函数式编程的语言。\n那么，到底什么是函数式编程，函数式编程的核心思想又是什么？\n函数式编程的第一个特点就是可以把函数作为参数传递给另一个函数，也就是所谓的高阶函数。例如，对数组进行排序，可以传入一个排序函数作为参数：\n12String[] array = &#123; &quot;orange&quot;, &quot;Pear&quot;, &quot;Apple&quot; &#125;;Arrays.sort(array, String::compareToIgnoreCase);\n函数式编程的第二个特点就是可以返回一个函数，这样就可以实现闭包或者惰性计算：\n以上两个特点还仅仅是简化了代码。从代码的可维护性上讲，函数式编程最大的好处是引用透明，即函数运行的结果只依赖于输入的参数，而不依赖于外部状态，因此，我们常常说函数式编程没有副作用。\n没有副作用有个巨大的好处，就是函数内部无状态，即输入确定，输出就是确定的，容易测试和维护。\n很多初学者容易纠结“纯”函数式语言，认为只有Haskell这种消除了变量和副作用的语言才是正宗的函数式编程。还有人甚至认为纯函数不能有任何IO操作，包括打行日志都不行。\n其实这种纠结是没有意义的，因为计算机底层就是一个完全可变的内存和不可预测输入的系统，追求完美的无副作用是不现实的，我们只需要理解函数式编程的思想，把业务逻辑做到“无副作用”，至于有变量、打日志、读缓存这些无关紧要的“副作用”，根本不用担心，不需要解决，也几乎没法解决。\n我们来举个栗子。\n比如一个财务软件，需要一个函数专门计算个人所得税，输入是一个IncomeRecord，输出是个税金额：\n123double calculateIncomeTax(IncomeRecord record) &#123;    ...&#125;\n又假设IncomeRecord长这样：\n12345class IncomeRecord &#123;    String id; // 身份证号    String name; // 姓名    double salary; // 工资&#125;\n先不考虑五险一金这些乱七八糟的东西，我们只关注如何计算个税。为了简化，我们假设直接扣除一个免征额后按20%计算：\n12345double calculateIncomeTax(IncomeRecord record) &#123;    double threshold = 3500;    double tax = record.salary &lt;= threshold ? 0 : (record.salary - threshold) * 0.2;    return tax;&#125;\n上面这个程序在2018年9月1号前是没问题的，问题是2018年9月1号后起征点调整到了5000，那2018年8月和2018年9月，计算结果应该不一样。怎么改？\n普通开发者的改法：那还不简单？直接获取当前日期，返回正确的起征点就行：\n12345double calculateIncomeTax(IncomeRecord record) &#123;    double threshold = today() &lt; date(2018, 9, 1) ? 3500 : 5000;    double tax = record.salary &lt;= threshold ? 0 : (record.salary - threshold) * 0.2;    return tax;&#125;\n程序是没错，问题是：\n同样的输入，8月31号跑，和9月1号跑，结果不一样，难道会计要在9月1号做8月份的工资条，必须把电脑的时间先调到8月份？\n用函数式编程的观点思考一下，就发现问题所在：\ntoday()这个函数，返回结果与时间有关，这就造成了calculateIncomeTax()不再是一个纯函数，它与当前时间相关了。\n那怎么把calculateIncomeTax()恢复成一个纯函数，同时要支持起征点调整？\n方法是把时间相关的变量作为参数传进来，例如，给IncomeRecord增加几个字段：\n1234567class IncomeRecord &#123;    String id; // 身份证号    String name; // 姓名    double salary; // 工资    int year; // 年    int month; // 月&#125;\n这样我们就可以消除today()的调用：\n12345double calculateIncomeTax(IncomeRecord record) &#123;    double threshold = date(record.year, record.month) &lt; date(2018, 9) ? 3500 : 5000;    double tax = record.salary &lt;= threshold ? 0 : (record.salary - threshold) * 0.2;    return tax;&#125;\ncalculateIncomeTax()又变成了一个纯函数，会计就不用改电脑时间了。\n是不是觉得这个例子太简单了？其实简单的函数如果都能写成有状态的，那么复杂的业务逻辑必然写成一锅粥。\n举个复杂的栗子：\n对于一个股票交易系统，如果我们把输入定义为：开盘前所有股民的现金和持股，以及交易时段的所有订单，那么，输出就是收盘后所有股民的现金和持股：\n12345678StockStatus process(StockStatus old, List&lt;Order&gt; orders) &#123;    ...    for (Order order : orders) &#123;        ...        sendExchangeResult(...); // 给每一笔成交发送信息    &#125;    ...&#125;\n很显然这是一个纯函数，虽然在处理过程中，这个函数会给股民朋友发送各种心跳消息。\n如果把交易系统的模型设计成这样一个纯函数，那么理论上我们只需要从股市开市的那一天开始，把所有订单全部处理一遍，就可以正确得到今天收盘后的状态。\n或者说，只要取任意一天开盘前的系统状态的备份（就是整个数据库的备份），把当天的订单重新处理一遍，就得到了当天收盘的状态。这个过程可以做任意次，结果不变，因此，非常适合验证代码的修改是否影响了业务流程。\n那么问题来了，交易系统中有无数和时间相关的状态，怎么处理成纯函数？这个模型的处理，可比计算个税复杂多了。\n这就是函数式编程的精髓：业务系统模型无状态。模型的好坏，直接影响到代码的正确性、可靠性、稳定性，以及是否需要996。\n","dateCreated":"2025-05-23T16:53:02+08:00","dateModified":"2025-05-23T16:54:12+08:00","datePublished":"2025-05-23T16:53:02+08:00","description":"","headline":"函数式编程的核心思想","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/","keywords":"计算机基础理论"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"函数式编程最近几年越炒越热，有函数式编程的语言鄙视没有函数式编程的语言，纯函数式编程的语言鄙视不纯的函数式编程的语言。\n那么，到底什么是函数式编程，函数式编程的核心思想又是什么？\n函数式编程的第一个特点就是可以把函数作为参数传递给另一个函数，也就是所谓的高阶函数。例如，对数组进行排序，可以传入一个排序函数作为参数：\n12String[] array = &#123; &quot;orange&quot;, &quot;Pear&quot;, &quot;Apple&quot; &#125;;Arrays.sort(array, String::compareToIgnoreCase);\n函数式编程的第二个特点就是可以返回一个函数，这样就可以实现闭包或者惰性计算：\n以上两个特点还仅仅是简化了代码。从代码的可维护性上讲，函数式编程最大的好处是引用透明，即函数运行的结果只依赖于输入的参数，而不依赖于外部状态，因此，我们常常说函数式编程没有副作用。\n没有副作用有个巨大的好处，就是函数内部无状态，即输入确定，输出就是确定的，容易测试和维护。\n很多初学者容易纠结“纯”函数式语言，认为只有Haskell这种消除了变量和副作用的语言才是正宗的函数式编程。还有人甚至认为纯函数不能有任何IO操作，包括打行日志都不行。\n其实这种纠结是没有意义的，因为计算机底层就是一个完全可变的内存和不可预测输入的系统，追求完美的无副作用是不现实的，我们只需要理解函数式编程的思想，把业务逻辑做到“无副作用”，至于有变量、打日志、读缓存这些无关紧要的“副作用”，根本不用担心，不需要解决，也几乎没法解决。\n我们来举个栗子。\n比如一个财务软件，需要一个函数专门计算个人所得税，输入是一个IncomeRecord，输出是个税金额：\n123double calculateIncomeTax(IncomeRecord record) &#123;    ...&#125;\n又假设IncomeRecord长这样：\n12345class IncomeRecord &#123;    String id; // 身份证号    String name; // 姓名    double salary; // 工资&#125;\n先不考虑五险一金这些乱七八糟的东西，我们只关注如何计算个税。为了简化，我们假设直接扣除一个免征额后按20%计算：\n12345double calculateIncomeTax(IncomeRecord record) &#123;    double threshold = 3500;    double tax = record.salary &lt;= threshold ? 0 : (record.salary - threshold) * 0.2;    return tax;&#125;\n上面这个程序在2018年9月1号前是没问题的，问题是2018年9月1号后起征点调整到了5000，那2018年8月和2018年9月，计算结果应该不一样。怎么改？\n普通开发者的改法：那还不简单？直接获取当前日期，返回正确的起征点就行：\n12345double calculateIncomeTax(IncomeRecord record) &#123;    double threshold = today() &lt; date(2018, 9, 1) ? 3500 : 5000;    double tax = record.salary &lt;= threshold ? 0 : (record.salary - threshold) * 0.2;    return tax;&#125;\n程序是没错，问题是：\n同样的输入，8月31号跑，和9月1号跑，结果不一样，难道会计要在9月1号做8月份的工资条，必须把电脑的时间先调到8月份？\n用函数式编程的观点思考一下，就发现问题所在：\ntoday()这个函数，返回结果与时间有关，这就造成了calculateIncomeTax()不再是一个纯函数，它与当前时间相关了。\n那怎么把calculateIncomeTax()恢复成一个纯函数，同时要支持起征点调整？\n方法是把时间相关的变量作为参数传进来，例如，给IncomeRecord增加几个字段：\n1234567class IncomeRecord &#123;    String id; // 身份证号    String name; // 姓名    double salary; // 工资    int year; // 年    int month; // 月&#125;\n这样我们就可以消除today()的调用：\n12345double calculateIncomeTax(IncomeRecord record) &#123;    double threshold = date(record.year, record.month) &lt; date(2018, 9) ? 3500 : 5000;    double tax = record.salary &lt;= threshold ? 0 : (record.salary - threshold) * 0.2;    return tax;&#125;\ncalculateIncomeTax()又变成了一个纯函数，会计就不用改电脑时间了。\n是不是觉得这个例子太简单了？其实简单的函数如果都能写成有状态的，那么复杂的业务逻辑必然写成一锅粥。\n举个复杂的栗子：\n对于一个股票交易系统，如果我们把输入定义为：开盘前所有股民的现金和持股，以及交易时段的所有订单，那么，输出就是收盘后所有股民的现金和持股：\n12345678StockStatus process(StockStatus old, List&lt;Order&gt; orders) &#123;    ...    for (Order order : orders) &#123;        ...        sendExchangeResult(...); // 给每一笔成交发送信息    &#125;    ...&#125;\n很显然这是一个纯函数，虽然在处理过程中，这个函数会给股民朋友发送各种心跳消息。\n如果把交易系统的模型设计成这样一个纯函数，那么理论上我们只需要从股市开市的那一天开始，把所有订单全部处理一遍，就可以正确得到今天收盘后的状态。\n或者说，只要取任意一天开盘前的系统状态的备份（就是整个数据库的备份），把当天的订单重新处理一遍，就得到了当天收盘的状态。这个过程可以做任意次，结果不变，因此，非常适合验证代码的修改是否影响了业务流程。\n那么问题来了，交易系统中有无数和时间相关的状态，怎么处理成纯函数？这个模型的处理，可比计算个税复杂多了。\n这就是函数式编程的精髓：业务系统模型无状态。模型的好坏，直接影响到代码的正确性、可靠性、稳定性，以及是否需要996。\n","dateCreated":"2025-05-23T16:53:02+08:00","dateModified":"2025-05-23T16:54:12+08:00","datePublished":"2025-05-23T16:53:02+08:00","description":"","headline":"函数式编程的核心思想","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/","keywords":"计算机基础理论"}</script>
     <meta name="description" content="函数式编程最近几年越炒越热，有函数式编程的语言鄙视没有函数式编程的语言，纯函数式编程的语言鄙视不纯的函数式编程的语言。 那么，到底什么是函数式编程，函数式编程的核心思想又是什么？ 函数式编程的第一个特点就是可以把函数作为参数传递给另一个函数，也就是所谓的高阶函数。例如，对数组进行排序，可以传入一个排序函数作为参数： 12String[] array &#x3D; &#123; &quot;orange&amp;qu">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="函数式编程的核心思想">
-<meta property="og:url" content="https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/index.html">
+<meta property="og:url" content="https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="函数式编程最近几年越炒越热，有函数式编程的语言鄙视没有函数式编程的语言，纯函数式编程的语言鄙视不纯的函数式编程的语言。 那么，到底什么是函数式编程，函数式编程的核心思想又是什么？ 函数式编程的第一个特点就是可以把函数作为参数传递给另一个函数，也就是所谓的高阶函数。例如，对数组进行排序，可以传入一个排序函数作为参数： 12String[] array &#x3D; &#123; &quot;orange&amp;qu">
 <meta property="og:locale" content="zh_TW">
@@ -50,7 +50,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../assets/images/profile.jpg"/>
     
     
     
@@ -421,7 +421,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -432,7 +432,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -445,7 +445,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -458,7 +458,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -471,7 +471,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -484,7 +484,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -549,7 +549,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -560,7 +560,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -573,7 +573,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -586,7 +586,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -599,7 +599,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -612,7 +612,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -633,7 +633,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -646,7 +646,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -659,7 +659,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -672,7 +672,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2025/05/23/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -748,7 +748,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -771,7 +771,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -794,7 +794,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -817,7 +817,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -840,7 +840,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -863,7 +863,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -886,7 +886,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -909,7 +909,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -932,7 +932,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -955,7 +955,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

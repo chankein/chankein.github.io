@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"继承\n一个类可以继承另一个类的方法，属性和其它特性。当一个类继承其它类时，继承类叫子类，被继承类叫超类（或父类）。在 Swift 中，继承是区分「类」与其它类型的一个基本特征。\n在 Swift 中，类可以调用和访问超类的方法、属性和下标，并且可以重写这些方法，属性和下标来优化或修改它们的行为。Swift 会检查你的重写定义在超类中是否有匹配的定义，以此确保你的重写行为是正确的。\n可以为类中继承来的属性添加属性观察器，这样一来，当属性值改变时，类就会被通知到。可以为任何属性添加属性观察器，无论它原本被定义为存储型属性还是计算型属性。\n定义一个基类\n不继承于其它类的类，称之为基类。\n\n注意\nSwift 中的类并不是从一个通用的基类继承而来的。如果你不为自己定义的类指定一个超类的话，这个类就会自动成为基类。\n\n下面的例子定义了一个叫 Vehicle 的基类。这个基类声明了一个名为 currentSpeed，默认值是 0.0 的存储型属性（属性类型推断为 Double）。currentSpeed 属性的值被一个 String 类型的只读计算型属性 description 使用，用来创建对于车辆的描述。\nVehicle 基类还定义了一个名为 makeNoise 的方法。这个方法实际上不为 Vehicle 实例做任何事，但之后将会被 Vehicle 的子类定制：\n123456789class Vehicle &#123;    var currentSpeed = 0.0    var description: String &#123;        return &quot;traveling at \\(currentSpeed) miles per hour&quot;    &#125;    func makeNoise() &#123;        // 什么也不做——因为车辆不一定会有噪音    &#125;&#125;\n可以用初始化语法创建一个 Vehicle 的新实例，即类名后面跟一个空括号：\n1let someVehicle = Vehicle()\n现在已经创建了一个 Vehicle 的新实例，你可以访问它的 description 属性来打印车辆的当前速度：\n12print(&quot;Vehicle: \\(someVehicle.description)&quot;)// 打印“Vehicle: traveling at 0.0 miles per hour”\nVehicle 类定义了一个具有通用特性的车辆类，但实际上对于它本身来说没什么用处。为了让它变得更加有用，还需要进一步完善它，从而能够描述一个具体类型的车辆。\n子类生成\n子类生成指的是在一个已有类的基础上创建一个新的类。子类继承超类的特性，并且可以进一步完善。你还可以为子类添加新的特性。\n为了指明某个类的超类，将超类名写在子类名的后面，用冒号分隔：\n123class SomeClass: SomeSuperclass &#123;    // 这里是子类的定义&#125;\n下一个例子，定义了一个叫 Bicycle 的子类，继承自父类 Vehicle：\n123class Bicycle: Vehicle &#123;    var hasBasket = false&#125;\n新的 Bicycle 类自动继承 Vehicle 类的所有特性，比如 currentSpeed 和 description 属性，还有 makeNoise() 方法。\n除了所继承的特性，Bicycle 类还定义了一个默认值为 false 的存储型属性 hasBasket（属性推断为 Bool）。\n默认情况下，你创建的所有新的 Bicycle 实例不会有一个篮子（即 hasBasket 属性默认为 false）。创建该实例之后，你可以为 Bicycle 实例设置 hasBasket 属性为 ture：\n12let bicycle = Bicycle()bicycle.hasBasket = true\n你还可以修改 Bicycle 实例所继承的 currentSpeed 属性，和查询实例所继承的 description 属性：\n123bicycle.currentSpeed = 15.0print(&quot;Bicycle: \\(bicycle.description)&quot;)// 打印“Bicycle: traveling at 15.0 miles per hour”\n子类还可以继续被其它类继承，下面的示例为 Bicycle 创建了一个名为 Tandem（双人自行车）的子类：\n123class Tandem: Bicycle &#123;    var currentNumberOfPassengers = 0&#125;\nTandem 从 Bicycle 继承了所有的属性与方法，这又使它同时继承了 Vehicle 的所有属性与方法。Tandem 也增加了一个新的叫做 currentNumberOfPassengers 的存储型属性，默认值为 0。\n如果你创建了一个 Tandem 的实例，你可以使用它所有的新属性和继承的属性，还能查询从 Vehicle 继承来的只读属性 description：\n123456let tandem = Tandem()tandem.hasBasket = truetandem.currentNumberOfPassengers = 2tandem.currentSpeed = 22.0print(&quot;Tandem: \\(tandem.description)&quot;)// 打印：“Tandem: traveling at 22.0 miles per hour”\n重写\n子类可以为继承来的实例方法，类方法，实例属性，类属性，或下标提供自己定制的实现。我们把这种行为叫重写。\n如果要重写某个特性，你需要在重写定义的前面加上 override 关键字。这么做，就表明了你是想提供一个重写版本，而非错误地提供了一个相同的定义。意外的重写行为可能会导致不可预知的错误，任何缺少 override 关键字的重写都会在编译时被认定为错误。\noverride 关键字会提醒 Swift 编译器去检查该类的超类（或其中一个父类）是否有匹配重写版本的声明。这个检查可以确保你的重写定义是正确的。\n访问超类的方法，属性及下标\n当你在子类中重写超类的方法，属性或下标时，有时在你的重写版本中使用已经存在的超类实现会大有裨益。比如，你可以完善已有实现的行为，或在一个继承来的变量中存储一个修改过的值。\n在合适的地方，你可以通过使用 super 前缀来访问超类版本的方法，属性或下标：\n\n在方法 someMethod() 的重写实现中，可以通过 super.someMethod() 来调用超类版本的 someMethod() 方法。\n在属性 someProperty 的 getter 或 setter 的重写实现中，可以通过 super.someProperty 来访问超类版本的 someProperty 属性。\n在下标的重写实现中，可以通过 super[someIndex] 来访问超类版本中的相同下标。\n\n重写方法\n在子类中，你可以重写继承来的实例方法或类方法，提供一个定制或替代的方法实现。\n下面的例子定义了 Vehicle 的一个新的子类，叫 Train，它重写了从 Vehicle 类继承来的 makeNoise() 方法：\n12345class Train: Vehicle &#123;    override func makeNoise() &#123;        print(&quot;Choo Choo&quot;)    &#125;&#125;\n如果你创建一个 Train 的新实例，并调用了它的 makeNoise() 方法，你就会发现 Train 版本的方法被调用：\n123let train = Train()train.makeNoise()// 打印“Choo Choo”\n重写属性\n你可以重写继承来的实例属性或类型属性，提供自己定制的 getter 和 setter，或添加属性观察器，使重写的属性可以观察到底层的属性值什么时候发生改变。\n重写属性的 Getters 和 Setters\n你可以提供定制的 getter（或 setter）来重写任何一个继承来的属性，无论这个属性是存储型还是计算型属性。子类并不知道继承来的属性是存储型的还是计算型的，它只知道继承来的属性会有一个名字和类型。你在重写一个属性时，必须将它的名字和类型都写出来。这样才能使编译器去检查你重写的属性是与超类中同名同类型的属性相匹配的。\n你可以将一个继承来的只读属性重写为一个读写属性，只需要在重写版本的属性里提供 getter 和 setter 即可。但是，你不可以将一个继承来的读写属性重写为一个只读属性。\n\n注意\n如果你在重写属性中提供了 setter，那么你也一定要提供 getter。如果你不想在重写版本中的 getter 里修改继承来的属性值，你可以直接通过 super.someProperty 来返回继承来的值，其中 someProperty 是你要重写的属性的名字。\n\n以下的例子定义了一个新类，叫 Car，它是 Vehicle 的子类。这个类引入了一个新的存储型属性叫做 gear，默认值为整数 1。Car 类重写了继承自 Vehicle 的 description 属性，提供包含当前档位的自定义描述：\n123456class Car: Vehicle &#123;    var gear = 1    override var description: String &#123;        return super.description + &quot; in gear \\(gear)&quot;    &#125;&#125;\n重写的 description 属性首先要调用 super.description 返回 Vehicle 类的 description 属性。之后，Car 类版本的 description 在末尾增加了一些额外的文本来提供关于当前档位的信息。\n如果你创建了 Car 的实例并且设置了它的 gear 和 currentSpeed 属性，你可以看到它的 description 返回了 Car 中的自定义描述：\n12345let car = Car()car.currentSpeed = 25.0car.gear = 3print(&quot;Car: \\(car.description)&quot;)// 打印“Car: traveling at 25.0 miles per hour in gear 3”\n重写属性观察器\n你可以通过重写属性为一个继承来的属性添加属性观察器。这样一来，无论被继承属性原本是如何实现的，当其属性值发生改变时，你就会被通知到。关于属性观察器的更多内容，请看 属性观察器。\n\n注意\n你不可以为继承来的常量存储型属性或继承来的只读计算型属性添加属性观察器。这些属性的值是不可以被设置的，所以，为它们提供 willSet 或 didSet 实现也是不恰当。 此外还要注意，你不可以同时提供重写的 setter 和重写的属性观察器。如果你想观察属性值的变化，并且你已经为那个属性提供了定制的 setter，那么你在 setter 中就可以观察到任何值变化了。\n\n下面的例子定义了一个新类叫 AutomaticCar，它是 Car 的子类。AutomaticCar 表示自动档汽车，它可以根据当前的速度自动选择合适的档位:\n1234567class AutomaticCar: Car &#123;    override var currentSpeed: Double &#123;        didSet &#123;            gear = Int(currentSpeed / 10.0) + 1        &#125;    &#125;&#125;\n当你设置 AutomaticCar 的 currentSpeed 属性，属性的 didSet 观察器就会自动地设置 gear 属性，为新的速度选择一个合适的档位。具体来说就是，属性观察器将新的速度值除以 10，然后向下取得最接近的整数值，最后加 1 来得到档位 gear 的值。例如，速度为 35.0 时，档位为 4：\n1234let automatic = AutomaticCar()automatic.currentSpeed = 35.0print(&quot;AutomaticCar: \\(automatic.description)&quot;)// 打印“AutomaticCar: traveling at 35.0 miles per hour in gear 4”\n防止重写\n你可以通过把方法，属性或下标标记为 final 来防止它们被重写，只需要在声明关键字前加上 final 修饰符即可（例如：final var、final func、final class func 以及 final subscript）。\n任何试图对带有 final 标记的方法、属性或下标进行重写的代码，都会在编译时会报错。在类扩展中的方法，属性或下标也可以在扩展的定义里标记为 final。\n可以通过在关键字 class 前添加 final 修饰符（final class）来将整个类标记为 final 。这样的类是不可被继承的，试图继承这样的类会导致编译报错。\n","dateCreated":"2023-07-01T10:13:17+08:00","dateModified":"2025-06-18T12:11:24+08:00","datePublished":"2023-07-01T10:13:17+08:00","description":"","headline":"swift继承","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/","keywords":"swift"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"继承\n一个类可以继承另一个类的方法，属性和其它特性。当一个类继承其它类时，继承类叫子类，被继承类叫超类（或父类）。在 Swift 中，继承是区分「类」与其它类型的一个基本特征。\n在 Swift 中，类可以调用和访问超类的方法、属性和下标，并且可以重写这些方法，属性和下标来优化或修改它们的行为。Swift 会检查你的重写定义在超类中是否有匹配的定义，以此确保你的重写行为是正确的。\n可以为类中继承来的属性添加属性观察器，这样一来，当属性值改变时，类就会被通知到。可以为任何属性添加属性观察器，无论它原本被定义为存储型属性还是计算型属性。\n定义一个基类\n不继承于其它类的类，称之为基类。\n\n注意\nSwift 中的类并不是从一个通用的基类继承而来的。如果你不为自己定义的类指定一个超类的话，这个类就会自动成为基类。\n\n下面的例子定义了一个叫 Vehicle 的基类。这个基类声明了一个名为 currentSpeed，默认值是 0.0 的存储型属性（属性类型推断为 Double）。currentSpeed 属性的值被一个 String 类型的只读计算型属性 description 使用，用来创建对于车辆的描述。\nVehicle 基类还定义了一个名为 makeNoise 的方法。这个方法实际上不为 Vehicle 实例做任何事，但之后将会被 Vehicle 的子类定制：\n123456789class Vehicle &#123;    var currentSpeed = 0.0    var description: String &#123;        return &quot;traveling at \\(currentSpeed) miles per hour&quot;    &#125;    func makeNoise() &#123;        // 什么也不做——因为车辆不一定会有噪音    &#125;&#125;\n可以用初始化语法创建一个 Vehicle 的新实例，即类名后面跟一个空括号：\n1let someVehicle = Vehicle()\n现在已经创建了一个 Vehicle 的新实例，你可以访问它的 description 属性来打印车辆的当前速度：\n12print(&quot;Vehicle: \\(someVehicle.description)&quot;)// 打印“Vehicle: traveling at 0.0 miles per hour”\nVehicle 类定义了一个具有通用特性的车辆类，但实际上对于它本身来说没什么用处。为了让它变得更加有用，还需要进一步完善它，从而能够描述一个具体类型的车辆。\n子类生成\n子类生成指的是在一个已有类的基础上创建一个新的类。子类继承超类的特性，并且可以进一步完善。你还可以为子类添加新的特性。\n为了指明某个类的超类，将超类名写在子类名的后面，用冒号分隔：\n123class SomeClass: SomeSuperclass &#123;    // 这里是子类的定义&#125;\n下一个例子，定义了一个叫 Bicycle 的子类，继承自父类 Vehicle：\n123class Bicycle: Vehicle &#123;    var hasBasket = false&#125;\n新的 Bicycle 类自动继承 Vehicle 类的所有特性，比如 currentSpeed 和 description 属性，还有 makeNoise() 方法。\n除了所继承的特性，Bicycle 类还定义了一个默认值为 false 的存储型属性 hasBasket（属性推断为 Bool）。\n默认情况下，你创建的所有新的 Bicycle 实例不会有一个篮子（即 hasBasket 属性默认为 false）。创建该实例之后，你可以为 Bicycle 实例设置 hasBasket 属性为 ture：\n12let bicycle = Bicycle()bicycle.hasBasket = true\n你还可以修改 Bicycle 实例所继承的 currentSpeed 属性，和查询实例所继承的 description 属性：\n123bicycle.currentSpeed = 15.0print(&quot;Bicycle: \\(bicycle.description)&quot;)// 打印“Bicycle: traveling at 15.0 miles per hour”\n子类还可以继续被其它类继承，下面的示例为 Bicycle 创建了一个名为 Tandem（双人自行车）的子类：\n123class Tandem: Bicycle &#123;    var currentNumberOfPassengers = 0&#125;\nTandem 从 Bicycle 继承了所有的属性与方法，这又使它同时继承了 Vehicle 的所有属性与方法。Tandem 也增加了一个新的叫做 currentNumberOfPassengers 的存储型属性，默认值为 0。\n如果你创建了一个 Tandem 的实例，你可以使用它所有的新属性和继承的属性，还能查询从 Vehicle 继承来的只读属性 description：\n123456let tandem = Tandem()tandem.hasBasket = truetandem.currentNumberOfPassengers = 2tandem.currentSpeed = 22.0print(&quot;Tandem: \\(tandem.description)&quot;)// 打印：“Tandem: traveling at 22.0 miles per hour”\n重写\n子类可以为继承来的实例方法，类方法，实例属性，类属性，或下标提供自己定制的实现。我们把这种行为叫重写。\n如果要重写某个特性，你需要在重写定义的前面加上 override 关键字。这么做，就表明了你是想提供一个重写版本，而非错误地提供了一个相同的定义。意外的重写行为可能会导致不可预知的错误，任何缺少 override 关键字的重写都会在编译时被认定为错误。\noverride 关键字会提醒 Swift 编译器去检查该类的超类（或其中一个父类）是否有匹配重写版本的声明。这个检查可以确保你的重写定义是正确的。\n访问超类的方法，属性及下标\n当你在子类中重写超类的方法，属性或下标时，有时在你的重写版本中使用已经存在的超类实现会大有裨益。比如，你可以完善已有实现的行为，或在一个继承来的变量中存储一个修改过的值。\n在合适的地方，你可以通过使用 super 前缀来访问超类版本的方法，属性或下标：\n\n在方法 someMethod() 的重写实现中，可以通过 super.someMethod() 来调用超类版本的 someMethod() 方法。\n在属性 someProperty 的 getter 或 setter 的重写实现中，可以通过 super.someProperty 来访问超类版本的 someProperty 属性。\n在下标的重写实现中，可以通过 super[someIndex] 来访问超类版本中的相同下标。\n\n重写方法\n在子类中，你可以重写继承来的实例方法或类方法，提供一个定制或替代的方法实现。\n下面的例子定义了 Vehicle 的一个新的子类，叫 Train，它重写了从 Vehicle 类继承来的 makeNoise() 方法：\n12345class Train: Vehicle &#123;    override func makeNoise() &#123;        print(&quot;Choo Choo&quot;)    &#125;&#125;\n如果你创建一个 Train 的新实例，并调用了它的 makeNoise() 方法，你就会发现 Train 版本的方法被调用：\n123let train = Train()train.makeNoise()// 打印“Choo Choo”\n重写属性\n你可以重写继承来的实例属性或类型属性，提供自己定制的 getter 和 setter，或添加属性观察器，使重写的属性可以观察到底层的属性值什么时候发生改变。\n重写属性的 Getters 和 Setters\n你可以提供定制的 getter（或 setter）来重写任何一个继承来的属性，无论这个属性是存储型还是计算型属性。子类并不知道继承来的属性是存储型的还是计算型的，它只知道继承来的属性会有一个名字和类型。你在重写一个属性时，必须将它的名字和类型都写出来。这样才能使编译器去检查你重写的属性是与超类中同名同类型的属性相匹配的。\n你可以将一个继承来的只读属性重写为一个读写属性，只需要在重写版本的属性里提供 getter 和 setter 即可。但是，你不可以将一个继承来的读写属性重写为一个只读属性。\n\n注意\n如果你在重写属性中提供了 setter，那么你也一定要提供 getter。如果你不想在重写版本中的 getter 里修改继承来的属性值，你可以直接通过 super.someProperty 来返回继承来的值，其中 someProperty 是你要重写的属性的名字。\n\n以下的例子定义了一个新类，叫 Car，它是 Vehicle 的子类。这个类引入了一个新的存储型属性叫做 gear，默认值为整数 1。Car 类重写了继承自 Vehicle 的 description 属性，提供包含当前档位的自定义描述：\n123456class Car: Vehicle &#123;    var gear = 1    override var description: String &#123;        return super.description + &quot; in gear \\(gear)&quot;    &#125;&#125;\n重写的 description 属性首先要调用 super.description 返回 Vehicle 类的 description 属性。之后，Car 类版本的 description 在末尾增加了一些额外的文本来提供关于当前档位的信息。\n如果你创建了 Car 的实例并且设置了它的 gear 和 currentSpeed 属性，你可以看到它的 description 返回了 Car 中的自定义描述：\n12345let car = Car()car.currentSpeed = 25.0car.gear = 3print(&quot;Car: \\(car.description)&quot;)// 打印“Car: traveling at 25.0 miles per hour in gear 3”\n重写属性观察器\n你可以通过重写属性为一个继承来的属性添加属性观察器。这样一来，无论被继承属性原本是如何实现的，当其属性值发生改变时，你就会被通知到。关于属性观察器的更多内容，请看 属性观察器。\n\n注意\n你不可以为继承来的常量存储型属性或继承来的只读计算型属性添加属性观察器。这些属性的值是不可以被设置的，所以，为它们提供 willSet 或 didSet 实现也是不恰当。 此外还要注意，你不可以同时提供重写的 setter 和重写的属性观察器。如果你想观察属性值的变化，并且你已经为那个属性提供了定制的 setter，那么你在 setter 中就可以观察到任何值变化了。\n\n下面的例子定义了一个新类叫 AutomaticCar，它是 Car 的子类。AutomaticCar 表示自动档汽车，它可以根据当前的速度自动选择合适的档位:\n1234567class AutomaticCar: Car &#123;    override var currentSpeed: Double &#123;        didSet &#123;            gear = Int(currentSpeed / 10.0) + 1        &#125;    &#125;&#125;\n当你设置 AutomaticCar 的 currentSpeed 属性，属性的 didSet 观察器就会自动地设置 gear 属性，为新的速度选择一个合适的档位。具体来说就是，属性观察器将新的速度值除以 10，然后向下取得最接近的整数值，最后加 1 来得到档位 gear 的值。例如，速度为 35.0 时，档位为 4：\n1234let automatic = AutomaticCar()automatic.currentSpeed = 35.0print(&quot;AutomaticCar: \\(automatic.description)&quot;)// 打印“AutomaticCar: traveling at 35.0 miles per hour in gear 4”\n防止重写\n你可以通过把方法，属性或下标标记为 final 来防止它们被重写，只需要在声明关键字前加上 final 修饰符即可（例如：final var、final func、final class func 以及 final subscript）。\n任何试图对带有 final 标记的方法、属性或下标进行重写的代码，都会在编译时会报错。在类扩展中的方法，属性或下标也可以在扩展的定义里标记为 final。\n可以通过在关键字 class 前添加 final 修饰符（final class）来将整个类标记为 final 。这样的类是不可被继承的，试图继承这样的类会导致编译报错。\n","dateCreated":"2023-07-01T10:13:17+08:00","dateModified":"2025-06-18T12:11:24+08:00","datePublished":"2023-07-01T10:13:17+08:00","description":"","headline":"swift继承","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/","keywords":"swift"}</script>
     <meta name="description" content="继承 一个类可以继承另一个类的方法，属性和其它特性。当一个类继承其它类时，继承类叫子类，被继承类叫超类（或父类）。在 Swift 中，继承是区分「类」与其它类型的一个基本特征。 在 Swift 中，类可以调用和访问超类的方法、属性和下标，并且可以重写这些方法，属性和下标来优化或修改它们的行为。Swift 会检查你的重写定义在超类中是否有匹配的定义，以此确保你的重写行为是正确的。 可以为类中继承来的">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="swift继承">
-<meta property="og:url" content="https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/index.html">
+<meta property="og:url" content="https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="继承 一个类可以继承另一个类的方法，属性和其它特性。当一个类继承其它类时，继承类叫子类，被继承类叫超类（或父类）。在 Swift 中，继承是区分「类」与其它类型的一个基本特征。 在 Swift 中，类可以调用和访问超类的方法、属性和下标，并且可以重写这些方法，属性和下标来优化或修改它们的行为。Swift 会检查你的重写定义在超类中是否有匹配的定义，以此确保你的重写行为是正确的。 可以为类中继承来的">
 <meta property="og:locale" content="zh_TW">
@@ -50,7 +50,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -464,7 +464,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -475,7 +475,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -488,7 +488,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -501,7 +501,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -514,7 +514,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -527,7 +527,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -592,7 +592,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -603,7 +603,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -616,7 +616,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -629,7 +629,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -642,7 +642,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -655,7 +655,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -676,7 +676,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -689,7 +689,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -702,7 +702,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -715,7 +715,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/07/01/Swift/swift%E7%BB%A7%E6%89%BF/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -791,7 +791,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -814,7 +814,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -837,7 +837,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -860,7 +860,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -883,7 +883,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -906,7 +906,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -929,7 +929,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -952,7 +952,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -975,7 +975,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -998,7 +998,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

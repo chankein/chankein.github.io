@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"现代操作系统（Windows，macOS，Linux）都可以执行多任务。多任务就是同时运行多个任务，例如：\n\nCPU执行代码都是一条一条顺序执行的，但是，即使是单核cpu，也可以同时运行多个任务。因为操作系统执行多任务实际上就是让CPU对多个任务轮流交替执行。\n例如，假设我们有语文、数学、英语3门作业要做，每个作业需要30分钟。我们把这3门作业看成是3个任务，可以做1分钟语文作业，再做1分钟数学作业，再做1分钟英语作业：\n\n这样轮流做下去，在某些人眼里看来，做作业的速度就非常快，看上去就像同时在做3门作业一样\n\n类似的，操作系统轮流让多个任务交替执行，例如，让浏览器执行0.001秒，让QQ执行0.001秒，再让音乐播放器执行0.001秒，在人看来，CPU就是在同时执行多个任务。\n即使是多核CPU，因为通常任务的数量远远多于CPU的核数，所以任务也是交替执行的。\n进程\n在计算机中，我们把一个任务称为一个进程，浏览器就是一个进程，视频播放器是另一个进程，类似的，音乐播放器和Word都是进程。\n某些进程内部还需要同时执行多个子任务。例如，我们在使用Word时，Word可以让我们一边打字，一边进行拼写检查，同时还可以在后台进行打印，我们把子任务称为线程。\n进程和线程的关系就是：一个进程可以包含一个或多个线程，但至少会有一个线程。\n123456789101112131415                        ┌──────────┐                        │Process   │                        │┌────────┐│            ┌──────────┐││ Thread ││┌──────────┐            │Process   ││└────────┘││Process   │            │┌────────┐││┌────────┐││┌────────┐│┌──────────┐││ Thread ││││ Thread ││││ Thread │││Process   ││└────────┘││└────────┘││└────────┘││┌────────┐││┌────────┐││┌────────┐││┌────────┐│││ Thread ││││ Thread ││││ Thread ││││ Thread │││└────────┘││└────────┘││└────────┘││└────────┘│└──────────┘└──────────┘└──────────┘└──────────┘┌──────────────────────────────────────────────┐│               Operating System               │└──────────────────────────────────────────────┘\n操作系统调度的最小任务单位其实不是进程，而是线程。常用的Windows、Linux等操作系统都采用抢占式多任务，如何调度线程完全由操作系统决定，程序自己不能决定什么时候执行，以及执行多长时间。\n因为同一个应用程序，既可以有多个进程，也可以有多个线程，因此，实现多任务的方法，有以下几种：\n多进程模式（每个进程只有一个线程）：\n123456┌──────────┐ ┌──────────┐ ┌──────────┐│Process   │ │Process   │ │Process   ││┌────────┐│ │┌────────┐│ │┌────────┐│││ Thread ││ ││ Thread ││ ││ Thread │││└────────┘│ │└────────┘│ │└────────┘│└──────────┘ └──────────┘ └──────────┘\n多线程模式（一个进程有多个线程）：\n123456789┌────────────────────┐│Process             ││┌────────┐┌────────┐│││ Thread ││ Thread │││└────────┘└────────┘││┌────────┐┌────────┐│││ Thread ││ Thread │││└────────┘└────────┘│└────────────────────┘\n多进程＋多线程模式（复杂度最高）：\n123456789┌──────────┐┌──────────┐┌──────────┐│Process   ││Process   ││Process   ││┌────────┐││┌────────┐││┌────────┐│││ Thread ││││ Thread ││││ Thread │││└────────┘││└────────┘││└────────┘││┌────────┐││┌────────┐││┌────────┐│││ Thread ││││ Thread ││││ Thread │││└────────┘││└────────┘││└────────┘│└──────────┘└──────────┘└──────────┘\n进程 vs 线程\n进程和线程是包含关系，但是多任务既可以由多进程实现，也可以由单进程内的多线程实现，还可以混合多进程＋多线程。\n具体采用哪种方式，要考虑到进程和线程的特点。\n和多线程相比，多进程的缺点在于：\n\n创建进程比创建线程开销大，尤其是在Windows系统上；\n进程间通信比线程间通信要慢，因为线程间通信就是读写同一个变量，速度很快。\n\n而多进程的优点在于：\n多进程稳定性比多线程高，因为在多进程的情况下，一个进程崩溃不会影响其他进程，而在多线程的情况下，任何一个线程崩溃会直接导致整个进程崩溃。\n多线程\nJava语言内置了多线程支持：一个Java程序实际上是一个JVM进程，JVM进程用一个主线程来执行main()方法，在main()方法内部，我们又可以启动多个线程。此外，JVM还有负责垃圾回收的其他工作线程等。\n因此，对于大多数Java程序来说，我们说多任务，实际上是说如何使用多线程实现多任务。\n和单线程相比，多线程编程的特点在于：多线程经常需要读写共享数据，并且需要同步。例如，播放电影时，就必须由一个线程播放视频，另一个线程播放音频，两个线程需要协调运行，否则画面和声音就不同步。因此，多线程编程的复杂度高，调试更困难。\nJava多线程编程的特点又在于：\n\n多线程模型是Java程序最基本的并发模型；\n后续读写网络、数据库、Web开发等都依赖Java多线程模型。\n\n因此，必须掌握Java多线程编程才能继续深入学习其他内容。\nJava语言内置了多线程支持。当Java程序启动的时候，实际上是启动了一个JVM进程，然后，JVM启动主线程来执行main()方法。在main()方法中，我们又可以启动其他线程。\n要创建一个新线程非常容易，我们需要实例化一个Thread实例，然后调用它的start()方法：\n1234567// 多线程public class Main &#123;    public static void main(String[] args) &#123;        Thread t = new Thread();        t.start(); // 启动新线程    &#125;&#125;\n但是这个线程启动后实际上什么也不做就立刻结束了。我们希望新线程能执行指定的代码，有以下几种方法：\n方法一：从Thread派生一个自定义类，然后覆写run()方法：\n1234567891011121314// 多线程public class Main &#123;    public static void main(String[] args) &#123;        Thread t = new MyThread();        t.start(); // 启动新线程    &#125;&#125;class MyThread extends Thread &#123;    @Override    public void run() &#123;        System.out.println(&quot;start new thread!&quot;);    &#125;&#125;\n执行上述代码，注意到start()方法会在内部自动调用实例的run()方法。\n方法二：创建Thread实例时，传入一个Runnable实例：\n1234567891011121314// 多线程public class Main &#123;    public static void main(String[] args) &#123;        Thread t = new Thread(new MyRunnable());        t.start(); // 启动新线程    &#125;&#125;class MyRunnable implements Runnable &#123;    @Override    public void run() &#123;        System.out.println(&quot;start new thread!&quot;);    &#125;&#125;\n或者用Java 8引入的lambda语法进一步简写为：\n123456789// 多线程public class Main &#123;    public static void main(String[] args) &#123;        Thread t = new Thread(() -&gt; &#123;            System.out.println(&quot;start new thread!&quot;);        &#125;);        t.start(); // 启动新线程    &#125;&#125;\n有童鞋会问，使用线程执行的打印语句，和直接在main()方法执行有区别吗？\n区别大了去了。我们看以下代码：\n12345678910111213public class Main &#123;    public static void main(String[] args) &#123;        System.out.println(&quot;main start...&quot;);        Thread t = new Thread() &#123;            public void run() &#123;                System.out.println(&quot;thread run...&quot;);                System.out.println(&quot;thread end.&quot;);            &#125;        &#125;;        t.start();        System.out.println(&quot;main end...&quot;);    &#125;&#125;\n我们用蓝色表示主线程，也就是main线程，main线程执行的代码有4行，首先打印main start，然后创建Thread对象，紧接着调用start()启动新线程。当start()方法被调用时，JVM就创建了一个新线程，我们通过实例变量t来表示这个新线程对象，并开始执行。\n接着，main线程继续执行打印main end语句，而t线程在main线程执行的同时会并发执行，打印thread run和thread end语句。\n当run()方法结束时，新线程就结束了。而main()方法结束时，主线程也结束了。\n我们再来看线程的执行顺序：\n\nmain线程肯定是先打印main start，再打印main end；\nt线程肯定是先打印thread run，再打印thread end。\n\n但是，除了可以肯定，main start会先打印外，main end打印在thread run之前、thread end之后或者之间，都无法确定。因为从t线程开始运行以后，两个线程就开始同时运行了，并且由操作系统调度，程序本身无法确定线程的调度顺序。\n要模拟并发执行的效果，我们可以在线程中调用Thread.sleep()，强迫当前线程暂停一段时间：\n1234567891011121314151617181920// 多线程public class Main &#123;    public static void main(String[] args) &#123;        System.out.println(&quot;main start...&quot;);        Thread t = new Thread() &#123;            public void run() &#123;                System.out.println(&quot;thread run...&quot;);                try &#123;                    Thread.sleep(10);                &#125; catch (InterruptedException e) &#123;&#125;                System.out.println(&quot;thread end.&quot;);            &#125;        &#125;;        t.start();        try &#123;            Thread.sleep(20);        &#125; catch (InterruptedException e) &#123;&#125;        System.out.println(&quot;main end...&quot;);    &#125;&#125;\nsleep()传入的参数是毫秒。调整暂停时间的大小，我们可以看到main线程和t线程执行的先后顺序。\n要特别注意：直接调用Thread实例的run()方法是无效的：\n123456789101112public class Main &#123;    public static void main(String[] args) &#123;        Thread t = new MyThread();        t.run();    &#125;&#125;class MyThread extends Thread &#123;    public void run() &#123;        System.out.println(&quot;hello&quot;);    &#125;&#125;\n直接调用run()方法，相当于调用了一个普通的Java方法，当前线程并没有任何改变，也不会启动新线程。上述代码实际上是在main()方法内部又调用了run()方法，打印hello语句是在main线程中执行的，没有任何新线程被创建。\n必须调用Thread实例的start()方法才能启动新线程，如果我们查看Thread类的源代码，会看到start()方法内部调用了一个private native void start0()方法，native修饰符表示这个方法是由JVM虚拟机内部的C代码实现的，不是由Java代码实现的。\n线程的优先级\n可以对线程设定优先级，设定优先级的方法是：\n1Thread.setPriority(int n) // 1~10, 默认值5\nJVM自动把1（低）~10（高）的优先级映射到操作系统实际优先级上（不同操作系统有不同的优先级数量）。优先级高的线程被操作系统调度的优先级较高，操作系统对高优先级线程可能调度更频繁，但我们决不能通过设置优先级来确保高优先级的线程一定会先执行。\n练习\n创建一个新线程。\n下载练习\n小结\nJava用Thread对象表示一个线程，通过调用start()启动一个新线程；\n一个线程对象只能调用一次start()方法；\n线程的执行代码写在run()方法中；\n线程调度由操作系统决定，程序本身无法决定调度顺序；\nThread.sleep()可以把当前线程暂停一段时间。\n线程的状态\n在Java程序中，一个线程对象只能调用一次start()方法启动新线程，并在新线程中执行run()方法。一旦run()方法执行完毕，线程就结束了。因此，Java线程的状态有以下几种：\n\nNew：新创建的线程，尚未执行；\nRunnable：运行中的线程，正在执行run()方法的Java代码；\nBlocked：运行中的线程，因为某些操作被阻塞而挂起；\nWaiting：运行中的线程，因为某些操作在等待中；\nTimed Waiting：运行中的线程，因为执行sleep()方法正在计时等待；\nTerminated：线程已终止，因为run()方法执行完毕。\n\n用一个状态转移图表示如下：\n123456789101112131415161718         ┌─────────────┐         │     New     │         └─────────────┘                │                ▼┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐ ┌─────────────┐ ┌─────────────┐││  Runnable   │ │   Blocked   ││ └─────────────┘ └─────────────┘│┌─────────────┐ ┌─────────────┐│ │   Waiting   │ │Timed Waiting││└─────────────┘ └─────────────┘│ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─                │                ▼         ┌─────────────┐         │ Terminated  │         └─────────────┘\n当线程启动后，它可以在Runnable、Blocked、Waiting和Timed Waiting这几个状态之间切换，直到最后变成Terminated状态，线程终止。\n线程终止的原因有：\n\n线程正常终止：run()方法执行到return语句返回；\n线程意外终止：run()方法因为未捕获的异常导致线程终止；\n对某个线程的Thread实例调用stop()方法强制终止（强烈不推荐使用）。\n\n一个线程还可以等待另一个线程直到其运行结束。例如，main线程在启动t线程后，可以通过t.join()等待t线程结束后再继续运行：\n123456789101112// 多线程public class Main &#123;    public static void main(String[] args) throws InterruptedException &#123;        Thread t = new Thread(() -&gt; &#123;            System.out.println(&quot;hello&quot;);        &#125;);        System.out.println(&quot;start&quot;);        t.start(); // 启动t线程        t.join(); // 此处main线程会等待t结束        System.out.println(&quot;end&quot;);    &#125;&#125;\n当main线程对线程对象t调用join()方法时，主线程将等待变量t表示的线程运行结束，即join就是指等待该线程结束，然后才继续往下执行自身线程。所以，上述代码打印顺序可以肯定是main线程先打印start，t线程再打印hello，main线程最后再打印end。\n如果t线程已经结束，对实例t调用join()会立刻返回。此外，join(long)的重载方法也可以指定一个等待时间，超过等待时间后就不再继续等待。\n小结\nJava线程对象Thread的状态包括：New、Runnable、Blocked、Waiting、Timed Waiting和Terminated；\n通过对另一个线程对象调用join()方法可以等待其执行结束；\n可以指定等待时间，超过等待时间线程仍然没有结束就不再等待；\n对已经运行结束的线程调用join()方法会立刻返回。\n\n\n如果线程需要执行一个长时间任务，就可能需要能中断线程。中断线程就是其他线程给该线程发一个信号，该线程收到信号后结束执行run()方法，使得自身线程能立刻结束运行。\n我们举个栗子：假设从网络下载一个100M的文件，如果网速很慢，用户等得不耐烦，就可能在下载过程中点“取消”，这时，程序就需要中断下载线程的执行。\n中断一个线程非常简单，只需要在其他线程中对目标线程调用interrupt()方法，目标线程需要反复检测自身状态是否是interrupted状态，如果是，就立刻结束运行。\n我们还是看示例代码：\n123456789101112131415161718192021// 中断线程public class Main &#123;    public static void main(String[] args) throws InterruptedException &#123;        Thread t = new MyThread();        t.start();        Thread.sleep(1); // 暂停1毫秒        t.interrupt(); // 中断t线程        t.join(); // 等待t线程结束        System.out.println(&quot;end&quot;);    &#125;&#125;class MyThread extends Thread &#123;    public void run() &#123;        int n = 0;        while (! isInterrupted()) &#123;            n ++;            System.out.println(n + &quot; hello!&quot;);        &#125;    &#125;&#125;\n仔细看上述代码，main线程通过调用t.interrupt()方法中断t线程，但是要注意，interrupt()方法仅仅向t线程发出了“中断请求”，至于t线程是否能立刻响应，要看具体代码。而t线程的while循环会检测isInterrupted()，所以上述代码能正确响应interrupt()请求，使得自身立刻结束运行run()方法。\n如果线程处于等待状态，例如，t.join()会让main线程进入等待状态，此时，如果对main线程调用interrupt()，join()方法会立刻抛出InterruptedException，因此，目标线程只要捕获到join()方法抛出的InterruptedException，就说明有其他线程对其调用了interrupt()方法，通常情况下该线程应该立刻结束运行。\n我们来看下面的示例代码：\n123456789101112131415161718192021222324252627282930313233343536373839// 中断线程public class Main &#123;    public static void main(String[] args) throws InterruptedException &#123;        Thread t = new MyThread();        t.start();        Thread.sleep(1000);        t.interrupt(); // 中断t线程        t.join(); // 等待t线程结束        System.out.println(&quot;end&quot;);    &#125;&#125;class MyThread extends Thread &#123;    public void run() &#123;        Thread hello = new HelloThread();        hello.start(); // 启动hello线程        try &#123;            hello.join(); // 等待hello线程结束        &#125; catch (InterruptedException e) &#123;            System.out.println(&quot;interrupted!&quot;);        &#125;        hello.interrupt();    &#125;&#125;class HelloThread extends Thread &#123;    public void run() &#123;        int n = 0;        while (!isInterrupted()) &#123;            n++;            System.out.println(n + &quot; hello!&quot;);            try &#123;                Thread.sleep(100);            &#125; catch (InterruptedException e) &#123;                break;            &#125;        &#125;    &#125;&#125;\nmain线程通过调用t.interrupt()从而通知t线程中断，而此时t线程正位于hello.join()的等待中，此方法会立刻结束等待并抛出InterruptedException。由于我们在t线程中捕获了InterruptedException，因此，就可以准备结束该线程。在t线程结束前，对hello线程也进行了interrupt()调用通知其中断。如果去掉这一行代码，可以发现hello线程仍然会继续运行，且JVM不会退出。\n另一个常用的中断线程的方法是设置标志位。我们通常会用一个running标志位来标识线程是否应该继续运行，在外部线程中，通过把HelloThread.running置为false，就可以让线程结束：\n123456789101112131415161718192021// 中断线程public class Main &#123;    public static void main(String[] args)  throws InterruptedException &#123;        HelloThread t = new HelloThread();        t.start();        Thread.sleep(1);        t.running = false; // 标志位置为false    &#125;&#125;class HelloThread extends Thread &#123;    public volatile boolean running = true;    public void run() &#123;        int n = 0;        while (running) &#123;            n ++;            System.out.println(n + &quot; hello!&quot;);        &#125;        System.out.println(&quot;end!&quot;);    &#125;&#125;\n注意到HelloThread的标志位boolean running是一个线程间共享的变量。线程间共享变量需要使用volatile关键字标记，确保每个线程都能读取到更新后的变量值。\n为什么要对线程间共享的变量用关键字volatile声明？这涉及到Java的内存模型。在Java虚拟机中，变量的值保存在主内存中，但是，当线程访问变量时，它会先获取一个副本，并保存在自己的工作内存中。如果线程修改了变量的值，虚拟机会在某个时刻把修改后的值回写到主内存，但是，这个时间是不确定的！\n12345678910111213141516┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐           Main Memory│                               │   ┌───────┐┌───────┐┌───────┐│  │ var A ││ var B ││ var C │  │   └───────┘└───────┘└───────┘│     │ ▲               │ ▲     │ ─ ─ ─│─│─ ─ ─ ─ ─ ─ ─ ─│─│─ ─ ─      │ │               │ │┌ ─ ─ ┼ ┼ ─ ─ ┐   ┌ ─ ─ ┼ ┼ ─ ─ ┐      ▼ │               ▼ ││  ┌───────┐  │   │  ┌───────┐  │   │ var A │         │ var C ││  └───────┘  │   │  └───────┘  │   Thread 1          Thread 2└ ─ ─ ─ ─ ─ ─ ┘   └ ─ ─ ─ ─ ─ ─ ┘\n这会导致如果一个线程更新了某个变量，另一个线程读取的值可能还是更新前的。例如，主内存的变量a = true，线程1执行a = false时，它在此刻仅仅是把变量a的副本变成了false，主内存的变量a还是true，在JVM把修改后的a回写到主内存之前，其他线程读取到的a的值仍然是true，这就造成了多线程之间共享的变量不一致。\n因此，volatile关键字的目的是告诉虚拟机：\n\n每次访问变量时，总是获取主内存的最新值；\n每次修改变量后，立刻回写到主内存。\n\nvolatile关键字解决的是可见性问题：当一个线程修改了某个共享变量的值，其他线程能够立刻看到修改后的值。\n如果我们去掉volatile关键字，运行上述程序，发现效果和带volatile差不多，这是因为在x86的架构下，JVM回写主内存的速度非常快，但是，换成ARM的架构，就会有显著的延迟。\n小结\n对目标线程调用interrupt()方法可以请求中断一个线程，目标线程通过检测isInterrupted()标志获取自身是否已中断。如果目标线程处于等待状态，该线程会捕获到InterruptedException；\n目标线程检测到isInterrupted()为true或者捕获了InterruptedException都应该立刻结束自身线程；\n通过标志位判断需要正确使用volatile关键字；\nvolatile关键字解决了共享变量在线程间的可见性问题。\n守护线程\nJava程序入口就是由JVM启动main线程，main线程又可以启动其他线程。当所有线程都运行结束时，JVM退出，进程结束。\n如果有一个线程没有退出，JVM进程就不会退出。所以，必须保证所有线程都能及时结束。\n但是有一种线程的目的就是无限循环，例如，一个定时触发任务的线程：\n12345678910111213class TimerThread extends Thread &#123;    @Override    public void run() &#123;        while (true) &#123;            System.out.println(LocalTime.now());            try &#123;                Thread.sleep(1000);            &#125; catch (InterruptedException e) &#123;                break;            &#125;        &#125;    &#125;&#125;\n如果这个线程不结束，JVM进程就无法结束。问题是，由谁负责结束这个线程？\n然而这类线程经常没有负责人来负责结束它们。但是，当其他线程结束时，JVM进程又必须要结束，怎么办？\n答案是使用守护线程（Daemon Thread）。\n守护线程是指为其他线程服务的线程。在JVM中，所有非守护线程都执行完毕后，无论有没有守护线程，虚拟机都会自动退出。\n因此，JVM退出时，不必关心守护线程是否已结束。\n如何创建守护线程呢？方法和普通线程一样，只是在调用start()方法前，调用setDaemon(true)把该线程标记为守护线程：\n123Thread t = new MyThread();t.setDaemon(true);t.start();\n在守护线程中，编写代码要注意：守护线程不能持有任何需要关闭的资源，例如打开文件等，因为虚拟机退出时，守护线程没有任何机会来关闭文件，这会导致数据丢失。\n练习\n使用守护线程。\n下载练习\n小结\n守护线程是为其他线程服务的线程；\n所有非守护线程都执行完毕后，虚拟机退出，守护线程随之结束；\n守护线程不能持有需要关闭的资源（如打开文件等）。\n\n\n","dateCreated":"2018-02-10T15:55:43+08:00","dateModified":"2025-06-17T18:08:29+08:00","datePublished":"2018-02-10T15:55:43+08:00","description":"","headline":"JAVA-多线程1","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/","keywords":"Java"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"现代操作系统（Windows，macOS，Linux）都可以执行多任务。多任务就是同时运行多个任务，例如：\n\nCPU执行代码都是一条一条顺序执行的，但是，即使是单核cpu，也可以同时运行多个任务。因为操作系统执行多任务实际上就是让CPU对多个任务轮流交替执行。\n例如，假设我们有语文、数学、英语3门作业要做，每个作业需要30分钟。我们把这3门作业看成是3个任务，可以做1分钟语文作业，再做1分钟数学作业，再做1分钟英语作业：\n\n这样轮流做下去，在某些人眼里看来，做作业的速度就非常快，看上去就像同时在做3门作业一样\n\n类似的，操作系统轮流让多个任务交替执行，例如，让浏览器执行0.001秒，让QQ执行0.001秒，再让音乐播放器执行0.001秒，在人看来，CPU就是在同时执行多个任务。\n即使是多核CPU，因为通常任务的数量远远多于CPU的核数，所以任务也是交替执行的。\n进程\n在计算机中，我们把一个任务称为一个进程，浏览器就是一个进程，视频播放器是另一个进程，类似的，音乐播放器和Word都是进程。\n某些进程内部还需要同时执行多个子任务。例如，我们在使用Word时，Word可以让我们一边打字，一边进行拼写检查，同时还可以在后台进行打印，我们把子任务称为线程。\n进程和线程的关系就是：一个进程可以包含一个或多个线程，但至少会有一个线程。\n123456789101112131415                        ┌──────────┐                        │Process   │                        │┌────────┐│            ┌──────────┐││ Thread ││┌──────────┐            │Process   ││└────────┘││Process   │            │┌────────┐││┌────────┐││┌────────┐│┌──────────┐││ Thread ││││ Thread ││││ Thread │││Process   ││└────────┘││└────────┘││└────────┘││┌────────┐││┌────────┐││┌────────┐││┌────────┐│││ Thread ││││ Thread ││││ Thread ││││ Thread │││└────────┘││└────────┘││└────────┘││└────────┘│└──────────┘└──────────┘└──────────┘└──────────┘┌──────────────────────────────────────────────┐│               Operating System               │└──────────────────────────────────────────────┘\n操作系统调度的最小任务单位其实不是进程，而是线程。常用的Windows、Linux等操作系统都采用抢占式多任务，如何调度线程完全由操作系统决定，程序自己不能决定什么时候执行，以及执行多长时间。\n因为同一个应用程序，既可以有多个进程，也可以有多个线程，因此，实现多任务的方法，有以下几种：\n多进程模式（每个进程只有一个线程）：\n123456┌──────────┐ ┌──────────┐ ┌──────────┐│Process   │ │Process   │ │Process   ││┌────────┐│ │┌────────┐│ │┌────────┐│││ Thread ││ ││ Thread ││ ││ Thread │││└────────┘│ │└────────┘│ │└────────┘│└──────────┘ └──────────┘ └──────────┘\n多线程模式（一个进程有多个线程）：\n123456789┌────────────────────┐│Process             ││┌────────┐┌────────┐│││ Thread ││ Thread │││└────────┘└────────┘││┌────────┐┌────────┐│││ Thread ││ Thread │││└────────┘└────────┘│└────────────────────┘\n多进程＋多线程模式（复杂度最高）：\n123456789┌──────────┐┌──────────┐┌──────────┐│Process   ││Process   ││Process   ││┌────────┐││┌────────┐││┌────────┐│││ Thread ││││ Thread ││││ Thread │││└────────┘││└────────┘││└────────┘││┌────────┐││┌────────┐││┌────────┐│││ Thread ││││ Thread ││││ Thread │││└────────┘││└────────┘││└────────┘│└──────────┘└──────────┘└──────────┘\n进程 vs 线程\n进程和线程是包含关系，但是多任务既可以由多进程实现，也可以由单进程内的多线程实现，还可以混合多进程＋多线程。\n具体采用哪种方式，要考虑到进程和线程的特点。\n和多线程相比，多进程的缺点在于：\n\n创建进程比创建线程开销大，尤其是在Windows系统上；\n进程间通信比线程间通信要慢，因为线程间通信就是读写同一个变量，速度很快。\n\n而多进程的优点在于：\n多进程稳定性比多线程高，因为在多进程的情况下，一个进程崩溃不会影响其他进程，而在多线程的情况下，任何一个线程崩溃会直接导致整个进程崩溃。\n多线程\nJava语言内置了多线程支持：一个Java程序实际上是一个JVM进程，JVM进程用一个主线程来执行main()方法，在main()方法内部，我们又可以启动多个线程。此外，JVM还有负责垃圾回收的其他工作线程等。\n因此，对于大多数Java程序来说，我们说多任务，实际上是说如何使用多线程实现多任务。\n和单线程相比，多线程编程的特点在于：多线程经常需要读写共享数据，并且需要同步。例如，播放电影时，就必须由一个线程播放视频，另一个线程播放音频，两个线程需要协调运行，否则画面和声音就不同步。因此，多线程编程的复杂度高，调试更困难。\nJava多线程编程的特点又在于：\n\n多线程模型是Java程序最基本的并发模型；\n后续读写网络、数据库、Web开发等都依赖Java多线程模型。\n\n因此，必须掌握Java多线程编程才能继续深入学习其他内容。\nJava语言内置了多线程支持。当Java程序启动的时候，实际上是启动了一个JVM进程，然后，JVM启动主线程来执行main()方法。在main()方法中，我们又可以启动其他线程。\n要创建一个新线程非常容易，我们需要实例化一个Thread实例，然后调用它的start()方法：\n1234567// 多线程public class Main &#123;    public static void main(String[] args) &#123;        Thread t = new Thread();        t.start(); // 启动新线程    &#125;&#125;\n但是这个线程启动后实际上什么也不做就立刻结束了。我们希望新线程能执行指定的代码，有以下几种方法：\n方法一：从Thread派生一个自定义类，然后覆写run()方法：\n1234567891011121314// 多线程public class Main &#123;    public static void main(String[] args) &#123;        Thread t = new MyThread();        t.start(); // 启动新线程    &#125;&#125;class MyThread extends Thread &#123;    @Override    public void run() &#123;        System.out.println(&quot;start new thread!&quot;);    &#125;&#125;\n执行上述代码，注意到start()方法会在内部自动调用实例的run()方法。\n方法二：创建Thread实例时，传入一个Runnable实例：\n1234567891011121314// 多线程public class Main &#123;    public static void main(String[] args) &#123;        Thread t = new Thread(new MyRunnable());        t.start(); // 启动新线程    &#125;&#125;class MyRunnable implements Runnable &#123;    @Override    public void run() &#123;        System.out.println(&quot;start new thread!&quot;);    &#125;&#125;\n或者用Java 8引入的lambda语法进一步简写为：\n123456789// 多线程public class Main &#123;    public static void main(String[] args) &#123;        Thread t = new Thread(() -&gt; &#123;            System.out.println(&quot;start new thread!&quot;);        &#125;);        t.start(); // 启动新线程    &#125;&#125;\n有童鞋会问，使用线程执行的打印语句，和直接在main()方法执行有区别吗？\n区别大了去了。我们看以下代码：\n12345678910111213public class Main &#123;    public static void main(String[] args) &#123;        System.out.println(&quot;main start...&quot;);        Thread t = new Thread() &#123;            public void run() &#123;                System.out.println(&quot;thread run...&quot;);                System.out.println(&quot;thread end.&quot;);            &#125;        &#125;;        t.start();        System.out.println(&quot;main end...&quot;);    &#125;&#125;\n我们用蓝色表示主线程，也就是main线程，main线程执行的代码有4行，首先打印main start，然后创建Thread对象，紧接着调用start()启动新线程。当start()方法被调用时，JVM就创建了一个新线程，我们通过实例变量t来表示这个新线程对象，并开始执行。\n接着，main线程继续执行打印main end语句，而t线程在main线程执行的同时会并发执行，打印thread run和thread end语句。\n当run()方法结束时，新线程就结束了。而main()方法结束时，主线程也结束了。\n我们再来看线程的执行顺序：\n\nmain线程肯定是先打印main start，再打印main end；\nt线程肯定是先打印thread run，再打印thread end。\n\n但是，除了可以肯定，main start会先打印外，main end打印在thread run之前、thread end之后或者之间，都无法确定。因为从t线程开始运行以后，两个线程就开始同时运行了，并且由操作系统调度，程序本身无法确定线程的调度顺序。\n要模拟并发执行的效果，我们可以在线程中调用Thread.sleep()，强迫当前线程暂停一段时间：\n1234567891011121314151617181920// 多线程public class Main &#123;    public static void main(String[] args) &#123;        System.out.println(&quot;main start...&quot;);        Thread t = new Thread() &#123;            public void run() &#123;                System.out.println(&quot;thread run...&quot;);                try &#123;                    Thread.sleep(10);                &#125; catch (InterruptedException e) &#123;&#125;                System.out.println(&quot;thread end.&quot;);            &#125;        &#125;;        t.start();        try &#123;            Thread.sleep(20);        &#125; catch (InterruptedException e) &#123;&#125;        System.out.println(&quot;main end...&quot;);    &#125;&#125;\nsleep()传入的参数是毫秒。调整暂停时间的大小，我们可以看到main线程和t线程执行的先后顺序。\n要特别注意：直接调用Thread实例的run()方法是无效的：\n123456789101112public class Main &#123;    public static void main(String[] args) &#123;        Thread t = new MyThread();        t.run();    &#125;&#125;class MyThread extends Thread &#123;    public void run() &#123;        System.out.println(&quot;hello&quot;);    &#125;&#125;\n直接调用run()方法，相当于调用了一个普通的Java方法，当前线程并没有任何改变，也不会启动新线程。上述代码实际上是在main()方法内部又调用了run()方法，打印hello语句是在main线程中执行的，没有任何新线程被创建。\n必须调用Thread实例的start()方法才能启动新线程，如果我们查看Thread类的源代码，会看到start()方法内部调用了一个private native void start0()方法，native修饰符表示这个方法是由JVM虚拟机内部的C代码实现的，不是由Java代码实现的。\n线程的优先级\n可以对线程设定优先级，设定优先级的方法是：\n1Thread.setPriority(int n) // 1~10, 默认值5\nJVM自动把1（低）~10（高）的优先级映射到操作系统实际优先级上（不同操作系统有不同的优先级数量）。优先级高的线程被操作系统调度的优先级较高，操作系统对高优先级线程可能调度更频繁，但我们决不能通过设置优先级来确保高优先级的线程一定会先执行。\n练习\n创建一个新线程。\n下载练习\n小结\nJava用Thread对象表示一个线程，通过调用start()启动一个新线程；\n一个线程对象只能调用一次start()方法；\n线程的执行代码写在run()方法中；\n线程调度由操作系统决定，程序本身无法决定调度顺序；\nThread.sleep()可以把当前线程暂停一段时间。\n线程的状态\n在Java程序中，一个线程对象只能调用一次start()方法启动新线程，并在新线程中执行run()方法。一旦run()方法执行完毕，线程就结束了。因此，Java线程的状态有以下几种：\n\nNew：新创建的线程，尚未执行；\nRunnable：运行中的线程，正在执行run()方法的Java代码；\nBlocked：运行中的线程，因为某些操作被阻塞而挂起；\nWaiting：运行中的线程，因为某些操作在等待中；\nTimed Waiting：运行中的线程，因为执行sleep()方法正在计时等待；\nTerminated：线程已终止，因为run()方法执行完毕。\n\n用一个状态转移图表示如下：\n123456789101112131415161718         ┌─────────────┐         │     New     │         └─────────────┘                │                ▼┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐ ┌─────────────┐ ┌─────────────┐││  Runnable   │ │   Blocked   ││ └─────────────┘ └─────────────┘│┌─────────────┐ ┌─────────────┐│ │   Waiting   │ │Timed Waiting││└─────────────┘ └─────────────┘│ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─                │                ▼         ┌─────────────┐         │ Terminated  │         └─────────────┘\n当线程启动后，它可以在Runnable、Blocked、Waiting和Timed Waiting这几个状态之间切换，直到最后变成Terminated状态，线程终止。\n线程终止的原因有：\n\n线程正常终止：run()方法执行到return语句返回；\n线程意外终止：run()方法因为未捕获的异常导致线程终止；\n对某个线程的Thread实例调用stop()方法强制终止（强烈不推荐使用）。\n\n一个线程还可以等待另一个线程直到其运行结束。例如，main线程在启动t线程后，可以通过t.join()等待t线程结束后再继续运行：\n123456789101112// 多线程public class Main &#123;    public static void main(String[] args) throws InterruptedException &#123;        Thread t = new Thread(() -&gt; &#123;            System.out.println(&quot;hello&quot;);        &#125;);        System.out.println(&quot;start&quot;);        t.start(); // 启动t线程        t.join(); // 此处main线程会等待t结束        System.out.println(&quot;end&quot;);    &#125;&#125;\n当main线程对线程对象t调用join()方法时，主线程将等待变量t表示的线程运行结束，即join就是指等待该线程结束，然后才继续往下执行自身线程。所以，上述代码打印顺序可以肯定是main线程先打印start，t线程再打印hello，main线程最后再打印end。\n如果t线程已经结束，对实例t调用join()会立刻返回。此外，join(long)的重载方法也可以指定一个等待时间，超过等待时间后就不再继续等待。\n小结\nJava线程对象Thread的状态包括：New、Runnable、Blocked、Waiting、Timed Waiting和Terminated；\n通过对另一个线程对象调用join()方法可以等待其执行结束；\n可以指定等待时间，超过等待时间线程仍然没有结束就不再等待；\n对已经运行结束的线程调用join()方法会立刻返回。\n\n\n如果线程需要执行一个长时间任务，就可能需要能中断线程。中断线程就是其他线程给该线程发一个信号，该线程收到信号后结束执行run()方法，使得自身线程能立刻结束运行。\n我们举个栗子：假设从网络下载一个100M的文件，如果网速很慢，用户等得不耐烦，就可能在下载过程中点“取消”，这时，程序就需要中断下载线程的执行。\n中断一个线程非常简单，只需要在其他线程中对目标线程调用interrupt()方法，目标线程需要反复检测自身状态是否是interrupted状态，如果是，就立刻结束运行。\n我们还是看示例代码：\n123456789101112131415161718192021// 中断线程public class Main &#123;    public static void main(String[] args) throws InterruptedException &#123;        Thread t = new MyThread();        t.start();        Thread.sleep(1); // 暂停1毫秒        t.interrupt(); // 中断t线程        t.join(); // 等待t线程结束        System.out.println(&quot;end&quot;);    &#125;&#125;class MyThread extends Thread &#123;    public void run() &#123;        int n = 0;        while (! isInterrupted()) &#123;            n ++;            System.out.println(n + &quot; hello!&quot;);        &#125;    &#125;&#125;\n仔细看上述代码，main线程通过调用t.interrupt()方法中断t线程，但是要注意，interrupt()方法仅仅向t线程发出了“中断请求”，至于t线程是否能立刻响应，要看具体代码。而t线程的while循环会检测isInterrupted()，所以上述代码能正确响应interrupt()请求，使得自身立刻结束运行run()方法。\n如果线程处于等待状态，例如，t.join()会让main线程进入等待状态，此时，如果对main线程调用interrupt()，join()方法会立刻抛出InterruptedException，因此，目标线程只要捕获到join()方法抛出的InterruptedException，就说明有其他线程对其调用了interrupt()方法，通常情况下该线程应该立刻结束运行。\n我们来看下面的示例代码：\n123456789101112131415161718192021222324252627282930313233343536373839// 中断线程public class Main &#123;    public static void main(String[] args) throws InterruptedException &#123;        Thread t = new MyThread();        t.start();        Thread.sleep(1000);        t.interrupt(); // 中断t线程        t.join(); // 等待t线程结束        System.out.println(&quot;end&quot;);    &#125;&#125;class MyThread extends Thread &#123;    public void run() &#123;        Thread hello = new HelloThread();        hello.start(); // 启动hello线程        try &#123;            hello.join(); // 等待hello线程结束        &#125; catch (InterruptedException e) &#123;            System.out.println(&quot;interrupted!&quot;);        &#125;        hello.interrupt();    &#125;&#125;class HelloThread extends Thread &#123;    public void run() &#123;        int n = 0;        while (!isInterrupted()) &#123;            n++;            System.out.println(n + &quot; hello!&quot;);            try &#123;                Thread.sleep(100);            &#125; catch (InterruptedException e) &#123;                break;            &#125;        &#125;    &#125;&#125;\nmain线程通过调用t.interrupt()从而通知t线程中断，而此时t线程正位于hello.join()的等待中，此方法会立刻结束等待并抛出InterruptedException。由于我们在t线程中捕获了InterruptedException，因此，就可以准备结束该线程。在t线程结束前，对hello线程也进行了interrupt()调用通知其中断。如果去掉这一行代码，可以发现hello线程仍然会继续运行，且JVM不会退出。\n另一个常用的中断线程的方法是设置标志位。我们通常会用一个running标志位来标识线程是否应该继续运行，在外部线程中，通过把HelloThread.running置为false，就可以让线程结束：\n123456789101112131415161718192021// 中断线程public class Main &#123;    public static void main(String[] args)  throws InterruptedException &#123;        HelloThread t = new HelloThread();        t.start();        Thread.sleep(1);        t.running = false; // 标志位置为false    &#125;&#125;class HelloThread extends Thread &#123;    public volatile boolean running = true;    public void run() &#123;        int n = 0;        while (running) &#123;            n ++;            System.out.println(n + &quot; hello!&quot;);        &#125;        System.out.println(&quot;end!&quot;);    &#125;&#125;\n注意到HelloThread的标志位boolean running是一个线程间共享的变量。线程间共享变量需要使用volatile关键字标记，确保每个线程都能读取到更新后的变量值。\n为什么要对线程间共享的变量用关键字volatile声明？这涉及到Java的内存模型。在Java虚拟机中，变量的值保存在主内存中，但是，当线程访问变量时，它会先获取一个副本，并保存在自己的工作内存中。如果线程修改了变量的值，虚拟机会在某个时刻把修改后的值回写到主内存，但是，这个时间是不确定的！\n12345678910111213141516┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐           Main Memory│                               │   ┌───────┐┌───────┐┌───────┐│  │ var A ││ var B ││ var C │  │   └───────┘└───────┘└───────┘│     │ ▲               │ ▲     │ ─ ─ ─│─│─ ─ ─ ─ ─ ─ ─ ─│─│─ ─ ─      │ │               │ │┌ ─ ─ ┼ ┼ ─ ─ ┐   ┌ ─ ─ ┼ ┼ ─ ─ ┐      ▼ │               ▼ ││  ┌───────┐  │   │  ┌───────┐  │   │ var A │         │ var C ││  └───────┘  │   │  └───────┘  │   Thread 1          Thread 2└ ─ ─ ─ ─ ─ ─ ┘   └ ─ ─ ─ ─ ─ ─ ┘\n这会导致如果一个线程更新了某个变量，另一个线程读取的值可能还是更新前的。例如，主内存的变量a = true，线程1执行a = false时，它在此刻仅仅是把变量a的副本变成了false，主内存的变量a还是true，在JVM把修改后的a回写到主内存之前，其他线程读取到的a的值仍然是true，这就造成了多线程之间共享的变量不一致。\n因此，volatile关键字的目的是告诉虚拟机：\n\n每次访问变量时，总是获取主内存的最新值；\n每次修改变量后，立刻回写到主内存。\n\nvolatile关键字解决的是可见性问题：当一个线程修改了某个共享变量的值，其他线程能够立刻看到修改后的值。\n如果我们去掉volatile关键字，运行上述程序，发现效果和带volatile差不多，这是因为在x86的架构下，JVM回写主内存的速度非常快，但是，换成ARM的架构，就会有显著的延迟。\n小结\n对目标线程调用interrupt()方法可以请求中断一个线程，目标线程通过检测isInterrupted()标志获取自身是否已中断。如果目标线程处于等待状态，该线程会捕获到InterruptedException；\n目标线程检测到isInterrupted()为true或者捕获了InterruptedException都应该立刻结束自身线程；\n通过标志位判断需要正确使用volatile关键字；\nvolatile关键字解决了共享变量在线程间的可见性问题。\n守护线程\nJava程序入口就是由JVM启动main线程，main线程又可以启动其他线程。当所有线程都运行结束时，JVM退出，进程结束。\n如果有一个线程没有退出，JVM进程就不会退出。所以，必须保证所有线程都能及时结束。\n但是有一种线程的目的就是无限循环，例如，一个定时触发任务的线程：\n12345678910111213class TimerThread extends Thread &#123;    @Override    public void run() &#123;        while (true) &#123;            System.out.println(LocalTime.now());            try &#123;                Thread.sleep(1000);            &#125; catch (InterruptedException e) &#123;                break;            &#125;        &#125;    &#125;&#125;\n如果这个线程不结束，JVM进程就无法结束。问题是，由谁负责结束这个线程？\n然而这类线程经常没有负责人来负责结束它们。但是，当其他线程结束时，JVM进程又必须要结束，怎么办？\n答案是使用守护线程（Daemon Thread）。\n守护线程是指为其他线程服务的线程。在JVM中，所有非守护线程都执行完毕后，无论有没有守护线程，虚拟机都会自动退出。\n因此，JVM退出时，不必关心守护线程是否已结束。\n如何创建守护线程呢？方法和普通线程一样，只是在调用start()方法前，调用setDaemon(true)把该线程标记为守护线程：\n123Thread t = new MyThread();t.setDaemon(true);t.start();\n在守护线程中，编写代码要注意：守护线程不能持有任何需要关闭的资源，例如打开文件等，因为虚拟机退出时，守护线程没有任何机会来关闭文件，这会导致数据丢失。\n练习\n使用守护线程。\n下载练习\n小结\n守护线程是为其他线程服务的线程；\n所有非守护线程都执行完毕后，虚拟机退出，守护线程随之结束；\n守护线程不能持有需要关闭的资源（如打开文件等）。\n\n\n","dateCreated":"2018-02-10T15:55:43+08:00","dateModified":"2025-06-17T18:08:29+08:00","datePublished":"2018-02-10T15:55:43+08:00","description":"","headline":"JAVA-多线程1","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/","keywords":"Java"}</script>
     <meta name="description" content="现代操作系统（Windows，macOS，Linux）都可以执行多任务。多任务就是同时运行多个任务，例如：  CPU执行代码都是一条一条顺序执行的，但是，即使是单核cpu，也可以同时运行多个任务。因为操作系统执行多任务实际上就是让CPU对多个任务轮流交替执行。 例如，假设我们有语文、数学、英语3门作业要做，每个作业需要30分钟。我们把这3门作业看成是3个任务，可以做1分钟语文作业，再做1分钟数学作">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="JAVA-多线程1">
-<meta property="og:url" content="https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/index.html">
+<meta property="og:url" content="https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="现代操作系统（Windows，macOS，Linux）都可以执行多任务。多任务就是同时运行多个任务，例如：  CPU执行代码都是一条一条顺序执行的，但是，即使是单核cpu，也可以同时运行多个任务。因为操作系统执行多任务实际上就是让CPU对多个任务轮流交替执行。 例如，假设我们有语文、数学、英语3门作业要做，每个作业需要30分钟。我们把这3门作业看成是3个任务，可以做1分钟语文作业，再做1分钟数学作">
 <meta property="og:locale" content="zh_TW">
@@ -54,7 +54,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -552,7 +552,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -563,7 +563,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -576,7 +576,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -589,7 +589,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -602,7 +602,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -615,7 +615,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -680,7 +680,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -691,7 +691,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -704,7 +704,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -717,7 +717,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -730,7 +730,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -743,7 +743,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -764,7 +764,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -777,7 +777,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -790,7 +790,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -803,7 +803,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/02/10/java/JAVA-%E5%A4%9A%E7%BA%BF%E7%A8%8B1/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -879,7 +879,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -902,7 +902,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -925,7 +925,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -948,7 +948,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -971,7 +971,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -994,7 +994,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1017,7 +1017,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1040,7 +1040,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1063,7 +1063,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1086,7 +1086,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

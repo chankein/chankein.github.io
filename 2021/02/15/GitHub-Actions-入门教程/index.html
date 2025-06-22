@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"GitHub Actions 是 GitHub 的持续集成服务，于2018年10月推出。\n这些天，我一直在试用，觉得它非常强大，有创意，比 Travis CI 玩法更多。\n本文是一个简单教程，演示如何使用 GitHub Actions 自动发布一个 React 应用到 GitHub Pages。\n\n一、GitHub Actions 是什么？\n大家知道，持续集成由很多操作组成，比如抓取代码、运行测试、登录远程服务器，发布到第三方服务等等。GitHub 把这些操作就称为 actions。\n很多操作在不同项目里面是类似的，完全可以共享。GitHub 注意到了这一点，想出了一个很妙的点子，允许开发者把每个操作写成独立的脚本文件，存放到代码仓库，使得其他开发者可以引用。\n如果你需要某个 action，不必自己写复杂的脚本，直接引用他人写好的 action 即可，整个持续集成过程，就变成了一个 actions 的组合。这就是 GitHub Actions 最特别的地方。\nGitHub 做了一个官方市场，可以搜索到他人提交的 actions。另外，还有一个 awesome actions 的仓库，也可以找到不少 action。\n\n上面说了，每个 action 就是一个独立脚本，因此可以做成代码仓库，使用userName/repoName的语法引用 action。比如，actions/setup-node就表示github.com/actions/setup-node这个仓库，它代表一个 action，作用是安装 Node.js。事实上，GitHub 官方的 actions 都放在 github.com/actions 里面。\n既然 actions 是代码仓库，当然就有版本的概念，用户可以引用某个具体版本的 action。下面都是合法的 action 引用，用的就是 Git 的指针概念，详见官方文档。\n\n1234actions/setup-node@74bc508 # 指向一个 commitactions/[email protected]    # 指向一个标签actions/setup-node@master  # 指向一个分支\n\n二、基本概念\nGitHub Actions 有一些自己的术语。\n（1）workflow （工作流程）：持续集成一次运行的过程，就是一个 workflow。\n（2）job （任务）：一个 workflow 由一个或多个 jobs 构成，含义是一次持续集成的运行，可以完成多个任务。\n（3）step（步骤）：每个 job 由多个 step 构成，一步步完成。\n（4）action （动作）：每个 step 可以依次执行一个或多个命令（action）。\n三、workflow 文件\nGitHub Actions 的配置文件叫做 workflow 文件，存放在代码仓库的.github/workflows目录。\nworkflow 文件采用 YAML 格式，文件名可以任意取，但是后缀名统一为.yml，比如foo.yml。一个库可以有多个 workflow 文件。GitHub 只要发现.github/workflows目录里面有.yml文件，就会自动运行该文件。\nworkflow 文件的配置字段非常多，详见官方文档。下面是一些基本字段。\n（1）name\nname字段是 workflow 的名称。如果省略该字段，默认为当前 workflow 的文件名。\n\n12name: GitHub Actions Demo\n\n（2）on\non字段指定触发 workflow 的条件，通常是某些事件。\n\n12on: push\n\n上面代码指定，push事件触发 workflow。\non字段也可以是事件的数组。\n\n12on: [push, pull_request]\n\n上面代码指定，push事件或pull_request事件都可以触发 workflow。\n完整的事件列表，请查看官方文档。除了代码库事件，GitHub Actions 也支持外部事件触发，或者定时运行。\n（3）on.&lt;push|pull_request&gt;.&lt;tags|branches&gt;\n指定触发事件时，可以限定分支或标签。\n\n12345on:  push:    branches:          - master\n\n上面代码指定，只有master分支发生push事件时，才会触发 workflow。\n（4）jobs.&lt;job_id&gt;.name\nworkflow 文件的主体是jobs字段，表示要执行的一项或多项任务。\njobs字段里面，需要写出每一项任务的job_id，具体名称自定义。job_id里面的name字段是任务的说明。\n\n123456jobs:  my_first_job:    name: My first job  my_second_job:    name: My second job\n\n上面代码的jobs字段包含两项任务，job_id分别是my_first_job和my_second_job。\n（5）jobs.&lt;job_id&gt;.needs\nneeds字段指定当前任务的依赖关系，即运行顺序。\n\n1234567jobs:  job1:  job2:    needs: job1  job3:    needs: [job1, job2]\n\n上面代码中，job1必须先于job2完成，而job3等待job1和job2的完成才能运行。因此，这个 workflow 的运行顺序依次为：job1、job2、job3。\n（6）jobs.&lt;job_id&gt;.runs-on\nruns-on字段指定运行所需要的虚拟机环境。它是必填字段。目前可用的虚拟机如下。\n\n\nubuntu-latest，ubuntu-18.04或ubuntu-16.04\nwindows-latest，windows-2019或windows-2016\nmacOS-latest或macOS-10.14\n\n\n下面代码指定虚拟机环境为ubuntu-18.04。\n\n12runs-on: ubuntu-18.04\n\n（7）jobs.&lt;job_id&gt;.steps\nsteps字段指定每个 Job 的运行步骤，可以包含一个或多个步骤。每个步骤都可以指定以下三个字段。\n\n\njobs.&lt;job_id&gt;.steps.name：步骤名称。\njobs.&lt;job_id&gt;.steps.run：该步骤运行的命令或者 action。\njobs.&lt;job_id&gt;.steps.env：该步骤所需的环境变量。\n\n\n下面是一个完整的 workflow 文件的范例。\n\n1234567891011121314151617name: Greeting from Monaon: pushjobs:  my-job:    name: My Job    runs-on: ubuntu-latest    steps:    - name: Print a greeting      env:        MY_VAR: Hi there! My name is        FIRST_NAME: Mona        MIDDLE_NAME: The        LAST_NAME: Octocat      run: |        echo $MY_VAR $FIRST_NAME $MIDDLE_NAME $LAST_NAME.\n\n上面代码中，steps字段只包括一个步骤。该步骤先注入四个环境变量，然后执行一条 Bash 命令。\n四、实例：React 项目发布到 GitHub Pages\n下面是一个实例，通过 GitHub Actions 构建一个 React 项目，并发布到 GitHub Pages。最终代码都在这个仓库里面，发布后的参考网址为ruanyf.github.io/github-actions-demo。\n第一步，GitHub Actions 目前还处在测试阶段，需要到这个网址申请测试资格。申请以后，可能需要几天才能通过。据说，2019年11月就会放开。\n获得资格后，仓库顶部的菜单会出现Actions一项。\n\n第二步，这个示例需要将构建成果发到 GitHub 仓库，因此需要 GitHub 密钥。按照官方文档，生成一个密钥。然后，将这个密钥储存到当前仓库的Settings/Secrets里面。\n\n上图是储存秘密的环境变量的地方。环境变量的名字可以随便起，这里用的是ACCESS_TOKEN。如果你不用这个名字，后面脚本里的变量名也要跟着改。\n第三步，本地计算机使用create-react-app，生成一个标准的 React 应用。\n\n123$ npx create-react-app github-actions-demo$ cd github-actions-demo\n\n然后，打开package.json文件，加一个homepage字段，表示该应用发布后的根目录（参见官方文档）。\n\n12&quot;homepage&quot;: &quot;https://[username].github.io/github-actions-demo&quot;,\n\n上面代码中，将[username]替换成你的 GitHub 用户名，参见范例。\n第四步，在这个仓库的.github/workflows目录，生成一个 workflow 文件，名字可以随便取，这个示例是ci.yml。\n我们选用一个别人已经写好的 action：JamesIves/github-pages-deploy-action，它提供了 workflow 的范例文件，直接拷贝过来就行了（查看源码）。\n\n1234567891011121314151617181920name: GitHub Actions Build and Deploy Demoon:  push:    branches:      - masterjobs:  build-and-deploy:    runs-on: ubuntu-latest    steps:    - name: Checkout      uses: actions/checkout@master    - name: Build and Deploy      uses: JamesIves/github-pages-deploy-action@master      env:        ACCESS_TOKEN: $&#123;&#123; secrets.ACCESS_TOKEN &#125;&#125;        BRANCH: gh-pages        FOLDER: build        BUILD_SCRIPT: npm install &amp;&amp; npm run build\n\n上面这个 workflow 文件的要点如下。\n\n\n整个流程在master分支发生push事件时触发。\n只有一个job，运行在虚拟机环境ubuntu-latest。\n第一步是获取源码，使用的 action 是actions/checkout。\n第二步是构建和部署，使用的 action 是JamesIves/github-pages-deploy-action。\n第二步需要四个环境变量，分别为 GitHub 密钥、发布分支、构建成果所在目录、构建脚本。其中，只有 GitHub 密钥是秘密变量，需要写在双括号里面，其他三个都可以直接写在文件里。\n\n\n第五步，保存上面的文件后，将整个仓库推送到 GitHub。\nGitHub 发现了 workflow 文件以后，就会自动运行。你可以在网站上实时查看运行日志，日志默认保存30天。\n\n等到 workflow 运行结束，访问 GitHub Page，会看到构建成果已经发上网了。\n\n以后，每次修改后推送源码，GitHub Actions 都会自动运行，将构建产物发布到网页。\n五、参考链接\n\nGitHub Pages 官方文档\nGithub Actions for web apps, Luke Boyle\nMy First Week With GitHub Actions, Adam Zolyak\n\n（完）\n","dateCreated":"2021-02-15T15:09:17+08:00","dateModified":"2025-06-15T15:16:41+08:00","datePublished":"2021-02-15T15:09:17+08:00","description":"","headline":"GitHub Actions 入门教程","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/","keywords":"GitHub"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"GitHub Actions 是 GitHub 的持续集成服务，于2018年10月推出。\n这些天，我一直在试用，觉得它非常强大，有创意，比 Travis CI 玩法更多。\n本文是一个简单教程，演示如何使用 GitHub Actions 自动发布一个 React 应用到 GitHub Pages。\n\n一、GitHub Actions 是什么？\n大家知道，持续集成由很多操作组成，比如抓取代码、运行测试、登录远程服务器，发布到第三方服务等等。GitHub 把这些操作就称为 actions。\n很多操作在不同项目里面是类似的，完全可以共享。GitHub 注意到了这一点，想出了一个很妙的点子，允许开发者把每个操作写成独立的脚本文件，存放到代码仓库，使得其他开发者可以引用。\n如果你需要某个 action，不必自己写复杂的脚本，直接引用他人写好的 action 即可，整个持续集成过程，就变成了一个 actions 的组合。这就是 GitHub Actions 最特别的地方。\nGitHub 做了一个官方市场，可以搜索到他人提交的 actions。另外，还有一个 awesome actions 的仓库，也可以找到不少 action。\n\n上面说了，每个 action 就是一个独立脚本，因此可以做成代码仓库，使用userName/repoName的语法引用 action。比如，actions/setup-node就表示github.com/actions/setup-node这个仓库，它代表一个 action，作用是安装 Node.js。事实上，GitHub 官方的 actions 都放在 github.com/actions 里面。\n既然 actions 是代码仓库，当然就有版本的概念，用户可以引用某个具体版本的 action。下面都是合法的 action 引用，用的就是 Git 的指针概念，详见官方文档。\n\n1234actions/setup-node@74bc508 # 指向一个 commitactions/[email protected]    # 指向一个标签actions/setup-node@master  # 指向一个分支\n\n二、基本概念\nGitHub Actions 有一些自己的术语。\n（1）workflow （工作流程）：持续集成一次运行的过程，就是一个 workflow。\n（2）job （任务）：一个 workflow 由一个或多个 jobs 构成，含义是一次持续集成的运行，可以完成多个任务。\n（3）step（步骤）：每个 job 由多个 step 构成，一步步完成。\n（4）action （动作）：每个 step 可以依次执行一个或多个命令（action）。\n三、workflow 文件\nGitHub Actions 的配置文件叫做 workflow 文件，存放在代码仓库的.github/workflows目录。\nworkflow 文件采用 YAML 格式，文件名可以任意取，但是后缀名统一为.yml，比如foo.yml。一个库可以有多个 workflow 文件。GitHub 只要发现.github/workflows目录里面有.yml文件，就会自动运行该文件。\nworkflow 文件的配置字段非常多，详见官方文档。下面是一些基本字段。\n（1）name\nname字段是 workflow 的名称。如果省略该字段，默认为当前 workflow 的文件名。\n\n12name: GitHub Actions Demo\n\n（2）on\non字段指定触发 workflow 的条件，通常是某些事件。\n\n12on: push\n\n上面代码指定，push事件触发 workflow。\non字段也可以是事件的数组。\n\n12on: [push, pull_request]\n\n上面代码指定，push事件或pull_request事件都可以触发 workflow。\n完整的事件列表，请查看官方文档。除了代码库事件，GitHub Actions 也支持外部事件触发，或者定时运行。\n（3）on.&lt;push|pull_request&gt;.&lt;tags|branches&gt;\n指定触发事件时，可以限定分支或标签。\n\n12345on:  push:    branches:          - master\n\n上面代码指定，只有master分支发生push事件时，才会触发 workflow。\n（4）jobs.&lt;job_id&gt;.name\nworkflow 文件的主体是jobs字段，表示要执行的一项或多项任务。\njobs字段里面，需要写出每一项任务的job_id，具体名称自定义。job_id里面的name字段是任务的说明。\n\n123456jobs:  my_first_job:    name: My first job  my_second_job:    name: My second job\n\n上面代码的jobs字段包含两项任务，job_id分别是my_first_job和my_second_job。\n（5）jobs.&lt;job_id&gt;.needs\nneeds字段指定当前任务的依赖关系，即运行顺序。\n\n1234567jobs:  job1:  job2:    needs: job1  job3:    needs: [job1, job2]\n\n上面代码中，job1必须先于job2完成，而job3等待job1和job2的完成才能运行。因此，这个 workflow 的运行顺序依次为：job1、job2、job3。\n（6）jobs.&lt;job_id&gt;.runs-on\nruns-on字段指定运行所需要的虚拟机环境。它是必填字段。目前可用的虚拟机如下。\n\n\nubuntu-latest，ubuntu-18.04或ubuntu-16.04\nwindows-latest，windows-2019或windows-2016\nmacOS-latest或macOS-10.14\n\n\n下面代码指定虚拟机环境为ubuntu-18.04。\n\n12runs-on: ubuntu-18.04\n\n（7）jobs.&lt;job_id&gt;.steps\nsteps字段指定每个 Job 的运行步骤，可以包含一个或多个步骤。每个步骤都可以指定以下三个字段。\n\n\njobs.&lt;job_id&gt;.steps.name：步骤名称。\njobs.&lt;job_id&gt;.steps.run：该步骤运行的命令或者 action。\njobs.&lt;job_id&gt;.steps.env：该步骤所需的环境变量。\n\n\n下面是一个完整的 workflow 文件的范例。\n\n1234567891011121314151617name: Greeting from Monaon: pushjobs:  my-job:    name: My Job    runs-on: ubuntu-latest    steps:    - name: Print a greeting      env:        MY_VAR: Hi there! My name is        FIRST_NAME: Mona        MIDDLE_NAME: The        LAST_NAME: Octocat      run: |        echo $MY_VAR $FIRST_NAME $MIDDLE_NAME $LAST_NAME.\n\n上面代码中，steps字段只包括一个步骤。该步骤先注入四个环境变量，然后执行一条 Bash 命令。\n四、实例：React 项目发布到 GitHub Pages\n下面是一个实例，通过 GitHub Actions 构建一个 React 项目，并发布到 GitHub Pages。最终代码都在这个仓库里面，发布后的参考网址为ruanyf.github.io/github-actions-demo。\n第一步，GitHub Actions 目前还处在测试阶段，需要到这个网址申请测试资格。申请以后，可能需要几天才能通过。据说，2019年11月就会放开。\n获得资格后，仓库顶部的菜单会出现Actions一项。\n\n第二步，这个示例需要将构建成果发到 GitHub 仓库，因此需要 GitHub 密钥。按照官方文档，生成一个密钥。然后，将这个密钥储存到当前仓库的Settings/Secrets里面。\n\n上图是储存秘密的环境变量的地方。环境变量的名字可以随便起，这里用的是ACCESS_TOKEN。如果你不用这个名字，后面脚本里的变量名也要跟着改。\n第三步，本地计算机使用create-react-app，生成一个标准的 React 应用。\n\n123$ npx create-react-app github-actions-demo$ cd github-actions-demo\n\n然后，打开package.json文件，加一个homepage字段，表示该应用发布后的根目录（参见官方文档）。\n\n12&quot;homepage&quot;: &quot;https://[username].github.io/github-actions-demo&quot;,\n\n上面代码中，将[username]替换成你的 GitHub 用户名，参见范例。\n第四步，在这个仓库的.github/workflows目录，生成一个 workflow 文件，名字可以随便取，这个示例是ci.yml。\n我们选用一个别人已经写好的 action：JamesIves/github-pages-deploy-action，它提供了 workflow 的范例文件，直接拷贝过来就行了（查看源码）。\n\n1234567891011121314151617181920name: GitHub Actions Build and Deploy Demoon:  push:    branches:      - masterjobs:  build-and-deploy:    runs-on: ubuntu-latest    steps:    - name: Checkout      uses: actions/checkout@master    - name: Build and Deploy      uses: JamesIves/github-pages-deploy-action@master      env:        ACCESS_TOKEN: $&#123;&#123; secrets.ACCESS_TOKEN &#125;&#125;        BRANCH: gh-pages        FOLDER: build        BUILD_SCRIPT: npm install &amp;&amp; npm run build\n\n上面这个 workflow 文件的要点如下。\n\n\n整个流程在master分支发生push事件时触发。\n只有一个job，运行在虚拟机环境ubuntu-latest。\n第一步是获取源码，使用的 action 是actions/checkout。\n第二步是构建和部署，使用的 action 是JamesIves/github-pages-deploy-action。\n第二步需要四个环境变量，分别为 GitHub 密钥、发布分支、构建成果所在目录、构建脚本。其中，只有 GitHub 密钥是秘密变量，需要写在双括号里面，其他三个都可以直接写在文件里。\n\n\n第五步，保存上面的文件后，将整个仓库推送到 GitHub。\nGitHub 发现了 workflow 文件以后，就会自动运行。你可以在网站上实时查看运行日志，日志默认保存30天。\n\n等到 workflow 运行结束，访问 GitHub Page，会看到构建成果已经发上网了。\n\n以后，每次修改后推送源码，GitHub Actions 都会自动运行，将构建产物发布到网页。\n五、参考链接\n\nGitHub Pages 官方文档\nGithub Actions for web apps, Luke Boyle\nMy First Week With GitHub Actions, Adam Zolyak\n\n（完）\n","dateCreated":"2021-02-15T15:09:17+08:00","dateModified":"2025-06-15T15:16:41+08:00","datePublished":"2021-02-15T15:09:17+08:00","description":"","headline":"GitHub Actions 入门教程","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/","keywords":"GitHub"}</script>
     <meta name="description" content="GitHub Actions 是 GitHub 的持续集成服务，于2018年10月推出。 这些天，我一直在试用，觉得它非常强大，有创意，比 Travis CI 玩法更多。 本文是一个简单教程，演示如何使用 GitHub Actions 自动发布一个 React 应用到 GitHub Pages。  一、GitHub Actions 是什么？ 大家知道，持续集成由很多操作组成，比如抓取代码、运行测试">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="GitHub Actions 入门教程">
-<meta property="og:url" content="https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/index.html">
+<meta property="og:url" content="https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="GitHub Actions 是 GitHub 的持续集成服务，于2018年10月推出。 这些天，我一直在试用，觉得它非常强大，有创意，比 Travis CI 玩法更多。 本文是一个简单教程，演示如何使用 GitHub Actions 自动发布一个 React 应用到 GitHub Pages。  一、GitHub Actions 是什么？ 大家知道，持续集成由很多操作组成，比如抓取代码、运行测试">
 <meta property="og:locale" content="zh_TW">
@@ -57,7 +57,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../assets/images/profile.jpg"/>
     
     
     
@@ -523,7 +523,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -534,7 +534,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -547,7 +547,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -560,7 +560,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -573,7 +573,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -586,7 +586,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -651,7 +651,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -662,7 +662,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -675,7 +675,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -688,7 +688,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -701,7 +701,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -714,7 +714,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -735,7 +735,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -748,7 +748,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -761,7 +761,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -774,7 +774,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2021/02/15/GitHub-Actions-%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -850,7 +850,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -873,7 +873,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -896,7 +896,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -919,7 +919,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -942,7 +942,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -965,7 +965,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -988,7 +988,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1011,7 +1011,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1034,7 +1034,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1057,7 +1057,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"属性\n属性将值与特定的类、结构体或枚举关联。存储属性会将常量和变量存储为实例的一部分，而计算属性则是直接计算（而不是存储）值。计算属性可以用于类、结构体和枚举，而存储属性只能用于类和结构体。\n存储属性和计算属性通常与特定类型的实例关联。但是，属性也可以直接与类型本身关联，这种属性称为类型属性。\n另外，还可以定义属性观察器来监控属性值的变化，以此来触发自定义的操作。属性观察器可以添加到类本身定义的存储属性上，也可以添加到从父类继承的属性上。\n存储属性\n简单来说，一个存储属性就是存储在特定类或结构体实例里的一个常量或变量。存储属性可以是变量存储属性（用关键字 var 定义），也可以是常量存储属性（用关键字 let 定义）。\n可以在定义存储属性的时候指定默认值，请参考 默认构造器 一节。也可以在构造过程中设置或修改存储属性的值，甚至修改常量存储属性的值，请参考 构造过程中常量属性的修改 一节。\n下面的例子定义了一个名为 FixedLengthRange 的结构体，该结构体用于描述整数的区间，且这个范围值在被创建后不能被修改。\n12345678struct FixedLengthRange &#123;    var firstValue: Int    let length: Int&#125;var rangeOfThreeItems = FixedLengthRange(firstValue: 0, length: 3)// 该区间表示整数 0，1，2rangeOfThreeItems.firstValue = 6// 该区间现在表示整数 6，7，8\nFixedLengthRange 的实例包含一个名为 firstValue 的变量存储属性和一个名为 length 的常量存储属性。在上面的例子中，length 在创建实例的时候被初始化，且之后无法修改它的值，因为它是一个常量存储属性。\n常量结构体实例的存储属性\n如果创建了一个结构体实例并将其赋值给一个常量，则无法修改该实例的任何属性，即使被声明为可变属性也不行:\n1234let rangeOfFourItems = FixedLengthRange(firstValue: 0, length: 4)// 该区间表示整数 0，1，2，3rangeOfFourItems.firstValue = 6// 尽管 firstValue 是个可变属性，但这里还是会报错\n因为 rangeOfFourItems 被声明成了常量（用 let 关键字），所以即使 firstValue 是一个可变属性，也无法再修改它了。\n这种行为是由于结构体属于值类型。当值类型的实例被声明为常量的时候，它的所有属性也就成了常量。\n属于引用类型的类则不一样。把一个引用类型的实例赋给一个常量后，依然可以修改该实例的可变属性。\n延时加载存储属性\n延时加载存储属性是指当第一次被调用的时候才会计算其初始值的属性。在属性声明前使用 lazy 来标示一个延时加载存储属性。\n\n注意\n必须将延时加载属性声明成变量（使用 var 关键字），因为属性的初始值可能在实例构造完成之后才会得到。而常量属性在构造过程完成之前必须要有初始值，因此无法声明成延时加载。\n\n当属性的值依赖于一些外部因素且这些外部因素只有在构造过程结束之后才会知道的时候，延时加载属性就会很有用。或者当获得属性的值因为需要复杂或者大量的计算，而需要采用需要的时候再计算的方式，延时加载属性也会很有用。\n下面的例子使用了延时加载存储属性来避免复杂类中不必要的初始化工作。例子中定义了 DataImporter 和 DataManager 两个类，下面是部分代码：\n12345678910111213141516171819class DataImporter &#123;    /*    DataImporter 是一个负责将外部文件中的数据导入的类。    这个类的初始化会消耗不少时间。    */    var fileName = &quot;data.txt&quot;    // 这里会提供数据导入功能&#125;class DataManager &#123;    lazy var importer = DataImporter()    var data = [String]()    // 这里会提供数据管理功能&#125;let manager = DataManager()manager.data.append(&quot;Some data&quot;)manager.data.append(&quot;Some more data&quot;)// DataImporter 实例的 importer 属性还没有被创建\nDataManager 类包含一个名为 data 的存储属性，初始值是一个空的字符串数组。这里没有给出全部代码，只需知道 DataManager 类的目的是管理和提供对这个字符串数组的访问即可。\nDataManager 的一个功能是从文件中导入数据。这个功能由 DataImporter 类提供，DataImporter 完成初始化需要消耗不少时间：因为它的实例在初始化时可能需要打开文件并读取文件中的内容到内存中。\nDataManager 管理数据时也可能不从文件中导入数据。所以当 DataManager 的实例被创建时，没必要创建一个 DataImporter 的实例，更明智的做法是第一次用到 DataImporter 的时候才去创建它。\n由于使用了 lazy，DataImporter 的实例 importer 属性只有在第一次被访问的时候才被创建。比如访问它的属性 fileName 时：\n123print(manager.importer.fileName)// DataImporter 实例的 importer 属性现在被创建了// 输出“data.txt”\n\n注意\n如果一个被标记为 lazy 的属性在没有初始化时就同时被多个线程访问，则无法保证该属性只会被初始化一次。\n\n存储属性和实例变量\n如果您有过 Objective-C 经验，应该知道 Objective-C 为类实例存储值和引用提供两种方法。除了属性之外，还可以使用实例变量作为一个备份存储将变量值赋值给属性。\nSwift 编程语言中把这些理论统一用属性来实现。Swift 中的属性没有对应的实例变量，属性的备份存储也无法直接访问。这就避免了不同场景下访问方式的困扰，同时也将属性的定义简化成一个语句。属性的全部信息——包括命名、类型和内存管理特征——作为类型定义的一部分，都定义在一个地方。\n计算属性\n除存储属性外，类、结构体和枚举可以定义计算属性。计算属性不直接存储值，而是提供一个 getter 和一个可选的 setter，来间接获取和设置其他属性或变量的值。\n123456789101112131415161718192021222324252627struct Point &#123;    var x = 0.0, y = 0.0&#125;struct Size &#123;    var width = 0.0, height = 0.0&#125;struct Rect &#123;    var origin = Point()    var size = Size()    var center: Point &#123;        get &#123;            let centerX = origin.x + (size.width / 2)            let centerY = origin.y + (size.height / 2)            return Point(x: centerX, y: centerY)        &#125;        set(newCenter) &#123;            origin.x = newCenter.x - (size.width / 2)            origin.y = newCenter.y - (size.height / 2)        &#125;    &#125;&#125;var square = Rect(origin: Point(x: 0.0, y: 0.0),    size: Size(width: 10.0, height: 10.0))let initialSquareCenter = square.centersquare.center = Point(x: 15.0, y: 15.0)print(&quot;square.origin is now at (\\(square.origin.x), \\(square.origin.y))&quot;)// 打印“square.origin is now at (10.0, 10.0)”\n这个例子定义了 3 个结构体来描述几何形状：\n\nPoint 封装了一个 (x, y) 的坐标\nSize 封装了一个 width 和一个 height\nRect 表示一个有原点和尺寸的矩形\n\nRect 也提供了一个名为 center 的计算属性。一个 Rect 的中心点可以从 origin（原点）和 size（大小）算出，所以不需要将中心点以 Point 类型的值来保存。Rect 的计算属性 center 提供了自定义的 getter 和 setter 来获取和设置矩形的中心点，就像它有一个存储属性一样。\n上述例子中创建了一个名为 square 的 Rect 实例，初始值原点是 (0, 0)，宽度高度都是 10。如下图中蓝色正方形所示。\nsquare 的 center 属性可以通过点运算符（square.center）来访问，这会调用该属性的 getter 来获取它的值。跟直接返回已经存在的值不同，getter 实际上通过计算然后返回一个新的 Point 来表示 square 的中心点。如代码所示，它正确返回了中心点 (5, 5)。\ncenter 属性之后被设置了一个新的值 (15, 15)，表示向右上方移动正方形到如下图橙色正方形所示的位置。设置属性 center 的值会调用它的 setter 来修改属性 origin 的 x 和 y 的值，从而实现移动正方形到新的位置。\n\n简化 Setter 声明\n如果计算属性的 setter 没有定义表示新值的参数名，则可以使用默认名称 newValue。下面是使用了简化 setter 声明的 Rect 结构体代码：\n123456789101112131415struct AlternativeRect &#123;    var origin = Point()    var size = Size()    var center: Point &#123;        get &#123;            let centerX = origin.x + (size.width / 2)            let centerY = origin.y + (size.height / 2)            return Point(x: centerX, y: centerY)        &#125;        set &#123;            origin.x = newValue.x - (size.width / 2)            origin.y = newValue.y - (size.height / 2)        &#125;    &#125;&#125;\n简化 Getter 声明\n如果整个 getter 是单一表达式，getter 会隐式地返回这个表达式结果。下面是另一个版本的 Rect 结构体，用到了简化的 getter 和 setter 声明：\n1234567891011121314struct CompactRect &#123;    var origin = Point()    var size = Size()    var center: Point &#123;        get &#123;            Point(x: origin.x + (size.width / 2),                  y: origin.y + (size.height / 2))        &#125;        set &#123;            origin.x = newValue.x - (size.width / 2)            origin.y = newValue.y - (size.height / 2)        &#125;    &#125;&#125;\n在 getter 中忽略 return 与在函数中忽略 return 的规则相同，请参考 隐式返回的函数。\n只读计算属性\n只有 getter 没有 setter 的计算属性叫只读计算属性。只读计算属性总是返回一个值，可以通过点运算符访问，但不能设置新的值。\n\n注意\n必须使用 var 关键字定义计算属性，包括只读计算属性，因为它们的值不是固定的。let 关键字只用来声明常量属性，表示初始化后再也无法修改的值。\n\n只读计算属性的声明可以去掉 get 关键字和花括号：\n123456789struct Cuboid &#123;    var width = 0.0, height = 0.0, depth = 0.0    var volume: Double &#123;        return width * height * depth    &#125;&#125;let fourByFiveByTwo = Cuboid(width: 4.0, height: 5.0, depth: 2.0)print(&quot;the volume of fourByFiveByTwo is \\(fourByFiveByTwo.volume)&quot;)// 打印“the volume of fourByFiveByTwo is 40.0”\n这个例子定义了一个名为 Cuboid 的结构体，表示三维空间的立方体，包含 width、height 和 depth 属性。结构体还有一个名为 volume 的只读计算属性用来返回立方体的体积。为 volume 提供 setter 毫无意义，因为无法确定如何修改 width、height 和 depth 三者的值来匹配新的 volume。然而，Cuboid 提供一个只读计算属性来让外部用户直接获取体积是很有用的。\n属性观察器\n属性观察器监控和响应属性值的变化，每次属性被设置值的时候都会调用属性观察器，即使新值和当前值相同的时候也不例外。\n你可以为除了延时加载存储属性之外的其他存储属性添加属性观察器，你也可以在子类中通过重写属性的方式为继承的属性（包括存储属性和计算属性）添加属性观察器。你不必为非重写的计算属性添加属性观察器，因为你可以直接通过它的 setter 监控和响应值的变化。属性重写请参考 重写。\n可以为属性添加其中一个或两个观察器：\n\nwillSet 在新的值被设置之前调用\ndidSet 在新的值被设置之后调用\n\nwillSet 观察器会将新的属性值作为常量参数传入，在 willSet 的实现代码中可以为这个参数指定一个名称，如果不指定则参数仍然可用，这时使用默认名称 newValue 表示。\n同样，didSet 观察器会将旧的属性值作为参数传入，可以为该参数指定一个名称或者使用默认参数名 oldValue。如果在 didSet 方法中再次对该属性赋值，那么新值会覆盖旧的值。\n\n注意\n在父类初始化方法调用之后，在子类构造器中给父类的属性赋值时，会调用父类属性的 willSet 和 didSet 观察器。而在父类初始化方法调用之前，给子类的属性赋值时不会调用子类属性的观察器。\n有关构造器代理的更多信息，请参考 值类型的构造器代理 和 类的构造器代理。\n\n下面是一个 willSet 和 didSet 实际运用的例子，其中定义了一个名为 StepCounter 的类，用来统计一个人步行时的总步数。这个类可以跟计步器或其他日常锻炼的统计装置的输入数据配合使用。\n12345678910111213141516171819202122class StepCounter &#123;    var totalSteps: Int = 0 &#123;        willSet(newTotalSteps) &#123;            print(&quot;将 totalSteps 的值设置为 \\(newTotalSteps)&quot;)        &#125;        didSet &#123;            if totalSteps &gt; oldValue  &#123;                print(&quot;增加了 \\(totalSteps - oldValue) 步&quot;)            &#125;        &#125;    &#125;&#125;let stepCounter = StepCounter()stepCounter.totalSteps = 200// 将 totalSteps 的值设置为 200// 增加了 200 步stepCounter.totalSteps = 360// 将 totalSteps 的值设置为 360// 增加了 160 步stepCounter.totalSteps = 896// 将 totalSteps 的值设置为 896// 增加了 536 步\nStepCounter 类定义了一个叫 totalSteps 的 Int 类型的属性。它是一个存储属性，包含 willSet 和 didSet 观察器。\n当 totalSteps 被设置新值的时候，它的 willSet 和 didSet 观察器都会被调用，即使新值和当前值完全相同时也会被调用。\n例子中的 willSet 观察器将表示新值的参数自定义为 newTotalSteps，这个观察器只是简单的将新的值输出。\ndidSet 观察器在 totalSteps 的值改变后被调用，它把新值和旧值进行对比，如果总步数增加了，就输出一个消息表示增加了多少步。didSet 没有为旧值提供自定义名称，所以默认值 oldValue 表示旧值的参数名。\n\n注意\n如果将带有观察器的属性通过 in-out 方式传入函数，willSet 和 didSet 也会调用。这是因为 in-out 参数采用了拷入拷出内存模式：即在函数内部使用的是参数的 copy，函数结束后，又对参数重新赋值。关于 in-out 参数详细的介绍，请参考 输入输出参数\n\n全局变量和局部变量\n计算属性和观察属性所描述的功能也可以用于全局变量和局部变量。全局变量是在函数、方法、闭包或任何类型之外定义的变量。局部变量是在函数、方法或闭包内部定义的变量。\n前面章节提到的全局或局部变量都属于存储型变量，跟存储属性类似，它为特定类型的值提供存储空间，并允许读取和写入。\n另外，在全局或局部范围都可以定义计算型变量和为存储型变量定义观察器。计算型变量跟计算属性一样，返回一个计算结果而不是存储值，声明格式也完全一样。\n\n注意\n全局的常量或变量都是延迟计算的，跟 延时加载存储属性 相似，不同的地方在于，全局的常量或变量不需要标记 lazy 修饰符。\n局部范围的常量和变量从不延迟计算。\n\n类型属性\n实例属性属于一个特定类型的实例，每创建一个实例，实例都拥有属于自己的一套属性值，实例之间的属性相互独立。\n你也可以为类型本身定义属性，无论创建了多少个该类型的实例，这些属性都只有唯一一份。这种属性就是类型属性。\n类型属性用于定义某个类型所有实例共享的数据，比如所有实例都能用的一个常量（就像 C 语言中的静态常量），或者所有实例都能访问的一个变量（就像 C 语言中的静态变量）。\n存储型类型属性可以是变量或常量，计算型类型属性跟实例的计算型属性一样只能定义成变量属性。\n\n注意\n跟实例的存储型属性不同，必须给存储型类型属性指定默认值，因为类型本身没有构造器，也就无法在初始化过程中使用构造器给类型属性赋值。\n存储型类型属性是延迟初始化的，它们只有在第一次被访问的时候才会被初始化。即使它们被多个线程同时访问，系统也保证只会对其进行一次初始化，并且不需要对其使用 lazy 修饰符。\n\n类型属性语法\n在 C 或 Objective-C 中，与某个类型关联的静态常量和静态变量，是作为 global（全局）静态变量定义的。但是在 Swift 中，类型属性是作为类型定义的一部分写在类型最外层的花括号内，因此它的作用范围也就在类型支持的范围内。\n使用关键字 static 来定义类型属性。在为类定义计算型类型属性时，可以改用关键字 class 来支持子类对父类的实现进行重写。下面的例子演示了存储型和计算型类型属性的语法：\n123456789101112131415161718192021struct SomeStructure &#123;    static var storedTypeProperty = &quot;Some value.&quot;    static var computedTypeProperty: Int &#123;        return 1    &#125;&#125;enum SomeEnumeration &#123;    static var storedTypeProperty = &quot;Some value.&quot;    static var computedTypeProperty: Int &#123;        return 6    &#125;&#125;class SomeClass &#123;    static var storedTypeProperty = &quot;Some value.&quot;    static var computedTypeProperty: Int &#123;        return 27    &#125;    class var overrideableComputedTypeProperty: Int &#123;        return 107    &#125;&#125;\n\n注意\n例子中的计算型类型属性是只读的，但也可以定义可读可写的计算型类型属性，跟计算型实例属性的语法相同。\n\n获取和设置类型属性的值\n跟实例属性一样，类型属性也是通过点运算符来访问。但是，类型属性是通过类型本身来访问，而不是通过实例。比如：\n123456789print(SomeStructure.storedTypeProperty)// 打印“Some value.”SomeStructure.storedTypeProperty = &quot;Another value.&quot;print(SomeStructure.storedTypeProperty)// 打印“Another value.”print(SomeEnumeration.computedTypeProperty)// 打印“6”print(SomeClass.computedTypeProperty)// 打印“27”\n下面的例子定义了一个结构体，使用两个存储型类型属性来表示两个声道的音量，每个声道具有 0 到 10 之间的整数音量。\n下图展示了如何把两个声道结合来模拟立体声的音量。当声道的音量是 0，没有一个灯会亮；当声道的音量是 10，所有灯点亮。本图中，左声道的音量是 9，右声道的音量是 7：\n\n上面所描述的声道模型使用 AudioChannel 结构体的实例来表示：\n12345678910111213141516struct AudioChannel &#123;    static let thresholdLevel = 10    static var maxInputLevelForAllChannels = 0    var currentLevel: Int = 0 &#123;        didSet &#123;            if currentLevel &gt; AudioChannel.thresholdLevel &#123;                // 将当前音量限制在阈值之内                currentLevel = AudioChannel.thresholdLevel            &#125;            if currentLevel &gt; AudioChannel.maxInputLevelForAllChannels &#123;                // 存储当前音量作为新的最大输入音量                AudioChannel.maxInputLevelForAllChannels = currentLevel            &#125;        &#125;    &#125;&#125;\nAudioChannel 结构定义了 2 个存储型类型属性来实现上述功能。第一个是 thresholdLevel，表示音量的最大上限阈值，它是一个值为 10 的常量，对所有实例都可见，如果音量高于 10，则取最大上限值 10（见后面描述）。\n第二个类型属性是变量存储型属性 maxInputLevelForAllChannels，它用来表示所有 AudioChannel 实例的最大输入音量，初始值是 0。\nAudioChannel 也定义了一个名为 currentLevel 的存储型实例属性，表示当前声道现在的音量，取值为 0 到 10。\n属性 currentLevel 包含 didSet 属性观察器来检查每次设置后的属性值，它做如下两个检查：\n\n如果 currentLevel 的新值大于允许的阈值 thresholdLevel，属性观察器将 currentLevel 的值限定为阈值 thresholdLevel。\n如果修正后的 currentLevel 值大于静态类型属性 maxInputLevelForAllChannels 的值，属性观察器就将新值保存在 maxInputLevelForAllChannels 中。\n\n\n注意\n在第一个检查过程中，didSet 属性观察器将 currentLevel 设置成了不同的值，但这不会造成属性观察器被再次调用。\n\n可以使用结构体 AudioChannel 创建两个声道 leftChannel 和 rightChannel，用以表示立体声系统的音量：\n12var leftChannel = AudioChannel()var rightChannel = AudioChannel()\n如果将左声道的 currentLevel 设置成 7，类型属性 maxInputLevelForAllChannels 也会更新成 7：\n12345leftChannel.currentLevel = 7print(leftChannel.currentLevel)// 输出“7”print(AudioChannel.maxInputLevelForAllChannels)// 输出“7”\n如果试图将右声道的 currentLevel 设置成 11，它会被修正到最大值 10，同时 maxInputLevelForAllChannels 的值也会更新到 10：\n12345rightChannel.currentLevel = 11print(rightChannel.currentLevel)// 输出“10”print(AudioChannel.maxInputLevelForAllChannels)// 输出“10”\n","dateCreated":"2023-06-28T10:13:17+08:00","dateModified":"2025-06-18T12:00:51+08:00","datePublished":"2023-06-28T10:13:17+08:00","description":"","headline":"swift属性","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/","keywords":"swift"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"属性\n属性将值与特定的类、结构体或枚举关联。存储属性会将常量和变量存储为实例的一部分，而计算属性则是直接计算（而不是存储）值。计算属性可以用于类、结构体和枚举，而存储属性只能用于类和结构体。\n存储属性和计算属性通常与特定类型的实例关联。但是，属性也可以直接与类型本身关联，这种属性称为类型属性。\n另外，还可以定义属性观察器来监控属性值的变化，以此来触发自定义的操作。属性观察器可以添加到类本身定义的存储属性上，也可以添加到从父类继承的属性上。\n存储属性\n简单来说，一个存储属性就是存储在特定类或结构体实例里的一个常量或变量。存储属性可以是变量存储属性（用关键字 var 定义），也可以是常量存储属性（用关键字 let 定义）。\n可以在定义存储属性的时候指定默认值，请参考 默认构造器 一节。也可以在构造过程中设置或修改存储属性的值，甚至修改常量存储属性的值，请参考 构造过程中常量属性的修改 一节。\n下面的例子定义了一个名为 FixedLengthRange 的结构体，该结构体用于描述整数的区间，且这个范围值在被创建后不能被修改。\n12345678struct FixedLengthRange &#123;    var firstValue: Int    let length: Int&#125;var rangeOfThreeItems = FixedLengthRange(firstValue: 0, length: 3)// 该区间表示整数 0，1，2rangeOfThreeItems.firstValue = 6// 该区间现在表示整数 6，7，8\nFixedLengthRange 的实例包含一个名为 firstValue 的变量存储属性和一个名为 length 的常量存储属性。在上面的例子中，length 在创建实例的时候被初始化，且之后无法修改它的值，因为它是一个常量存储属性。\n常量结构体实例的存储属性\n如果创建了一个结构体实例并将其赋值给一个常量，则无法修改该实例的任何属性，即使被声明为可变属性也不行:\n1234let rangeOfFourItems = FixedLengthRange(firstValue: 0, length: 4)// 该区间表示整数 0，1，2，3rangeOfFourItems.firstValue = 6// 尽管 firstValue 是个可变属性，但这里还是会报错\n因为 rangeOfFourItems 被声明成了常量（用 let 关键字），所以即使 firstValue 是一个可变属性，也无法再修改它了。\n这种行为是由于结构体属于值类型。当值类型的实例被声明为常量的时候，它的所有属性也就成了常量。\n属于引用类型的类则不一样。把一个引用类型的实例赋给一个常量后，依然可以修改该实例的可变属性。\n延时加载存储属性\n延时加载存储属性是指当第一次被调用的时候才会计算其初始值的属性。在属性声明前使用 lazy 来标示一个延时加载存储属性。\n\n注意\n必须将延时加载属性声明成变量（使用 var 关键字），因为属性的初始值可能在实例构造完成之后才会得到。而常量属性在构造过程完成之前必须要有初始值，因此无法声明成延时加载。\n\n当属性的值依赖于一些外部因素且这些外部因素只有在构造过程结束之后才会知道的时候，延时加载属性就会很有用。或者当获得属性的值因为需要复杂或者大量的计算，而需要采用需要的时候再计算的方式，延时加载属性也会很有用。\n下面的例子使用了延时加载存储属性来避免复杂类中不必要的初始化工作。例子中定义了 DataImporter 和 DataManager 两个类，下面是部分代码：\n12345678910111213141516171819class DataImporter &#123;    /*    DataImporter 是一个负责将外部文件中的数据导入的类。    这个类的初始化会消耗不少时间。    */    var fileName = &quot;data.txt&quot;    // 这里会提供数据导入功能&#125;class DataManager &#123;    lazy var importer = DataImporter()    var data = [String]()    // 这里会提供数据管理功能&#125;let manager = DataManager()manager.data.append(&quot;Some data&quot;)manager.data.append(&quot;Some more data&quot;)// DataImporter 实例的 importer 属性还没有被创建\nDataManager 类包含一个名为 data 的存储属性，初始值是一个空的字符串数组。这里没有给出全部代码，只需知道 DataManager 类的目的是管理和提供对这个字符串数组的访问即可。\nDataManager 的一个功能是从文件中导入数据。这个功能由 DataImporter 类提供，DataImporter 完成初始化需要消耗不少时间：因为它的实例在初始化时可能需要打开文件并读取文件中的内容到内存中。\nDataManager 管理数据时也可能不从文件中导入数据。所以当 DataManager 的实例被创建时，没必要创建一个 DataImporter 的实例，更明智的做法是第一次用到 DataImporter 的时候才去创建它。\n由于使用了 lazy，DataImporter 的实例 importer 属性只有在第一次被访问的时候才被创建。比如访问它的属性 fileName 时：\n123print(manager.importer.fileName)// DataImporter 实例的 importer 属性现在被创建了// 输出“data.txt”\n\n注意\n如果一个被标记为 lazy 的属性在没有初始化时就同时被多个线程访问，则无法保证该属性只会被初始化一次。\n\n存储属性和实例变量\n如果您有过 Objective-C 经验，应该知道 Objective-C 为类实例存储值和引用提供两种方法。除了属性之外，还可以使用实例变量作为一个备份存储将变量值赋值给属性。\nSwift 编程语言中把这些理论统一用属性来实现。Swift 中的属性没有对应的实例变量，属性的备份存储也无法直接访问。这就避免了不同场景下访问方式的困扰，同时也将属性的定义简化成一个语句。属性的全部信息——包括命名、类型和内存管理特征——作为类型定义的一部分，都定义在一个地方。\n计算属性\n除存储属性外，类、结构体和枚举可以定义计算属性。计算属性不直接存储值，而是提供一个 getter 和一个可选的 setter，来间接获取和设置其他属性或变量的值。\n123456789101112131415161718192021222324252627struct Point &#123;    var x = 0.0, y = 0.0&#125;struct Size &#123;    var width = 0.0, height = 0.0&#125;struct Rect &#123;    var origin = Point()    var size = Size()    var center: Point &#123;        get &#123;            let centerX = origin.x + (size.width / 2)            let centerY = origin.y + (size.height / 2)            return Point(x: centerX, y: centerY)        &#125;        set(newCenter) &#123;            origin.x = newCenter.x - (size.width / 2)            origin.y = newCenter.y - (size.height / 2)        &#125;    &#125;&#125;var square = Rect(origin: Point(x: 0.0, y: 0.0),    size: Size(width: 10.0, height: 10.0))let initialSquareCenter = square.centersquare.center = Point(x: 15.0, y: 15.0)print(&quot;square.origin is now at (\\(square.origin.x), \\(square.origin.y))&quot;)// 打印“square.origin is now at (10.0, 10.0)”\n这个例子定义了 3 个结构体来描述几何形状：\n\nPoint 封装了一个 (x, y) 的坐标\nSize 封装了一个 width 和一个 height\nRect 表示一个有原点和尺寸的矩形\n\nRect 也提供了一个名为 center 的计算属性。一个 Rect 的中心点可以从 origin（原点）和 size（大小）算出，所以不需要将中心点以 Point 类型的值来保存。Rect 的计算属性 center 提供了自定义的 getter 和 setter 来获取和设置矩形的中心点，就像它有一个存储属性一样。\n上述例子中创建了一个名为 square 的 Rect 实例，初始值原点是 (0, 0)，宽度高度都是 10。如下图中蓝色正方形所示。\nsquare 的 center 属性可以通过点运算符（square.center）来访问，这会调用该属性的 getter 来获取它的值。跟直接返回已经存在的值不同，getter 实际上通过计算然后返回一个新的 Point 来表示 square 的中心点。如代码所示，它正确返回了中心点 (5, 5)。\ncenter 属性之后被设置了一个新的值 (15, 15)，表示向右上方移动正方形到如下图橙色正方形所示的位置。设置属性 center 的值会调用它的 setter 来修改属性 origin 的 x 和 y 的值，从而实现移动正方形到新的位置。\n\n简化 Setter 声明\n如果计算属性的 setter 没有定义表示新值的参数名，则可以使用默认名称 newValue。下面是使用了简化 setter 声明的 Rect 结构体代码：\n123456789101112131415struct AlternativeRect &#123;    var origin = Point()    var size = Size()    var center: Point &#123;        get &#123;            let centerX = origin.x + (size.width / 2)            let centerY = origin.y + (size.height / 2)            return Point(x: centerX, y: centerY)        &#125;        set &#123;            origin.x = newValue.x - (size.width / 2)            origin.y = newValue.y - (size.height / 2)        &#125;    &#125;&#125;\n简化 Getter 声明\n如果整个 getter 是单一表达式，getter 会隐式地返回这个表达式结果。下面是另一个版本的 Rect 结构体，用到了简化的 getter 和 setter 声明：\n1234567891011121314struct CompactRect &#123;    var origin = Point()    var size = Size()    var center: Point &#123;        get &#123;            Point(x: origin.x + (size.width / 2),                  y: origin.y + (size.height / 2))        &#125;        set &#123;            origin.x = newValue.x - (size.width / 2)            origin.y = newValue.y - (size.height / 2)        &#125;    &#125;&#125;\n在 getter 中忽略 return 与在函数中忽略 return 的规则相同，请参考 隐式返回的函数。\n只读计算属性\n只有 getter 没有 setter 的计算属性叫只读计算属性。只读计算属性总是返回一个值，可以通过点运算符访问，但不能设置新的值。\n\n注意\n必须使用 var 关键字定义计算属性，包括只读计算属性，因为它们的值不是固定的。let 关键字只用来声明常量属性，表示初始化后再也无法修改的值。\n\n只读计算属性的声明可以去掉 get 关键字和花括号：\n123456789struct Cuboid &#123;    var width = 0.0, height = 0.0, depth = 0.0    var volume: Double &#123;        return width * height * depth    &#125;&#125;let fourByFiveByTwo = Cuboid(width: 4.0, height: 5.0, depth: 2.0)print(&quot;the volume of fourByFiveByTwo is \\(fourByFiveByTwo.volume)&quot;)// 打印“the volume of fourByFiveByTwo is 40.0”\n这个例子定义了一个名为 Cuboid 的结构体，表示三维空间的立方体，包含 width、height 和 depth 属性。结构体还有一个名为 volume 的只读计算属性用来返回立方体的体积。为 volume 提供 setter 毫无意义，因为无法确定如何修改 width、height 和 depth 三者的值来匹配新的 volume。然而，Cuboid 提供一个只读计算属性来让外部用户直接获取体积是很有用的。\n属性观察器\n属性观察器监控和响应属性值的变化，每次属性被设置值的时候都会调用属性观察器，即使新值和当前值相同的时候也不例外。\n你可以为除了延时加载存储属性之外的其他存储属性添加属性观察器，你也可以在子类中通过重写属性的方式为继承的属性（包括存储属性和计算属性）添加属性观察器。你不必为非重写的计算属性添加属性观察器，因为你可以直接通过它的 setter 监控和响应值的变化。属性重写请参考 重写。\n可以为属性添加其中一个或两个观察器：\n\nwillSet 在新的值被设置之前调用\ndidSet 在新的值被设置之后调用\n\nwillSet 观察器会将新的属性值作为常量参数传入，在 willSet 的实现代码中可以为这个参数指定一个名称，如果不指定则参数仍然可用，这时使用默认名称 newValue 表示。\n同样，didSet 观察器会将旧的属性值作为参数传入，可以为该参数指定一个名称或者使用默认参数名 oldValue。如果在 didSet 方法中再次对该属性赋值，那么新值会覆盖旧的值。\n\n注意\n在父类初始化方法调用之后，在子类构造器中给父类的属性赋值时，会调用父类属性的 willSet 和 didSet 观察器。而在父类初始化方法调用之前，给子类的属性赋值时不会调用子类属性的观察器。\n有关构造器代理的更多信息，请参考 值类型的构造器代理 和 类的构造器代理。\n\n下面是一个 willSet 和 didSet 实际运用的例子，其中定义了一个名为 StepCounter 的类，用来统计一个人步行时的总步数。这个类可以跟计步器或其他日常锻炼的统计装置的输入数据配合使用。\n12345678910111213141516171819202122class StepCounter &#123;    var totalSteps: Int = 0 &#123;        willSet(newTotalSteps) &#123;            print(&quot;将 totalSteps 的值设置为 \\(newTotalSteps)&quot;)        &#125;        didSet &#123;            if totalSteps &gt; oldValue  &#123;                print(&quot;增加了 \\(totalSteps - oldValue) 步&quot;)            &#125;        &#125;    &#125;&#125;let stepCounter = StepCounter()stepCounter.totalSteps = 200// 将 totalSteps 的值设置为 200// 增加了 200 步stepCounter.totalSteps = 360// 将 totalSteps 的值设置为 360// 增加了 160 步stepCounter.totalSteps = 896// 将 totalSteps 的值设置为 896// 增加了 536 步\nStepCounter 类定义了一个叫 totalSteps 的 Int 类型的属性。它是一个存储属性，包含 willSet 和 didSet 观察器。\n当 totalSteps 被设置新值的时候，它的 willSet 和 didSet 观察器都会被调用，即使新值和当前值完全相同时也会被调用。\n例子中的 willSet 观察器将表示新值的参数自定义为 newTotalSteps，这个观察器只是简单的将新的值输出。\ndidSet 观察器在 totalSteps 的值改变后被调用，它把新值和旧值进行对比，如果总步数增加了，就输出一个消息表示增加了多少步。didSet 没有为旧值提供自定义名称，所以默认值 oldValue 表示旧值的参数名。\n\n注意\n如果将带有观察器的属性通过 in-out 方式传入函数，willSet 和 didSet 也会调用。这是因为 in-out 参数采用了拷入拷出内存模式：即在函数内部使用的是参数的 copy，函数结束后，又对参数重新赋值。关于 in-out 参数详细的介绍，请参考 输入输出参数\n\n全局变量和局部变量\n计算属性和观察属性所描述的功能也可以用于全局变量和局部变量。全局变量是在函数、方法、闭包或任何类型之外定义的变量。局部变量是在函数、方法或闭包内部定义的变量。\n前面章节提到的全局或局部变量都属于存储型变量，跟存储属性类似，它为特定类型的值提供存储空间，并允许读取和写入。\n另外，在全局或局部范围都可以定义计算型变量和为存储型变量定义观察器。计算型变量跟计算属性一样，返回一个计算结果而不是存储值，声明格式也完全一样。\n\n注意\n全局的常量或变量都是延迟计算的，跟 延时加载存储属性 相似，不同的地方在于，全局的常量或变量不需要标记 lazy 修饰符。\n局部范围的常量和变量从不延迟计算。\n\n类型属性\n实例属性属于一个特定类型的实例，每创建一个实例，实例都拥有属于自己的一套属性值，实例之间的属性相互独立。\n你也可以为类型本身定义属性，无论创建了多少个该类型的实例，这些属性都只有唯一一份。这种属性就是类型属性。\n类型属性用于定义某个类型所有实例共享的数据，比如所有实例都能用的一个常量（就像 C 语言中的静态常量），或者所有实例都能访问的一个变量（就像 C 语言中的静态变量）。\n存储型类型属性可以是变量或常量，计算型类型属性跟实例的计算型属性一样只能定义成变量属性。\n\n注意\n跟实例的存储型属性不同，必须给存储型类型属性指定默认值，因为类型本身没有构造器，也就无法在初始化过程中使用构造器给类型属性赋值。\n存储型类型属性是延迟初始化的，它们只有在第一次被访问的时候才会被初始化。即使它们被多个线程同时访问，系统也保证只会对其进行一次初始化，并且不需要对其使用 lazy 修饰符。\n\n类型属性语法\n在 C 或 Objective-C 中，与某个类型关联的静态常量和静态变量，是作为 global（全局）静态变量定义的。但是在 Swift 中，类型属性是作为类型定义的一部分写在类型最外层的花括号内，因此它的作用范围也就在类型支持的范围内。\n使用关键字 static 来定义类型属性。在为类定义计算型类型属性时，可以改用关键字 class 来支持子类对父类的实现进行重写。下面的例子演示了存储型和计算型类型属性的语法：\n123456789101112131415161718192021struct SomeStructure &#123;    static var storedTypeProperty = &quot;Some value.&quot;    static var computedTypeProperty: Int &#123;        return 1    &#125;&#125;enum SomeEnumeration &#123;    static var storedTypeProperty = &quot;Some value.&quot;    static var computedTypeProperty: Int &#123;        return 6    &#125;&#125;class SomeClass &#123;    static var storedTypeProperty = &quot;Some value.&quot;    static var computedTypeProperty: Int &#123;        return 27    &#125;    class var overrideableComputedTypeProperty: Int &#123;        return 107    &#125;&#125;\n\n注意\n例子中的计算型类型属性是只读的，但也可以定义可读可写的计算型类型属性，跟计算型实例属性的语法相同。\n\n获取和设置类型属性的值\n跟实例属性一样，类型属性也是通过点运算符来访问。但是，类型属性是通过类型本身来访问，而不是通过实例。比如：\n123456789print(SomeStructure.storedTypeProperty)// 打印“Some value.”SomeStructure.storedTypeProperty = &quot;Another value.&quot;print(SomeStructure.storedTypeProperty)// 打印“Another value.”print(SomeEnumeration.computedTypeProperty)// 打印“6”print(SomeClass.computedTypeProperty)// 打印“27”\n下面的例子定义了一个结构体，使用两个存储型类型属性来表示两个声道的音量，每个声道具有 0 到 10 之间的整数音量。\n下图展示了如何把两个声道结合来模拟立体声的音量。当声道的音量是 0，没有一个灯会亮；当声道的音量是 10，所有灯点亮。本图中，左声道的音量是 9，右声道的音量是 7：\n\n上面所描述的声道模型使用 AudioChannel 结构体的实例来表示：\n12345678910111213141516struct AudioChannel &#123;    static let thresholdLevel = 10    static var maxInputLevelForAllChannels = 0    var currentLevel: Int = 0 &#123;        didSet &#123;            if currentLevel &gt; AudioChannel.thresholdLevel &#123;                // 将当前音量限制在阈值之内                currentLevel = AudioChannel.thresholdLevel            &#125;            if currentLevel &gt; AudioChannel.maxInputLevelForAllChannels &#123;                // 存储当前音量作为新的最大输入音量                AudioChannel.maxInputLevelForAllChannels = currentLevel            &#125;        &#125;    &#125;&#125;\nAudioChannel 结构定义了 2 个存储型类型属性来实现上述功能。第一个是 thresholdLevel，表示音量的最大上限阈值，它是一个值为 10 的常量，对所有实例都可见，如果音量高于 10，则取最大上限值 10（见后面描述）。\n第二个类型属性是变量存储型属性 maxInputLevelForAllChannels，它用来表示所有 AudioChannel 实例的最大输入音量，初始值是 0。\nAudioChannel 也定义了一个名为 currentLevel 的存储型实例属性，表示当前声道现在的音量，取值为 0 到 10。\n属性 currentLevel 包含 didSet 属性观察器来检查每次设置后的属性值，它做如下两个检查：\n\n如果 currentLevel 的新值大于允许的阈值 thresholdLevel，属性观察器将 currentLevel 的值限定为阈值 thresholdLevel。\n如果修正后的 currentLevel 值大于静态类型属性 maxInputLevelForAllChannels 的值，属性观察器就将新值保存在 maxInputLevelForAllChannels 中。\n\n\n注意\n在第一个检查过程中，didSet 属性观察器将 currentLevel 设置成了不同的值，但这不会造成属性观察器被再次调用。\n\n可以使用结构体 AudioChannel 创建两个声道 leftChannel 和 rightChannel，用以表示立体声系统的音量：\n12var leftChannel = AudioChannel()var rightChannel = AudioChannel()\n如果将左声道的 currentLevel 设置成 7，类型属性 maxInputLevelForAllChannels 也会更新成 7：\n12345leftChannel.currentLevel = 7print(leftChannel.currentLevel)// 输出“7”print(AudioChannel.maxInputLevelForAllChannels)// 输出“7”\n如果试图将右声道的 currentLevel 设置成 11，它会被修正到最大值 10，同时 maxInputLevelForAllChannels 的值也会更新到 10：\n12345rightChannel.currentLevel = 11print(rightChannel.currentLevel)// 输出“10”print(AudioChannel.maxInputLevelForAllChannels)// 输出“10”\n","dateCreated":"2023-06-28T10:13:17+08:00","dateModified":"2025-06-18T12:00:51+08:00","datePublished":"2023-06-28T10:13:17+08:00","description":"","headline":"swift属性","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/","keywords":"swift"}</script>
     <meta name="description" content="属性 属性将值与特定的类、结构体或枚举关联。存储属性会将常量和变量存储为实例的一部分，而计算属性则是直接计算（而不是存储）值。计算属性可以用于类、结构体和枚举，而存储属性只能用于类和结构体。 存储属性和计算属性通常与特定类型的实例关联。但是，属性也可以直接与类型本身关联，这种属性称为类型属性。 另外，还可以定义属性观察器来监控属性值的变化，以此来触发自定义的操作。属性观察器可以添加到类本身定义的存">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="swift属性">
-<meta property="og:url" content="https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/index.html">
+<meta property="og:url" content="https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="属性 属性将值与特定的类、结构体或枚举关联。存储属性会将常量和变量存储为实例的一部分，而计算属性则是直接计算（而不是存储）值。计算属性可以用于类、结构体和枚举，而存储属性只能用于类和结构体。 存储属性和计算属性通常与特定类型的实例关联。但是，属性也可以直接与类型本身关联，这种属性称为类型属性。 另外，还可以定义属性观察器来监控属性值的变化，以此来触发自定义的操作。属性观察器可以添加到类本身定义的存">
 <meta property="og:locale" content="zh_TW">
@@ -53,7 +53,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -531,7 +531,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -542,7 +542,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -555,7 +555,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -568,7 +568,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -581,7 +581,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -594,7 +594,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -659,7 +659,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -670,7 +670,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -683,7 +683,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -696,7 +696,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -709,7 +709,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -722,7 +722,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -743,7 +743,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -756,7 +756,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -769,7 +769,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -782,7 +782,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/06/28/Swift/swift%E5%B1%9E%E6%80%A7/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -858,7 +858,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -881,7 +881,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -904,7 +904,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -927,7 +927,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -950,7 +950,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -973,7 +973,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -996,7 +996,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1019,7 +1019,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1042,7 +1042,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1065,7 +1065,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

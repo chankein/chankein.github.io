@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"Web开发\n最早的软件都是运行在大型机上的，软件使用者通过“哑终端”登陆到大型机上去运行软件。后来随着PC机的兴起，软件开始主要运行在桌面上，而数据库这样的软件运行在服务器端，这种Client/Server模式简称CS架构。\n随着互联网的兴起，人们发现，CS架构不适合Web，最大的原因是Web应用程序的修改和升级非常迅速，而CS架构需要每个客户端逐个升级桌面App，因此，Browser/Server模式开始流行，简称BS架构。\n在BS架构下，客户端只需要浏览器，应用程序的逻辑和数据都存储在服务器端。浏览器只需要请求服务器，获取Web页面，并把Web页面展示给用户即可。\n当然，Web页面也具有极强的交互性。由于Web页面是用HTML编写的，而HTML具备超强的表现力，并且，服务器端升级后，客户端无需任何部署就可以使用到新的版本，因此，BS架构迅速流行起来。\n今天，除了重量级的软件如Office，Photoshop等，大部分软件都以Web形式提供。比如，新浪提供的新闻、博客、微博等服务，均是Web应用。\nWeb应用开发可以说是目前软件开发中最重要的部分。Web开发也经历了好几个阶段：\n\n静态Web页面：由文本编辑器直接编辑并生成静态的HTML页面，如果要修改Web页面的内容，就需要再次编辑HTML源文件，早期的互联网Web页面就是静态的；\nCGI：由于静态Web页面无法与用户交互，比如用户填写了一个注册表单，静态Web页面就无法处理。要处理用户发送的动态数据，出现了Common Gateway Interface，简称CGI，用C/C++编写。\nASP/JSP/PHP：由于Web应用特点是修改频繁，用C/C++这样的低级语言非常不适合Web开发，而脚本语言由于开发效率高，与HTML结合紧密，因此，迅速取代了CGI模式。ASP是微软推出的用VBScript脚本编程的Web开发技术，而JSP用Java来编写脚本，PHP本身则是开源的脚本语言。\nMVC：为了解决直接用脚本语言嵌入HTML导致的可维护性差的问题，Web应用也引入了Model-View-Controller的模式，来简化Web开发。ASP发展为ASP.Net，JSP和PHP也有一大堆MVC框架。\n\n目前，Web开发技术仍在快速发展中，异步开发、新的MVVM前端技术层出不穷。\nPython的诞生历史比Web还要早，由于Python是一种解释型的脚本语言，开发效率高，所以非常适合用来做Web开发。\nPython有上百种Web开发框架，有很多成熟的模板技术，选择Python开发Web应用，不但开发效率高，而且运行速度快。\n本章我们会详细讨论Python Web开发技术。\n\n在Web应用中，服务器把网页传给浏览器，实际上就是把网页的HTML代码发送给浏览器，让浏览器显示出来。而浏览器和服务器之间的传输协议是HTTP，所以：\n\nHTML是一种用来定义网页的文本，会HTML，就可以编写网页；\nHTTP是在网络上传输HTML的协议，用于浏览器和服务器的通信。\n\n在举例子之前，我们需要安装Google的Chrome浏览器。\n为什么要使用Chrome浏览器而不是IE呢？因为我们需要在浏览器很方便地调试我们的Web应用，而Chrome提供了一套完整地调试工具，非常适合Web开发。\n安装好Chrome浏览器后，打开Chrome，在菜单中选择“视图”，“开发者”，“开发者工具”，就可以显示开发者工具：\n\nElements显示网页的结构，Network显示浏览器和服务器的通信。我们点Network，确保第一个小红灯亮着，Chrome就会记录所有浏览器和服务器之间的通信：\n\n当我们在地址栏输入www.sina.com.cn时，浏览器将显示新浪的首页。在这个过程中，浏览器都干了哪些事情呢？通过Network的记录，我们就可以知道。在Network中，定位到第一条记录，点击，右侧将显示Request Headers，点击右侧的view source，我们就可以看到浏览器发给新浪服务器的请求：\n\n最主要的头两行分析如下，第一行：\n1GET / HTTP/1.1\nGET表示一个读取请求，将从服务器获得网页数据，/表示URL的路径，URL总是以/开头，/就表示首页，最后的HTTP/1.1指示采用的HTTP协议版本是1.1。目前HTTP协议的版本就是1.1，但是大部分服务器也支持1.0版本，主要区别在于1.1版本允许多个HTTP请求复用一个TCP连接，以加快传输速度。\n从第二行开始，每一行都类似于Xxx: abcdefg：\n1Host: www.sina.com.cn\n表示请求的域名是www.sina.com.cn。如果一台服务器有多个网站，服务器就需要通过Host来区分浏览器请求的是哪个网站。\n继续往下找到Response Headers，点击view source，显示服务器返回的原始响应数据：\n\nHTTP响应分为Header和Body两部分（Body是可选项），我们在Network中看到的Header最重要的几行如下：\n1200 OK\n200表示一个成功的响应，后面的OK是说明。失败的响应有404 Not Found：网页不存在，500 Internal Server Error：服务器内部出错，等等。\n1Content-Type: text/html\nContent-Type指示响应的内容，这里是text/html表示HTML网页。请注意，浏览器就是依靠Content-Type来判断响应的内容是网页还是图片，是视频还是音乐。浏览器并不靠URL来判断响应的内容，所以，即使URL是http://example.com/abc.jpg，它也不一定就是图片。\nHTTP响应的Body就是HTML源码，我们在菜单栏选择“视图”，“开发者”，“查看网页源码”就可以在浏览器中直接查看HTML源码：\n\n当浏览器读取到新浪首页的HTML源码后，它会解析HTML，显示页面，然后，根据HTML里面的各种链接，再发送HTTP请求给新浪服务器，拿到相应的图片、视频、Flash、JavaScript脚本、CSS等各种资源，最终显示出一个完整的页面。所以我们在Network下面能看到很多额外的HTTP请求。\nHTTP请求\n跟踪了新浪的首页，我们来总结一下HTTP请求的流程：\n步骤1：浏览器首先向服务器发送HTTP请求，请求包括：\n方法：GET还是POST，GET仅请求资源，POST会附带用户数据；\n路径：/full/url/path；\n域名：由Host头指定：Host: www.sina.com.cn\n以及其他相关的Header；\n如果是POST，那么请求还包括一个Body，包含用户数据。\n步骤2：服务器向浏览器返回HTTP响应，响应包括：\n响应代码：200表示成功，3xx表示重定向，4xx表示客户端发送的请求有错误，5xx表示服务器端处理时发生了错误；\n响应类型：由Content-Type指定，例如：Content-Type: text/html;charset=utf-8表示响应类型是HTML文本，并且编码是UTF-8，Content-Type: image/jpeg表示响应类型是JPEG格式的图片；\n以及其他相关的Header；\n通常服务器的HTTP响应会携带内容，也就是有一个Body，包含响应的内容，网页的HTML源码就在Body中。\n步骤3：如果浏览器还需要继续向服务器请求其他资源，比如图片，就再次发出HTTP请求，重复步骤1、2。\nWeb采用的HTTP协议采用了非常简单的请求-响应模式，从而大大简化了开发。当我们编写一个页面时，我们只需要在HTTP响应中把HTML发送出去，不需要考虑如何附带图片、视频等，浏览器如果需要请求图片和视频，它会发送另一个HTTP请求，因此，一个HTTP请求只处理一个资源。\nHTTP协议同时具备极强的扩展性，虽然浏览器请求的是http://www.sina.com.cn/的首页，但是新浪在HTML中可以链入其他服务器的资源，比如&lt;img src=&quot;http://i1.sinaimg.cn/home/2013/1008/U8455P30DT20131008135420.png&quot;&gt;，从而将请求压力分散到各个服务器上，并且，一个站点可以链接到其他站点，无数个站点互相链接起来，就形成了World Wide Web，简称“三达不溜”（WWW）。\nHTTP格式\n每个HTTP请求和响应都遵循相同的格式，一个HTTP包含Header和Body两部分，其中Body是可选的。\nHTTP协议是一种文本协议，所以，它的格式也非常简单。HTTP GET请求的格式：\n1234GET /path HTTP/1.1Header1: Value1Header2: Value2Header3: Value3\n每个Header一行一个，换行符是\\r\\n。\nHTTP POST请求的格式：\n123456POST /path HTTP/1.1Header1: Value1Header2: Value2Header3: Value3body data goes here...\n当遇到连续两个\\r\\n时，Header部分结束，后面的数据全部是Body。\nHTTP响应的格式：\n123456200 OKHeader1: Value1Header2: Value2Header3: Value3body data goes here...\nHTTP响应如果包含body，也是通过\\r\\n\\r\\n来分隔的。请再次注意，Body的数据类型由Content-Type头来确定，如果是网页，Body就是文本，如果是图片，Body就是图片的二进制数据。\n当存在Content-Encoding时，Body数据是被压缩的，最常见的压缩方式是gzip，所以，看到Content-Encoding: gzip时，需要将Body数据先解压缩，才能得到真正的数据。压缩的目的在于减少Body的大小，加快网络传输。\n要详细了解HTTP协议，推荐“HTTP: The Definitive Guide”一书，非常不错，有中文译本《HTTP权威指南》。\nHTML简介\n网页就是HTML？这么理解大概没错。因为网页中不但包含文字，还有图片、视频、HTML5小游戏，有复杂的排版、动画效果，所以，HTML定义了一套语法规则，来告诉浏览器如何把一个丰富多彩的页面显示出来。\nHTML长什么样？上次我们看了新浪首页的HTML源码，如果仔细数数，竟然有6000多行！\n所以，学HTML，就不要指望从新浪入手了。我们来看看最简单的HTML长什么样：\n12345678&lt;html&gt;&lt;head&gt;  &lt;title&gt;Hello&lt;/title&gt;&lt;/head&gt;&lt;body&gt;  &lt;h1&gt;Hello, world!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;\n可以用文本编辑器编写HTML，然后保存为hello.html，双击或者把文件拖到浏览器中，就可以看到效果：\n\nHTML文档就是一系列的Tag组成，最外层的Tag是&lt;html&gt;。规范的HTML也包含&lt;head&gt;...&lt;/head&gt;和&lt;body&gt;...&lt;/body&gt;（注意不要和HTTP的Header、Body搞混了），由于HTML是富文档模型，所以，还有一系列的Tag用来表示链接、图片、表格、表单等等。\nCSS简介\nCSS是Cascading Style Sheets（层叠样式表）的简称，CSS用来控制HTML里的所有元素如何展现，比如，给标题元素&lt;h1&gt;加一个样式，变成48号字体，灰色，带阴影：\n123456789101112131415&lt;html&gt;&lt;head&gt;  &lt;title&gt;Hello&lt;/title&gt;  &lt;style&gt;    h1 &#123;      color: #333333;      font-size: 48px;      text-shadow: 3px 3px 3px #666666;    &#125;  &lt;/style&gt;&lt;/head&gt;&lt;body&gt;  &lt;h1&gt;Hello, world!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;\n效果如下：\n\nJavaScript简介\nJavaScript虽然名称有个Java，但它和Java真的一点关系没有。JavaScript是为了让HTML具有交互性而作为脚本语言添加的，JavaScript既可以内嵌到HTML中，也可以从外部链接到HTML中。如果我们希望当用户点击标题时把标题变成红色，就必须通过JavaScript来实现：\n1234567891011121314151617181920&lt;html&gt;&lt;head&gt;  &lt;title&gt;Hello&lt;/title&gt;  &lt;style&gt;    h1 &#123;      color: #333333;      font-size: 48px;      text-shadow: 3px 3px 3px #666666;    &#125;  &lt;/style&gt;  &lt;script&gt;    function change() &#123;      document.getElementsByTagName(&#x27;h1&#x27;)[0].style.color = &#x27;#ff0000&#x27;;    &#125;  &lt;/script&gt;&lt;/head&gt;&lt;body&gt;  &lt;h1 onclick=&quot;change()&quot;&gt;Hello, world!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;\n点击标题后效果如下：\n\n小结\n如果要学习Web开发，首先要对HTML、CSS和JavaScript作一定的了解。HTML定义了页面的内容，CSS来控制页面元素的样式，而JavaScript负责页面的交互逻辑。\n讲解HTML、CSS和JavaScript就可以写3本书，对于优秀的Web开发人员来说，精通HTML、CSS和JavaScript是必须的，这里推荐一个在线学习网站w3schools，以及一个对应的中文版本。\n当我们用Python或者其他语言开发Web应用时，我们就是要在服务器端动态创建出HTML，这样，浏览器就会向不同的用户显示出不同的Web页面。\n\n了解了HTTP协议和HTML文档，我们其实就明白了一个Web应用的本质就是：\n\n浏览器发送一个HTTP请求；\n服务器收到请求，生成一个HTML文档；\n服务器把HTML文档作为HTTP响应的Body发送给浏览器；\n浏览器收到HTTP响应，从HTTP Body取出HTML文档并显示。\n\n所以，最简单的Web应用就是先把HTML用文件保存好，用一个现成的HTTP服务器软件，接收用户请求，从文件中读取HTML，返回。Apache、Nginx、Lighttpd等这些常见的静态服务器就是干这件事情的。\n如果要动态生成HTML，就需要把上述步骤自己来实现。不过，接受HTTP请求、解析HTTP请求、发送HTTP响应都是苦力活，如果我们自己来写这些底层代码，还没开始写动态HTML呢，就得花个把月去读HTTP规范。\n正确的做法是底层代码由专门的服务器软件实现，我们用Python专注于生成HTML文档。因为我们不希望接触到TCP连接、HTTP原始请求和响应格式，所以，需要一个统一的接口，让我们专心用Python编写Web业务。\n这个接口就是WSGI：Web Server Gateway Interface。\nWSGI接口定义非常简单，它只要求Web开发者实现一个函数，就可以响应HTTP请求。我们来看一个最简单的Web版本的“Hello, web!”：\n123def application(environ, start_response):    start_response(&#x27;200 OK&#x27;, [(&#x27;Content-Type&#x27;, &#x27;text/html&#x27;)])    return [b&#x27;&lt;h1&gt;Hello, web!&lt;/h1&gt;&#x27;]\n上面的application()函数就是符合WSGI标准的一个HTTP处理函数，它接收两个参数：\n\nenviron：一个包含所有HTTP请求信息的dict对象；\nstart_response：一个发送HTTP响应的函数。\n\n在application()函数中，调用：\n1start_response(&#x27;200 OK&#x27;, [(&#x27;Content-Type&#x27;, &#x27;text/html&#x27;)])\n就发送了HTTP响应的Header，注意Header只能发送一次，也就是只能调用一次start_response()函数。start_response()函数接收两个参数，一个是HTTP响应码，一个是一组list表示的HTTP Header，每个Header用一个包含两个str的tuple表示。\n通常情况下，都应该把Content-Type头发送给浏览器。其他很多常用的HTTP Header也应该发送。\n然后，函数的返回值b'&lt;h1&gt;Hello, web!&lt;/h1&gt;'将作为HTTP响应的Body发送给浏览器。\n有了WSGI，我们关心的就是如何从environ这个dict对象拿到HTTP请求信息，然后构造HTML，通过start_response()发送Header，最后返回Body。\n整个application()函数本身没有涉及到任何解析HTTP的部分，也就是说，底层代码不需要我们自己编写，我们只负责在更高层次上考虑如何响应请求就可以了。\n不过，等等，这个application()函数怎么调用？如果我们自己调用，两个参数environ和start_response我们没法提供，返回的bytes也没法发给浏览器。\n所以application()函数必须由WSGI服务器来调用。有很多符合WSGI规范的服务器，我们可以挑选一个来用。但是现在，我们只想尽快测试一下我们编写的application()函数真的可以把HTML输出到浏览器，所以，要赶紧找一个最简单的WSGI服务器，把我们的Web应用程序跑起来。\n好消息是Python内置了一个WSGI服务器，这个模块叫wsgiref，它是用纯Python编写的WSGI服务器的参考实现。所谓“参考实现”是指该实现完全符合WSGI标准，但是不考虑任何运行效率，仅供开发和测试使用。\n运行WSGI服务\n我们先编写hello.py，实现Web应用程序的WSGI处理函数：\n12345# hello.pydef application(environ, start_response):    start_response(&#x27;200 OK&#x27;, [(&#x27;Content-Type&#x27;, &#x27;text/html&#x27;)])    return [b&#x27;&lt;h1&gt;Hello, web!&lt;/h1&gt;&#x27;]\n然后，再编写一个server.py，负责启动WSGI服务器，加载application()函数：\n1234567891011# server.py# 从wsgiref模块导入:from wsgiref.simple_server import make_server# 导入我们自己编写的application函数:from hello import application# 创建一个服务器，IP地址为空，端口是8000，处理函数是application:httpd = make_server(&#x27;&#x27;, 8000, application)print(&#x27;Serving HTTP on port 8000...&#x27;)# 开始监听HTTP请求:httpd.serve_forever()\n确保以上两个文件在同一个目录下，然后在命令行输入python server.py来启动WSGI服务器：\n\n注意：如果8000端口已被其他程序占用，启动将失败，请修改成其他端口。\n启动成功后，打开浏览器，输入http://localhost:8000/，就可以看到结果了：\n\n在命令行可以看到wsgiref打印的log信息：\n\n按Ctrl+C终止服务器。\n如果你觉得这个Web应用太简单了，可以稍微改造一下，从environ里读取PATH_INFO，这样可以显示更加动态的内容：\n123456# hello.pydef application(environ, start_response):    start_response(&#x27;200 OK&#x27;, [(&#x27;Content-Type&#x27;, &#x27;text/html&#x27;)])    body = &#x27;&lt;h1&gt;Hello, %s!&lt;/h1&gt;&#x27; % (environ[&#x27;PATH_INFO&#x27;][1:] or &#x27;web&#x27;)    return [body.encode(&#x27;utf-8&#x27;)]\n你可以在地址栏输入用户名作为URL的一部分，将返回Hello, xxx!：\n\n是不是有点Web App的感觉了？\n小结\n无论多么复杂的Web应用程序，入口都是一个WSGI处理函数。HTTP请求的所有输入信息都可以通过environ获得，HTTP响应的输出都可以通过start_response()加上函数返回值作为Body。\n复杂的Web应用程序，光靠一个WSGI函数来处理还是太底层了，我们需要在WSGI之上再抽象出Web框架，进一步简化Web开发。\n参考源码\nhello.py\nserver.py\n了解了WSGI框架，我们发现：其实一个Web App，就是写一个WSGI的处理函数，针对每个HTTP请求进行响应。\n但是如何处理HTTP请求不是问题，问题是如何处理100个不同的URL。\n每一个URL可以对应GET和POST请求，当然还有PUT、DELETE等请求，但是我们通常只考虑最常见的GET和POST请求。\n一个最简单的想法是从environ变量里取出HTTP请求的信息，然后逐个判断：\n12345678def application(environ, start_response):    method = environ[&#x27;REQUEST_METHOD&#x27;]    path = environ[&#x27;PATH_INFO&#x27;]    if method==&#x27;GET&#x27; and path==&#x27;/&#x27;:        return handle_home(environ, start_response)    if method==&#x27;POST&#x27; and path=&#x27;/signin&#x27;:        return handle_signin(environ, start_response)    ...\n只是这么写下去代码是肯定没法维护了。\n代码这么写没法维护的原因是因为WSGI提供的接口虽然比HTTP接口高级了不少，但和Web App的处理逻辑比，还是比较低级，我们需要在WSGI接口之上能进一步抽象，让我们专注于用一个函数处理一个URL，至于URL到函数的映射，就交给Web框架来做。\n由于用Python开发一个Web框架十分容易，所以Python有上百个开源的Web框架。这里我们先不讨论各种Web框架的优缺点，直接选择一个比较流行的Web框架——Flask来使用。\n用Flask编写Web App比WSGI接口简单（这不是废话么，要是比WSGI还复杂，用框架干嘛？），我们先用pip安装Flask：\n1$ pip install flask\n然后写一个app.py，处理3个URL，分别是：\n\nGET /：首页，返回Home；\nGET /signin：登录页，显示登录表单；\nPOST /signin：处理登录表单，显示登录结果。\n\n注意噢，同一个URL/signin分别有GET和POST两种请求，映射到两个处理函数中。\nFlask通过Python的装饰器在内部自动地把URL和函数给关联起来，所以，我们写出来的代码就像这样：\n1234567891011121314151617181920212223242526from flask import Flaskfrom flask import requestapp = Flask(__name__)@app.route(&#x27;/&#x27;, methods=[&#x27;GET&#x27;, &#x27;POST&#x27;])def home():    return &#x27;&lt;h1&gt;Home&lt;/h1&gt;&#x27;@app.route(&#x27;/signin&#x27;, methods=[&#x27;GET&#x27;])def signin_form():    return &#x27;&#x27;&#x27;&lt;form action=&quot;/signin&quot; method=&quot;post&quot;&gt;              &lt;p&gt;&lt;input name=&quot;username&quot;&gt;&lt;/p&gt;              &lt;p&gt;&lt;input name=&quot;password&quot; type=&quot;password&quot;&gt;&lt;/p&gt;              &lt;p&gt;&lt;button type=&quot;submit&quot;&gt;Sign In&lt;/button&gt;&lt;/p&gt;              &lt;/form&gt;&#x27;&#x27;&#x27;@app.route(&#x27;/signin&#x27;, methods=[&#x27;POST&#x27;])def signin():    # 需要从request对象读取表单内容：    if request.form[&#x27;username&#x27;]==&#x27;admin&#x27; and request.form[&#x27;password&#x27;]==&#x27;password&#x27;:        return &#x27;&lt;h3&gt;Hello, admin!&lt;/h3&gt;&#x27;    return &#x27;&lt;h3&gt;Bad username or password.&lt;/h3&gt;&#x27;if __name__ == &#x27;__main__&#x27;:    app.run()\n运行python app.py，Flask自带的Server在端口5000上监听：\n12$ python app.py  * Running on http://127.0.0.1:5000/\n打开浏览器，输入首页地址http://localhost:5000/：\n\n首页显示正确！\n再在浏览器地址栏输入http://localhost:5000/signin，会显示登录表单：\n\n输入预设的用户名admin和口令password，登录成功：\n\n输入其他错误的用户名和口令，登录失败：\n\n实际的Web App应该拿到用户名和口令后，去数据库查询再比对，来判断用户是否能登录成功。\n除了Flask，常见的Python Web框架还有：\n\nDjango：全能型Web框架；\nweb.py：一个小巧的Web框架；\nBottle：和Flask类似的Web框架；\nTornado：Facebook的开源异步Web框架。\n\n当然了，因为开发Python的Web框架也不是什么难事，我们后面也会讲到开发Web框架的内容。\n小结\n有了Web框架，我们在编写Web应用时，注意力就从WSGI处理函数转移到URL+对应的处理函数，这样，编写Web App就更加简单了。\n在编写URL处理函数时，除了配置URL外，从HTTP请求拿到用户数据也是非常重要的。Web框架都提供了自己的API来实现这些功能。Flask通过request.form['name']来获取表单的内容。\n参考源码\napp.py\nWeb框架把我们从WSGI中拯救出来了。现在，我们只需要不断地编写函数，带上URL，就可以继续Web App的开发了。\n但是，Web App不仅仅是处理逻辑，展示给用户的页面也非常重要。在函数中返回一个包含HTML的字符串，简单的页面还可以，但是，想想新浪首页的6000多行的HTML，你确信能在Python的字符串中正确地写出来么？反正我是做不到。\n俗话说得好，不懂前端的Python工程师不是好的产品经理。有Web开发经验的同学都明白，Web App最复杂的部分就在HTML页面。HTML不仅要正确，还要通过CSS美化，再加上复杂的JavaScript脚本来实现各种交互和动画效果。总之，生成HTML页面的难度很大。\n由于在Python代码里拼字符串是不现实的，所以，模板技术出现了。\n使用模板，我们需要预先准备一个HTML文档，这个HTML文档不是普通的HTML，而是嵌入了一些变量和指令，然后，根据我们传入的数据，替换后，得到最终的HTML，发送给用户：\n\n这就是传说中的MVC：Model-View-Controller，中文名“模型-视图-控制器”。\nPython处理URL的函数就是C：Controller，Controller负责业务逻辑，比如检查用户名是否存在，取出用户信息等等；\n包含变量&#123;&#123; name &#125;&#125;的模板就是V：View，View负责显示逻辑，通过简单地替换一些变量，View最终输出的就是用户看到的HTML。\nMVC中的Model在哪？Model是用来传给View的，这样View在替换变量的时候，就可以从Model中取出相应的数据。\n上面的例子中，Model就是一个dict：\n1&#123; &#x27;name&#x27;: &#x27;Michael&#x27; &#125;\n只是因为Python支持关键字参数，很多Web框架允许传入关键字参数，然后，在框架内部组装出一个dict作为Model。\n现在，我们把上次直接输出字符串作为HTML的例子用高端大气上档次的MVC模式改写一下：\n12345678910111213141516171819202122from flask import Flask, request, render_templateapp = Flask(__name__)@app.route(&#x27;/&#x27;, methods=[&#x27;GET&#x27;, &#x27;POST&#x27;])def home():    return render_template(&#x27;home.html&#x27;)@app.route(&#x27;/signin&#x27;, methods=[&#x27;GET&#x27;])def signin_form():    return render_template(&#x27;form.html&#x27;)@app.route(&#x27;/signin&#x27;, methods=[&#x27;POST&#x27;])def signin():    username = request.form[&#x27;username&#x27;]    password = request.form[&#x27;password&#x27;]    if username==&#x27;admin&#x27; and password==&#x27;password&#x27;:        return render_template(&#x27;signin-ok.html&#x27;, username=username)    return render_template(&#x27;form.html&#x27;, message=&#x27;Bad username or password&#x27;, username=username)if __name__ == &#x27;__main__&#x27;:    app.run()\nFlask通过render_template()函数来实现模板的渲染。和Web框架类似，Python的模板也有很多种。Flask默认支持的模板是jinja2，所以我们先直接安装jinja2：\n1$ pip install jinja2\n然后，开始编写jinja2模板：\nhome.html\n用来显示首页的模板：\n12345678&lt;html&gt;&lt;head&gt;  &lt;title&gt;Home&lt;/title&gt;&lt;/head&gt;&lt;body&gt;  &lt;h1 style=&quot;font-style:italic&quot;&gt;Home&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;\nform.html\n用来显示登录表单的模板：\n12345678910111213141516&lt;html&gt;&lt;head&gt;  &lt;title&gt;Please Sign In&lt;/title&gt;&lt;/head&gt;&lt;body&gt;  &#123;% if message %&#125;  &lt;p style=&quot;color:red&quot;&gt;&#123;&#123; message &#125;&#125;&lt;/p&gt;  &#123;% endif %&#125;  &lt;form action=&quot;/signin&quot; method=&quot;post&quot;&gt;    &lt;legend&gt;Please sign in:&lt;/legend&gt;    &lt;p&gt;&lt;input name=&quot;username&quot; placeholder=&quot;Username&quot; value=&quot;&#123;&#123; username &#125;&#125;&quot;&gt;&lt;/p&gt;    &lt;p&gt;&lt;input name=&quot;password&quot; placeholder=&quot;Password&quot; type=&quot;password&quot;&gt;&lt;/p&gt;    &lt;p&gt;&lt;button type=&quot;submit&quot;&gt;Sign In&lt;/button&gt;&lt;/p&gt;  &lt;/form&gt;&lt;/body&gt;&lt;/html&gt;\nsignin-ok.html\n登录成功的模板：\n12345678&lt;html&gt;&lt;head&gt;  &lt;title&gt;Welcome, &#123;&#123; username &#125;&#125;&lt;/title&gt;&lt;/head&gt;&lt;body&gt;  &lt;p&gt;Welcome, &#123;&#123; username &#125;&#125;!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;\n登录失败的模板呢？我们在form.html中加了一点条件判断，把form.html重用为登录失败的模板。\n最后，一定要把模板放到正确的templates目录下，templates和app.py在同级目录下：\n\n启动python app.py，看看使用模板的页面效果：\n\n通过MVC，我们在Python代码中处理M：Model和C：Controller，而V：View是通过模板处理的，这样，我们就成功地把Python代码和HTML代码最大限度地分离了。\n使用模板的另一大好处是，模板改起来很方便，而且，改完保存后，刷新浏览器就能看到最新的效果，这对于调试HTML、CSS和JavaScript的前端工程师来说实在是太重要了。\n在Jinja2模板中，我们用&#123;&#123; name &#125;&#125;表示一个需要替换的变量。很多时候，还需要循环、条件判断等指令语句，在Jinja2中，用&#123;% ... %&#125;表示指令。\n比如循环输出页码：\n123&#123;% for i in page_list %&#125;    &lt;a href=&quot;/page/&#123;&#123; i &#125;&#125;&quot;&gt;&#123;&#123; i &#125;&#125;&lt;/a&gt;&#123;% endfor %&#125;\n如果page_list是一个list：[1, 2, 3, 4, 5]，上面的模板将输出5个超链接。\n除了Jinja2，常见的模板还有：\n\nMako：用&lt;% ... %&gt;和$&#123;xxx&#125;的一个模板；\nCheetah：也是用&lt;% ... %&gt;和$&#123;xxx&#125;的一个模板；\nDjango：Django是一站式框架，内置一个用&#123;% ... %&#125;和&#123;&#123; xxx &#125;&#125;的模板。\n\n小结\n有了MVC，我们就分离了Python代码和HTML代码。HTML代码全部放到模板里，写起来更有效率。\n参考源码\napp.zip\n","dateCreated":"2016-05-01T23:10:34+08:00","dateModified":"2025-06-18T11:29:13+08:00","datePublished":"2016-05-01T23:10:34+08:00","description":"","headline":"18.python(Web开发)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/","keywords":"python"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"Web开发\n最早的软件都是运行在大型机上的，软件使用者通过“哑终端”登陆到大型机上去运行软件。后来随着PC机的兴起，软件开始主要运行在桌面上，而数据库这样的软件运行在服务器端，这种Client/Server模式简称CS架构。\n随着互联网的兴起，人们发现，CS架构不适合Web，最大的原因是Web应用程序的修改和升级非常迅速，而CS架构需要每个客户端逐个升级桌面App，因此，Browser/Server模式开始流行，简称BS架构。\n在BS架构下，客户端只需要浏览器，应用程序的逻辑和数据都存储在服务器端。浏览器只需要请求服务器，获取Web页面，并把Web页面展示给用户即可。\n当然，Web页面也具有极强的交互性。由于Web页面是用HTML编写的，而HTML具备超强的表现力，并且，服务器端升级后，客户端无需任何部署就可以使用到新的版本，因此，BS架构迅速流行起来。\n今天，除了重量级的软件如Office，Photoshop等，大部分软件都以Web形式提供。比如，新浪提供的新闻、博客、微博等服务，均是Web应用。\nWeb应用开发可以说是目前软件开发中最重要的部分。Web开发也经历了好几个阶段：\n\n静态Web页面：由文本编辑器直接编辑并生成静态的HTML页面，如果要修改Web页面的内容，就需要再次编辑HTML源文件，早期的互联网Web页面就是静态的；\nCGI：由于静态Web页面无法与用户交互，比如用户填写了一个注册表单，静态Web页面就无法处理。要处理用户发送的动态数据，出现了Common Gateway Interface，简称CGI，用C/C++编写。\nASP/JSP/PHP：由于Web应用特点是修改频繁，用C/C++这样的低级语言非常不适合Web开发，而脚本语言由于开发效率高，与HTML结合紧密，因此，迅速取代了CGI模式。ASP是微软推出的用VBScript脚本编程的Web开发技术，而JSP用Java来编写脚本，PHP本身则是开源的脚本语言。\nMVC：为了解决直接用脚本语言嵌入HTML导致的可维护性差的问题，Web应用也引入了Model-View-Controller的模式，来简化Web开发。ASP发展为ASP.Net，JSP和PHP也有一大堆MVC框架。\n\n目前，Web开发技术仍在快速发展中，异步开发、新的MVVM前端技术层出不穷。\nPython的诞生历史比Web还要早，由于Python是一种解释型的脚本语言，开发效率高，所以非常适合用来做Web开发。\nPython有上百种Web开发框架，有很多成熟的模板技术，选择Python开发Web应用，不但开发效率高，而且运行速度快。\n本章我们会详细讨论Python Web开发技术。\n\n在Web应用中，服务器把网页传给浏览器，实际上就是把网页的HTML代码发送给浏览器，让浏览器显示出来。而浏览器和服务器之间的传输协议是HTTP，所以：\n\nHTML是一种用来定义网页的文本，会HTML，就可以编写网页；\nHTTP是在网络上传输HTML的协议，用于浏览器和服务器的通信。\n\n在举例子之前，我们需要安装Google的Chrome浏览器。\n为什么要使用Chrome浏览器而不是IE呢？因为我们需要在浏览器很方便地调试我们的Web应用，而Chrome提供了一套完整地调试工具，非常适合Web开发。\n安装好Chrome浏览器后，打开Chrome，在菜单中选择“视图”，“开发者”，“开发者工具”，就可以显示开发者工具：\n\nElements显示网页的结构，Network显示浏览器和服务器的通信。我们点Network，确保第一个小红灯亮着，Chrome就会记录所有浏览器和服务器之间的通信：\n\n当我们在地址栏输入www.sina.com.cn时，浏览器将显示新浪的首页。在这个过程中，浏览器都干了哪些事情呢？通过Network的记录，我们就可以知道。在Network中，定位到第一条记录，点击，右侧将显示Request Headers，点击右侧的view source，我们就可以看到浏览器发给新浪服务器的请求：\n\n最主要的头两行分析如下，第一行：\n1GET / HTTP/1.1\nGET表示一个读取请求，将从服务器获得网页数据，/表示URL的路径，URL总是以/开头，/就表示首页，最后的HTTP/1.1指示采用的HTTP协议版本是1.1。目前HTTP协议的版本就是1.1，但是大部分服务器也支持1.0版本，主要区别在于1.1版本允许多个HTTP请求复用一个TCP连接，以加快传输速度。\n从第二行开始，每一行都类似于Xxx: abcdefg：\n1Host: www.sina.com.cn\n表示请求的域名是www.sina.com.cn。如果一台服务器有多个网站，服务器就需要通过Host来区分浏览器请求的是哪个网站。\n继续往下找到Response Headers，点击view source，显示服务器返回的原始响应数据：\n\nHTTP响应分为Header和Body两部分（Body是可选项），我们在Network中看到的Header最重要的几行如下：\n1200 OK\n200表示一个成功的响应，后面的OK是说明。失败的响应有404 Not Found：网页不存在，500 Internal Server Error：服务器内部出错，等等。\n1Content-Type: text/html\nContent-Type指示响应的内容，这里是text/html表示HTML网页。请注意，浏览器就是依靠Content-Type来判断响应的内容是网页还是图片，是视频还是音乐。浏览器并不靠URL来判断响应的内容，所以，即使URL是http://example.com/abc.jpg，它也不一定就是图片。\nHTTP响应的Body就是HTML源码，我们在菜单栏选择“视图”，“开发者”，“查看网页源码”就可以在浏览器中直接查看HTML源码：\n\n当浏览器读取到新浪首页的HTML源码后，它会解析HTML，显示页面，然后，根据HTML里面的各种链接，再发送HTTP请求给新浪服务器，拿到相应的图片、视频、Flash、JavaScript脚本、CSS等各种资源，最终显示出一个完整的页面。所以我们在Network下面能看到很多额外的HTTP请求。\nHTTP请求\n跟踪了新浪的首页，我们来总结一下HTTP请求的流程：\n步骤1：浏览器首先向服务器发送HTTP请求，请求包括：\n方法：GET还是POST，GET仅请求资源，POST会附带用户数据；\n路径：/full/url/path；\n域名：由Host头指定：Host: www.sina.com.cn\n以及其他相关的Header；\n如果是POST，那么请求还包括一个Body，包含用户数据。\n步骤2：服务器向浏览器返回HTTP响应，响应包括：\n响应代码：200表示成功，3xx表示重定向，4xx表示客户端发送的请求有错误，5xx表示服务器端处理时发生了错误；\n响应类型：由Content-Type指定，例如：Content-Type: text/html;charset=utf-8表示响应类型是HTML文本，并且编码是UTF-8，Content-Type: image/jpeg表示响应类型是JPEG格式的图片；\n以及其他相关的Header；\n通常服务器的HTTP响应会携带内容，也就是有一个Body，包含响应的内容，网页的HTML源码就在Body中。\n步骤3：如果浏览器还需要继续向服务器请求其他资源，比如图片，就再次发出HTTP请求，重复步骤1、2。\nWeb采用的HTTP协议采用了非常简单的请求-响应模式，从而大大简化了开发。当我们编写一个页面时，我们只需要在HTTP响应中把HTML发送出去，不需要考虑如何附带图片、视频等，浏览器如果需要请求图片和视频，它会发送另一个HTTP请求，因此，一个HTTP请求只处理一个资源。\nHTTP协议同时具备极强的扩展性，虽然浏览器请求的是http://www.sina.com.cn/的首页，但是新浪在HTML中可以链入其他服务器的资源，比如&lt;img src=&quot;http://i1.sinaimg.cn/home/2013/1008/U8455P30DT20131008135420.png&quot;&gt;，从而将请求压力分散到各个服务器上，并且，一个站点可以链接到其他站点，无数个站点互相链接起来，就形成了World Wide Web，简称“三达不溜”（WWW）。\nHTTP格式\n每个HTTP请求和响应都遵循相同的格式，一个HTTP包含Header和Body两部分，其中Body是可选的。\nHTTP协议是一种文本协议，所以，它的格式也非常简单。HTTP GET请求的格式：\n1234GET /path HTTP/1.1Header1: Value1Header2: Value2Header3: Value3\n每个Header一行一个，换行符是\\r\\n。\nHTTP POST请求的格式：\n123456POST /path HTTP/1.1Header1: Value1Header2: Value2Header3: Value3body data goes here...\n当遇到连续两个\\r\\n时，Header部分结束，后面的数据全部是Body。\nHTTP响应的格式：\n123456200 OKHeader1: Value1Header2: Value2Header3: Value3body data goes here...\nHTTP响应如果包含body，也是通过\\r\\n\\r\\n来分隔的。请再次注意，Body的数据类型由Content-Type头来确定，如果是网页，Body就是文本，如果是图片，Body就是图片的二进制数据。\n当存在Content-Encoding时，Body数据是被压缩的，最常见的压缩方式是gzip，所以，看到Content-Encoding: gzip时，需要将Body数据先解压缩，才能得到真正的数据。压缩的目的在于减少Body的大小，加快网络传输。\n要详细了解HTTP协议，推荐“HTTP: The Definitive Guide”一书，非常不错，有中文译本《HTTP权威指南》。\nHTML简介\n网页就是HTML？这么理解大概没错。因为网页中不但包含文字，还有图片、视频、HTML5小游戏，有复杂的排版、动画效果，所以，HTML定义了一套语法规则，来告诉浏览器如何把一个丰富多彩的页面显示出来。\nHTML长什么样？上次我们看了新浪首页的HTML源码，如果仔细数数，竟然有6000多行！\n所以，学HTML，就不要指望从新浪入手了。我们来看看最简单的HTML长什么样：\n12345678&lt;html&gt;&lt;head&gt;  &lt;title&gt;Hello&lt;/title&gt;&lt;/head&gt;&lt;body&gt;  &lt;h1&gt;Hello, world!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;\n可以用文本编辑器编写HTML，然后保存为hello.html，双击或者把文件拖到浏览器中，就可以看到效果：\n\nHTML文档就是一系列的Tag组成，最外层的Tag是&lt;html&gt;。规范的HTML也包含&lt;head&gt;...&lt;/head&gt;和&lt;body&gt;...&lt;/body&gt;（注意不要和HTTP的Header、Body搞混了），由于HTML是富文档模型，所以，还有一系列的Tag用来表示链接、图片、表格、表单等等。\nCSS简介\nCSS是Cascading Style Sheets（层叠样式表）的简称，CSS用来控制HTML里的所有元素如何展现，比如，给标题元素&lt;h1&gt;加一个样式，变成48号字体，灰色，带阴影：\n123456789101112131415&lt;html&gt;&lt;head&gt;  &lt;title&gt;Hello&lt;/title&gt;  &lt;style&gt;    h1 &#123;      color: #333333;      font-size: 48px;      text-shadow: 3px 3px 3px #666666;    &#125;  &lt;/style&gt;&lt;/head&gt;&lt;body&gt;  &lt;h1&gt;Hello, world!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;\n效果如下：\n\nJavaScript简介\nJavaScript虽然名称有个Java，但它和Java真的一点关系没有。JavaScript是为了让HTML具有交互性而作为脚本语言添加的，JavaScript既可以内嵌到HTML中，也可以从外部链接到HTML中。如果我们希望当用户点击标题时把标题变成红色，就必须通过JavaScript来实现：\n1234567891011121314151617181920&lt;html&gt;&lt;head&gt;  &lt;title&gt;Hello&lt;/title&gt;  &lt;style&gt;    h1 &#123;      color: #333333;      font-size: 48px;      text-shadow: 3px 3px 3px #666666;    &#125;  &lt;/style&gt;  &lt;script&gt;    function change() &#123;      document.getElementsByTagName(&#x27;h1&#x27;)[0].style.color = &#x27;#ff0000&#x27;;    &#125;  &lt;/script&gt;&lt;/head&gt;&lt;body&gt;  &lt;h1 onclick=&quot;change()&quot;&gt;Hello, world!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;\n点击标题后效果如下：\n\n小结\n如果要学习Web开发，首先要对HTML、CSS和JavaScript作一定的了解。HTML定义了页面的内容，CSS来控制页面元素的样式，而JavaScript负责页面的交互逻辑。\n讲解HTML、CSS和JavaScript就可以写3本书，对于优秀的Web开发人员来说，精通HTML、CSS和JavaScript是必须的，这里推荐一个在线学习网站w3schools，以及一个对应的中文版本。\n当我们用Python或者其他语言开发Web应用时，我们就是要在服务器端动态创建出HTML，这样，浏览器就会向不同的用户显示出不同的Web页面。\n\n了解了HTTP协议和HTML文档，我们其实就明白了一个Web应用的本质就是：\n\n浏览器发送一个HTTP请求；\n服务器收到请求，生成一个HTML文档；\n服务器把HTML文档作为HTTP响应的Body发送给浏览器；\n浏览器收到HTTP响应，从HTTP Body取出HTML文档并显示。\n\n所以，最简单的Web应用就是先把HTML用文件保存好，用一个现成的HTTP服务器软件，接收用户请求，从文件中读取HTML，返回。Apache、Nginx、Lighttpd等这些常见的静态服务器就是干这件事情的。\n如果要动态生成HTML，就需要把上述步骤自己来实现。不过，接受HTTP请求、解析HTTP请求、发送HTTP响应都是苦力活，如果我们自己来写这些底层代码，还没开始写动态HTML呢，就得花个把月去读HTTP规范。\n正确的做法是底层代码由专门的服务器软件实现，我们用Python专注于生成HTML文档。因为我们不希望接触到TCP连接、HTTP原始请求和响应格式，所以，需要一个统一的接口，让我们专心用Python编写Web业务。\n这个接口就是WSGI：Web Server Gateway Interface。\nWSGI接口定义非常简单，它只要求Web开发者实现一个函数，就可以响应HTTP请求。我们来看一个最简单的Web版本的“Hello, web!”：\n123def application(environ, start_response):    start_response(&#x27;200 OK&#x27;, [(&#x27;Content-Type&#x27;, &#x27;text/html&#x27;)])    return [b&#x27;&lt;h1&gt;Hello, web!&lt;/h1&gt;&#x27;]\n上面的application()函数就是符合WSGI标准的一个HTTP处理函数，它接收两个参数：\n\nenviron：一个包含所有HTTP请求信息的dict对象；\nstart_response：一个发送HTTP响应的函数。\n\n在application()函数中，调用：\n1start_response(&#x27;200 OK&#x27;, [(&#x27;Content-Type&#x27;, &#x27;text/html&#x27;)])\n就发送了HTTP响应的Header，注意Header只能发送一次，也就是只能调用一次start_response()函数。start_response()函数接收两个参数，一个是HTTP响应码，一个是一组list表示的HTTP Header，每个Header用一个包含两个str的tuple表示。\n通常情况下，都应该把Content-Type头发送给浏览器。其他很多常用的HTTP Header也应该发送。\n然后，函数的返回值b'&lt;h1&gt;Hello, web!&lt;/h1&gt;'将作为HTTP响应的Body发送给浏览器。\n有了WSGI，我们关心的就是如何从environ这个dict对象拿到HTTP请求信息，然后构造HTML，通过start_response()发送Header，最后返回Body。\n整个application()函数本身没有涉及到任何解析HTTP的部分，也就是说，底层代码不需要我们自己编写，我们只负责在更高层次上考虑如何响应请求就可以了。\n不过，等等，这个application()函数怎么调用？如果我们自己调用，两个参数environ和start_response我们没法提供，返回的bytes也没法发给浏览器。\n所以application()函数必须由WSGI服务器来调用。有很多符合WSGI规范的服务器，我们可以挑选一个来用。但是现在，我们只想尽快测试一下我们编写的application()函数真的可以把HTML输出到浏览器，所以，要赶紧找一个最简单的WSGI服务器，把我们的Web应用程序跑起来。\n好消息是Python内置了一个WSGI服务器，这个模块叫wsgiref，它是用纯Python编写的WSGI服务器的参考实现。所谓“参考实现”是指该实现完全符合WSGI标准，但是不考虑任何运行效率，仅供开发和测试使用。\n运行WSGI服务\n我们先编写hello.py，实现Web应用程序的WSGI处理函数：\n12345# hello.pydef application(environ, start_response):    start_response(&#x27;200 OK&#x27;, [(&#x27;Content-Type&#x27;, &#x27;text/html&#x27;)])    return [b&#x27;&lt;h1&gt;Hello, web!&lt;/h1&gt;&#x27;]\n然后，再编写一个server.py，负责启动WSGI服务器，加载application()函数：\n1234567891011# server.py# 从wsgiref模块导入:from wsgiref.simple_server import make_server# 导入我们自己编写的application函数:from hello import application# 创建一个服务器，IP地址为空，端口是8000，处理函数是application:httpd = make_server(&#x27;&#x27;, 8000, application)print(&#x27;Serving HTTP on port 8000...&#x27;)# 开始监听HTTP请求:httpd.serve_forever()\n确保以上两个文件在同一个目录下，然后在命令行输入python server.py来启动WSGI服务器：\n\n注意：如果8000端口已被其他程序占用，启动将失败，请修改成其他端口。\n启动成功后，打开浏览器，输入http://localhost:8000/，就可以看到结果了：\n\n在命令行可以看到wsgiref打印的log信息：\n\n按Ctrl+C终止服务器。\n如果你觉得这个Web应用太简单了，可以稍微改造一下，从environ里读取PATH_INFO，这样可以显示更加动态的内容：\n123456# hello.pydef application(environ, start_response):    start_response(&#x27;200 OK&#x27;, [(&#x27;Content-Type&#x27;, &#x27;text/html&#x27;)])    body = &#x27;&lt;h1&gt;Hello, %s!&lt;/h1&gt;&#x27; % (environ[&#x27;PATH_INFO&#x27;][1:] or &#x27;web&#x27;)    return [body.encode(&#x27;utf-8&#x27;)]\n你可以在地址栏输入用户名作为URL的一部分，将返回Hello, xxx!：\n\n是不是有点Web App的感觉了？\n小结\n无论多么复杂的Web应用程序，入口都是一个WSGI处理函数。HTTP请求的所有输入信息都可以通过environ获得，HTTP响应的输出都可以通过start_response()加上函数返回值作为Body。\n复杂的Web应用程序，光靠一个WSGI函数来处理还是太底层了，我们需要在WSGI之上再抽象出Web框架，进一步简化Web开发。\n参考源码\nhello.py\nserver.py\n了解了WSGI框架，我们发现：其实一个Web App，就是写一个WSGI的处理函数，针对每个HTTP请求进行响应。\n但是如何处理HTTP请求不是问题，问题是如何处理100个不同的URL。\n每一个URL可以对应GET和POST请求，当然还有PUT、DELETE等请求，但是我们通常只考虑最常见的GET和POST请求。\n一个最简单的想法是从environ变量里取出HTTP请求的信息，然后逐个判断：\n12345678def application(environ, start_response):    method = environ[&#x27;REQUEST_METHOD&#x27;]    path = environ[&#x27;PATH_INFO&#x27;]    if method==&#x27;GET&#x27; and path==&#x27;/&#x27;:        return handle_home(environ, start_response)    if method==&#x27;POST&#x27; and path=&#x27;/signin&#x27;:        return handle_signin(environ, start_response)    ...\n只是这么写下去代码是肯定没法维护了。\n代码这么写没法维护的原因是因为WSGI提供的接口虽然比HTTP接口高级了不少，但和Web App的处理逻辑比，还是比较低级，我们需要在WSGI接口之上能进一步抽象，让我们专注于用一个函数处理一个URL，至于URL到函数的映射，就交给Web框架来做。\n由于用Python开发一个Web框架十分容易，所以Python有上百个开源的Web框架。这里我们先不讨论各种Web框架的优缺点，直接选择一个比较流行的Web框架——Flask来使用。\n用Flask编写Web App比WSGI接口简单（这不是废话么，要是比WSGI还复杂，用框架干嘛？），我们先用pip安装Flask：\n1$ pip install flask\n然后写一个app.py，处理3个URL，分别是：\n\nGET /：首页，返回Home；\nGET /signin：登录页，显示登录表单；\nPOST /signin：处理登录表单，显示登录结果。\n\n注意噢，同一个URL/signin分别有GET和POST两种请求，映射到两个处理函数中。\nFlask通过Python的装饰器在内部自动地把URL和函数给关联起来，所以，我们写出来的代码就像这样：\n1234567891011121314151617181920212223242526from flask import Flaskfrom flask import requestapp = Flask(__name__)@app.route(&#x27;/&#x27;, methods=[&#x27;GET&#x27;, &#x27;POST&#x27;])def home():    return &#x27;&lt;h1&gt;Home&lt;/h1&gt;&#x27;@app.route(&#x27;/signin&#x27;, methods=[&#x27;GET&#x27;])def signin_form():    return &#x27;&#x27;&#x27;&lt;form action=&quot;/signin&quot; method=&quot;post&quot;&gt;              &lt;p&gt;&lt;input name=&quot;username&quot;&gt;&lt;/p&gt;              &lt;p&gt;&lt;input name=&quot;password&quot; type=&quot;password&quot;&gt;&lt;/p&gt;              &lt;p&gt;&lt;button type=&quot;submit&quot;&gt;Sign In&lt;/button&gt;&lt;/p&gt;              &lt;/form&gt;&#x27;&#x27;&#x27;@app.route(&#x27;/signin&#x27;, methods=[&#x27;POST&#x27;])def signin():    # 需要从request对象读取表单内容：    if request.form[&#x27;username&#x27;]==&#x27;admin&#x27; and request.form[&#x27;password&#x27;]==&#x27;password&#x27;:        return &#x27;&lt;h3&gt;Hello, admin!&lt;/h3&gt;&#x27;    return &#x27;&lt;h3&gt;Bad username or password.&lt;/h3&gt;&#x27;if __name__ == &#x27;__main__&#x27;:    app.run()\n运行python app.py，Flask自带的Server在端口5000上监听：\n12$ python app.py  * Running on http://127.0.0.1:5000/\n打开浏览器，输入首页地址http://localhost:5000/：\n\n首页显示正确！\n再在浏览器地址栏输入http://localhost:5000/signin，会显示登录表单：\n\n输入预设的用户名admin和口令password，登录成功：\n\n输入其他错误的用户名和口令，登录失败：\n\n实际的Web App应该拿到用户名和口令后，去数据库查询再比对，来判断用户是否能登录成功。\n除了Flask，常见的Python Web框架还有：\n\nDjango：全能型Web框架；\nweb.py：一个小巧的Web框架；\nBottle：和Flask类似的Web框架；\nTornado：Facebook的开源异步Web框架。\n\n当然了，因为开发Python的Web框架也不是什么难事，我们后面也会讲到开发Web框架的内容。\n小结\n有了Web框架，我们在编写Web应用时，注意力就从WSGI处理函数转移到URL+对应的处理函数，这样，编写Web App就更加简单了。\n在编写URL处理函数时，除了配置URL外，从HTTP请求拿到用户数据也是非常重要的。Web框架都提供了自己的API来实现这些功能。Flask通过request.form['name']来获取表单的内容。\n参考源码\napp.py\nWeb框架把我们从WSGI中拯救出来了。现在，我们只需要不断地编写函数，带上URL，就可以继续Web App的开发了。\n但是，Web App不仅仅是处理逻辑，展示给用户的页面也非常重要。在函数中返回一个包含HTML的字符串，简单的页面还可以，但是，想想新浪首页的6000多行的HTML，你确信能在Python的字符串中正确地写出来么？反正我是做不到。\n俗话说得好，不懂前端的Python工程师不是好的产品经理。有Web开发经验的同学都明白，Web App最复杂的部分就在HTML页面。HTML不仅要正确，还要通过CSS美化，再加上复杂的JavaScript脚本来实现各种交互和动画效果。总之，生成HTML页面的难度很大。\n由于在Python代码里拼字符串是不现实的，所以，模板技术出现了。\n使用模板，我们需要预先准备一个HTML文档，这个HTML文档不是普通的HTML，而是嵌入了一些变量和指令，然后，根据我们传入的数据，替换后，得到最终的HTML，发送给用户：\n\n这就是传说中的MVC：Model-View-Controller，中文名“模型-视图-控制器”。\nPython处理URL的函数就是C：Controller，Controller负责业务逻辑，比如检查用户名是否存在，取出用户信息等等；\n包含变量&#123;&#123; name &#125;&#125;的模板就是V：View，View负责显示逻辑，通过简单地替换一些变量，View最终输出的就是用户看到的HTML。\nMVC中的Model在哪？Model是用来传给View的，这样View在替换变量的时候，就可以从Model中取出相应的数据。\n上面的例子中，Model就是一个dict：\n1&#123; &#x27;name&#x27;: &#x27;Michael&#x27; &#125;\n只是因为Python支持关键字参数，很多Web框架允许传入关键字参数，然后，在框架内部组装出一个dict作为Model。\n现在，我们把上次直接输出字符串作为HTML的例子用高端大气上档次的MVC模式改写一下：\n12345678910111213141516171819202122from flask import Flask, request, render_templateapp = Flask(__name__)@app.route(&#x27;/&#x27;, methods=[&#x27;GET&#x27;, &#x27;POST&#x27;])def home():    return render_template(&#x27;home.html&#x27;)@app.route(&#x27;/signin&#x27;, methods=[&#x27;GET&#x27;])def signin_form():    return render_template(&#x27;form.html&#x27;)@app.route(&#x27;/signin&#x27;, methods=[&#x27;POST&#x27;])def signin():    username = request.form[&#x27;username&#x27;]    password = request.form[&#x27;password&#x27;]    if username==&#x27;admin&#x27; and password==&#x27;password&#x27;:        return render_template(&#x27;signin-ok.html&#x27;, username=username)    return render_template(&#x27;form.html&#x27;, message=&#x27;Bad username or password&#x27;, username=username)if __name__ == &#x27;__main__&#x27;:    app.run()\nFlask通过render_template()函数来实现模板的渲染。和Web框架类似，Python的模板也有很多种。Flask默认支持的模板是jinja2，所以我们先直接安装jinja2：\n1$ pip install jinja2\n然后，开始编写jinja2模板：\nhome.html\n用来显示首页的模板：\n12345678&lt;html&gt;&lt;head&gt;  &lt;title&gt;Home&lt;/title&gt;&lt;/head&gt;&lt;body&gt;  &lt;h1 style=&quot;font-style:italic&quot;&gt;Home&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;\nform.html\n用来显示登录表单的模板：\n12345678910111213141516&lt;html&gt;&lt;head&gt;  &lt;title&gt;Please Sign In&lt;/title&gt;&lt;/head&gt;&lt;body&gt;  &#123;% if message %&#125;  &lt;p style=&quot;color:red&quot;&gt;&#123;&#123; message &#125;&#125;&lt;/p&gt;  &#123;% endif %&#125;  &lt;form action=&quot;/signin&quot; method=&quot;post&quot;&gt;    &lt;legend&gt;Please sign in:&lt;/legend&gt;    &lt;p&gt;&lt;input name=&quot;username&quot; placeholder=&quot;Username&quot; value=&quot;&#123;&#123; username &#125;&#125;&quot;&gt;&lt;/p&gt;    &lt;p&gt;&lt;input name=&quot;password&quot; placeholder=&quot;Password&quot; type=&quot;password&quot;&gt;&lt;/p&gt;    &lt;p&gt;&lt;button type=&quot;submit&quot;&gt;Sign In&lt;/button&gt;&lt;/p&gt;  &lt;/form&gt;&lt;/body&gt;&lt;/html&gt;\nsignin-ok.html\n登录成功的模板：\n12345678&lt;html&gt;&lt;head&gt;  &lt;title&gt;Welcome, &#123;&#123; username &#125;&#125;&lt;/title&gt;&lt;/head&gt;&lt;body&gt;  &lt;p&gt;Welcome, &#123;&#123; username &#125;&#125;!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;\n登录失败的模板呢？我们在form.html中加了一点条件判断，把form.html重用为登录失败的模板。\n最后，一定要把模板放到正确的templates目录下，templates和app.py在同级目录下：\n\n启动python app.py，看看使用模板的页面效果：\n\n通过MVC，我们在Python代码中处理M：Model和C：Controller，而V：View是通过模板处理的，这样，我们就成功地把Python代码和HTML代码最大限度地分离了。\n使用模板的另一大好处是，模板改起来很方便，而且，改完保存后，刷新浏览器就能看到最新的效果，这对于调试HTML、CSS和JavaScript的前端工程师来说实在是太重要了。\n在Jinja2模板中，我们用&#123;&#123; name &#125;&#125;表示一个需要替换的变量。很多时候，还需要循环、条件判断等指令语句，在Jinja2中，用&#123;% ... %&#125;表示指令。\n比如循环输出页码：\n123&#123;% for i in page_list %&#125;    &lt;a href=&quot;/page/&#123;&#123; i &#125;&#125;&quot;&gt;&#123;&#123; i &#125;&#125;&lt;/a&gt;&#123;% endfor %&#125;\n如果page_list是一个list：[1, 2, 3, 4, 5]，上面的模板将输出5个超链接。\n除了Jinja2，常见的模板还有：\n\nMako：用&lt;% ... %&gt;和$&#123;xxx&#125;的一个模板；\nCheetah：也是用&lt;% ... %&gt;和$&#123;xxx&#125;的一个模板；\nDjango：Django是一站式框架，内置一个用&#123;% ... %&#125;和&#123;&#123; xxx &#125;&#125;的模板。\n\n小结\n有了MVC，我们就分离了Python代码和HTML代码。HTML代码全部放到模板里，写起来更有效率。\n参考源码\napp.zip\n","dateCreated":"2016-05-01T23:10:34+08:00","dateModified":"2025-06-18T11:29:13+08:00","datePublished":"2016-05-01T23:10:34+08:00","description":"","headline":"18.python(Web开发)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/","keywords":"python"}</script>
     <meta name="description" content="Web开发 最早的软件都是运行在大型机上的，软件使用者通过“哑终端”登陆到大型机上去运行软件。后来随着PC机的兴起，软件开始主要运行在桌面上，而数据库这样的软件运行在服务器端，这种Client&#x2F;Server模式简称CS架构。 随着互联网的兴起，人们发现，CS架构不适合Web，最大的原因是Web应用程序的修改和升级非常迅速，而CS架构需要每个客户端逐个升级桌面App，因此，Browser&#x2F;Serve">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="18.python(Web开发)">
-<meta property="og:url" content="https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/index.html">
+<meta property="og:url" content="https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="Web开发 最早的软件都是运行在大型机上的，软件使用者通过“哑终端”登陆到大型机上去运行软件。后来随着PC机的兴起，软件开始主要运行在桌面上，而数据库这样的软件运行在服务器端，这种Client&#x2F;Server模式简称CS架构。 随着互联网的兴起，人们发现，CS架构不适合Web，最大的原因是Web应用程序的修改和升级非常迅速，而CS架构需要每个客户端逐个升级桌面App，因此，Browser&#x2F;Serve">
 <meta property="og:locale" content="zh_TW">
@@ -70,7 +70,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -646,7 +646,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -657,7 +657,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -670,7 +670,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -683,7 +683,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -696,7 +696,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -709,7 +709,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -774,7 +774,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -785,7 +785,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -798,7 +798,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -811,7 +811,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -824,7 +824,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -837,7 +837,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -858,7 +858,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -871,7 +871,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -884,7 +884,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -897,7 +897,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2016/05/01/python/18.pythonWeb%E5%BC%80%E5%8F%91/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -973,7 +973,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -996,7 +996,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -1019,7 +1019,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -1042,7 +1042,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -1065,7 +1065,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -1088,7 +1088,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1111,7 +1111,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1134,7 +1134,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1157,7 +1157,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1180,7 +1180,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"# 访问仓库\n仓库（Repository）是集中存放镜像的地方。\n一个容易混淆的概念是注册服务器（Registry）。实际上注册服务器是管理仓库的具体服务器，每个服务器上可以有多个仓库，而每个仓库下面有多个镜像。从这方面来说，仓库可以被认为是一个具体的项目或目录。例如对于仓库地址 docker.io/ubuntu 来说，docker.io 是注册服务器地址，ubuntu 是仓库名。\n大部分时候，并不需要严格区分这两者的概念。\n# Docker Hub\n目前 Docker 官方维护了一个公共仓库 Docker Hub (opens new window)，其中已经包括了数量超过 2,650,000 (opens new window) 的镜像。大部分需求都可以通过在 Docker Hub 中直接下载镜像来实现。\n# 注册\n你可以在 https://hub.docker.com 免费注册一个 Docker 账号。\n# 登录\n可以通过执行 docker login 命令交互式的输入用户名及密码来完成在命令行界面登录 Docker Hub。\n你可以通过 docker logout 退出登录。\n# 拉取镜像\n你可以通过 docker search 命令来查找官方仓库中的镜像，并利用 docker pull 命令来将它下载到本地。\n例如以 centos 为关键词进行搜索：\n1234567$ docker search centosNAME                               DESCRIPTION                                     STARS     OFFICIAL   AUTOMATEDcentos                             The official build of CentOS.                   6449      [OK]ansible/centos7-ansible            Ansible on Centos7                              132                  [OK]consol/centos-xfce-vnc             Centos container with &quot;headless&quot; VNC session…   126                  [OK]jdeathe/centos-ssh                 OpenSSH / Supervisor / EPEL/IUS/SCL Repos - …   117                  [OK]centos/systemd                     systemd enabled base container.                 96                   [OK]\n可以看到返回了很多包含关键字的镜像，其中包括镜像名字、描述、收藏数（表示该镜像的受关注程度）、是否官方创建（OFFICIAL）、是否自动构建 （AUTOMATED）。\n根据是否是官方提供，可将镜像分为两类。\n一种是类似 centos 这样的镜像，被称为基础镜像或根镜像。这些基础镜像由 Docker 公司创建、验证、支持、提供。这样的镜像往往使用单个单词作为名字。\n还有一种类型，比如 ansible/centos7-ansible 镜像，它是由 Docker Hub 的注册用户创建并维护的，往往带有用户名称前缀。可以通过前缀 username/ 来指定使用某个用户提供的镜像，比如 ansible 用户。\n另外，在查找的时候通过 --filter=stars=N 参数可以指定仅显示收藏数量为 N 以上的镜像。\n下载官方 centos 镜像到本地。\n1234567$ docker pull centosUsing default tag: latestlatest: Pulling from library/centos7a0437f04f83: Pull completeDigest: sha256:5528e8b1b1719d34604c87e11dcd1c0a20bedf46e83b5632cdeac91b8c04efc1Status: Downloaded newer image for centos:latestdocker.io/library/centos:latest\n# 推送镜像\n用户也可以在登录后通过 docker push 命令来将自己的镜像推送到 Docker Hub。\n以下命令中的 username 请替换为你的 Docker 账号用户名。\n1234567891011121314$ docker tag ubuntu:18.04 username/ubuntu:18.04$ docker image lsREPOSITORY                                               TAG                    IMAGE ID            CREATED             SIZEubuntu                                                   18.04                  275d79972a86        6 days ago          94.6MBusername/ubuntu                                          18.04                  275d79972a86        6 days ago          94.6MB$ docker push username/ubuntu:18.04$ docker search usernameNAME                      DESCRIPTION                                     STARS               OFFICIAL            AUTOMATEDusername/ubuntu\n# 自动构建\n\n2021 年 7 月 26 日之后，该项功能仅限付费用户 (opens new window)使用。\n\n自动构建（Automated Builds）可以自动触发构建镜像，方便升级镜像。\n有时候，用户构建了镜像，安装了某个软件，当软件发布新版本则需要手动更新镜像。\n而自动构建允许用户通过 Docker Hub 指定跟踪一个目标网站（支持 GitHub (opens new window) 或 BitBucket (opens new window)）上的项目，一旦项目发生新的提交 （commit）或者创建了新的标签（tag），Docker Hub 会自动构建镜像并推送到 Docker Hub 中。\n要配置自动构建，包括如下的步骤：\n\n\n登录 Docker Hub；\n\n\n在 Docker Hub 点击右上角头像，在账号设置（Account Settings）中关联（Linked Accounts）目标网站；\n\n\n在 Docker Hub 中新建或选择已有的仓库，在 Builds 选项卡中选择 Configure Automated Builds；\n\n\n选取一个目标网站中的项目（需要含 Dockerfile）和分支；\n\n\n指定 Dockerfile 的位置，并保存。\n\n\n之后，可以在 Docker Hub 的仓库页面的 Timeline 选项卡中查看每次构建的状态。\n# 私有仓库\n有时候使用 Docker Hub 这样的公共仓库可能不方便，用户可以创建一个本地仓库供私人使用。\n本节介绍如何使用本地仓库。\ndocker-registry (opens new window) 是官方提供的工具，可以用于构建私有的镜像仓库。本文内容基于 docker-registry (opens new window) v2.x 版本。\n# 安装运行 docker-registry\n# 容器运行\n你可以使用官方 registry 镜像来运行。\n1$ docker run -d -p 5000:5000 --restart=always --name registry registry\n这将使用官方的 registry 镜像来启动私有仓库。默认情况下，仓库会被创建在容器的 /var/lib/registry 目录下。你可以通过 -v 参数来将镜像文件存放在本地的指定路径。例如下面的例子将上传的镜像放到本地的 /opt/data/registry 目录。\n1234$ docker run -d \\    -p 5000:5000 \\    -v /opt/data/registry:/var/lib/registry \\    registry\n# 在私有仓库上传、搜索、下载镜像\n创建好私有仓库之后，就可以使用 docker tag 来标记一个镜像，然后推送它到仓库。例如私有仓库地址为 127.0.0.1:5000。\n先在本机查看已有的镜像。\n123$ docker image lsREPOSITORY                        TAG                 IMAGE ID            CREATED             VIRTUAL SIZEubuntu                            latest              ba5877dc9bec        6 weeks ago         192.7 MB\n使用 docker tag 将 ubuntu:latest 这个镜像标记为 127.0.0.1:5000/ubuntu:latest。\n格式为 docker tag IMAGE[:TAG] [REGISTRY_HOST[:REGISTRY_PORT]/]REPOSITORY[:TAG]。\n12345$ docker tag ubuntu:latest 127.0.0.1:5000/ubuntu:latest$ docker image lsREPOSITORY                        TAG                 IMAGE ID            CREATED             VIRTUAL SIZEubuntu                            latest              ba5877dc9bec        6 weeks ago         192.7 MB127.0.0.1:5000/ubuntu:latest      latest              ba5877dc9bec        6 weeks ago         192.7 MB\n使用 docker push 上传标记的镜像。\n123456789$ docker push 127.0.0.1:5000/ubuntu:latestThe push refers to repository [127.0.0.1:5000/ubuntu]373a30c24545: Pusheda9148f5200b0: Pushedcdd3de0940ab: Pushedfc56279bbb33: Pushedb38367233d37: Pushed2aebd096e0e2: Pushedlatest: digest: sha256:fe4277621f10b5026266932ddf760f5a756d2facd505a94d2da12f4f52f71f5a size: 1568\n用 curl 查看仓库中的镜像。\n12$ curl 127.0.0.1:5000/v2/_catalog&#123;&quot;repositories&quot;:[&quot;ubuntu&quot;]&#125;\n这里可以看到 &#123;&quot;repositories&quot;:[&quot;ubuntu&quot;]&#125;，表明镜像已经被成功上传了。\n先删除已有镜像，再尝试从私有仓库中下载这个镜像。\n1234567891011121314$ docker image rm 127.0.0.1:5000/ubuntu:latest$ docker pull 127.0.0.1:5000/ubuntu:latestPulling repository 127.0.0.1:5000/ubuntu:latestba5877dc9bec: Download complete511136ea3c5a: Download complete9bad880da3d2: Download complete25f11f5fb0cb: Download completeebc34468f71d: Download complete2318d26665ef: Download complete$ docker image lsREPOSITORY                         TAG                 IMAGE ID            CREATED             VIRTUAL SIZE127.0.0.1:5000/ubuntu:latest       latest              ba5877dc9bec        6 weeks ago         192.7 MB\n# 配置非 https 仓库地址\n如果你不想使用 127.0.0.1:5000 作为仓库地址，比如想让本网段的其他主机也能把镜像推送到私有仓库。你就得把例如 192.168.199.100:5000 这样的内网地址作为私有仓库地址，这时你会发现无法成功推送镜像。\n这是因为 Docker 默认不允许非 HTTPS 方式推送镜像。我们可以通过 Docker 的配置选项来取消这个限制，或者查看下一节配置能够通过 HTTPS 访问的私有仓库。\n# Ubuntu 16.04+, Debian 8+, centos 7\n对于使用 systemd 的系统，请在 /etc/docker/daemon.json 中写入如下内容（如果文件不存在请新建该文件）\n123456789&#123;  &quot;registry-mirror&quot;: [    &quot;https://hub-mirror.c.163.com&quot;,    &quot;https://mirror.baidubce.com&quot;  ],  &quot;insecure-registries&quot;: [    &quot;192.168.199.100:5000&quot;  ]&#125;\n\n注意：该文件必须符合 json 规范，否则 Docker 将不能启动。\n\n# 其他\n对于 Docker Desktop for Windows 、 Docker Desktop for Mac 在设置中的 Docker Engine 中进行编辑 ，增加和上边一样的字符串即可。\n# 私有仓库高级配置\n上一节我们搭建了一个具有基础功能的私有仓库，本小节我们来使用 Docker Compose 搭建一个拥有权限认证、TLS 的私有仓库。\n新建一个文件夹，以下步骤均在该文件夹中进行。\n# 准备站点证书\n如果你拥有一个域名，国内各大云服务商均提供免费的站点证书。你也可以使用 openssl 自行签发证书。\n这里假设我们将要搭建的私有仓库地址为 docker.domain.com，下面我们介绍使用 openssl 自行签发 docker.domain.com 的站点 SSL 证书。\n第一步创建 CA 私钥。\n1$ openssl genrsa -out &quot;root-ca.key&quot; 4096\n第二步利用私钥创建 CA 根证书请求文件。\n1234$ openssl req \\          -new -key &quot;root-ca.key&quot; \\          -out &quot;root-ca.csr&quot; -sha256 \\          -subj &#x27;/C=CN/ST=Shanxi/L=Datong/O=Your Company Name/CN=Your Company Name Docker Registry CA&#x27;\n\n以上命令中 -subj 参数里的 /C 表示国家，如 CN；/ST 表示省；/L 表示城市或者地区；/O 表示组织名；/CN 通用名称。\n\n第三步配置 CA 根证书，新建 root-ca.cnf。\n1234[root_ca]basicConstraints = critical,CA:TRUE,pathlen:1keyUsage = critical, nonRepudiation, cRLSign, keyCertSignsubjectKeyIdentifier=hash\n第四步签发根证书。\n1234$ openssl x509 -req  -days 3650  -in &quot;root-ca.csr&quot; \\               -signkey &quot;root-ca.key&quot; -sha256 -out &quot;root-ca.crt&quot; \\               -extfile &quot;root-ca.cnf&quot; -extensions \\               root_ca\n第五步生成站点 SSL 私钥。\n1$ openssl genrsa -out &quot;docker.domain.com.key&quot; 4096\n第六步使用私钥生成证书请求文件。\n12$ openssl req -new -key &quot;docker.domain.com.key&quot; -out &quot;site.csr&quot; -sha256 \\          -subj &#x27;/C=CN/ST=Shanxi/L=Datong/O=Your Company Name/CN=docker.domain.com&#x27;\n第七步配置证书，新建 site.cnf 文件。\n1234567[server]authorityKeyIdentifier=keyid,issuerbasicConstraints = critical,CA:FALSEextendedKeyUsage=serverAuthkeyUsage = critical, digitalSignature, keyEnciphermentsubjectAltName = DNS:docker.domain.com, IP:127.0.0.1subjectKeyIdentifier=hash\n第八步签署站点 SSL 证书。\n123$ openssl x509 -req -days 750 -in &quot;site.csr&quot; -sha256 \\    -CA &quot;root-ca.crt&quot; -CAkey &quot;root-ca.key&quot;  -CAcreateserial \\    -out &quot;docker.domain.com.crt&quot; -extfile &quot;site.cnf&quot; -extensions server\n这样已经拥有了 docker.domain.com 的网站 SSL 私钥 docker.domain.com.key 和 SSL 证书 docker.domain.com.crt 及 CA 根证书 root-ca.crt。\n新建 ssl 文件夹并将 docker.domain.com.key docker.domain.com.crt root-ca.crt 这三个文件移入，删除其他文件。\n# 配置私有仓库\n私有仓库默认的配置文件位于 /etc/docker/registry/config.yml，我们先在本地编辑 config.yml，之后挂载到容器中。\n1234567891011121314151617181920212223242526272829303132333435version: 0.1log:  accesslog:    disabled: true  level: debug  formatter: text  fields:    service: registry    environment: stagingstorage:  delete:    enabled: true  cache:    blobdescriptor: inmemory  filesystem:    rootdirectory: /var/lib/registryauth:  htpasswd:    realm: basic-realm    path: /etc/docker/registry/auth/nginx.htpasswdhttp:  addr: :443  host: https://docker.domain.com  headers:    X-Content-Type-Options: [nosniff]  http2:    disabled: false  tls:    certificate: /etc/docker/registry/ssl/docker.domain.com.crt    key: /etc/docker/registry/ssl/docker.domain.com.keyhealth:  storagedriver:    enabled: true    interval: 10sthreshold: 3\n# 生成 http 认证文件\n123456$ mkdir auth$ docker run --rm \\    --entrypoint htpasswd \\    httpd:alpine \\    -Bbn username password &gt; auth/nginx.htpasswd\n\n将上面的 username password 替换为你自己的用户名和密码。\n\n# 编辑 docker-compose.yml\n12345678910111213version: &#x27;3&#x27;services:  registry:    image: registry    ports:      - &quot;443:443&quot;    volumes:      - ./:/etc/docker/registry      - registry-data:/var/lib/registryvolumes:  registry-data:\n# 修改 hosts\n编辑 /etc/hosts\n1127.0.0.1 docker.domain.com\n# 启动\n这样我们就搭建好了一个具有权限认证、TLS 的私有仓库，接下来我们测试其功能是否正常。\n# 测试私有仓库功能\n由于自行签发的 CA 根证书不被系统信任，所以我们需要将 CA 根证书 ssl/root-ca.crt 移入 /etc/docker/certs.d/docker.domain.com 文件夹中。\n123$ sudo mkdir -p /etc/docker/certs.d/docker.domain.com$ sudo cp ssl/root-ca.crt /etc/docker/certs.d/docker.domain.com/ca.crt\n登录到私有仓库。\n1$ docker login docker.domain.com\n尝试推送、拉取镜像。\n123456789$ docker pull ubuntu:18.04$ docker tag ubuntu:18.04 docker.domain.com/username/ubuntu:18.04$ docker push docker.domain.com/username/ubuntu:18.04$ docker image rm docker.domain.com/username/ubuntu:18.04$ docker pull docker.domain.com/username/ubuntu:18.04\n如果我们退出登录，尝试推送镜像。\n12345$ docker logout docker.domain.com$ docker push docker.domain.com/username/ubuntu:18.04no basic auth credentials\n发现会提示没有登录，不能将镜像推送到私有仓库中。\n# 注意事项\n如果你本机占用了 443 端口，你可以配置 Nginx 代理 (opens new window)，这里不再赘述。\n# Nexus3.x 的私有仓库\n使用 Docker 官方的 Registry 创建的仓库面临一些维护问题。比如某些镜像删除以后空间默认是不会回收的，需要一些命令去回收空间然后重启 Registry。在企业中把内部的一些工具包放入 Nexus 中是比较常见的做法，最新版本 Nexus3.x 全面支持 Docker 的私有镜像。所以使用 Nexus3.x (opens new window) 一个软件来管理 Docker , Maven , Yum , PyPI 等是一个明智的选择。\n# 启动 Nexus 容器\n1234$ docker run -d --name nexus3 --restart=always \\    -p 8081:8081 \\    --mount src=nexus-data,target=/nexus-data \\    sonatype/nexus3\n首次运行需等待 3-5 分钟，你可以使用 docker logs nexus3 -f 查看日志：\n123456789$ docker logs nexus3 -f2021-03-11 15:31:21,990+0000 INFO  [jetty-main-1] *SYSTEM org.sonatype.nexus.bootstrap.jetty.JettyServer --------------------------------------------------Started Sonatype Nexus OSS 3.30.0-01-------------------------------------------------\n如果你看到以上内容，说明 Nexus 已经启动成功，你可以使用浏览器打开 http://YourIP:8081 访问 Nexus 了。\n首次运行请通过以下命令获取初始密码：\n123$ docker exec nexus3 cat /nexus-data/admin.password9266139e-41a2-4abb-92ec-e4142a3532cb\n首次启动 Nexus 的默认帐号是 admin ，密码则是上边命令获取到的，点击右上角登录，首次登录需更改初始密码。\n登录之后可以点击页面上方的齿轮按钮按照下面的方法进行设置。\n# 创建仓库\n创建一个私有仓库的方法： Repository-&gt;Repositories 点击右边菜单 Create repository 选择 docker (hosted)\n\nName: 仓库的名称\nHTTP: 仓库单独的访问端口（例如：5001）\nHosted -&gt; Deployment pollcy: 请选择 Allow redeploy 否则无法上传 Docker 镜像。\n\n其它的仓库创建方法请各位自己摸索，还可以创建一个 docker (proxy) 类型的仓库链接到 DockerHub 上。再创建一个 docker (group) 类型的仓库把刚才的 hosted 与 proxy 添加在一起。主机在访问的时候默认下载私有仓库中的镜像，如果没有将链接到 DockerHub 中下载并缓存到 Nexus 中。\n# 添加访问权限\n菜单 Security-&gt;Realms 把 Docker Bearer Token Realm 移到右边的框中保存。\n添加用户规则：菜单 Security-&gt;Roles-&gt;Create role 在 Privlleges 选项搜索 docker 把相应的规则移动到右边的框中然后保存。\n添加用户：菜单 Security-&gt;Users-&gt;Create local user 在 Roles 选项中选中刚才创建的规则移动到右边的窗口保存。\n# NGINX 加密代理\n证书的生成请参见 私有仓库高级配置 里面证书生成一节。\nNGINX 示例配置如下\n12345678910111213141516171819202122232425262728293031323334353637383940414243444546upstream register&#123;    server &quot;YourHostName OR IP&quot;:5001; #端口为上面添加私有镜像仓库时设置的 HTTP 选项的端口号    check interval=3000 rise=2 fall=10 timeout=1000 type=http;    check_http_send &quot;HEAD / HTTP/1.0\\r\\n\\r\\n&quot;;    check_http_expect_alive http_4xx;&#125;server &#123;    server_name YourDomainName;#如果没有 DNS 服务器做解析，请删除此选项使用本机 IP 地址访问    listen       443 ssl;    ssl_certificate key/example.crt;    ssl_certificate_key key/example.key;    ssl_session_timeout  5m;    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;    ssl_ciphers  HIGH:!aNULL:!MD5;    ssl_prefer_server_ciphers   on;    large_client_header_buffers 4 32k;    client_max_body_size 300m;    client_body_buffer_size 512k;    proxy_connect_timeout 600;    proxy_read_timeout   600;    proxy_send_timeout   600;    proxy_buffer_size    128k;    proxy_buffers       4 64k;    proxy_busy_buffers_size 128k;    proxy_temp_file_write_size 512k;    location / &#123;        proxy_set_header Host $host;        proxy_set_header X-Forwarded-Proto $scheme;        proxy_set_header X-Forwarded-Port $server_port;        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;        proxy_http_version 1.1;        proxy_set_header Upgrade $http_upgrade;        proxy_set_header Connection $connection_upgrade;        proxy_redirect off;        proxy_set_header X-Real-IP $remote_addr;        proxy_pass http://register;        proxy_read_timeout 900s;    &#125;    error_page   500 502 503 504  /50x.html;&#125;\n# Docker 主机访问镜像仓库\n如果不启用 SSL 加密可以通过 前面章节 的方法添加非 https 仓库地址到 Docker 的配置文件中然后重启 Docker。\n使用 SSL 加密以后程序需要访问就不能采用修改配置的方式了。具体方法如下：\n123$ openssl s_client -showcerts -connect YourDomainName OR HostIP:443 &lt;/dev/null 2&gt;/dev/null|openssl x509 -outform PEM &gt;ca.crt$ cat ca.crt | sudo tee -a /etc/ssl/certs/ca-certificates.crt$ systemctl restart docker\n使用 docker login YourDomainName OR HostIP 进行测试，用户名密码填写上面 Nexus 中设置的。\n","dateCreated":"2018-04-07T16:02:39+08:00","dateModified":"2025-06-16T10:22:20+08:00","datePublished":"2018-04-07T16:02:39+08:00","description":"","headline":"6.Docker 仓库(Docker详细教程)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/","keywords":"Docker"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"# 访问仓库\n仓库（Repository）是集中存放镜像的地方。\n一个容易混淆的概念是注册服务器（Registry）。实际上注册服务器是管理仓库的具体服务器，每个服务器上可以有多个仓库，而每个仓库下面有多个镜像。从这方面来说，仓库可以被认为是一个具体的项目或目录。例如对于仓库地址 docker.io/ubuntu 来说，docker.io 是注册服务器地址，ubuntu 是仓库名。\n大部分时候，并不需要严格区分这两者的概念。\n# Docker Hub\n目前 Docker 官方维护了一个公共仓库 Docker Hub (opens new window)，其中已经包括了数量超过 2,650,000 (opens new window) 的镜像。大部分需求都可以通过在 Docker Hub 中直接下载镜像来实现。\n# 注册\n你可以在 https://hub.docker.com 免费注册一个 Docker 账号。\n# 登录\n可以通过执行 docker login 命令交互式的输入用户名及密码来完成在命令行界面登录 Docker Hub。\n你可以通过 docker logout 退出登录。\n# 拉取镜像\n你可以通过 docker search 命令来查找官方仓库中的镜像，并利用 docker pull 命令来将它下载到本地。\n例如以 centos 为关键词进行搜索：\n1234567$ docker search centosNAME                               DESCRIPTION                                     STARS     OFFICIAL   AUTOMATEDcentos                             The official build of CentOS.                   6449      [OK]ansible/centos7-ansible            Ansible on Centos7                              132                  [OK]consol/centos-xfce-vnc             Centos container with &quot;headless&quot; VNC session…   126                  [OK]jdeathe/centos-ssh                 OpenSSH / Supervisor / EPEL/IUS/SCL Repos - …   117                  [OK]centos/systemd                     systemd enabled base container.                 96                   [OK]\n可以看到返回了很多包含关键字的镜像，其中包括镜像名字、描述、收藏数（表示该镜像的受关注程度）、是否官方创建（OFFICIAL）、是否自动构建 （AUTOMATED）。\n根据是否是官方提供，可将镜像分为两类。\n一种是类似 centos 这样的镜像，被称为基础镜像或根镜像。这些基础镜像由 Docker 公司创建、验证、支持、提供。这样的镜像往往使用单个单词作为名字。\n还有一种类型，比如 ansible/centos7-ansible 镜像，它是由 Docker Hub 的注册用户创建并维护的，往往带有用户名称前缀。可以通过前缀 username/ 来指定使用某个用户提供的镜像，比如 ansible 用户。\n另外，在查找的时候通过 --filter=stars=N 参数可以指定仅显示收藏数量为 N 以上的镜像。\n下载官方 centos 镜像到本地。\n1234567$ docker pull centosUsing default tag: latestlatest: Pulling from library/centos7a0437f04f83: Pull completeDigest: sha256:5528e8b1b1719d34604c87e11dcd1c0a20bedf46e83b5632cdeac91b8c04efc1Status: Downloaded newer image for centos:latestdocker.io/library/centos:latest\n# 推送镜像\n用户也可以在登录后通过 docker push 命令来将自己的镜像推送到 Docker Hub。\n以下命令中的 username 请替换为你的 Docker 账号用户名。\n1234567891011121314$ docker tag ubuntu:18.04 username/ubuntu:18.04$ docker image lsREPOSITORY                                               TAG                    IMAGE ID            CREATED             SIZEubuntu                                                   18.04                  275d79972a86        6 days ago          94.6MBusername/ubuntu                                          18.04                  275d79972a86        6 days ago          94.6MB$ docker push username/ubuntu:18.04$ docker search usernameNAME                      DESCRIPTION                                     STARS               OFFICIAL            AUTOMATEDusername/ubuntu\n# 自动构建\n\n2021 年 7 月 26 日之后，该项功能仅限付费用户 (opens new window)使用。\n\n自动构建（Automated Builds）可以自动触发构建镜像，方便升级镜像。\n有时候，用户构建了镜像，安装了某个软件，当软件发布新版本则需要手动更新镜像。\n而自动构建允许用户通过 Docker Hub 指定跟踪一个目标网站（支持 GitHub (opens new window) 或 BitBucket (opens new window)）上的项目，一旦项目发生新的提交 （commit）或者创建了新的标签（tag），Docker Hub 会自动构建镜像并推送到 Docker Hub 中。\n要配置自动构建，包括如下的步骤：\n\n\n登录 Docker Hub；\n\n\n在 Docker Hub 点击右上角头像，在账号设置（Account Settings）中关联（Linked Accounts）目标网站；\n\n\n在 Docker Hub 中新建或选择已有的仓库，在 Builds 选项卡中选择 Configure Automated Builds；\n\n\n选取一个目标网站中的项目（需要含 Dockerfile）和分支；\n\n\n指定 Dockerfile 的位置，并保存。\n\n\n之后，可以在 Docker Hub 的仓库页面的 Timeline 选项卡中查看每次构建的状态。\n# 私有仓库\n有时候使用 Docker Hub 这样的公共仓库可能不方便，用户可以创建一个本地仓库供私人使用。\n本节介绍如何使用本地仓库。\ndocker-registry (opens new window) 是官方提供的工具，可以用于构建私有的镜像仓库。本文内容基于 docker-registry (opens new window) v2.x 版本。\n# 安装运行 docker-registry\n# 容器运行\n你可以使用官方 registry 镜像来运行。\n1$ docker run -d -p 5000:5000 --restart=always --name registry registry\n这将使用官方的 registry 镜像来启动私有仓库。默认情况下，仓库会被创建在容器的 /var/lib/registry 目录下。你可以通过 -v 参数来将镜像文件存放在本地的指定路径。例如下面的例子将上传的镜像放到本地的 /opt/data/registry 目录。\n1234$ docker run -d \\    -p 5000:5000 \\    -v /opt/data/registry:/var/lib/registry \\    registry\n# 在私有仓库上传、搜索、下载镜像\n创建好私有仓库之后，就可以使用 docker tag 来标记一个镜像，然后推送它到仓库。例如私有仓库地址为 127.0.0.1:5000。\n先在本机查看已有的镜像。\n123$ docker image lsREPOSITORY                        TAG                 IMAGE ID            CREATED             VIRTUAL SIZEubuntu                            latest              ba5877dc9bec        6 weeks ago         192.7 MB\n使用 docker tag 将 ubuntu:latest 这个镜像标记为 127.0.0.1:5000/ubuntu:latest。\n格式为 docker tag IMAGE[:TAG] [REGISTRY_HOST[:REGISTRY_PORT]/]REPOSITORY[:TAG]。\n12345$ docker tag ubuntu:latest 127.0.0.1:5000/ubuntu:latest$ docker image lsREPOSITORY                        TAG                 IMAGE ID            CREATED             VIRTUAL SIZEubuntu                            latest              ba5877dc9bec        6 weeks ago         192.7 MB127.0.0.1:5000/ubuntu:latest      latest              ba5877dc9bec        6 weeks ago         192.7 MB\n使用 docker push 上传标记的镜像。\n123456789$ docker push 127.0.0.1:5000/ubuntu:latestThe push refers to repository [127.0.0.1:5000/ubuntu]373a30c24545: Pusheda9148f5200b0: Pushedcdd3de0940ab: Pushedfc56279bbb33: Pushedb38367233d37: Pushed2aebd096e0e2: Pushedlatest: digest: sha256:fe4277621f10b5026266932ddf760f5a756d2facd505a94d2da12f4f52f71f5a size: 1568\n用 curl 查看仓库中的镜像。\n12$ curl 127.0.0.1:5000/v2/_catalog&#123;&quot;repositories&quot;:[&quot;ubuntu&quot;]&#125;\n这里可以看到 &#123;&quot;repositories&quot;:[&quot;ubuntu&quot;]&#125;，表明镜像已经被成功上传了。\n先删除已有镜像，再尝试从私有仓库中下载这个镜像。\n1234567891011121314$ docker image rm 127.0.0.1:5000/ubuntu:latest$ docker pull 127.0.0.1:5000/ubuntu:latestPulling repository 127.0.0.1:5000/ubuntu:latestba5877dc9bec: Download complete511136ea3c5a: Download complete9bad880da3d2: Download complete25f11f5fb0cb: Download completeebc34468f71d: Download complete2318d26665ef: Download complete$ docker image lsREPOSITORY                         TAG                 IMAGE ID            CREATED             VIRTUAL SIZE127.0.0.1:5000/ubuntu:latest       latest              ba5877dc9bec        6 weeks ago         192.7 MB\n# 配置非 https 仓库地址\n如果你不想使用 127.0.0.1:5000 作为仓库地址，比如想让本网段的其他主机也能把镜像推送到私有仓库。你就得把例如 192.168.199.100:5000 这样的内网地址作为私有仓库地址，这时你会发现无法成功推送镜像。\n这是因为 Docker 默认不允许非 HTTPS 方式推送镜像。我们可以通过 Docker 的配置选项来取消这个限制，或者查看下一节配置能够通过 HTTPS 访问的私有仓库。\n# Ubuntu 16.04+, Debian 8+, centos 7\n对于使用 systemd 的系统，请在 /etc/docker/daemon.json 中写入如下内容（如果文件不存在请新建该文件）\n123456789&#123;  &quot;registry-mirror&quot;: [    &quot;https://hub-mirror.c.163.com&quot;,    &quot;https://mirror.baidubce.com&quot;  ],  &quot;insecure-registries&quot;: [    &quot;192.168.199.100:5000&quot;  ]&#125;\n\n注意：该文件必须符合 json 规范，否则 Docker 将不能启动。\n\n# 其他\n对于 Docker Desktop for Windows 、 Docker Desktop for Mac 在设置中的 Docker Engine 中进行编辑 ，增加和上边一样的字符串即可。\n# 私有仓库高级配置\n上一节我们搭建了一个具有基础功能的私有仓库，本小节我们来使用 Docker Compose 搭建一个拥有权限认证、TLS 的私有仓库。\n新建一个文件夹，以下步骤均在该文件夹中进行。\n# 准备站点证书\n如果你拥有一个域名，国内各大云服务商均提供免费的站点证书。你也可以使用 openssl 自行签发证书。\n这里假设我们将要搭建的私有仓库地址为 docker.domain.com，下面我们介绍使用 openssl 自行签发 docker.domain.com 的站点 SSL 证书。\n第一步创建 CA 私钥。\n1$ openssl genrsa -out &quot;root-ca.key&quot; 4096\n第二步利用私钥创建 CA 根证书请求文件。\n1234$ openssl req \\          -new -key &quot;root-ca.key&quot; \\          -out &quot;root-ca.csr&quot; -sha256 \\          -subj &#x27;/C=CN/ST=Shanxi/L=Datong/O=Your Company Name/CN=Your Company Name Docker Registry CA&#x27;\n\n以上命令中 -subj 参数里的 /C 表示国家，如 CN；/ST 表示省；/L 表示城市或者地区；/O 表示组织名；/CN 通用名称。\n\n第三步配置 CA 根证书，新建 root-ca.cnf。\n1234[root_ca]basicConstraints = critical,CA:TRUE,pathlen:1keyUsage = critical, nonRepudiation, cRLSign, keyCertSignsubjectKeyIdentifier=hash\n第四步签发根证书。\n1234$ openssl x509 -req  -days 3650  -in &quot;root-ca.csr&quot; \\               -signkey &quot;root-ca.key&quot; -sha256 -out &quot;root-ca.crt&quot; \\               -extfile &quot;root-ca.cnf&quot; -extensions \\               root_ca\n第五步生成站点 SSL 私钥。\n1$ openssl genrsa -out &quot;docker.domain.com.key&quot; 4096\n第六步使用私钥生成证书请求文件。\n12$ openssl req -new -key &quot;docker.domain.com.key&quot; -out &quot;site.csr&quot; -sha256 \\          -subj &#x27;/C=CN/ST=Shanxi/L=Datong/O=Your Company Name/CN=docker.domain.com&#x27;\n第七步配置证书，新建 site.cnf 文件。\n1234567[server]authorityKeyIdentifier=keyid,issuerbasicConstraints = critical,CA:FALSEextendedKeyUsage=serverAuthkeyUsage = critical, digitalSignature, keyEnciphermentsubjectAltName = DNS:docker.domain.com, IP:127.0.0.1subjectKeyIdentifier=hash\n第八步签署站点 SSL 证书。\n123$ openssl x509 -req -days 750 -in &quot;site.csr&quot; -sha256 \\    -CA &quot;root-ca.crt&quot; -CAkey &quot;root-ca.key&quot;  -CAcreateserial \\    -out &quot;docker.domain.com.crt&quot; -extfile &quot;site.cnf&quot; -extensions server\n这样已经拥有了 docker.domain.com 的网站 SSL 私钥 docker.domain.com.key 和 SSL 证书 docker.domain.com.crt 及 CA 根证书 root-ca.crt。\n新建 ssl 文件夹并将 docker.domain.com.key docker.domain.com.crt root-ca.crt 这三个文件移入，删除其他文件。\n# 配置私有仓库\n私有仓库默认的配置文件位于 /etc/docker/registry/config.yml，我们先在本地编辑 config.yml，之后挂载到容器中。\n1234567891011121314151617181920212223242526272829303132333435version: 0.1log:  accesslog:    disabled: true  level: debug  formatter: text  fields:    service: registry    environment: stagingstorage:  delete:    enabled: true  cache:    blobdescriptor: inmemory  filesystem:    rootdirectory: /var/lib/registryauth:  htpasswd:    realm: basic-realm    path: /etc/docker/registry/auth/nginx.htpasswdhttp:  addr: :443  host: https://docker.domain.com  headers:    X-Content-Type-Options: [nosniff]  http2:    disabled: false  tls:    certificate: /etc/docker/registry/ssl/docker.domain.com.crt    key: /etc/docker/registry/ssl/docker.domain.com.keyhealth:  storagedriver:    enabled: true    interval: 10sthreshold: 3\n# 生成 http 认证文件\n123456$ mkdir auth$ docker run --rm \\    --entrypoint htpasswd \\    httpd:alpine \\    -Bbn username password &gt; auth/nginx.htpasswd\n\n将上面的 username password 替换为你自己的用户名和密码。\n\n# 编辑 docker-compose.yml\n12345678910111213version: &#x27;3&#x27;services:  registry:    image: registry    ports:      - &quot;443:443&quot;    volumes:      - ./:/etc/docker/registry      - registry-data:/var/lib/registryvolumes:  registry-data:\n# 修改 hosts\n编辑 /etc/hosts\n1127.0.0.1 docker.domain.com\n# 启动\n这样我们就搭建好了一个具有权限认证、TLS 的私有仓库，接下来我们测试其功能是否正常。\n# 测试私有仓库功能\n由于自行签发的 CA 根证书不被系统信任，所以我们需要将 CA 根证书 ssl/root-ca.crt 移入 /etc/docker/certs.d/docker.domain.com 文件夹中。\n123$ sudo mkdir -p /etc/docker/certs.d/docker.domain.com$ sudo cp ssl/root-ca.crt /etc/docker/certs.d/docker.domain.com/ca.crt\n登录到私有仓库。\n1$ docker login docker.domain.com\n尝试推送、拉取镜像。\n123456789$ docker pull ubuntu:18.04$ docker tag ubuntu:18.04 docker.domain.com/username/ubuntu:18.04$ docker push docker.domain.com/username/ubuntu:18.04$ docker image rm docker.domain.com/username/ubuntu:18.04$ docker pull docker.domain.com/username/ubuntu:18.04\n如果我们退出登录，尝试推送镜像。\n12345$ docker logout docker.domain.com$ docker push docker.domain.com/username/ubuntu:18.04no basic auth credentials\n发现会提示没有登录，不能将镜像推送到私有仓库中。\n# 注意事项\n如果你本机占用了 443 端口，你可以配置 Nginx 代理 (opens new window)，这里不再赘述。\n# Nexus3.x 的私有仓库\n使用 Docker 官方的 Registry 创建的仓库面临一些维护问题。比如某些镜像删除以后空间默认是不会回收的，需要一些命令去回收空间然后重启 Registry。在企业中把内部的一些工具包放入 Nexus 中是比较常见的做法，最新版本 Nexus3.x 全面支持 Docker 的私有镜像。所以使用 Nexus3.x (opens new window) 一个软件来管理 Docker , Maven , Yum , PyPI 等是一个明智的选择。\n# 启动 Nexus 容器\n1234$ docker run -d --name nexus3 --restart=always \\    -p 8081:8081 \\    --mount src=nexus-data,target=/nexus-data \\    sonatype/nexus3\n首次运行需等待 3-5 分钟，你可以使用 docker logs nexus3 -f 查看日志：\n123456789$ docker logs nexus3 -f2021-03-11 15:31:21,990+0000 INFO  [jetty-main-1] *SYSTEM org.sonatype.nexus.bootstrap.jetty.JettyServer --------------------------------------------------Started Sonatype Nexus OSS 3.30.0-01-------------------------------------------------\n如果你看到以上内容，说明 Nexus 已经启动成功，你可以使用浏览器打开 http://YourIP:8081 访问 Nexus 了。\n首次运行请通过以下命令获取初始密码：\n123$ docker exec nexus3 cat /nexus-data/admin.password9266139e-41a2-4abb-92ec-e4142a3532cb\n首次启动 Nexus 的默认帐号是 admin ，密码则是上边命令获取到的，点击右上角登录，首次登录需更改初始密码。\n登录之后可以点击页面上方的齿轮按钮按照下面的方法进行设置。\n# 创建仓库\n创建一个私有仓库的方法： Repository-&gt;Repositories 点击右边菜单 Create repository 选择 docker (hosted)\n\nName: 仓库的名称\nHTTP: 仓库单独的访问端口（例如：5001）\nHosted -&gt; Deployment pollcy: 请选择 Allow redeploy 否则无法上传 Docker 镜像。\n\n其它的仓库创建方法请各位自己摸索，还可以创建一个 docker (proxy) 类型的仓库链接到 DockerHub 上。再创建一个 docker (group) 类型的仓库把刚才的 hosted 与 proxy 添加在一起。主机在访问的时候默认下载私有仓库中的镜像，如果没有将链接到 DockerHub 中下载并缓存到 Nexus 中。\n# 添加访问权限\n菜单 Security-&gt;Realms 把 Docker Bearer Token Realm 移到右边的框中保存。\n添加用户规则：菜单 Security-&gt;Roles-&gt;Create role 在 Privlleges 选项搜索 docker 把相应的规则移动到右边的框中然后保存。\n添加用户：菜单 Security-&gt;Users-&gt;Create local user 在 Roles 选项中选中刚才创建的规则移动到右边的窗口保存。\n# NGINX 加密代理\n证书的生成请参见 私有仓库高级配置 里面证书生成一节。\nNGINX 示例配置如下\n12345678910111213141516171819202122232425262728293031323334353637383940414243444546upstream register&#123;    server &quot;YourHostName OR IP&quot;:5001; #端口为上面添加私有镜像仓库时设置的 HTTP 选项的端口号    check interval=3000 rise=2 fall=10 timeout=1000 type=http;    check_http_send &quot;HEAD / HTTP/1.0\\r\\n\\r\\n&quot;;    check_http_expect_alive http_4xx;&#125;server &#123;    server_name YourDomainName;#如果没有 DNS 服务器做解析，请删除此选项使用本机 IP 地址访问    listen       443 ssl;    ssl_certificate key/example.crt;    ssl_certificate_key key/example.key;    ssl_session_timeout  5m;    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;    ssl_ciphers  HIGH:!aNULL:!MD5;    ssl_prefer_server_ciphers   on;    large_client_header_buffers 4 32k;    client_max_body_size 300m;    client_body_buffer_size 512k;    proxy_connect_timeout 600;    proxy_read_timeout   600;    proxy_send_timeout   600;    proxy_buffer_size    128k;    proxy_buffers       4 64k;    proxy_busy_buffers_size 128k;    proxy_temp_file_write_size 512k;    location / &#123;        proxy_set_header Host $host;        proxy_set_header X-Forwarded-Proto $scheme;        proxy_set_header X-Forwarded-Port $server_port;        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;        proxy_http_version 1.1;        proxy_set_header Upgrade $http_upgrade;        proxy_set_header Connection $connection_upgrade;        proxy_redirect off;        proxy_set_header X-Real-IP $remote_addr;        proxy_pass http://register;        proxy_read_timeout 900s;    &#125;    error_page   500 502 503 504  /50x.html;&#125;\n# Docker 主机访问镜像仓库\n如果不启用 SSL 加密可以通过 前面章节 的方法添加非 https 仓库地址到 Docker 的配置文件中然后重启 Docker。\n使用 SSL 加密以后程序需要访问就不能采用修改配置的方式了。具体方法如下：\n123$ openssl s_client -showcerts -connect YourDomainName OR HostIP:443 &lt;/dev/null 2&gt;/dev/null|openssl x509 -outform PEM &gt;ca.crt$ cat ca.crt | sudo tee -a /etc/ssl/certs/ca-certificates.crt$ systemctl restart docker\n使用 docker login YourDomainName OR HostIP 进行测试，用户名密码填写上面 Nexus 中设置的。\n","dateCreated":"2018-04-07T16:02:39+08:00","dateModified":"2025-06-16T10:22:20+08:00","datePublished":"2018-04-07T16:02:39+08:00","description":"","headline":"6.Docker 仓库(Docker详细教程)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/","keywords":"Docker"}</script>
     <meta name="description" content="# 访问仓库 仓库（Repository）是集中存放镜像的地方。 一个容易混淆的概念是注册服务器（Registry）。实际上注册服务器是管理仓库的具体服务器，每个服务器上可以有多个仓库，而每个仓库下面有多个镜像。从这方面来说，仓库可以被认为是一个具体的项目或目录。例如对于仓库地址 docker.io&#x2F;ubuntu 来说，docker.io 是注册服务器地址，ubuntu 是仓库名。 大部分时候，并">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="6.Docker 仓库(Docker详细教程)">
-<meta property="og:url" content="https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/index.html">
+<meta property="og:url" content="https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="# 访问仓库 仓库（Repository）是集中存放镜像的地方。 一个容易混淆的概念是注册服务器（Registry）。实际上注册服务器是管理仓库的具体服务器，每个服务器上可以有多个仓库，而每个仓库下面有多个镜像。从这方面来说，仓库可以被认为是一个具体的项目或目录。例如对于仓库地址 docker.io&#x2F;ubuntu 来说，docker.io 是注册服务器地址，ubuntu 是仓库名。 大部分时候，并">
 <meta property="og:locale" content="zh_TW">
@@ -50,7 +50,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -556,7 +556,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -567,7 +567,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -580,7 +580,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -593,7 +593,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -606,7 +606,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -619,7 +619,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -684,7 +684,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -695,7 +695,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -708,7 +708,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -721,7 +721,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -734,7 +734,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -747,7 +747,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -768,7 +768,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -781,7 +781,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -794,7 +794,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -807,7 +807,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/04/07/docker/6.Docker%20%E4%BB%93%E5%BA%93(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -883,7 +883,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -906,7 +906,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -929,7 +929,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -952,7 +952,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -975,7 +975,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -998,7 +998,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1021,7 +1021,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1044,7 +1044,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1067,7 +1067,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1090,7 +1090,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

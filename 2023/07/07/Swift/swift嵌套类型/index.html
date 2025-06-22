@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"嵌套类型\n枚举常被用于为特定类或结构体实现某些功能。类似地，枚举可以方便的定义工具类或结构体，从而为某个复杂的类型所使用。为了实现这种功能，Swift 允许你定义嵌套类型，可以在支持的类型中定义嵌套的枚举、类和结构体。\n要在一个类型中嵌套另一个类型，将嵌套类型的定义写在其外部类型的 &#123;&#125; 内，而且可以根据需要定义多级嵌套。\n嵌套类型实践\n下面这个例子定义了一个结构体 BlackjackCard（二十一点），用来模拟 BlackjackCard 中的扑克牌点数。BlackjackCard 结构体包含两个嵌套定义的枚举类型 Suit 和 Rank。\n在 BlackjackCard 中，Ace 牌可以表示 1 或者 11，Ace 牌的这一特征通过一个嵌套在 Rank 枚举中的结构体 Values 来表示：\n12345678910111213141516171819202122232425262728293031323334353637struct BlackjackCard &#123;    // 嵌套的 Suit 枚举    enum Suit: Character &#123;        case spades = &quot;♠&quot;, hearts = &quot;♡&quot;, diamonds = &quot;♢&quot;, clubs = &quot;♣&quot;    &#125;    // 嵌套的 Rank 枚举    enum Rank: Int &#123;        case two = 2, three, four, five, six, seven, eight, nine, ten        case jack, queen, king, ace        struct Values &#123;            let first: Int, second: Int?        &#125;        var values: Values &#123;            switch self &#123;            case .ace:                return Values(first: 1, second: 11)            case .jack, .queen, .king:                return Values(first: 10, second: nil)            default:                return Values(first: self.rawValue, second: nil)            &#125;        &#125;    &#125;    // BlackjackCard 的属性和方法    let rank: Rank, suit: Suit    var description: String &#123;        var output = &quot;suit is \\(suit.rawValue),&quot;        output += &quot; value is \\(rank.values.first)&quot;        if let second = rank.values.second &#123;            output += &quot; or \\(second)&quot;        &#125;        return output    &#125;&#125;\nSuit 枚举用来描述扑克牌的四种花色，并用一个 Character 类型的原始值表示花色符号。\nRank 枚举用来描述扑克牌从 Ace~10，以及 J、Q、K，这 13 种牌，并用一个 Int 类型的原始值表示牌的面值。（这个 Int 类型的原始值未用于 Ace、J、Q、K 这 4 种牌。）\n如上所述，Rank 枚举在内部定义了一个嵌套结构体 Values。结构体 Values 中定义了两个属性，用于反映只有 Ace 有两个数值，其余牌都只有一个数值：\n\nfirst 的类型为 Int\nsecond 的类型为 Int?，或者说“可选 Int”\n\nRank 还定义了一个计算型属性 values，它将会返回一个 Values 结构体的实例。这个计算型属性会根据牌的面值，用适当的数值去初始化 Values 实例。对于 J、Q、K、Ace 这四种牌，会使用特殊数值。对于数字面值的牌，使用枚举实例的 Int 类型的原始值。\nBlackjackCard 结构体拥有两个属性——rank 与 suit。它也同样定义了一个计算型属性 description，description 属性用 rank 和 suit 中的内容来构建对扑克牌名字和数值的描述。该属性使用可选绑定来检查可选类型 second 是否有值，若有值，则在原有的描述中增加对 second 的描述。\n因为 BlackjackCard 是一个没有自定义构造器的结构体，在 结构体的逐一成员构造器 中可知，结构体有默认的成员构造器，所以你可以用默认的构造器去初始化新常量 theAceOfSpades：\n123let theAceOfSpades = BlackjackCard(rank: .ace, suit: .spades)print(&quot;theAceOfSpades: \\(theAceOfSpades.description)&quot;)// 打印“theAceOfSpades: suit is ♠, value is 1 or 11”\n尽管 Rank 和 Suit 嵌套在 BlackjackCard 中，但它们的类型仍可从上下文中推断出来，所以在初始化实例时能够单独通过成员名称（.ace 和 .spades）引用枚举实例。在上面的例子中，description 属性正确地反映了黑桃 A 牌具有 1 和 11 两个值。\n引用嵌套类型\n在外部引用嵌套类型时，在嵌套类型的类型名前加上其外部类型的类型名作为前缀：\n12let heartsSymbol = BlackjackCard.Suit.hearts.rawValue// 红心符号为“♡”\n对于上面这个例子，这样可以使 Suit、Rank 和 Values 的名字尽可能的短，因为它们的名字可以由定义它们的上下文来限定。\n","dateCreated":"2023-07-07T10:13:17+08:00","dateModified":"2025-06-18T12:27:38+08:00","datePublished":"2023-07-07T10:13:17+08:00","description":"","headline":"swift嵌套类型","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/","keywords":"swift"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"嵌套类型\n枚举常被用于为特定类或结构体实现某些功能。类似地，枚举可以方便的定义工具类或结构体，从而为某个复杂的类型所使用。为了实现这种功能，Swift 允许你定义嵌套类型，可以在支持的类型中定义嵌套的枚举、类和结构体。\n要在一个类型中嵌套另一个类型，将嵌套类型的定义写在其外部类型的 &#123;&#125; 内，而且可以根据需要定义多级嵌套。\n嵌套类型实践\n下面这个例子定义了一个结构体 BlackjackCard（二十一点），用来模拟 BlackjackCard 中的扑克牌点数。BlackjackCard 结构体包含两个嵌套定义的枚举类型 Suit 和 Rank。\n在 BlackjackCard 中，Ace 牌可以表示 1 或者 11，Ace 牌的这一特征通过一个嵌套在 Rank 枚举中的结构体 Values 来表示：\n12345678910111213141516171819202122232425262728293031323334353637struct BlackjackCard &#123;    // 嵌套的 Suit 枚举    enum Suit: Character &#123;        case spades = &quot;♠&quot;, hearts = &quot;♡&quot;, diamonds = &quot;♢&quot;, clubs = &quot;♣&quot;    &#125;    // 嵌套的 Rank 枚举    enum Rank: Int &#123;        case two = 2, three, four, five, six, seven, eight, nine, ten        case jack, queen, king, ace        struct Values &#123;            let first: Int, second: Int?        &#125;        var values: Values &#123;            switch self &#123;            case .ace:                return Values(first: 1, second: 11)            case .jack, .queen, .king:                return Values(first: 10, second: nil)            default:                return Values(first: self.rawValue, second: nil)            &#125;        &#125;    &#125;    // BlackjackCard 的属性和方法    let rank: Rank, suit: Suit    var description: String &#123;        var output = &quot;suit is \\(suit.rawValue),&quot;        output += &quot; value is \\(rank.values.first)&quot;        if let second = rank.values.second &#123;            output += &quot; or \\(second)&quot;        &#125;        return output    &#125;&#125;\nSuit 枚举用来描述扑克牌的四种花色，并用一个 Character 类型的原始值表示花色符号。\nRank 枚举用来描述扑克牌从 Ace~10，以及 J、Q、K，这 13 种牌，并用一个 Int 类型的原始值表示牌的面值。（这个 Int 类型的原始值未用于 Ace、J、Q、K 这 4 种牌。）\n如上所述，Rank 枚举在内部定义了一个嵌套结构体 Values。结构体 Values 中定义了两个属性，用于反映只有 Ace 有两个数值，其余牌都只有一个数值：\n\nfirst 的类型为 Int\nsecond 的类型为 Int?，或者说“可选 Int”\n\nRank 还定义了一个计算型属性 values，它将会返回一个 Values 结构体的实例。这个计算型属性会根据牌的面值，用适当的数值去初始化 Values 实例。对于 J、Q、K、Ace 这四种牌，会使用特殊数值。对于数字面值的牌，使用枚举实例的 Int 类型的原始值。\nBlackjackCard 结构体拥有两个属性——rank 与 suit。它也同样定义了一个计算型属性 description，description 属性用 rank 和 suit 中的内容来构建对扑克牌名字和数值的描述。该属性使用可选绑定来检查可选类型 second 是否有值，若有值，则在原有的描述中增加对 second 的描述。\n因为 BlackjackCard 是一个没有自定义构造器的结构体，在 结构体的逐一成员构造器 中可知，结构体有默认的成员构造器，所以你可以用默认的构造器去初始化新常量 theAceOfSpades：\n123let theAceOfSpades = BlackjackCard(rank: .ace, suit: .spades)print(&quot;theAceOfSpades: \\(theAceOfSpades.description)&quot;)// 打印“theAceOfSpades: suit is ♠, value is 1 or 11”\n尽管 Rank 和 Suit 嵌套在 BlackjackCard 中，但它们的类型仍可从上下文中推断出来，所以在初始化实例时能够单独通过成员名称（.ace 和 .spades）引用枚举实例。在上面的例子中，description 属性正确地反映了黑桃 A 牌具有 1 和 11 两个值。\n引用嵌套类型\n在外部引用嵌套类型时，在嵌套类型的类型名前加上其外部类型的类型名作为前缀：\n12let heartsSymbol = BlackjackCard.Suit.hearts.rawValue// 红心符号为“♡”\n对于上面这个例子，这样可以使 Suit、Rank 和 Values 的名字尽可能的短，因为它们的名字可以由定义它们的上下文来限定。\n","dateCreated":"2023-07-07T10:13:17+08:00","dateModified":"2025-06-18T12:27:38+08:00","datePublished":"2023-07-07T10:13:17+08:00","description":"","headline":"swift嵌套类型","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/","keywords":"swift"}</script>
     <meta name="description" content="嵌套类型 枚举常被用于为特定类或结构体实现某些功能。类似地，枚举可以方便的定义工具类或结构体，从而为某个复杂的类型所使用。为了实现这种功能，Swift 允许你定义嵌套类型，可以在支持的类型中定义嵌套的枚举、类和结构体。 要在一个类型中嵌套另一个类型，将嵌套类型的定义写在其外部类型的 &#123;&#125; 内，而且可以根据需要定义多级嵌套。 嵌套类型实践 下面这个例子定义了一个结构体 Black">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="swift嵌套类型">
-<meta property="og:url" content="https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/index.html">
+<meta property="og:url" content="https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="嵌套类型 枚举常被用于为特定类或结构体实现某些功能。类似地，枚举可以方便的定义工具类或结构体，从而为某个复杂的类型所使用。为了实现这种功能，Swift 允许你定义嵌套类型，可以在支持的类型中定义嵌套的枚举、类和结构体。 要在一个类型中嵌套另一个类型，将嵌套类型的定义写在其外部类型的 &#123;&#125; 内，而且可以根据需要定义多级嵌套。 嵌套类型实践 下面这个例子定义了一个结构体 Black">
 <meta property="og:locale" content="zh_TW">
@@ -50,7 +50,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -406,7 +406,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -417,7 +417,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -430,7 +430,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -443,7 +443,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -456,7 +456,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -469,7 +469,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -534,7 +534,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -545,7 +545,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -558,7 +558,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -571,7 +571,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -584,7 +584,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -597,7 +597,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -618,7 +618,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -631,7 +631,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -644,7 +644,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -657,7 +657,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/07/07/Swift/swift%E5%B5%8C%E5%A5%97%E7%B1%BB%E5%9E%8B/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -733,7 +733,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -756,7 +756,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -779,7 +779,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -802,7 +802,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -825,7 +825,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -848,7 +848,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -871,7 +871,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -894,7 +894,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -917,7 +917,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -940,7 +940,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

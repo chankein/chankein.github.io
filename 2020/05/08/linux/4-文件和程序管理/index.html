@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. 用户权限管理\n1.1 文件权限基础\n权限表示法\n123456d rwx r-x r--↑ ↑   ↑   ↑│ │   │   └─ 其他用户权限(r--)│ │   └─── 所属组权限(r-x)│ └────── 所有者权限(rwx)└──────── 文件类型(d=目录)\n权限数值\n\nr(读): 4\nw(写): 2\nx(执行): 1\n\n1.2 chmod 命令\n1chmod [选项] 权限 文件\n常用选项\n\n-R: 递归修改目录下所有文件\n\n权限设置方法\n\n\n符号法:\n1234chmod u+x file      # 给所有者添加执行权限chmod g-w file      # 移除组的写权限chmod o=rx file     # 设置其他用户为读执行chmod a+r file      # 给所有用户添加读权限\n\n\n数字法:\n12chmod 755 file      # rwxr-xr-xchmod 644 file      # rw-r--r--\n\n\n1.3 特殊权限\n\n\n\n权限\n数值\n设置方法\n说明\n\n\n\n\nSUID\n4000\nu+s\n执行时以文件所有者权限运行\n\n\nSGID\n2000\ng+s\n执行时以文件所属组权限运行\n\n\nSticky\n1000\no+t\n目录中文件只有所有者能删除\n\n\n\n1.4 umask 命令\n12umask           # 查看当前umask值umask 022       # 设置新的umask值\n\n文件默认权限: 666 - umask\n目录默认权限: 777 - umask\n\n1.5 ACL 高级权限控制\n123setfacl -m u:user:rwx file   # 添加用户ACLsetfacl -x u:user file       # 删除用户ACLgetfacl file                 # 查看ACL权限\n1.6 所有权管理\n123chown user:group file        # 修改所有者和组chown -R user:group dir      # 递归修改chgrp group file             # 修改文件所属组\n2. 链接管理\n2.1 链接类型对比\n\n\n\n特性\n硬链接\n软链接\n\n\n\n\ninode\n相同\n不同\n\n\n跨文件系统\n不支持\n支持\n\n\n链接目录\n不允许\n允许\n\n\n原文件删除\n仍可访问\n失效\n\n\n\n2.2 ln 命令\n12ln source link        # 创建硬链接ln -s source link     # 创建软链接\n3. 进程管理\n3.1 ps 命令\n123ps aux       # 查看所有进程ps -ef       # 完整格式显示ps -u user   # 查看指定用户进程\n3.2 top 命令\n1top          # 动态查看进程\n\nr: 调整进程优先级\nk: 终止进程\nq: 退出\n\n3.3 进程控制\n123kill -9 PID          # 强制终止进程killall process      # 终止同名所有进程pkill pattern        # 按模式终止进程\n常用信号\n\n\n\n信号\n值\n说明\n\n\n\n\nHUP\n1\n重新加载配置\n\n\nINT\n2\n中断(Ctrl+C)\n\n\nKILL\n9\n强制终止\n\n\nTERM\n15\n正常终止\n\n\n\n3.4 作业控制\n1234command &amp;       # 后台运行fg %1          # 前台恢复作业1bg %2          # 后台继续作业2jobs           # 查看后台作业\n3.5 优先级管理\n12nice -n 10 command   # 启动低优先级进程renice 15 -p PID     # 调整运行中进程优先级\n3.6 终端复用器\n1tmux                # 启动新会话\n常用快捷键:\n\nCtrl+b c: 新建窗口\nCtrl+b %: 垂直分割\nCtrl+b &quot;: 水平分割\nCtrl+b d: 分离会话\n\n4. 压缩与归档\n4.1 单文件压缩\ngzip\n123gzip file            # 压缩为file.gzgunzip file.gz       # 解压gzip -d file.gz      # 解压(同上)\nbzip2\n12bzip2 file           # 压缩为file.bz2bunzip2 file.bz2     # 解压\nxz\n12xz file              # 压缩为file.xzunxz file.xz         # 解压\n4.2 归档工具\ntar 命令\n123456789# 打包压缩tar czvf archive.tar.gz dir/     # gzip压缩tar cjvf archive.tar.bz2 dir/    # bzip2压缩tar cJvf archive.tar.xz dir/     # xz压缩# 解压tar xzvf archive.tar.gz          # 解压gziptar xjvf archive.tar.bz2         # 解压bzip2tar xJvf archive.tar.xz          # 解压xz\ncpio 命令\n12find . | cpio -ov &gt; backup.cpio      # 创建归档cpio -idv &lt; backup.cpio              # 解压归档\ndd 命令\n12dd if=/dev/sda of=disk.img bs=1M     # 创建磁盘映像dd if=disk.img of=/dev/sdb           # 恢复磁盘映像\n5. 实用技巧\n5.1 nohup 命令\n1nohup command &amp;      # 退出终端后继续运行\n5.2 watch 命令\n1watch -n 5 &#x27;ls -l&#x27;   # 每5秒执行一次命令\n5.3 文件传输\n1dd if=file.iso | ssh user@host &quot;dd of=file.iso&quot;  # 通过SSH传输文件\n","dateCreated":"2020-05-08T16:06:24+08:00","dateModified":"2025-05-08T14:27:23+08:00","datePublished":"2020-05-08T16:06:24+08:00","description":"","headline":"4.文件和程序管理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/","keywords":"linux, LPIC"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. 用户权限管理\n1.1 文件权限基础\n权限表示法\n123456d rwx r-x r--↑ ↑   ↑   ↑│ │   │   └─ 其他用户权限(r--)│ │   └─── 所属组权限(r-x)│ └────── 所有者权限(rwx)└──────── 文件类型(d=目录)\n权限数值\n\nr(读): 4\nw(写): 2\nx(执行): 1\n\n1.2 chmod 命令\n1chmod [选项] 权限 文件\n常用选项\n\n-R: 递归修改目录下所有文件\n\n权限设置方法\n\n\n符号法:\n1234chmod u+x file      # 给所有者添加执行权限chmod g-w file      # 移除组的写权限chmod o=rx file     # 设置其他用户为读执行chmod a+r file      # 给所有用户添加读权限\n\n\n数字法:\n12chmod 755 file      # rwxr-xr-xchmod 644 file      # rw-r--r--\n\n\n1.3 特殊权限\n\n\n\n权限\n数值\n设置方法\n说明\n\n\n\n\nSUID\n4000\nu+s\n执行时以文件所有者权限运行\n\n\nSGID\n2000\ng+s\n执行时以文件所属组权限运行\n\n\nSticky\n1000\no+t\n目录中文件只有所有者能删除\n\n\n\n1.4 umask 命令\n12umask           # 查看当前umask值umask 022       # 设置新的umask值\n\n文件默认权限: 666 - umask\n目录默认权限: 777 - umask\n\n1.5 ACL 高级权限控制\n123setfacl -m u:user:rwx file   # 添加用户ACLsetfacl -x u:user file       # 删除用户ACLgetfacl file                 # 查看ACL权限\n1.6 所有权管理\n123chown user:group file        # 修改所有者和组chown -R user:group dir      # 递归修改chgrp group file             # 修改文件所属组\n2. 链接管理\n2.1 链接类型对比\n\n\n\n特性\n硬链接\n软链接\n\n\n\n\ninode\n相同\n不同\n\n\n跨文件系统\n不支持\n支持\n\n\n链接目录\n不允许\n允许\n\n\n原文件删除\n仍可访问\n失效\n\n\n\n2.2 ln 命令\n12ln source link        # 创建硬链接ln -s source link     # 创建软链接\n3. 进程管理\n3.1 ps 命令\n123ps aux       # 查看所有进程ps -ef       # 完整格式显示ps -u user   # 查看指定用户进程\n3.2 top 命令\n1top          # 动态查看进程\n\nr: 调整进程优先级\nk: 终止进程\nq: 退出\n\n3.3 进程控制\n123kill -9 PID          # 强制终止进程killall process      # 终止同名所有进程pkill pattern        # 按模式终止进程\n常用信号\n\n\n\n信号\n值\n说明\n\n\n\n\nHUP\n1\n重新加载配置\n\n\nINT\n2\n中断(Ctrl+C)\n\n\nKILL\n9\n强制终止\n\n\nTERM\n15\n正常终止\n\n\n\n3.4 作业控制\n1234command &amp;       # 后台运行fg %1          # 前台恢复作业1bg %2          # 后台继续作业2jobs           # 查看后台作业\n3.5 优先级管理\n12nice -n 10 command   # 启动低优先级进程renice 15 -p PID     # 调整运行中进程优先级\n3.6 终端复用器\n1tmux                # 启动新会话\n常用快捷键:\n\nCtrl+b c: 新建窗口\nCtrl+b %: 垂直分割\nCtrl+b &quot;: 水平分割\nCtrl+b d: 分离会话\n\n4. 压缩与归档\n4.1 单文件压缩\ngzip\n123gzip file            # 压缩为file.gzgunzip file.gz       # 解压gzip -d file.gz      # 解压(同上)\nbzip2\n12bzip2 file           # 压缩为file.bz2bunzip2 file.bz2     # 解压\nxz\n12xz file              # 压缩为file.xzunxz file.xz         # 解压\n4.2 归档工具\ntar 命令\n123456789# 打包压缩tar czvf archive.tar.gz dir/     # gzip压缩tar cjvf archive.tar.bz2 dir/    # bzip2压缩tar cJvf archive.tar.xz dir/     # xz压缩# 解压tar xzvf archive.tar.gz          # 解压gziptar xjvf archive.tar.bz2         # 解压bzip2tar xJvf archive.tar.xz          # 解压xz\ncpio 命令\n12find . | cpio -ov &gt; backup.cpio      # 创建归档cpio -idv &lt; backup.cpio              # 解压归档\ndd 命令\n12dd if=/dev/sda of=disk.img bs=1M     # 创建磁盘映像dd if=disk.img of=/dev/sdb           # 恢复磁盘映像\n5. 实用技巧\n5.1 nohup 命令\n1nohup command &amp;      # 退出终端后继续运行\n5.2 watch 命令\n1watch -n 5 &#x27;ls -l&#x27;   # 每5秒执行一次命令\n5.3 文件传输\n1dd if=file.iso | ssh user@host &quot;dd of=file.iso&quot;  # 通过SSH传输文件\n","dateCreated":"2020-05-08T16:06:24+08:00","dateModified":"2025-05-08T14:27:23+08:00","datePublished":"2020-05-08T16:06:24+08:00","description":"","headline":"4.文件和程序管理","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/","keywords":"linux, LPIC"}</script>
     <meta name="description" content="1. 用户权限管理 1.1 文件权限基础 权限表示法 123456d rwx r-x r--↑ ↑   ↑   ↑│ │   │   └─ 其他用户权限(r--)│ │   └─── 所属组权限(r-x)│ └────── 所有者权限(rwx)└──────── 文件类型(d&#x3D;目录) 权限数值  r(读): 4 w(写): 2 x(执行): 1  1.2 chmod 命令 1chmod [选项]">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="4.文件和程序管理">
-<meta property="og:url" content="https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/index.html">
+<meta property="og:url" content="https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="1. 用户权限管理 1.1 文件权限基础 权限表示法 123456d rwx r-x r--↑ ↑   ↑   ↑│ │   │   └─ 其他用户权限(r--)│ │   └─── 所属组权限(r-x)│ └────── 所有者权限(rwx)└──────── 文件类型(d&#x3D;目录) 权限数值  r(读): 4 w(写): 2 x(执行): 1  1.2 chmod 命令 1chmod [选项]">
 <meta property="og:locale" content="zh_TW">
@@ -51,7 +51,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -566,7 +566,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -577,7 +577,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -590,7 +590,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -603,7 +603,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -616,7 +616,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -629,7 +629,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -694,7 +694,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -705,7 +705,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -718,7 +718,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -731,7 +731,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -744,7 +744,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -757,7 +757,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -778,7 +778,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -791,7 +791,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -804,7 +804,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -817,7 +817,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/05/08/linux/4-%E6%96%87%E4%BB%B6%E5%92%8C%E7%A8%8B%E5%BA%8F%E7%AE%A1%E7%90%86/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -893,7 +893,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -916,7 +916,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -939,7 +939,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -962,7 +962,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -985,7 +985,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -1008,7 +1008,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1031,7 +1031,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1054,7 +1054,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1077,7 +1077,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1100,7 +1100,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"Docker 中的网络功能介绍\n# Docker 中的网络功能介绍\nDocker 允许通过外部访问容器或容器互联的方式来提供网络服务。\n# 外部访问容器\n容器中可以运行一些网络应用，要让外部也可以访问这些应用，可以通过 -P 或 -p 参数来指定端口映射。\n当使用 -P 标记时，Docker 会随机映射一个端口到内部容器开放的网络端口。\n使用 docker container ls 可以看到，本地主机的 32768 被映射到了容器的 80 端口。此时访问本机的 32768 端口即可访问容器内 NGINX 默认页面。\n12345$ docker run -d -P nginx:alpine$ docker container ls -lCONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                   NAMESfae320d08268        nginx:alpine        &quot;/docker-entrypoint.…&quot;   24 seconds ago      Up 20 seconds       0.0.0.0:32768-&gt;80/tcp   bold_mcnulty\n同样的，可以通过 docker logs 命令来查看访问记录。\n12$ docker logs fa172.17.0.1 - - [25/Aug/2020:08:34:04 +0000] &quot;GET / HTTP/1.1&quot; 200 612 &quot;-&quot; &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:80.0) Gecko/20100101 Firefox/80.0&quot; &quot;-&quot;\n-p 则可以指定要映射的端口，并且，在一个指定端口上只可以绑定一个容器。支持的格式有 ip:hostPort:containerPort | ip::containerPort | hostPort:containerPort。\n# 映射所有接口地址\n使用 hostPort:containerPort 格式本地的 80 端口映射到容器的 80 端口，可以执行\n1$ docker run -d -p 80:80 nginx:alpine\n此时默认会绑定本地所有接口上的所有地址。\n# 映射到指定地址的指定端口\n可以使用 ip:hostPort:containerPort 格式指定映射使用一个特定地址，比如 localhost 地址 127.0.0.1\n1$ docker run -d -p 127.0.0.1:80:80 nginx:alpine\n# 映射到指定地址的任意端口\n使用 ip::containerPort 绑定 localhost 的任意端口到容器的 80 端口，本地主机会自动分配一个端口。\n1$ docker run -d -p 127.0.0.1::80 nginx:alpine\n还可以使用 udp 标记来指定 udp 端口\n1$ docker run -d -p 127.0.0.1:80:80/udp nginx:alpine\n# 查看映射端口配置\n使用 docker port 来查看当前映射的端口配置，也可以查看到绑定的地址\n12$ docker port fa 800.0.0.0:32768\n注意：\n\n\n容器有自己的内部网络和 ip 地址（使用 docker inspect 查看，Docker 还可以有一个可变的网络配置。）\n\n\n-p 标记可以多次使用来绑定多个端口\n\n\n例如\n1234$ docker run -d \\    -p 80:80 \\    -p 443:443 \\    nginx:alpine\n# 容器互联\n如果你之前有 Docker 使用经验，你可能已经习惯了使用 --link 参数来使容器互联。\n随着 Docker 网络的完善，强烈建议大家将容器加入自定义的 Docker 网络来连接多个容器，而不是使用 --link 参数。\n# 新建网络\n下面先创建一个新的 Docker 网络。\n1$ docker network create -d bridge my-net\n-d 参数指定 Docker 网络类型，有 bridge overlay。其中 overlay 网络类型用于 Swarm mode，在本小节中你可以忽略它。\n# 连接容器\n运行一个容器并连接到新建的 my-net 网络\n1$ docker run -it --rm --name busybox1 --network my-net busybox sh\n打开新的终端，再运行一个容器并加入到 my-net 网络\n1$ docker run -it --rm --name busybox2 --network my-net busybox sh\n再打开一个新的终端查看容器信息\n12345$ docker container lsCONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMESb47060aca56b        busybox             &quot;sh&quot;                11 minutes ago      Up 11 minutes                           busybox28720575823ec        busybox             &quot;sh&quot;                16 minutes ago      Up 16 minutes                           busybox1\n下面通过 ping 来证明 busybox1 容器和 busybox2 容器建立了互联关系。\n在 busybox1 容器输入以下命令\n1234/ # ping busybox2PING busybox2 (172.19.0.3): 56 data bytes64 bytes from 172.19.0.3: seq=0 ttl=64 time=0.072 ms64 bytes from 172.19.0.3: seq=1 ttl=64 time=0.118 ms\n用 ping 来测试连接 busybox2 容器，它会解析成 172.19.0.3。\n同理在 busybox2 容器执行 ping busybox1，也会成功连接到。\n1234/ # ping busybox1PING busybox1 (172.19.0.2): 56 data bytes64 bytes from 172.19.0.2: seq=0 ttl=64 time=0.064 ms64 bytes from 172.19.0.2: seq=1 ttl=64 time=0.143 ms\n这样，busybox1 容器和 busybox2 容器建立了互联关系。\n# Docker Compose\n如果你有多个容器之间需要互相连接，推荐使用 Docker Compose。\n# 配置 DNS\n如何自定义配置容器的主机名和 DNS 呢？秘诀就是 Docker 利用虚拟文件来挂载容器的 3 个相关配置文件。\n在容器中使用 mount 命令可以看到挂载信息：\n1234$ mount/dev/disk/by-uuid/1fec...ebdf on /etc/hostname type ext4 .../dev/disk/by-uuid/1fec...ebdf on /etc/hosts type ext4 ...tmpfs on /etc/resolv.conf type tmpfs ...\n这种机制可以让宿主主机 DNS 信息发生更新后，所有 Docker 容器的 DNS 配置通过 /etc/resolv.conf 文件立刻得到更新。\n配置全部容器的 DNS ，也可以在 /etc/docker/daemon.json 文件中增加以下内容来设置。\n123456&#123;  &quot;dns&quot; : [    &quot;114.114.114.114&quot;,    &quot;8.8.8.8&quot;  ]&#125;\n这样每次启动的容器 DNS 自动配置为 114.114.114.114 和 8.8.8.8。使用以下命令来证明其已经生效。\n1234$ docker run -it --rm ubuntu:18.04  cat etc/resolv.confnameserver 114.114.114.114nameserver 8.8.8.8\n如果用户想要手动指定容器的配置，可以在使用 docker run 命令启动容器时加入如下参数：\n-h HOSTNAME 或者 --hostname=HOSTNAME 设定容器的主机名，它会被写到容器内的 /etc/hostname 和 /etc/hosts。但它在容器外部看不到，既不会在 docker container ls 中显示，也不会在其他的容器的 /etc/hosts 看到。\n--dns=IP_ADDRESS 添加 DNS 服务器到容器的 /etc/resolv.conf 中，让容器用这个服务器来解析所有不在 /etc/hosts 中的主机名。\n--dns-search=DOMAIN 设定容器的搜索域，当设定搜索域为 .example.com 时，在搜索一个名为 host 的主机时，DNS 不仅搜索 host，还会搜索 host.example.com。\n\n注意：如果在容器启动时没有指定最后两个参数，Docker 会默认用主机上的 /etc/resolv.conf 来配置容器。\n\n","dateCreated":"2018-04-09T16:02:39+08:00","dateModified":"2025-06-16T10:22:29+08:00","datePublished":"2018-04-09T16:02:39+08:00","description":"","headline":"8.Docker 使用网络(Docker详细教程)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/","keywords":"Docker"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"Docker 中的网络功能介绍\n# Docker 中的网络功能介绍\nDocker 允许通过外部访问容器或容器互联的方式来提供网络服务。\n# 外部访问容器\n容器中可以运行一些网络应用，要让外部也可以访问这些应用，可以通过 -P 或 -p 参数来指定端口映射。\n当使用 -P 标记时，Docker 会随机映射一个端口到内部容器开放的网络端口。\n使用 docker container ls 可以看到，本地主机的 32768 被映射到了容器的 80 端口。此时访问本机的 32768 端口即可访问容器内 NGINX 默认页面。\n12345$ docker run -d -P nginx:alpine$ docker container ls -lCONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                   NAMESfae320d08268        nginx:alpine        &quot;/docker-entrypoint.…&quot;   24 seconds ago      Up 20 seconds       0.0.0.0:32768-&gt;80/tcp   bold_mcnulty\n同样的，可以通过 docker logs 命令来查看访问记录。\n12$ docker logs fa172.17.0.1 - - [25/Aug/2020:08:34:04 +0000] &quot;GET / HTTP/1.1&quot; 200 612 &quot;-&quot; &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:80.0) Gecko/20100101 Firefox/80.0&quot; &quot;-&quot;\n-p 则可以指定要映射的端口，并且，在一个指定端口上只可以绑定一个容器。支持的格式有 ip:hostPort:containerPort | ip::containerPort | hostPort:containerPort。\n# 映射所有接口地址\n使用 hostPort:containerPort 格式本地的 80 端口映射到容器的 80 端口，可以执行\n1$ docker run -d -p 80:80 nginx:alpine\n此时默认会绑定本地所有接口上的所有地址。\n# 映射到指定地址的指定端口\n可以使用 ip:hostPort:containerPort 格式指定映射使用一个特定地址，比如 localhost 地址 127.0.0.1\n1$ docker run -d -p 127.0.0.1:80:80 nginx:alpine\n# 映射到指定地址的任意端口\n使用 ip::containerPort 绑定 localhost 的任意端口到容器的 80 端口，本地主机会自动分配一个端口。\n1$ docker run -d -p 127.0.0.1::80 nginx:alpine\n还可以使用 udp 标记来指定 udp 端口\n1$ docker run -d -p 127.0.0.1:80:80/udp nginx:alpine\n# 查看映射端口配置\n使用 docker port 来查看当前映射的端口配置，也可以查看到绑定的地址\n12$ docker port fa 800.0.0.0:32768\n注意：\n\n\n容器有自己的内部网络和 ip 地址（使用 docker inspect 查看，Docker 还可以有一个可变的网络配置。）\n\n\n-p 标记可以多次使用来绑定多个端口\n\n\n例如\n1234$ docker run -d \\    -p 80:80 \\    -p 443:443 \\    nginx:alpine\n# 容器互联\n如果你之前有 Docker 使用经验，你可能已经习惯了使用 --link 参数来使容器互联。\n随着 Docker 网络的完善，强烈建议大家将容器加入自定义的 Docker 网络来连接多个容器，而不是使用 --link 参数。\n# 新建网络\n下面先创建一个新的 Docker 网络。\n1$ docker network create -d bridge my-net\n-d 参数指定 Docker 网络类型，有 bridge overlay。其中 overlay 网络类型用于 Swarm mode，在本小节中你可以忽略它。\n# 连接容器\n运行一个容器并连接到新建的 my-net 网络\n1$ docker run -it --rm --name busybox1 --network my-net busybox sh\n打开新的终端，再运行一个容器并加入到 my-net 网络\n1$ docker run -it --rm --name busybox2 --network my-net busybox sh\n再打开一个新的终端查看容器信息\n12345$ docker container lsCONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMESb47060aca56b        busybox             &quot;sh&quot;                11 minutes ago      Up 11 minutes                           busybox28720575823ec        busybox             &quot;sh&quot;                16 minutes ago      Up 16 minutes                           busybox1\n下面通过 ping 来证明 busybox1 容器和 busybox2 容器建立了互联关系。\n在 busybox1 容器输入以下命令\n1234/ # ping busybox2PING busybox2 (172.19.0.3): 56 data bytes64 bytes from 172.19.0.3: seq=0 ttl=64 time=0.072 ms64 bytes from 172.19.0.3: seq=1 ttl=64 time=0.118 ms\n用 ping 来测试连接 busybox2 容器，它会解析成 172.19.0.3。\n同理在 busybox2 容器执行 ping busybox1，也会成功连接到。\n1234/ # ping busybox1PING busybox1 (172.19.0.2): 56 data bytes64 bytes from 172.19.0.2: seq=0 ttl=64 time=0.064 ms64 bytes from 172.19.0.2: seq=1 ttl=64 time=0.143 ms\n这样，busybox1 容器和 busybox2 容器建立了互联关系。\n# Docker Compose\n如果你有多个容器之间需要互相连接，推荐使用 Docker Compose。\n# 配置 DNS\n如何自定义配置容器的主机名和 DNS 呢？秘诀就是 Docker 利用虚拟文件来挂载容器的 3 个相关配置文件。\n在容器中使用 mount 命令可以看到挂载信息：\n1234$ mount/dev/disk/by-uuid/1fec...ebdf on /etc/hostname type ext4 .../dev/disk/by-uuid/1fec...ebdf on /etc/hosts type ext4 ...tmpfs on /etc/resolv.conf type tmpfs ...\n这种机制可以让宿主主机 DNS 信息发生更新后，所有 Docker 容器的 DNS 配置通过 /etc/resolv.conf 文件立刻得到更新。\n配置全部容器的 DNS ，也可以在 /etc/docker/daemon.json 文件中增加以下内容来设置。\n123456&#123;  &quot;dns&quot; : [    &quot;114.114.114.114&quot;,    &quot;8.8.8.8&quot;  ]&#125;\n这样每次启动的容器 DNS 自动配置为 114.114.114.114 和 8.8.8.8。使用以下命令来证明其已经生效。\n1234$ docker run -it --rm ubuntu:18.04  cat etc/resolv.confnameserver 114.114.114.114nameserver 8.8.8.8\n如果用户想要手动指定容器的配置，可以在使用 docker run 命令启动容器时加入如下参数：\n-h HOSTNAME 或者 --hostname=HOSTNAME 设定容器的主机名，它会被写到容器内的 /etc/hostname 和 /etc/hosts。但它在容器外部看不到，既不会在 docker container ls 中显示，也不会在其他的容器的 /etc/hosts 看到。\n--dns=IP_ADDRESS 添加 DNS 服务器到容器的 /etc/resolv.conf 中，让容器用这个服务器来解析所有不在 /etc/hosts 中的主机名。\n--dns-search=DOMAIN 设定容器的搜索域，当设定搜索域为 .example.com 时，在搜索一个名为 host 的主机时，DNS 不仅搜索 host，还会搜索 host.example.com。\n\n注意：如果在容器启动时没有指定最后两个参数，Docker 会默认用主机上的 /etc/resolv.conf 来配置容器。\n\n","dateCreated":"2018-04-09T16:02:39+08:00","dateModified":"2025-06-16T10:22:29+08:00","datePublished":"2018-04-09T16:02:39+08:00","description":"","headline":"8.Docker 使用网络(Docker详细教程)","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/","keywords":"Docker"}</script>
     <meta name="description" content="Docker 中的网络功能介绍 # Docker 中的网络功能介绍 Docker 允许通过外部访问容器或容器互联的方式来提供网络服务。 # 外部访问容器 容器中可以运行一些网络应用，要让外部也可以访问这些应用，可以通过 -P 或 -p 参数来指定端口映射。 当使用 -P 标记时，Docker 会随机映射一个端口到内部容器开放的网络端口。 使用 docker container ls 可以看到，本地">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="8.Docker 使用网络(Docker详细教程)">
-<meta property="og:url" content="https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/index.html">
+<meta property="og:url" content="https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="Docker 中的网络功能介绍 # Docker 中的网络功能介绍 Docker 允许通过外部访问容器或容器互联的方式来提供网络服务。 # 外部访问容器 容器中可以运行一些网络应用，要让外部也可以访问这些应用，可以通过 -P 或 -p 参数来指定端口映射。 当使用 -P 标记时，Docker 会随机映射一个端口到内部容器开放的网络端口。 使用 docker container ls 可以看到，本地">
 <meta property="og:locale" content="zh_TW">
@@ -50,7 +50,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -459,7 +459,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -470,7 +470,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -483,7 +483,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -496,7 +496,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -509,7 +509,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -522,7 +522,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -587,7 +587,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -598,7 +598,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -611,7 +611,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -624,7 +624,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -637,7 +637,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -650,7 +650,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -671,7 +671,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -684,7 +684,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -697,7 +697,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -710,7 +710,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/04/09/docker/8.Docker%20%E4%BD%BF%E7%94%A8%E7%BD%91%E7%BB%9C(Docker%E8%AF%A6%E7%BB%86%E6%95%99%E7%A8%8B)/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -786,7 +786,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -809,7 +809,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -832,7 +832,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -855,7 +855,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -878,7 +878,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -901,7 +901,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -924,7 +924,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -947,7 +947,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -970,7 +970,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -993,7 +993,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

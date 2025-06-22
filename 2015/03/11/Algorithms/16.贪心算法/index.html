@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"16. 贪心算法\n求解最优化问题的算法通常需要经过一系列的步骤，在每个步骤都面临多种选择。对于许多最优化问题，使用动态规划算法来求最优解有些杀鸡用牛刀了，可以使用更简单、更高效的算法．贪心算法就是这样的算法，它在每一步都做出当时看起来最佳的选择。也就是说，它总是做出局部最优的选择，寄希望这样的选择能导致全局最优解。\n活动选择问题\n我们的第一个例子是一个调度竞争共享资源的多个活动的问题，目标是选出一个最大的互相兼容的活动集合。假定有一个 n 个活动的集合S=a1,a2,...,anS={a_1, a_2, ... , a_n}S=a​1​​,a​2​​,...,a​n​​，这些活动使用同一个资源（例如一个阶梯教室），而这个资源在某个时刻只能供一个活动使用。每个活动aia_ia​i​​都有一个开始时间sis_is​i​​和一个结束时间fif_if​i​​ ，其中0≤si&lt;fi&lt;∞0\\le s_i &lt; f_i &lt; \\infty0≤s​i​​&lt;f​i​​&lt;∞。如果被选中，任务aia_ia​i​​发生在半开时间区间[si,fi)[s_i, f_i)[s​i​​,f​i​​)期间．如果两个活动aia_ia​i​​和aja_ja​j​​满足[si,fi)[s_i, f_i)[s​i​​,f​i​​)和[sj,fj)[s_j, f_j)[s​j​​,f​j​​)不重叠，则称它们是兼容的．也就是说，若si≥fjs_i\\ge f_js​i​​≥f​j​​或sj≥fis_j\\ge f_is​j​​≥f​i​​，则aia_ia​i​​和aja_ja​j​​是兼容的．在活动选择问题中，我们希望选出一个最大兼容活动集。假定活动已按结束时间的单调递增顺序排序：\nf1≤f2≤f3≤...≤fn−1≤fnf_1 \\le f_2 \\le f_3 \\le ... \\le f_{n-1} \\le f_n\nf​1​​≤f​2​​≤f​3​​≤...≤f​n−1​​≤f​n​​\n例如下面的活动集合S：\n\n\n\ni\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n\n\n\n\nsis_is​i​​\n1\n3\n0\n5\n3\n5\n6\n8\n8\n2\n12\n\n\nfif_if​i​​\n4\n5\n6\n7\n9\n9\n10\n11\n12\n14\n16\n\n\n\n对于这个例子，子集S=a3,a9,a11S={a_3, a_9,a_11}S=a​3​​,a​9​​,a​1​​1由相互兼容的活动组成。但它不是一个最大集，因为子集S=a1,a4,a8,a11S={a_1, a_4, a_8,a_11}S=a​1​​,a​4​​,a​8​​,a​1​​1更大。实际上S=a1,a4,a8,a11S={a_1, a_4, a_8,a_11}S=a​1​​,a​4​​,a​8​​,a​1​​1是一个最大兼容活动子集，另一个最大子集是\nS=a2,a4,a9,a11S={a_2, a_4, a_9,a_11}S=a​2​​,a​4​​,a​9​​,a​1​​1。\n最优子结构\n假定集合SijS_{ij}S​ij​​（aia_ia​i​​结束之后，aja_ja​j​​开始之前的活动）的一个最大相互兼容的活动子集为AijA_{ij}A​ij​​，而且AijA_{ij}A​ij​​包含了活动aka_ka​k​​。 由于最优解包含了活动aka_ka​k​​，我们得到两个子问题：SikS_{ik}S​ik​​（aka_ka​k​​开始之前的活动）的兼容活动 和 SkjS_{kj}S​kj​​（aka_ka​k​​结束之后的活动）的兼容活动。由剪切-粘贴法可以证明SijS_{ij}S​ij​​的最优解为SikS_{ik}S​ik​​的最优解、aka_ka​k​​、 SkjS_{kj}S​kj​​的最优解组成。即Aij=Aik∪ak∪AkjA_{ij} = A_{ik} \\cup a_k \\cup A_{kj}A​ij​​=A​ik​​∪a​k​​∪A​kj​​。\n所以这时我们可以用动态规划方法求出所有k的取值情况对应的解，然后找出一个最大的作为最优解。\n如果用c[i,j]c[i, j]c[i,j]表示SijS_{ij}S​ij​​的最优解的大小，递归式为：\nc[i,j]={0ifSij=∅,maxak∈Sij{c[i,k]+c[k,j]+1}ifSij≠∅,c[i, j] = \\left \\{\n    \\begin{aligned}\n    &amp; 0 &amp;                                                if \\quad S_{ij} = \\varnothing, \\\\\n    &amp; \\max_{a_k \\in S_{ij}}\\{c[i, k] + c[k, j] + 1\\} &amp;   if \\quad S_{ij} \\ne \\varnothing,\n    \\end{aligned}\n\\right.\nc[i,j]={​​​​​0​​a​k​​∈S​ij​​​max​​{c[i,k]+c[k,j]+1}​​​ifS​ij​​=∅,​ifS​ij​​≠∅,​​\n贪心选择\n动态规划需要考虑每种子问题，比较之后得出哪种选择是最优解。假如我们无需求解每种子问题，直接就可以找出一个最优选择。那么将大大减少计算过程。对于活动选择问题，我们可以只考虑一个选择：贪心选择。\n直观上，我们应该选择一个活动，使得选择它后剩下的资源可以尽可能多的被其他活动利用。直觉告诉我们选择S中最早结束的活动，因为他可以剩下尽可能多的资源。由于我们活动时按照结束时间排序的，也就是说贪心选择就是a1a_1a​1​​。\n当做出贪心选择后，只剩下一个子问题需要求解，因为不会有在a1a_1a​1​​开始前结束的活动。加上前面的最优子结构性质，所以S的最优解就是a1⋃A1na_1 \\bigcup A_{1n}a​1​​⋃A​1n​​。\n证明贪心选择——最早结束的活动总是最优解的一部分：\n定理： 考虑任意非空子问题SkS_kS​k​​，另ama_ma​m​​是SkS_kS​k​​种最早结束的活动，则ama_ma​m​​在SkS_kS​k​​的某个最大兼容活动子集中。\n证明： AkA_kA​k​​是SkS_kS​k​​的某个最大兼容活动子集，aja_ja​j​​是AkA_kA​k​​种最早结束的活动。如果aj=ama_j = a_ma​j​​=a​m​​，则已经证明ama_ma​m​​在SkS_kS​k​​的某个最大兼容活动子集中；如果aj≠ama_j \\ne a_ma​j​​≠a​m​​，那么用ama_ma​m​​替换AkA_kA​k​​中的aja_ja​j​​产生Ak′A_k^\\primeA​k​′​​，由于fm≤fjf_m \\le f_jf​m​​≤f​j​​而且AkA_kA​k​​中的活动都是不相交的，所以Ak′A_k^\\primeA​k​′​​也是SkS_kS​k​​的最大兼容活动子集，得证。\n递归贪心算法\n为了方便算法初始化，添加一个虚拟活动a0a_0a​0​​，其结束时间f0=0f_0 = 0f​0​​=0，这样子问题S0S_0S​0​​就是完整的活动集S。求解原问题即可调用 RECURSIVE-ACTIVITY-SELECTOR(s, f, 0, n)。\n\n2,3行是为了找到第一个，与aka_ka​k​​不相交的最先结束的活动ama_ma​m​​。\n迭代贪心算法\n\n贪心算法原理\n前面我们讨论活动选择问题的贪心算法的过程比通常的过程繁琐一些，我们当时经过了如下几个步骤：\n\n确定问题的最优子结构．\n设计一个递归算法（动态规划）。\n证明如果我们做出一个贪心选择，则只剩下一个子问题。\n证明贪心选择总是安全的（步骤 3 、 4 的顺序可以调换）。\n设计一个递归算法实现贪心策略。\n将递归算法转换为迭代算法。\n\n这个过程详细的看到贪心算法是如何以动态规划为基础的。\n更一般地，我们可以简单按如下步骤设计贪心算法：\n\n将最优化问题转化为这样的形式：对其做出一次选择后，只剩下一个子问题需要求解。\n证明做出贪心选择后，原问题总是存在最优解，即贪心选择总是安全的。\n证明做出贪心选择后，剩余的子问题满足性质：其最优解与贪心选择组合即可得到原问题的最优解，这样就得到了最优子结构。\n\n在本章剩余部分中，我们将使用这种更直接的设计方法．但我们应该知道，在每个贪心算法之下，几乎总有一个更繁琐的动态规划算法。\n在证明一个问题可以用贪心算法解决过程中，证明一个问题的贪心选择性质 和 最优子结构性质 是非常重要的。\n赫夫曼编码\n赫夫曼编码k而已有效的压缩数据：通常可以节省20%~90%的空间，具体压缩率依赖于数据的特型。我们将待压缩数据看做字符序列。根据每个字符出现的频率，赫夫曼贪心算法构造出字符的最优二进制表示。\n下面给出一个例子，待压缩文件有10万个字符数据。文件中出现了6种不同的字符，出现的次数见表格：\n\n\n\n\na\nb\nc\nd\ne\nf\n\n\n\n\n频率（千次）\n45\n13\n12\n16\n9\n5\n\n\n定长编码\n000\n001\n010\n011\n100\n101\n\n\n变长编码\n0\n101\n100\n111\n1101\n1100\n\n\n\n如果用定长编码来存储信息，那么需要用3位来表示z和6个字符。这种方法总共需要300000个二进制位来存储。\n但如果用变长编码来存储信息，如表格中所示，出现频率较高字符的使用短一点的二进制编码表示。这种方法需要(45×1+13×3+12×3+16×3+9×4+5×4)×1000=224000(45 \\times 1 + 13 \\times 3 + 12 \\times 3 + 16 \\times 3 + 9 \\times 4 + 5 \\times 4) \\times 1000 = 224000(45×1+13×3+12×3+16×3+9×4+5×4)×1000=224000位。与定长编码相比节约了25%的空间。\n我们这里只考虑前缀码，即没有任何码字是其他码字的前缀。只考虑前缀码的原因是，前缀码与任何其他编码方式比都可以保证最优的压缩率，但此处不予证明。\n前缀码的作用是简化解码过程，由于没有任何码字是其他码字的前缀，所以文件开头的码字是无歧义的。我们可以简单的识别出开始码字，将其转换为对应的字符，然后对文件剩余部分重复的做这种解码过程。\n编码方案可以用一个二叉树表示——编码树。下图a表示了定长编码的编码树，图b表示了变长编码的编码树。叶子结点为字符，并存储字符的出现频率，字符的二进制编码是从根节点到叶子节点的路径，向左表示0，向右表示1。内部结点不存储字符，存储子节点的频率和。\n\n给定一棵对应前缀码的树T，我们可以容易地计算出编码一个文件需要多少个二进制位。对于字母表C中的每个字符c，令属性c.freq表示c在文件中出现的频率，令dT(c)d_T(c)d​T​​(c)表示c的叶结点在树中的深度。注意，dT(c)d_T(c)d​T​​(c)也是字符c的码字的长度。则编码文件需要习：\nB(T)=∑c∈Cc.freq⋅dT(c)B(T) = \\sum_{c \\in C}c.freq\\cdot d_T(c)\nB(T)=​c∈C​∑​​c.freq⋅d​T​​(c)\n个二进制位，我们将B(T)定义为T的代价。\n构造赫夫曼编码\n赫夫曼设计了一个贪心算法得到最优前缀码，被称为赫夫曼编码。\n下面是哈夫曼算法的伪代码，输入一个字母表C，输出一个最优前缀码对应的编码树。\n\n构造编码树的过程如下：\n算法中使用一个优先队列Q，初始化时将字母表C全部插入Q。每次循环时，创造一个结点z，从优先队列取出两个最小值作为结点z的孩子，并使得z.freq为两个孩子的freq之和，然后将z结点重新插入优先队列Q中。直到优先队列中只剩下一个元素，这时这个元素为编码树的root结点，并且所有字符都已加入编码树。\n下面是一个例子：\n\n证明赫夫曼算法的正确性\n贪心选择\n贪心选择性质：若x,y是C中频率最低的两个字符。那么C存在一个最优前缀码，x,y的码字长度相等，且只有最后一个二进制位不同。\n证明思路，假设有一个最优前缀码的编码树TTT，把x,y与编码树中深度最深的两个兄弟节点进行交换产生T′T^\\primeT​′​​。通过计算得出B(T′)≤B(T)B(T^\\prime) \\le B(T)B(T​′​​)≤B(T)。\n最优子结构\n最优子结构性质：若x,y是C中频率最低的两个字符。令C′C^\\primeC​′​​为CCC去除x和y，然后加入字符z，且z.freq=x.freq+y.freqz.freq = x.freq + y.freqz.freq=x.freq+y.freq。T′T^\\primeT​′​​为C′C^\\primeC​′​​的一个最优前缀码的编码树，将T′T^\\primeT​′​​中的叶子节点z替换为一个以x,y为子节点的内部节点得到树TTT。则T为C的一个最优前缀码的编码树。\n证明思路，反证法，假设C存在一个T′′T^{\\prime\\prime}T​′′​​比T更优，由贪心选择性质可知x,y为兄弟节点（不一定吧？书中用不失一般性，不太理解），将T′′T^{\\prime\\prime}T​′′​​中的x,y替换为z得到T′′′T^{\\prime\\prime\\prime}T​′′′​​，结果得到B(T′′′)&lt;B(T′)B(T^{\\prime\\prime\\prime}) &lt; B(T^{\\prime})B(T​′′′​​)&lt;B(T​′​​)，与T′T^\\primeT​′​​为C′C^\\primeC​′​​的一个最优前缀码的编码树的假设相悖。\n涉及算法\n\n点击查看实现\n\n\n活动选择问题\n赫夫曼编码\n\n","dateCreated":"2015-03-11T18:20:08+08:00","dateModified":"2025-06-02T23:17:17+08:00","datePublished":"2015-03-11T18:20:08+08:00","description":"","headline":"16. 贪心算法","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/","keywords":"算法"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"16. 贪心算法\n求解最优化问题的算法通常需要经过一系列的步骤，在每个步骤都面临多种选择。对于许多最优化问题，使用动态规划算法来求最优解有些杀鸡用牛刀了，可以使用更简单、更高效的算法．贪心算法就是这样的算法，它在每一步都做出当时看起来最佳的选择。也就是说，它总是做出局部最优的选择，寄希望这样的选择能导致全局最优解。\n活动选择问题\n我们的第一个例子是一个调度竞争共享资源的多个活动的问题，目标是选出一个最大的互相兼容的活动集合。假定有一个 n 个活动的集合S=a1,a2,...,anS={a_1, a_2, ... , a_n}S=a​1​​,a​2​​,...,a​n​​，这些活动使用同一个资源（例如一个阶梯教室），而这个资源在某个时刻只能供一个活动使用。每个活动aia_ia​i​​都有一个开始时间sis_is​i​​和一个结束时间fif_if​i​​ ，其中0≤si&lt;fi&lt;∞0\\le s_i &lt; f_i &lt; \\infty0≤s​i​​&lt;f​i​​&lt;∞。如果被选中，任务aia_ia​i​​发生在半开时间区间[si,fi)[s_i, f_i)[s​i​​,f​i​​)期间．如果两个活动aia_ia​i​​和aja_ja​j​​满足[si,fi)[s_i, f_i)[s​i​​,f​i​​)和[sj,fj)[s_j, f_j)[s​j​​,f​j​​)不重叠，则称它们是兼容的．也就是说，若si≥fjs_i\\ge f_js​i​​≥f​j​​或sj≥fis_j\\ge f_is​j​​≥f​i​​，则aia_ia​i​​和aja_ja​j​​是兼容的．在活动选择问题中，我们希望选出一个最大兼容活动集。假定活动已按结束时间的单调递增顺序排序：\nf1≤f2≤f3≤...≤fn−1≤fnf_1 \\le f_2 \\le f_3 \\le ... \\le f_{n-1} \\le f_n\nf​1​​≤f​2​​≤f​3​​≤...≤f​n−1​​≤f​n​​\n例如下面的活动集合S：\n\n\n\ni\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n\n\n\n\nsis_is​i​​\n1\n3\n0\n5\n3\n5\n6\n8\n8\n2\n12\n\n\nfif_if​i​​\n4\n5\n6\n7\n9\n9\n10\n11\n12\n14\n16\n\n\n\n对于这个例子，子集S=a3,a9,a11S={a_3, a_9,a_11}S=a​3​​,a​9​​,a​1​​1由相互兼容的活动组成。但它不是一个最大集，因为子集S=a1,a4,a8,a11S={a_1, a_4, a_8,a_11}S=a​1​​,a​4​​,a​8​​,a​1​​1更大。实际上S=a1,a4,a8,a11S={a_1, a_4, a_8,a_11}S=a​1​​,a​4​​,a​8​​,a​1​​1是一个最大兼容活动子集，另一个最大子集是\nS=a2,a4,a9,a11S={a_2, a_4, a_9,a_11}S=a​2​​,a​4​​,a​9​​,a​1​​1。\n最优子结构\n假定集合SijS_{ij}S​ij​​（aia_ia​i​​结束之后，aja_ja​j​​开始之前的活动）的一个最大相互兼容的活动子集为AijA_{ij}A​ij​​，而且AijA_{ij}A​ij​​包含了活动aka_ka​k​​。 由于最优解包含了活动aka_ka​k​​，我们得到两个子问题：SikS_{ik}S​ik​​（aka_ka​k​​开始之前的活动）的兼容活动 和 SkjS_{kj}S​kj​​（aka_ka​k​​结束之后的活动）的兼容活动。由剪切-粘贴法可以证明SijS_{ij}S​ij​​的最优解为SikS_{ik}S​ik​​的最优解、aka_ka​k​​、 SkjS_{kj}S​kj​​的最优解组成。即Aij=Aik∪ak∪AkjA_{ij} = A_{ik} \\cup a_k \\cup A_{kj}A​ij​​=A​ik​​∪a​k​​∪A​kj​​。\n所以这时我们可以用动态规划方法求出所有k的取值情况对应的解，然后找出一个最大的作为最优解。\n如果用c[i,j]c[i, j]c[i,j]表示SijS_{ij}S​ij​​的最优解的大小，递归式为：\nc[i,j]={0ifSij=∅,maxak∈Sij{c[i,k]+c[k,j]+1}ifSij≠∅,c[i, j] = \\left \\{\n    \\begin{aligned}\n    &amp; 0 &amp;                                                if \\quad S_{ij} = \\varnothing, \\\\\n    &amp; \\max_{a_k \\in S_{ij}}\\{c[i, k] + c[k, j] + 1\\} &amp;   if \\quad S_{ij} \\ne \\varnothing,\n    \\end{aligned}\n\\right.\nc[i,j]={​​​​​0​​a​k​​∈S​ij​​​max​​{c[i,k]+c[k,j]+1}​​​ifS​ij​​=∅,​ifS​ij​​≠∅,​​\n贪心选择\n动态规划需要考虑每种子问题，比较之后得出哪种选择是最优解。假如我们无需求解每种子问题，直接就可以找出一个最优选择。那么将大大减少计算过程。对于活动选择问题，我们可以只考虑一个选择：贪心选择。\n直观上，我们应该选择一个活动，使得选择它后剩下的资源可以尽可能多的被其他活动利用。直觉告诉我们选择S中最早结束的活动，因为他可以剩下尽可能多的资源。由于我们活动时按照结束时间排序的，也就是说贪心选择就是a1a_1a​1​​。\n当做出贪心选择后，只剩下一个子问题需要求解，因为不会有在a1a_1a​1​​开始前结束的活动。加上前面的最优子结构性质，所以S的最优解就是a1⋃A1na_1 \\bigcup A_{1n}a​1​​⋃A​1n​​。\n证明贪心选择——最早结束的活动总是最优解的一部分：\n定理： 考虑任意非空子问题SkS_kS​k​​，另ama_ma​m​​是SkS_kS​k​​种最早结束的活动，则ama_ma​m​​在SkS_kS​k​​的某个最大兼容活动子集中。\n证明： AkA_kA​k​​是SkS_kS​k​​的某个最大兼容活动子集，aja_ja​j​​是AkA_kA​k​​种最早结束的活动。如果aj=ama_j = a_ma​j​​=a​m​​，则已经证明ama_ma​m​​在SkS_kS​k​​的某个最大兼容活动子集中；如果aj≠ama_j \\ne a_ma​j​​≠a​m​​，那么用ama_ma​m​​替换AkA_kA​k​​中的aja_ja​j​​产生Ak′A_k^\\primeA​k​′​​，由于fm≤fjf_m \\le f_jf​m​​≤f​j​​而且AkA_kA​k​​中的活动都是不相交的，所以Ak′A_k^\\primeA​k​′​​也是SkS_kS​k​​的最大兼容活动子集，得证。\n递归贪心算法\n为了方便算法初始化，添加一个虚拟活动a0a_0a​0​​，其结束时间f0=0f_0 = 0f​0​​=0，这样子问题S0S_0S​0​​就是完整的活动集S。求解原问题即可调用 RECURSIVE-ACTIVITY-SELECTOR(s, f, 0, n)。\n\n2,3行是为了找到第一个，与aka_ka​k​​不相交的最先结束的活动ama_ma​m​​。\n迭代贪心算法\n\n贪心算法原理\n前面我们讨论活动选择问题的贪心算法的过程比通常的过程繁琐一些，我们当时经过了如下几个步骤：\n\n确定问题的最优子结构．\n设计一个递归算法（动态规划）。\n证明如果我们做出一个贪心选择，则只剩下一个子问题。\n证明贪心选择总是安全的（步骤 3 、 4 的顺序可以调换）。\n设计一个递归算法实现贪心策略。\n将递归算法转换为迭代算法。\n\n这个过程详细的看到贪心算法是如何以动态规划为基础的。\n更一般地，我们可以简单按如下步骤设计贪心算法：\n\n将最优化问题转化为这样的形式：对其做出一次选择后，只剩下一个子问题需要求解。\n证明做出贪心选择后，原问题总是存在最优解，即贪心选择总是安全的。\n证明做出贪心选择后，剩余的子问题满足性质：其最优解与贪心选择组合即可得到原问题的最优解，这样就得到了最优子结构。\n\n在本章剩余部分中，我们将使用这种更直接的设计方法．但我们应该知道，在每个贪心算法之下，几乎总有一个更繁琐的动态规划算法。\n在证明一个问题可以用贪心算法解决过程中，证明一个问题的贪心选择性质 和 最优子结构性质 是非常重要的。\n赫夫曼编码\n赫夫曼编码k而已有效的压缩数据：通常可以节省20%~90%的空间，具体压缩率依赖于数据的特型。我们将待压缩数据看做字符序列。根据每个字符出现的频率，赫夫曼贪心算法构造出字符的最优二进制表示。\n下面给出一个例子，待压缩文件有10万个字符数据。文件中出现了6种不同的字符，出现的次数见表格：\n\n\n\n\na\nb\nc\nd\ne\nf\n\n\n\n\n频率（千次）\n45\n13\n12\n16\n9\n5\n\n\n定长编码\n000\n001\n010\n011\n100\n101\n\n\n变长编码\n0\n101\n100\n111\n1101\n1100\n\n\n\n如果用定长编码来存储信息，那么需要用3位来表示z和6个字符。这种方法总共需要300000个二进制位来存储。\n但如果用变长编码来存储信息，如表格中所示，出现频率较高字符的使用短一点的二进制编码表示。这种方法需要(45×1+13×3+12×3+16×3+9×4+5×4)×1000=224000(45 \\times 1 + 13 \\times 3 + 12 \\times 3 + 16 \\times 3 + 9 \\times 4 + 5 \\times 4) \\times 1000 = 224000(45×1+13×3+12×3+16×3+9×4+5×4)×1000=224000位。与定长编码相比节约了25%的空间。\n我们这里只考虑前缀码，即没有任何码字是其他码字的前缀。只考虑前缀码的原因是，前缀码与任何其他编码方式比都可以保证最优的压缩率，但此处不予证明。\n前缀码的作用是简化解码过程，由于没有任何码字是其他码字的前缀，所以文件开头的码字是无歧义的。我们可以简单的识别出开始码字，将其转换为对应的字符，然后对文件剩余部分重复的做这种解码过程。\n编码方案可以用一个二叉树表示——编码树。下图a表示了定长编码的编码树，图b表示了变长编码的编码树。叶子结点为字符，并存储字符的出现频率，字符的二进制编码是从根节点到叶子节点的路径，向左表示0，向右表示1。内部结点不存储字符，存储子节点的频率和。\n\n给定一棵对应前缀码的树T，我们可以容易地计算出编码一个文件需要多少个二进制位。对于字母表C中的每个字符c，令属性c.freq表示c在文件中出现的频率，令dT(c)d_T(c)d​T​​(c)表示c的叶结点在树中的深度。注意，dT(c)d_T(c)d​T​​(c)也是字符c的码字的长度。则编码文件需要习：\nB(T)=∑c∈Cc.freq⋅dT(c)B(T) = \\sum_{c \\in C}c.freq\\cdot d_T(c)\nB(T)=​c∈C​∑​​c.freq⋅d​T​​(c)\n个二进制位，我们将B(T)定义为T的代价。\n构造赫夫曼编码\n赫夫曼设计了一个贪心算法得到最优前缀码，被称为赫夫曼编码。\n下面是哈夫曼算法的伪代码，输入一个字母表C，输出一个最优前缀码对应的编码树。\n\n构造编码树的过程如下：\n算法中使用一个优先队列Q，初始化时将字母表C全部插入Q。每次循环时，创造一个结点z，从优先队列取出两个最小值作为结点z的孩子，并使得z.freq为两个孩子的freq之和，然后将z结点重新插入优先队列Q中。直到优先队列中只剩下一个元素，这时这个元素为编码树的root结点，并且所有字符都已加入编码树。\n下面是一个例子：\n\n证明赫夫曼算法的正确性\n贪心选择\n贪心选择性质：若x,y是C中频率最低的两个字符。那么C存在一个最优前缀码，x,y的码字长度相等，且只有最后一个二进制位不同。\n证明思路，假设有一个最优前缀码的编码树TTT，把x,y与编码树中深度最深的两个兄弟节点进行交换产生T′T^\\primeT​′​​。通过计算得出B(T′)≤B(T)B(T^\\prime) \\le B(T)B(T​′​​)≤B(T)。\n最优子结构\n最优子结构性质：若x,y是C中频率最低的两个字符。令C′C^\\primeC​′​​为CCC去除x和y，然后加入字符z，且z.freq=x.freq+y.freqz.freq = x.freq + y.freqz.freq=x.freq+y.freq。T′T^\\primeT​′​​为C′C^\\primeC​′​​的一个最优前缀码的编码树，将T′T^\\primeT​′​​中的叶子节点z替换为一个以x,y为子节点的内部节点得到树TTT。则T为C的一个最优前缀码的编码树。\n证明思路，反证法，假设C存在一个T′′T^{\\prime\\prime}T​′′​​比T更优，由贪心选择性质可知x,y为兄弟节点（不一定吧？书中用不失一般性，不太理解），将T′′T^{\\prime\\prime}T​′′​​中的x,y替换为z得到T′′′T^{\\prime\\prime\\prime}T​′′′​​，结果得到B(T′′′)&lt;B(T′)B(T^{\\prime\\prime\\prime}) &lt; B(T^{\\prime})B(T​′′′​​)&lt;B(T​′​​)，与T′T^\\primeT​′​​为C′C^\\primeC​′​​的一个最优前缀码的编码树的假设相悖。\n涉及算法\n\n点击查看实现\n\n\n活动选择问题\n赫夫曼编码\n\n","dateCreated":"2015-03-11T18:20:08+08:00","dateModified":"2025-06-02T23:17:17+08:00","datePublished":"2015-03-11T18:20:08+08:00","description":"","headline":"16. 贪心算法","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/","keywords":"算法"}</script>
     <meta name="description" content="16. 贪心算法 求解最优化问题的算法通常需要经过一系列的步骤，在每个步骤都面临多种选择。对于许多最优化问题，使用动态规划算法来求最优解有些杀鸡用牛刀了，可以使用更简单、更高效的算法．贪心算法就是这样的算法，它在每一步都做出当时看起来最佳的选择。也就是说，它总是做出局部最优的选择，寄希望这样的选择能导致全局最优解。 活动选择问题 我们的第一个例子是一个调度竞争共享资源的多个活动的问题，目标是选出一">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="16. 贪心算法">
-<meta property="og:url" content="https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/index.html">
+<meta property="og:url" content="https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="16. 贪心算法 求解最优化问题的算法通常需要经过一系列的步骤，在每个步骤都面临多种选择。对于许多最优化问题，使用动态规划算法来求最优解有些杀鸡用牛刀了，可以使用更简单、更高效的算法．贪心算法就是这样的算法，它在每一步都做出当时看起来最佳的选择。也就是说，它总是做出局部最优的选择，寄希望这样的选择能导致全局最优解。 活动选择问题 我们的第一个例子是一个调度竞争共享资源的多个活动的问题，目标是选出一">
 <meta property="og:locale" content="zh_TW">
@@ -56,7 +56,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -567,7 +567,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -578,7 +578,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -591,7 +591,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -604,7 +604,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -617,7 +617,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -630,7 +630,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -695,7 +695,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -706,7 +706,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -719,7 +719,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -732,7 +732,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -745,7 +745,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -758,7 +758,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -779,7 +779,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -792,7 +792,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -805,7 +805,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -818,7 +818,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2015/03/11/Algorithms/16.%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -894,7 +894,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -917,7 +917,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -940,7 +940,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -963,7 +963,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -986,7 +986,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -1009,7 +1009,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1032,7 +1032,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1055,7 +1055,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1078,7 +1078,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1101,7 +1101,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

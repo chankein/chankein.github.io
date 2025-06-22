@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"不是有个叫迪杰斯特拉(Dijkstra)的算法吗？名字难记不说，加权图的最短路径问题在实际开发中也很少需要自己实现，所以总是很快就忘了。。。\n迪杰斯特拉算法是什么\n迪杰斯特拉算法是一种用于求解图的最短路径的算法。很多人可能只是听过这个名字。虽然它的原理简单易懂，但初次接触可能有些难以理解，不过只要逐步分析就会发现它其实是一个相当直观的算法。\n对于没有权重的迷宫搜索等问题，可以用广度优先搜索(BFS)解决，但如果每条边都有权重，就需要计算所有可能的路径。假设每个顶点只经过一次，且有E条边，那么时间复杂度会是O(E!)，计算量会爆炸式增长。\n这样计算起来就很不现实。\n而迪杰斯特拉算法正是高效解决这类问题的算法。\n需要注意的是，各边的成本必须是非负值（大于等于0）。如果包含负数，则需要使用贝尔曼-福特(Bellman-Ford)等算法。\n步骤\n迪杰斯特拉算法的步骤非常简单：\n\n将起点的最短距离设为0\n从未访问的点中选择已知最短距离且距离最小的顶点移动\n设置该顶点连接的其他顶点的最短距离。如果可以更新更短的距离，则更新。\n重复以上步骤，直到所有顶点的最短距离都确定\n\n光这么说可能有点抽象，下面我们通过一个具体例子来说明。\n示例\n虽然方法很原始，但这是最能表达清楚的方式…\n我们来看下面这张图的最短路径：\n\n绿色表示最短路径已确定并已访问的顶点，红色是起点顶点。每个顶点上的数字表示当前的最短路径：\n\n可以看到，算法从起点开始，每次移动到当前最短路径的顶点，并计算相邻顶点的最短路径。\n实现\n接下来我们来实现这个算法。\n按照上述步骤直接实现：\n1234567891011121314151617181920212223242526272829303132333435363738function main(nodes) &#123;    const start = nodes[0]    // 记录已访问的顶点    const visited = new Set()    const routesFromStart = new Map()     // 记录从起点出发的距离    routesFromStart.set(start, &#123;distance: 0&#125;)    for(const n of nodes) &#123;        if(n != start) &#123;            // 除起点外所有顶点初始化为无穷大            routesFromStart.set(n, &#123;distance: Number.MAX_VALUE&#125;)        &#125;    &#125;    let current = start    let routes = new Map()    while(current != null) &#123;        visited.add(current)        for(const edge of current.edges) &#123;             // 计算相邻顶点的最短距离，如果更小则更新            if(edge.cost + routesFromStart.get(current).distance &lt; routesFromStart.get(edge.to).distance) &#123;                routesFromStart.set(edge.to, &#123;distance: edge.cost + routesFromStart.get(current).distance&#125;)                routes.set(current, edge.to)            &#125;        &#125;        let cheapestNodeDistance = Number.MAX_VALUE        current = null        // 从已计算最短距离的未访问顶点中选择最小的顶点        for(const city of routesFromStart.keys()) &#123;            if(!visited.has(city) &amp;&amp; cheapestNodeDistance &gt; routesFromStart.get(city).distance)&#123;                cheapestNodeDistance = routesFromStart.get(city).distance                current = city            &#125;        &#125;    &#125;    return routesFromStart.get(nodes[nodes.length - 1]).distance&#125;\n假设顶点数为V，这段代码在最坏情况下需要遍历所有边，并在内部循环中选择最小顶点，因此时间复杂度是O(V² + E)。空间复杂度需要记录每个顶点，所以是O(V)。\n关于使用优先队列的实现\n细心的读者可能已经发现，这段代码中选取最小顶点的逻辑可以优化，这就是优先队列(Priority Queue)。\n优先队列的插入和取出操作需要O(logN)的时间复杂度，但比线性搜索最小顶点更快。\nJavaScript没有内置优先队列，以下是Python实现：\n12345678910111213141516171819202122232425262728def dijkstra(nodes):    start_node = nodes[0]    routes_from_start = &#123;n: math.inf for n in nodes&#125;    # 起点距离设为0    routes_from_start[start_node] = 0        minHeap = []    # 添加起点    heappush(minHeap, (0, start_node))    # 直到堆为空    while minHeap:        (cost, current_node) = heappop(minHeap)        # 检查priority key是否重复        if cost &gt; routes_from_start[current_node]:            continue        for node in current_node.routes:            price_info = current_node.routes[node]            if routes_from_start[node] &gt; price_info + routes_from_start[current_node]:                routes_from_start[node] = price_info + routes_from_start[current_node]                # 记录更新最短距离的节点                heappush(minHeap, (price_info + routes_from_start[current_node], node))    return routes_from_start[nodes[-1]]\n优先队列的说明我们以后再讨论。\n优化后的算法时间复杂度为O(V + ElogE)，比最初的实现更高效。\n记录路径\n现在我们已经能求出最短成本，但这是&quot;最短路径&quot;问题，我们自然还想知道具体路径。\n改进上面的代码：\n12345678910111213141516171819202122232425262728293031323334353637383940def dijkstra(nodes):    start_node = nodes[0]    routes_from_start = &#123;n: math.inf for n in nodes&#125;    # 起点距离设为0    routes_from_start[start_node] = 0        minHeap = []    # 添加起点    heappush(minHeap, (0, start_node))    path = collections.defaultdict(Node)    # 直到堆为空    while minHeap:        (cost, current_node) = heappop(minHeap)        # 检查priority key是否重复        if cost &gt; routes_from_start[current_node]:            continue        for node in current_node.routes:            price_info = current_node.routes[node]            if routes_from_start[node] &gt; price_info + routes_from_start[current_node]:                routes_from_start[node] = price_info + routes_from_start[current_node]                # 记录更新最短距离的节点                path[node.id] = current_node.id                heappush(minHeap, (price_info + routes_from_start[current_node], node))    current_node = nodes[-1].id    path_array = []    # 从终点回溯记录的最短路径节点    while current_node:        path_array.append(current_node)        if current_node not in path:            break        current_node = path[current_node]    return routes_from_start[nodes[-1]], path_array[::-1]\n迪杰斯特拉算法会记录更新最短距离的节点，最后回溯即可。时间复杂度会增加最短路径节点数的计算量。\n为什么这样能求出最短路径\n看到这里，很多人可能会想：算法本身很简单，实现也不难，但为什么能保证求出最短距离呢？我们简单验证一下：\n\n假设集合L中的顶点到起点S的最短距离已确定，那么从L连接到的最小顶点也应该是S的最短距离。\n\n\n在集合T中选取最小顶点i，则d[i] = min(T)。对于任意顶点k，最短距离d[k] ≥ d[i]是确定的，因为d[i]是最小值且各边权重非负。\n通过归纳法可以证明这一点。\n其实这就是一个递推公式：\nd[i] = min(k ⊂ T) + i到L中相邻顶点的最短距离\n说到递推公式就想到动态规划(DP)。关于DP可以参考这篇文章：\nhttps://qiita.com/drken/items/a5e6fe22863b7992efdb\n用DP来看值的更新过程：\n\n纵轴表示迭代次数，横轴表示顶点。原来迪杰斯特拉算法是DP的一种啊。\n总结\n通过以上分析，迪杰斯特拉算法一旦理解后其实相当简单。以后在算法问题中遇到类似问题时，希望能快速联想到这个算法。\n*顺便说一句，我也想写一篇关于DP的文章\n讲解视频可以在这里观看：\nhttps://youtu.be/jz8b0q5R1Ss\n参考\nhttp://www.lab2.kuis.kyoto-u.ac.jp/~shuichi/algintro/alg-6s.pdf\nhttps://www.youtube.com/watch?v=X1AsMlJdiok\n","dateCreated":"2023-04-12T22:53:09+08:00","dateModified":"2025-06-03T16:26:08+08:00","datePublished":"2023-04-12T22:53:09+08:00","description":"","headline":"Dijkstra简单介绍","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/","keywords":"算法"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"不是有个叫迪杰斯特拉(Dijkstra)的算法吗？名字难记不说，加权图的最短路径问题在实际开发中也很少需要自己实现，所以总是很快就忘了。。。\n迪杰斯特拉算法是什么\n迪杰斯特拉算法是一种用于求解图的最短路径的算法。很多人可能只是听过这个名字。虽然它的原理简单易懂，但初次接触可能有些难以理解，不过只要逐步分析就会发现它其实是一个相当直观的算法。\n对于没有权重的迷宫搜索等问题，可以用广度优先搜索(BFS)解决，但如果每条边都有权重，就需要计算所有可能的路径。假设每个顶点只经过一次，且有E条边，那么时间复杂度会是O(E!)，计算量会爆炸式增长。\n这样计算起来就很不现实。\n而迪杰斯特拉算法正是高效解决这类问题的算法。\n需要注意的是，各边的成本必须是非负值（大于等于0）。如果包含负数，则需要使用贝尔曼-福特(Bellman-Ford)等算法。\n步骤\n迪杰斯特拉算法的步骤非常简单：\n\n将起点的最短距离设为0\n从未访问的点中选择已知最短距离且距离最小的顶点移动\n设置该顶点连接的其他顶点的最短距离。如果可以更新更短的距离，则更新。\n重复以上步骤，直到所有顶点的最短距离都确定\n\n光这么说可能有点抽象，下面我们通过一个具体例子来说明。\n示例\n虽然方法很原始，但这是最能表达清楚的方式…\n我们来看下面这张图的最短路径：\n\n绿色表示最短路径已确定并已访问的顶点，红色是起点顶点。每个顶点上的数字表示当前的最短路径：\n\n可以看到，算法从起点开始，每次移动到当前最短路径的顶点，并计算相邻顶点的最短路径。\n实现\n接下来我们来实现这个算法。\n按照上述步骤直接实现：\n1234567891011121314151617181920212223242526272829303132333435363738function main(nodes) &#123;    const start = nodes[0]    // 记录已访问的顶点    const visited = new Set()    const routesFromStart = new Map()     // 记录从起点出发的距离    routesFromStart.set(start, &#123;distance: 0&#125;)    for(const n of nodes) &#123;        if(n != start) &#123;            // 除起点外所有顶点初始化为无穷大            routesFromStart.set(n, &#123;distance: Number.MAX_VALUE&#125;)        &#125;    &#125;    let current = start    let routes = new Map()    while(current != null) &#123;        visited.add(current)        for(const edge of current.edges) &#123;             // 计算相邻顶点的最短距离，如果更小则更新            if(edge.cost + routesFromStart.get(current).distance &lt; routesFromStart.get(edge.to).distance) &#123;                routesFromStart.set(edge.to, &#123;distance: edge.cost + routesFromStart.get(current).distance&#125;)                routes.set(current, edge.to)            &#125;        &#125;        let cheapestNodeDistance = Number.MAX_VALUE        current = null        // 从已计算最短距离的未访问顶点中选择最小的顶点        for(const city of routesFromStart.keys()) &#123;            if(!visited.has(city) &amp;&amp; cheapestNodeDistance &gt; routesFromStart.get(city).distance)&#123;                cheapestNodeDistance = routesFromStart.get(city).distance                current = city            &#125;        &#125;    &#125;    return routesFromStart.get(nodes[nodes.length - 1]).distance&#125;\n假设顶点数为V，这段代码在最坏情况下需要遍历所有边，并在内部循环中选择最小顶点，因此时间复杂度是O(V² + E)。空间复杂度需要记录每个顶点，所以是O(V)。\n关于使用优先队列的实现\n细心的读者可能已经发现，这段代码中选取最小顶点的逻辑可以优化，这就是优先队列(Priority Queue)。\n优先队列的插入和取出操作需要O(logN)的时间复杂度，但比线性搜索最小顶点更快。\nJavaScript没有内置优先队列，以下是Python实现：\n12345678910111213141516171819202122232425262728def dijkstra(nodes):    start_node = nodes[0]    routes_from_start = &#123;n: math.inf for n in nodes&#125;    # 起点距离设为0    routes_from_start[start_node] = 0        minHeap = []    # 添加起点    heappush(minHeap, (0, start_node))    # 直到堆为空    while minHeap:        (cost, current_node) = heappop(minHeap)        # 检查priority key是否重复        if cost &gt; routes_from_start[current_node]:            continue        for node in current_node.routes:            price_info = current_node.routes[node]            if routes_from_start[node] &gt; price_info + routes_from_start[current_node]:                routes_from_start[node] = price_info + routes_from_start[current_node]                # 记录更新最短距离的节点                heappush(minHeap, (price_info + routes_from_start[current_node], node))    return routes_from_start[nodes[-1]]\n优先队列的说明我们以后再讨论。\n优化后的算法时间复杂度为O(V + ElogE)，比最初的实现更高效。\n记录路径\n现在我们已经能求出最短成本，但这是&quot;最短路径&quot;问题，我们自然还想知道具体路径。\n改进上面的代码：\n12345678910111213141516171819202122232425262728293031323334353637383940def dijkstra(nodes):    start_node = nodes[0]    routes_from_start = &#123;n: math.inf for n in nodes&#125;    # 起点距离设为0    routes_from_start[start_node] = 0        minHeap = []    # 添加起点    heappush(minHeap, (0, start_node))    path = collections.defaultdict(Node)    # 直到堆为空    while minHeap:        (cost, current_node) = heappop(minHeap)        # 检查priority key是否重复        if cost &gt; routes_from_start[current_node]:            continue        for node in current_node.routes:            price_info = current_node.routes[node]            if routes_from_start[node] &gt; price_info + routes_from_start[current_node]:                routes_from_start[node] = price_info + routes_from_start[current_node]                # 记录更新最短距离的节点                path[node.id] = current_node.id                heappush(minHeap, (price_info + routes_from_start[current_node], node))    current_node = nodes[-1].id    path_array = []    # 从终点回溯记录的最短路径节点    while current_node:        path_array.append(current_node)        if current_node not in path:            break        current_node = path[current_node]    return routes_from_start[nodes[-1]], path_array[::-1]\n迪杰斯特拉算法会记录更新最短距离的节点，最后回溯即可。时间复杂度会增加最短路径节点数的计算量。\n为什么这样能求出最短路径\n看到这里，很多人可能会想：算法本身很简单，实现也不难，但为什么能保证求出最短距离呢？我们简单验证一下：\n\n假设集合L中的顶点到起点S的最短距离已确定，那么从L连接到的最小顶点也应该是S的最短距离。\n\n\n在集合T中选取最小顶点i，则d[i] = min(T)。对于任意顶点k，最短距离d[k] ≥ d[i]是确定的，因为d[i]是最小值且各边权重非负。\n通过归纳法可以证明这一点。\n其实这就是一个递推公式：\nd[i] = min(k ⊂ T) + i到L中相邻顶点的最短距离\n说到递推公式就想到动态规划(DP)。关于DP可以参考这篇文章：\nhttps://qiita.com/drken/items/a5e6fe22863b7992efdb\n用DP来看值的更新过程：\n\n纵轴表示迭代次数，横轴表示顶点。原来迪杰斯特拉算法是DP的一种啊。\n总结\n通过以上分析，迪杰斯特拉算法一旦理解后其实相当简单。以后在算法问题中遇到类似问题时，希望能快速联想到这个算法。\n*顺便说一句，我也想写一篇关于DP的文章\n讲解视频可以在这里观看：\nhttps://youtu.be/jz8b0q5R1Ss\n参考\nhttp://www.lab2.kuis.kyoto-u.ac.jp/~shuichi/algintro/alg-6s.pdf\nhttps://www.youtube.com/watch?v=X1AsMlJdiok\n","dateCreated":"2023-04-12T22:53:09+08:00","dateModified":"2025-06-03T16:26:08+08:00","datePublished":"2023-04-12T22:53:09+08:00","description":"","headline":"Dijkstra简单介绍","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/","keywords":"算法"}</script>
     <meta name="description" content="不是有个叫迪杰斯特拉(Dijkstra)的算法吗？名字难记不说，加权图的最短路径问题在实际开发中也很少需要自己实现，所以总是很快就忘了。。。 迪杰斯特拉算法是什么 迪杰斯特拉算法是一种用于求解图的最短路径的算法。很多人可能只是听过这个名字。虽然它的原理简单易懂，但初次接触可能有些难以理解，不过只要逐步分析就会发现它其实是一个相当直观的算法。 对于没有权重的迷宫搜索等问题，可以用广度优先搜索(BFS">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="Dijkstra简单介绍">
-<meta property="og:url" content="https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/index.html">
+<meta property="og:url" content="https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="不是有个叫迪杰斯特拉(Dijkstra)的算法吗？名字难记不说，加权图的最短路径问题在实际开发中也很少需要自己实现，所以总是很快就忘了。。。 迪杰斯特拉算法是什么 迪杰斯特拉算法是一种用于求解图的最短路径的算法。很多人可能只是听过这个名字。虽然它的原理简单易懂，但初次接触可能有些难以理解，不过只要逐步分析就会发现它其实是一个相当直观的算法。 对于没有权重的迷宫搜索等问题，可以用广度优先搜索(BFS">
 <meta property="og:locale" content="zh_TW">
@@ -57,7 +57,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -453,7 +453,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -464,7 +464,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -477,7 +477,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -490,7 +490,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -503,7 +503,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -516,7 +516,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -581,7 +581,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -592,7 +592,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -605,7 +605,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -618,7 +618,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -631,7 +631,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -644,7 +644,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -665,7 +665,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -678,7 +678,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -691,7 +691,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -704,7 +704,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/04/12/Algorithms/Dijkstra%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -780,7 +780,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -803,7 +803,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -826,7 +826,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -849,7 +849,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -872,7 +872,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -895,7 +895,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -918,7 +918,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -941,7 +941,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -964,7 +964,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -987,7 +987,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

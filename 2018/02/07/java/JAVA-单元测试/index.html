@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"什么是单元测试呢？单元测试就是针对最小的功能单元编写测试代码。Java程序最小的功能单元是方法，因此，对Java程序进行单元测试就是针对单个Java方法的测试。\n单元测试有什么好处呢？在学习单元测试前，我们可以先了解一下测试驱动开发。\n所谓测试驱动开发，是指先编写接口，紧接着编写测试。编写完测试后，我们才开始真正编写实现代码。在编写实现代码的过程中，一边写，一边测，什么时候测试全部通过了，那就表示编写的实现完成了：\n12345678910111213    编写接口     │     ▼    编写测试     │     ▼┌─▶ 编写实现│    ││ N  ▼└── 运行测试     │ Y     ▼    任务完成\n这就是传说中的……\n\n当然，这是一种理想情况。大部分情况是我们已经编写了实现代码，需要对已有的代码进行测试。\n我们先通过一个示例来看如何编写测试。假定我们编写了一个计算阶乘的类，它只有一个静态方法来计算阶乘：\n代码如下：\n123456789public class Factorial &#123;    public static long fact(long n) &#123;        long r = 1;        for (long i = 1; i &lt;= n; i++) &#123;            r = r * i;        &#125;        return r;    &#125;&#125;\n要测试这个方法，一个很自然的想法是编写一个main()方法，然后运行一些测试代码：\n123456789public class Test &#123;    public static void main(String[] args) &#123;        if (fact(10) == 3628800) &#123;            System.out.println(&quot;pass&quot;);        &#125; else &#123;            System.out.println(&quot;fail&quot;);        &#125;    &#125;&#125;\n这样我们就可以通过运行main()方法来运行测试代码。\n不过，使用main()方法测试有很多缺点：\n一是只能有一个main()方法，不能把测试代码分离，二是没有打印出测试结果和期望结果，例如，expected: 3628800, but actual: 123456，三是很难编写一组通用的测试代码。\n因此，我们需要一种测试框架，帮助我们编写测试。\nJUnit\nJUnit是一个开源的Java语言的单元测试框架，专门针对Java设计，使用最广泛。JUnit是事实上的单元测试的标准框架，任何Java开发者都应当学习并使用JUnit编写单元测试。\n使用JUnit编写单元测试的好处在于，我们可以非常简单地组织测试代码，并随时运行它们，JUnit就会给出成功的测试和失败的测试，还可以生成测试报告，不仅包含测试的成功率，还可以统计测试的代码覆盖率，即被测试的代码本身有多少经过了测试。对于高质量的代码来说，测试覆盖率应该在80%以上。\n此外，几乎所有的IDE工具都集成了JUnit，这样我们就可以直接在IDE中编写并运行JUnit测试。JUnit目前最新版本是5。\n以Eclipse为例，当我们已经编写了一个Factorial.java文件后，我们想对其进行测试，需要编写一个对应的FactorialTest.java文件，以Test为后缀是一个惯例，并分别将其放入src和test目录中。最后，在Project - Properties - Java Build Path - Libraries中添加JUnit 5的库：\n\n整个项目结构如下：\n\n我们来看一下FactorialTest.java的内容：\n12345678910111213141516package com.itranswarp.learnjava;import static org.junit.jupiter.api.Assertions.*;import org.junit.jupiter.api.Test;public class FactorialTest &#123;    @Test    void testFact() &#123;        assertEquals(1, Factorial.fact(1));        assertEquals(2, Factorial.fact(2));        assertEquals(6, Factorial.fact(3));        assertEquals(3628800, Factorial.fact(10));        assertEquals(2432902008176640000L, Factorial.fact(20));    &#125;&#125;\n核心测试方法testFact()加上了@Test注解，这是JUnit要求的，它会把带有@Test的方法识别为测试方法。在测试方法内部，我们用assertEquals(1, Factorial.fact(1))表示，期望Factorial.fact(1)返回1。assertEquals(expected, actual)是最常用的测试方法，它在Assertion类中定义。Assertion还定义了其他断言方法，例如：\n\nassertTrue(): 期待结果为true\nassertFalse(): 期待结果为false\nassertNotNull(): 期待结果为非null\nassertArrayEquals(): 期待结果为数组并与期望数组每个元素的值均相等\n…\n\n运行单元测试非常简单。选中FactorialTest.java文件，点击Run - Run As - JUnit Test，Eclipse会自动运行这个JUnit测试，并显示结果：\n\n如果测试结果与预期不符，assertEquals()会抛出异常，我们就会得到一个测试失败的结果：\n\n在Failure Trace中，JUnit会告诉我们详细的错误结果：\n123456789org.opentest4j.AssertionFailedError: expected: &lt;3628800&gt; but was: &lt;362880&gt;\tat org.junit.jupiter.api.AssertionUtils.fail(AssertionUtils.java:55)\tat org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:195)\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:168)\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:163)\tat org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:611)\tat com.itranswarp.learnjava.FactorialTest.testFact(FactorialTest.java:14)\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\tat ...\n第一行的失败信息的意思是期待结果3628800但是实际返回是362880，此时，我们要么修正实现代码，要么修正测试代码，直到测试通过为止。\n使用浮点数时，由于浮点数无法精确地进行比较，因此，我们需要调用assertEquals(double expected, double actual, double delta)这个重载方法，指定一个误差值：\n1assertEquals(0.1, Math.abs(1 - 9 / 10.0), 0.0000001);\n单元测试的好处\n单元测试可以确保单个方法按照正确预期运行，如果修改了某个方法的代码，只需确保其对应的单元测试通过，即可认为改动正确。此外，测试代码本身就可以作为示例代码，用来演示如何调用该方法。\n使用JUnit进行单元测试，我们可以使用断言（Assertion）来测试期望结果，可以方便地组织和运行测试，并方便地查看测试结果。此外，JUnit既可以直接在IDE中运行，也可以方便地集成到Maven这些自动化工具中运行。\n在编写单元测试的时候，我们要遵循一定的规范：\n一是单元测试代码本身必须非常简单，能一下看明白，决不能再为测试代码编写测试；\n二是每个单元测试应当互相独立，不依赖运行的顺序；\n三是测试时不但要覆盖常用测试用例，还要特别注意测试边界条件，例如输入为0，null，空字符串&quot;&quot;等情况。\n练习\n使用JUnit编写测试代码。\n下载练习\n小结\nJUnit是一个单元测试框架，专门用于运行我们编写的单元测试：\n一个JUnit测试包含若干@Test方法，并使用Assertions进行断言，注意浮点数assertEquals()要指定delta。\n在一个单元测试中，我们经常编写多个@Test方法，来分组、分类对目标代码进行测试。\n在测试的时候，我们经常遇到一个对象需要初始化，测试完可能还需要清理的情况。如果每个@Test方法都写一遍这样的重复代码，显然比较麻烦。\nJUnit提供了编写测试前准备、测试后清理的固定代码，我们称之为Fixture。\n我们来看一个具体的Calculator的例子：\n12345678910111213public class Calculator &#123;    private long n = 0;    public long add(long x) &#123;        n = n + x;        return n;    &#125;    public long sub(long x) &#123;        n = n - x;        return n;    &#125;&#125;\n这个类的功能很简单，但是测试的时候，我们要先初始化对象，我们不必在每个测试方法中都写上初始化代码，而是通过@BeforeEach来初始化，通过@AfterEach来清理资源：\n12345678910111213141516171819202122232425262728public class CalculatorTest &#123;    Calculator calculator;    @BeforeEach    public void setUp() &#123;        this.calculator = new Calculator();    &#125;    @AfterEach    public void tearDown() &#123;        this.calculator = null;    &#125;    @Test    void testAdd() &#123;        assertEquals(100, this.calculator.add(100));        assertEquals(150, this.calculator.add(50));        assertEquals(130, this.calculator.add(-20));    &#125;    @Test    void testSub() &#123;        assertEquals(-100, this.calculator.sub(100));        assertEquals(-150, this.calculator.sub(50));        assertEquals(-130, this.calculator.sub(-20));    &#125;&#125;\n在CalculatorTest测试中，有两个标记为@BeforeEach和@AfterEach的方法，它们会在运行每个@Test方法前后自动运行。\n上面的测试代码在JUnit中运行顺序如下：\n123456for (Method testMethod : findTestMethods(CalculatorTest.class)) &#123;    var test = new CalculatorTest(); // 创建Test实例    invokeBeforeEach(test);        invokeTestMethod(test, testMethod);    invokeAfterEach(test);&#125;\n可见，@BeforeEach和@AfterEach会“环绕”在每个@Test方法前后。\n还有一些资源初始化和清理可能更加繁琐，而且会耗费较长的时间，例如初始化数据库。JUnit还提供了@BeforeAll和@AfterAll，它们在运行所有@Test前后运行，顺序如下：\n12345678invokeBeforeAll(CalculatorTest.class);for (Method testMethod : findTestMethods(CalculatorTest.class)) &#123;    var test = new CalculatorTest(); // 创建Test实例    invokeBeforeEach(test);        invokeTestMethod(test, testMethod);    invokeAfterEach(test);&#125;invokeAfterAll(CalculatorTest.class);\n因为@BeforeAll和@AfterAll在所有@Test方法运行前后仅运行一次，因此，它们只能初始化静态变量，例如：\n12345678910111213public class DatabaseTest &#123;    static Database db;    @BeforeAll    public static void initDatabase() &#123;        db = createDb(...);    &#125;        @AfterAll    public static void dropDatabase() &#123;        ...    &#125;&#125;\n事实上，@BeforeAll和@AfterAll也只能标注在静态方法上。\n因此，我们总结出编写Fixture的套路如下：\n\n对于实例变量，在@BeforeEach中初始化，在@AfterEach中清理，它们在各个@Test方法中互不影响，因为是不同的实例；\n对于静态变量，在@BeforeAll中初始化，在@AfterAll中清理，它们在各个@Test方法中均是唯一实例，会影响各个@Test方法。\n\n大多数情况下，使用@BeforeEach和@AfterEach就足够了。只有某些测试资源初始化耗费时间太长，以至于我们不得不尽量“复用”时才会用到@BeforeAll和@AfterAll。\n最后，注意到每次运行一个@Test方法前，JUnit首先创建一个XxxTest实例，因此，每个@Test方法内部的成员变量都是独立的，不能也无法把成员变量的状态从一个@Test方法带到另一个@Test方法。\n练习\n使用Fixture编写单元测试。\n下载练习\n小结\n编写Fixture是指针对每个@Test方法，编写@BeforeEach方法用于初始化测试资源，编写@AfterEach用于清理测试资源；\n必要时，可以编写@BeforeAll和@AfterAll，使用静态变量来初始化耗时的资源，并且在所有@Test方法的运行前后仅执行一次。\n异常测试\n在Java程序中，异常处理是非常重要的。\n我们自己编写的方法，也经常抛出各种异常。对于可能抛出的异常进行测试，本身就是测试的重要环节。\n因此，在编写JUnit测试的时候，除了正常的输入输出，我们还要特别针对可能导致异常的情况进行测试。\n我们仍然用Factorial举例：\n123456789101112public class Factorial &#123;    public static long fact(long n) &#123;        if (n &lt; 0) &#123;            throw new IllegalArgumentException();        &#125;        long r = 1;        for (long i = 1; i &lt;= n; i++) &#123;            r = r * i;        &#125;        return r;    &#125;&#125;\n在方法入口，我们增加了对参数n的检查，如果为负数，则直接抛出IllegalArgumentException。\n现在，我们希望对异常进行测试。在JUnit测试中，我们可以编写一个@Test方法专门测试异常：\n123456789@Testvoid testNegative() &#123;    assertThrows(IllegalArgumentException.class, new Executable() &#123;        @Override        public void execute() throws Throwable &#123;            Factorial.fact(-1);        &#125;    &#125;);&#125;\nJUnit提供assertThrows()来期望捕获一个指定的异常。第二个参数Executable封装了我们要执行的会产生异常的代码。当我们执行Factorial.fact(-1)时，必定抛出IllegalArgumentException。assertThrows()在捕获到指定异常时表示通过测试，未捕获到异常，或者捕获到的异常类型不对，均表示测试失败。\n有些童鞋会觉得编写一个Executable的匿名类太繁琐了。实际上，Java 8开始引入了函数式编程，所有单方法接口都可以简写如下：\n123456@Testvoid testNegative() &#123;    assertThrows(IllegalArgumentException.class, () -&gt; &#123;        Factorial.fact(-1);    &#125;);&#125;\n上述奇怪的-&gt;语法就是函数式接口的实现代码，我们会在后面详细介绍。现在，我们只需要通过这种固定的代码编写能抛出异常的语句即可。\n练习\n观察Factorial.fact()方法，注意到由于long型整数有范围限制，当我们传入参数21时，得到的结果是-4249290049419214848，而不是期望的51090942171709440000，因此，当传入参数大于20时，Factorial.fact()方法应当抛出ArithmeticException。请编写测试并修改实现代码，确保测试通过。\n下载练习\n小结\n测试异常可以使用assertThrows()，期待捕获到指定类型的异常；\n对可能发生的每种类型的异常都必须进行测试。\n\n\n在运行测试的时候，有些时候，我们需要排出某些@Test方法，不要让它运行，这时，我们就可以给它标记一个@Disabled：\n12345@Disabled@Testvoid testBug101() &#123;    // 这个测试不会运行&#125;\n为什么我们不直接注释掉@Test，而是要加一个@Disabled？这是因为注释掉@Test，JUnit就不知道这是个测试方法，而加上@Disabled，JUnit仍然识别出这是个测试方法，只是暂时不运行。它会在测试结果中显示：\n1Tests run: 68, Failures: 2, Errors: 0, Skipped: 5\n类似@Disabled这种注解就称为条件测试（Conditional Test），JUnit根据不同的条件注解，决定是否运行当前的@Test方法。\n我们来看一个例子：\n123456789101112public class Config &#123;    public String getConfigFile(String filename) &#123;        String os = System.getProperty(&quot;os.name&quot;).toLowerCase();        if (os.contains(&quot;win&quot;)) &#123;            return &quot;C:\\\\&quot; + filename;        &#125;        if (os.contains(&quot;mac&quot;) || os.contains(&quot;linux&quot;) || os.contains(&quot;unix&quot;)) &#123;            return &quot;/usr/local/&quot; + filename;        &#125;        throw new UnsupportedOperationException();    &#125;&#125;\n我们想要测试getConfigFile()这个方法，但是在Windows上跑，和在Linux上跑的代码路径不同，因此，针对两个系统的测试方法，其中一个只能在Windows上跑，另一个只能在Mac/Linux上跑：\n123456789@Testvoid testWindows() &#123;    assertEquals(&quot;C:\\\\test.ini&quot;, config.getConfigFile(&quot;test.ini&quot;));&#125;@Testvoid testLinuxAndMac() &#123;    assertEquals(&quot;/usr/local/test.cfg&quot;, config.getConfigFile(&quot;test.cfg&quot;));&#125;\n因此，我们给上述两个测试方法分别加上条件如下：\n1234567891011@Test@EnabledOnOs(OS.WINDOWS)void testWindows() &#123;    assertEquals(&quot;C:\\\\test.ini&quot;, config.getConfigFile(&quot;test.ini&quot;));&#125;@Test@EnabledOnOs(&#123; OS.LINUX, OS.MAC &#125;)void testLinuxAndMac() &#123;    assertEquals(&quot;/usr/local/test.cfg&quot;, config.getConfigFile(&quot;test.cfg&quot;));&#125;\n@EnableOnOs就是一个条件测试判断。\n我们来看一些常用的条件测试：\n不在Windows平台执行的测试，可以加上@DisabledOnOs(OS.WINDOWS)：\n12345@Test@DisabledOnOs(OS.WINDOWS)void testOnNonWindowsOs() &#123;    // TODO: this test is disabled on windows&#125;\n只能在Java 9或更高版本执行的测试，可以加上@DisabledOnJre(JRE.JAVA_8)：\n12345@Test@DisabledOnJre(JRE.JAVA_8)void testOnJava9OrAbove() &#123;    // TODO: this test is disabled on java 8&#125;\n只能在64位操作系统上执行的测试，可以用@EnabledIfSystemProperty判断：\n12345@Test@EnabledIfSystemProperty(named = &quot;os.arch&quot;, matches = &quot;.*64.*&quot;)void testOnlyOn64bitSystem() &#123;    // TODO: this test is only run on 64 bit system&#125;\n需要传入环境变量DEBUG=true才能执行的测试，可以用@EnabledIfEnvironmentVariable：\n12345@Test@EnabledIfEnvironmentVariable(named = &quot;DEBUG&quot;, matches = &quot;true&quot;)void testOnlyOnDebugMode() &#123;    // TODO: this test is only run on DEBUG=true&#125;\n当我们在JUnit中运行所有测试的时候，JUnit会给出执行的结果。在IDE中，我们能很容易地看到没有执行的测试：\n\n带有⊘标记的测试方法表示没有执行。\n练习\n在JUnit测试中使用条件测试。\n下载练习\n小结\n条件测试是根据某些注解在运行期让JUnit自动忽略某些测试。\n如果待测试的输入和输出是一组数据，可以把测试数据组织起来，用不同的测试数据调用相同的测试方法，这就是参数化测试。\n参数化测试和普通测试稍微不同的地方在于，一个测试方法需要接收至少一个参数，然后，传入一组参数反复运行。\nJUnit提供了一个@ParameterizedTest注解，用来进行参数化测试。\n假设我们想对Math.abs()进行测试，先用一组正数进行测试：\n12345@ParameterizedTest@ValueSource(ints = &#123; 0, 1, 5, 100 &#125;)void testAbs(int x) &#123;    assertEquals(x, Math.abs(x));&#125;\n再用一组负数进行测试：\n12345@ParameterizedTest@ValueSource(ints = &#123; -1, -5, -100 &#125;)void testAbsNegative(int x) &#123;    assertEquals(-x, Math.abs(x));&#125;\n注意到参数化测试的注解是@ParameterizedTest，而不是普通的@Test。\n实际的测试场景往往没有这么简单。假设我们自己编写了一个StringUtils.capitalize()方法，它会把字符串的第一个字母变为大写，后续字母变为小写：\n12345678public class StringUtils &#123;    public static String capitalize(String s) &#123;        if (s.length() == 0) &#123;            return s;        &#125;        return Character.toUpperCase(s.charAt(0)) + s.substring(1).toLowerCase();    &#125;&#125;\n要用参数化测试的方法来测试，我们不但要给出输入，还要给出预期输出。因此，测试方法至少需要接收两个参数：\n1234@ParameterizedTestvoid testCapitalize(String input, String result) &#123;    assertEquals(result, StringUtils.capitalize(input));&#125;\n现在问题来了：参数如何传入？\n最简单的方法是通过@MethodSource注解，它允许我们编写一个同名的静态方法来提供测试参数：\n123456789101112@ParameterizedTest@MethodSourcevoid testCapitalize(String input, String result) &#123;    assertEquals(result, StringUtils.capitalize(input));&#125;static List&lt;Arguments&gt; testCapitalize() &#123;    return List.of( // arguments:            Arguments.of(&quot;abc&quot;, &quot;Abc&quot;), //            Arguments.of(&quot;APPLE&quot;, &quot;Apple&quot;), //            Arguments.of(&quot;gooD&quot;, &quot;Good&quot;));&#125;\n上面的代码很容易理解：静态方法testCapitalize()返回了一组测试参数，每个参数都包含两个String，正好作为测试方法的两个参数传入。\n提示\n如果静态方法和测试方法的名称不同，@MethodSource也允许指定方法名。但使用默认同名方法最方便。\n另一种传入测试参数的方法是使用@CsvSource，它的每一个字符串表示一行，一行包含的若干参数用,分隔，因此，上述测试又可以改写如下：\n12345@ParameterizedTest@CsvSource(&#123; &quot;abc, Abc&quot;, &quot;APPLE, Apple&quot;, &quot;gooD, Good&quot; &#125;)void testCapitalize(String input, String result) &#123;    assertEquals(result, StringUtils.capitalize(input));&#125;\n如果有成百上千的测试输入，那么，直接写@CsvSource就很不方便。这个时候，我们可以把测试数据提到一个独立的CSV文件中，然后标注上@CsvFileSource：\n12345@ParameterizedTest@CsvFileSource(resources = &#123; &quot;/test-capitalize.csv&quot; &#125;)void testCapitalizeUsingCsvFile(String input, String result) &#123;    assertEquals(result, StringUtils.capitalize(input));&#125;\nJUnit只在classpath中查找指定的CSV文件，因此，test-capitalize.csv这个文件要放到test目录下，内容如下：\n1234apple, AppleHELLO, HelloJUnit, JunitreSource, Resource\n练习\n对StringUtils进行参数化测试。\n下载练习\n小结\n使用参数化测试，可以提供一组测试数据，对一个测试方法反复测试；\n参数既可以在测试代码中写死，也可以通过@CsvFileSource放到外部的CSV文件中。\n","dateCreated":"2018-02-07T15:44:16+08:00","dateModified":"2025-06-17T18:07:51+08:00","datePublished":"2018-02-07T15:44:16+08:00","description":"","headline":"JAVA-单元测试","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/","keywords":"Java, Junit"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"什么是单元测试呢？单元测试就是针对最小的功能单元编写测试代码。Java程序最小的功能单元是方法，因此，对Java程序进行单元测试就是针对单个Java方法的测试。\n单元测试有什么好处呢？在学习单元测试前，我们可以先了解一下测试驱动开发。\n所谓测试驱动开发，是指先编写接口，紧接着编写测试。编写完测试后，我们才开始真正编写实现代码。在编写实现代码的过程中，一边写，一边测，什么时候测试全部通过了，那就表示编写的实现完成了：\n12345678910111213    编写接口     │     ▼    编写测试     │     ▼┌─▶ 编写实现│    ││ N  ▼└── 运行测试     │ Y     ▼    任务完成\n这就是传说中的……\n\n当然，这是一种理想情况。大部分情况是我们已经编写了实现代码，需要对已有的代码进行测试。\n我们先通过一个示例来看如何编写测试。假定我们编写了一个计算阶乘的类，它只有一个静态方法来计算阶乘：\n代码如下：\n123456789public class Factorial &#123;    public static long fact(long n) &#123;        long r = 1;        for (long i = 1; i &lt;= n; i++) &#123;            r = r * i;        &#125;        return r;    &#125;&#125;\n要测试这个方法，一个很自然的想法是编写一个main()方法，然后运行一些测试代码：\n123456789public class Test &#123;    public static void main(String[] args) &#123;        if (fact(10) == 3628800) &#123;            System.out.println(&quot;pass&quot;);        &#125; else &#123;            System.out.println(&quot;fail&quot;);        &#125;    &#125;&#125;\n这样我们就可以通过运行main()方法来运行测试代码。\n不过，使用main()方法测试有很多缺点：\n一是只能有一个main()方法，不能把测试代码分离，二是没有打印出测试结果和期望结果，例如，expected: 3628800, but actual: 123456，三是很难编写一组通用的测试代码。\n因此，我们需要一种测试框架，帮助我们编写测试。\nJUnit\nJUnit是一个开源的Java语言的单元测试框架，专门针对Java设计，使用最广泛。JUnit是事实上的单元测试的标准框架，任何Java开发者都应当学习并使用JUnit编写单元测试。\n使用JUnit编写单元测试的好处在于，我们可以非常简单地组织测试代码，并随时运行它们，JUnit就会给出成功的测试和失败的测试，还可以生成测试报告，不仅包含测试的成功率，还可以统计测试的代码覆盖率，即被测试的代码本身有多少经过了测试。对于高质量的代码来说，测试覆盖率应该在80%以上。\n此外，几乎所有的IDE工具都集成了JUnit，这样我们就可以直接在IDE中编写并运行JUnit测试。JUnit目前最新版本是5。\n以Eclipse为例，当我们已经编写了一个Factorial.java文件后，我们想对其进行测试，需要编写一个对应的FactorialTest.java文件，以Test为后缀是一个惯例，并分别将其放入src和test目录中。最后，在Project - Properties - Java Build Path - Libraries中添加JUnit 5的库：\n\n整个项目结构如下：\n\n我们来看一下FactorialTest.java的内容：\n12345678910111213141516package com.itranswarp.learnjava;import static org.junit.jupiter.api.Assertions.*;import org.junit.jupiter.api.Test;public class FactorialTest &#123;    @Test    void testFact() &#123;        assertEquals(1, Factorial.fact(1));        assertEquals(2, Factorial.fact(2));        assertEquals(6, Factorial.fact(3));        assertEquals(3628800, Factorial.fact(10));        assertEquals(2432902008176640000L, Factorial.fact(20));    &#125;&#125;\n核心测试方法testFact()加上了@Test注解，这是JUnit要求的，它会把带有@Test的方法识别为测试方法。在测试方法内部，我们用assertEquals(1, Factorial.fact(1))表示，期望Factorial.fact(1)返回1。assertEquals(expected, actual)是最常用的测试方法，它在Assertion类中定义。Assertion还定义了其他断言方法，例如：\n\nassertTrue(): 期待结果为true\nassertFalse(): 期待结果为false\nassertNotNull(): 期待结果为非null\nassertArrayEquals(): 期待结果为数组并与期望数组每个元素的值均相等\n…\n\n运行单元测试非常简单。选中FactorialTest.java文件，点击Run - Run As - JUnit Test，Eclipse会自动运行这个JUnit测试，并显示结果：\n\n如果测试结果与预期不符，assertEquals()会抛出异常，我们就会得到一个测试失败的结果：\n\n在Failure Trace中，JUnit会告诉我们详细的错误结果：\n123456789org.opentest4j.AssertionFailedError: expected: &lt;3628800&gt; but was: &lt;362880&gt;\tat org.junit.jupiter.api.AssertionUtils.fail(AssertionUtils.java:55)\tat org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:195)\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:168)\tat org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:163)\tat org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:611)\tat com.itranswarp.learnjava.FactorialTest.testFact(FactorialTest.java:14)\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\tat ...\n第一行的失败信息的意思是期待结果3628800但是实际返回是362880，此时，我们要么修正实现代码，要么修正测试代码，直到测试通过为止。\n使用浮点数时，由于浮点数无法精确地进行比较，因此，我们需要调用assertEquals(double expected, double actual, double delta)这个重载方法，指定一个误差值：\n1assertEquals(0.1, Math.abs(1 - 9 / 10.0), 0.0000001);\n单元测试的好处\n单元测试可以确保单个方法按照正确预期运行，如果修改了某个方法的代码，只需确保其对应的单元测试通过，即可认为改动正确。此外，测试代码本身就可以作为示例代码，用来演示如何调用该方法。\n使用JUnit进行单元测试，我们可以使用断言（Assertion）来测试期望结果，可以方便地组织和运行测试，并方便地查看测试结果。此外，JUnit既可以直接在IDE中运行，也可以方便地集成到Maven这些自动化工具中运行。\n在编写单元测试的时候，我们要遵循一定的规范：\n一是单元测试代码本身必须非常简单，能一下看明白，决不能再为测试代码编写测试；\n二是每个单元测试应当互相独立，不依赖运行的顺序；\n三是测试时不但要覆盖常用测试用例，还要特别注意测试边界条件，例如输入为0，null，空字符串&quot;&quot;等情况。\n练习\n使用JUnit编写测试代码。\n下载练习\n小结\nJUnit是一个单元测试框架，专门用于运行我们编写的单元测试：\n一个JUnit测试包含若干@Test方法，并使用Assertions进行断言，注意浮点数assertEquals()要指定delta。\n在一个单元测试中，我们经常编写多个@Test方法，来分组、分类对目标代码进行测试。\n在测试的时候，我们经常遇到一个对象需要初始化，测试完可能还需要清理的情况。如果每个@Test方法都写一遍这样的重复代码，显然比较麻烦。\nJUnit提供了编写测试前准备、测试后清理的固定代码，我们称之为Fixture。\n我们来看一个具体的Calculator的例子：\n12345678910111213public class Calculator &#123;    private long n = 0;    public long add(long x) &#123;        n = n + x;        return n;    &#125;    public long sub(long x) &#123;        n = n - x;        return n;    &#125;&#125;\n这个类的功能很简单，但是测试的时候，我们要先初始化对象，我们不必在每个测试方法中都写上初始化代码，而是通过@BeforeEach来初始化，通过@AfterEach来清理资源：\n12345678910111213141516171819202122232425262728public class CalculatorTest &#123;    Calculator calculator;    @BeforeEach    public void setUp() &#123;        this.calculator = new Calculator();    &#125;    @AfterEach    public void tearDown() &#123;        this.calculator = null;    &#125;    @Test    void testAdd() &#123;        assertEquals(100, this.calculator.add(100));        assertEquals(150, this.calculator.add(50));        assertEquals(130, this.calculator.add(-20));    &#125;    @Test    void testSub() &#123;        assertEquals(-100, this.calculator.sub(100));        assertEquals(-150, this.calculator.sub(50));        assertEquals(-130, this.calculator.sub(-20));    &#125;&#125;\n在CalculatorTest测试中，有两个标记为@BeforeEach和@AfterEach的方法，它们会在运行每个@Test方法前后自动运行。\n上面的测试代码在JUnit中运行顺序如下：\n123456for (Method testMethod : findTestMethods(CalculatorTest.class)) &#123;    var test = new CalculatorTest(); // 创建Test实例    invokeBeforeEach(test);        invokeTestMethod(test, testMethod);    invokeAfterEach(test);&#125;\n可见，@BeforeEach和@AfterEach会“环绕”在每个@Test方法前后。\n还有一些资源初始化和清理可能更加繁琐，而且会耗费较长的时间，例如初始化数据库。JUnit还提供了@BeforeAll和@AfterAll，它们在运行所有@Test前后运行，顺序如下：\n12345678invokeBeforeAll(CalculatorTest.class);for (Method testMethod : findTestMethods(CalculatorTest.class)) &#123;    var test = new CalculatorTest(); // 创建Test实例    invokeBeforeEach(test);        invokeTestMethod(test, testMethod);    invokeAfterEach(test);&#125;invokeAfterAll(CalculatorTest.class);\n因为@BeforeAll和@AfterAll在所有@Test方法运行前后仅运行一次，因此，它们只能初始化静态变量，例如：\n12345678910111213public class DatabaseTest &#123;    static Database db;    @BeforeAll    public static void initDatabase() &#123;        db = createDb(...);    &#125;        @AfterAll    public static void dropDatabase() &#123;        ...    &#125;&#125;\n事实上，@BeforeAll和@AfterAll也只能标注在静态方法上。\n因此，我们总结出编写Fixture的套路如下：\n\n对于实例变量，在@BeforeEach中初始化，在@AfterEach中清理，它们在各个@Test方法中互不影响，因为是不同的实例；\n对于静态变量，在@BeforeAll中初始化，在@AfterAll中清理，它们在各个@Test方法中均是唯一实例，会影响各个@Test方法。\n\n大多数情况下，使用@BeforeEach和@AfterEach就足够了。只有某些测试资源初始化耗费时间太长，以至于我们不得不尽量“复用”时才会用到@BeforeAll和@AfterAll。\n最后，注意到每次运行一个@Test方法前，JUnit首先创建一个XxxTest实例，因此，每个@Test方法内部的成员变量都是独立的，不能也无法把成员变量的状态从一个@Test方法带到另一个@Test方法。\n练习\n使用Fixture编写单元测试。\n下载练习\n小结\n编写Fixture是指针对每个@Test方法，编写@BeforeEach方法用于初始化测试资源，编写@AfterEach用于清理测试资源；\n必要时，可以编写@BeforeAll和@AfterAll，使用静态变量来初始化耗时的资源，并且在所有@Test方法的运行前后仅执行一次。\n异常测试\n在Java程序中，异常处理是非常重要的。\n我们自己编写的方法，也经常抛出各种异常。对于可能抛出的异常进行测试，本身就是测试的重要环节。\n因此，在编写JUnit测试的时候，除了正常的输入输出，我们还要特别针对可能导致异常的情况进行测试。\n我们仍然用Factorial举例：\n123456789101112public class Factorial &#123;    public static long fact(long n) &#123;        if (n &lt; 0) &#123;            throw new IllegalArgumentException();        &#125;        long r = 1;        for (long i = 1; i &lt;= n; i++) &#123;            r = r * i;        &#125;        return r;    &#125;&#125;\n在方法入口，我们增加了对参数n的检查，如果为负数，则直接抛出IllegalArgumentException。\n现在，我们希望对异常进行测试。在JUnit测试中，我们可以编写一个@Test方法专门测试异常：\n123456789@Testvoid testNegative() &#123;    assertThrows(IllegalArgumentException.class, new Executable() &#123;        @Override        public void execute() throws Throwable &#123;            Factorial.fact(-1);        &#125;    &#125;);&#125;\nJUnit提供assertThrows()来期望捕获一个指定的异常。第二个参数Executable封装了我们要执行的会产生异常的代码。当我们执行Factorial.fact(-1)时，必定抛出IllegalArgumentException。assertThrows()在捕获到指定异常时表示通过测试，未捕获到异常，或者捕获到的异常类型不对，均表示测试失败。\n有些童鞋会觉得编写一个Executable的匿名类太繁琐了。实际上，Java 8开始引入了函数式编程，所有单方法接口都可以简写如下：\n123456@Testvoid testNegative() &#123;    assertThrows(IllegalArgumentException.class, () -&gt; &#123;        Factorial.fact(-1);    &#125;);&#125;\n上述奇怪的-&gt;语法就是函数式接口的实现代码，我们会在后面详细介绍。现在，我们只需要通过这种固定的代码编写能抛出异常的语句即可。\n练习\n观察Factorial.fact()方法，注意到由于long型整数有范围限制，当我们传入参数21时，得到的结果是-4249290049419214848，而不是期望的51090942171709440000，因此，当传入参数大于20时，Factorial.fact()方法应当抛出ArithmeticException。请编写测试并修改实现代码，确保测试通过。\n下载练习\n小结\n测试异常可以使用assertThrows()，期待捕获到指定类型的异常；\n对可能发生的每种类型的异常都必须进行测试。\n\n\n在运行测试的时候，有些时候，我们需要排出某些@Test方法，不要让它运行，这时，我们就可以给它标记一个@Disabled：\n12345@Disabled@Testvoid testBug101() &#123;    // 这个测试不会运行&#125;\n为什么我们不直接注释掉@Test，而是要加一个@Disabled？这是因为注释掉@Test，JUnit就不知道这是个测试方法，而加上@Disabled，JUnit仍然识别出这是个测试方法，只是暂时不运行。它会在测试结果中显示：\n1Tests run: 68, Failures: 2, Errors: 0, Skipped: 5\n类似@Disabled这种注解就称为条件测试（Conditional Test），JUnit根据不同的条件注解，决定是否运行当前的@Test方法。\n我们来看一个例子：\n123456789101112public class Config &#123;    public String getConfigFile(String filename) &#123;        String os = System.getProperty(&quot;os.name&quot;).toLowerCase();        if (os.contains(&quot;win&quot;)) &#123;            return &quot;C:\\\\&quot; + filename;        &#125;        if (os.contains(&quot;mac&quot;) || os.contains(&quot;linux&quot;) || os.contains(&quot;unix&quot;)) &#123;            return &quot;/usr/local/&quot; + filename;        &#125;        throw new UnsupportedOperationException();    &#125;&#125;\n我们想要测试getConfigFile()这个方法，但是在Windows上跑，和在Linux上跑的代码路径不同，因此，针对两个系统的测试方法，其中一个只能在Windows上跑，另一个只能在Mac/Linux上跑：\n123456789@Testvoid testWindows() &#123;    assertEquals(&quot;C:\\\\test.ini&quot;, config.getConfigFile(&quot;test.ini&quot;));&#125;@Testvoid testLinuxAndMac() &#123;    assertEquals(&quot;/usr/local/test.cfg&quot;, config.getConfigFile(&quot;test.cfg&quot;));&#125;\n因此，我们给上述两个测试方法分别加上条件如下：\n1234567891011@Test@EnabledOnOs(OS.WINDOWS)void testWindows() &#123;    assertEquals(&quot;C:\\\\test.ini&quot;, config.getConfigFile(&quot;test.ini&quot;));&#125;@Test@EnabledOnOs(&#123; OS.LINUX, OS.MAC &#125;)void testLinuxAndMac() &#123;    assertEquals(&quot;/usr/local/test.cfg&quot;, config.getConfigFile(&quot;test.cfg&quot;));&#125;\n@EnableOnOs就是一个条件测试判断。\n我们来看一些常用的条件测试：\n不在Windows平台执行的测试，可以加上@DisabledOnOs(OS.WINDOWS)：\n12345@Test@DisabledOnOs(OS.WINDOWS)void testOnNonWindowsOs() &#123;    // TODO: this test is disabled on windows&#125;\n只能在Java 9或更高版本执行的测试，可以加上@DisabledOnJre(JRE.JAVA_8)：\n12345@Test@DisabledOnJre(JRE.JAVA_8)void testOnJava9OrAbove() &#123;    // TODO: this test is disabled on java 8&#125;\n只能在64位操作系统上执行的测试，可以用@EnabledIfSystemProperty判断：\n12345@Test@EnabledIfSystemProperty(named = &quot;os.arch&quot;, matches = &quot;.*64.*&quot;)void testOnlyOn64bitSystem() &#123;    // TODO: this test is only run on 64 bit system&#125;\n需要传入环境变量DEBUG=true才能执行的测试，可以用@EnabledIfEnvironmentVariable：\n12345@Test@EnabledIfEnvironmentVariable(named = &quot;DEBUG&quot;, matches = &quot;true&quot;)void testOnlyOnDebugMode() &#123;    // TODO: this test is only run on DEBUG=true&#125;\n当我们在JUnit中运行所有测试的时候，JUnit会给出执行的结果。在IDE中，我们能很容易地看到没有执行的测试：\n\n带有⊘标记的测试方法表示没有执行。\n练习\n在JUnit测试中使用条件测试。\n下载练习\n小结\n条件测试是根据某些注解在运行期让JUnit自动忽略某些测试。\n如果待测试的输入和输出是一组数据，可以把测试数据组织起来，用不同的测试数据调用相同的测试方法，这就是参数化测试。\n参数化测试和普通测试稍微不同的地方在于，一个测试方法需要接收至少一个参数，然后，传入一组参数反复运行。\nJUnit提供了一个@ParameterizedTest注解，用来进行参数化测试。\n假设我们想对Math.abs()进行测试，先用一组正数进行测试：\n12345@ParameterizedTest@ValueSource(ints = &#123; 0, 1, 5, 100 &#125;)void testAbs(int x) &#123;    assertEquals(x, Math.abs(x));&#125;\n再用一组负数进行测试：\n12345@ParameterizedTest@ValueSource(ints = &#123; -1, -5, -100 &#125;)void testAbsNegative(int x) &#123;    assertEquals(-x, Math.abs(x));&#125;\n注意到参数化测试的注解是@ParameterizedTest，而不是普通的@Test。\n实际的测试场景往往没有这么简单。假设我们自己编写了一个StringUtils.capitalize()方法，它会把字符串的第一个字母变为大写，后续字母变为小写：\n12345678public class StringUtils &#123;    public static String capitalize(String s) &#123;        if (s.length() == 0) &#123;            return s;        &#125;        return Character.toUpperCase(s.charAt(0)) + s.substring(1).toLowerCase();    &#125;&#125;\n要用参数化测试的方法来测试，我们不但要给出输入，还要给出预期输出。因此，测试方法至少需要接收两个参数：\n1234@ParameterizedTestvoid testCapitalize(String input, String result) &#123;    assertEquals(result, StringUtils.capitalize(input));&#125;\n现在问题来了：参数如何传入？\n最简单的方法是通过@MethodSource注解，它允许我们编写一个同名的静态方法来提供测试参数：\n123456789101112@ParameterizedTest@MethodSourcevoid testCapitalize(String input, String result) &#123;    assertEquals(result, StringUtils.capitalize(input));&#125;static List&lt;Arguments&gt; testCapitalize() &#123;    return List.of( // arguments:            Arguments.of(&quot;abc&quot;, &quot;Abc&quot;), //            Arguments.of(&quot;APPLE&quot;, &quot;Apple&quot;), //            Arguments.of(&quot;gooD&quot;, &quot;Good&quot;));&#125;\n上面的代码很容易理解：静态方法testCapitalize()返回了一组测试参数，每个参数都包含两个String，正好作为测试方法的两个参数传入。\n提示\n如果静态方法和测试方法的名称不同，@MethodSource也允许指定方法名。但使用默认同名方法最方便。\n另一种传入测试参数的方法是使用@CsvSource，它的每一个字符串表示一行，一行包含的若干参数用,分隔，因此，上述测试又可以改写如下：\n12345@ParameterizedTest@CsvSource(&#123; &quot;abc, Abc&quot;, &quot;APPLE, Apple&quot;, &quot;gooD, Good&quot; &#125;)void testCapitalize(String input, String result) &#123;    assertEquals(result, StringUtils.capitalize(input));&#125;\n如果有成百上千的测试输入，那么，直接写@CsvSource就很不方便。这个时候，我们可以把测试数据提到一个独立的CSV文件中，然后标注上@CsvFileSource：\n12345@ParameterizedTest@CsvFileSource(resources = &#123; &quot;/test-capitalize.csv&quot; &#125;)void testCapitalizeUsingCsvFile(String input, String result) &#123;    assertEquals(result, StringUtils.capitalize(input));&#125;\nJUnit只在classpath中查找指定的CSV文件，因此，test-capitalize.csv这个文件要放到test目录下，内容如下：\n1234apple, AppleHELLO, HelloJUnit, JunitreSource, Resource\n练习\n对StringUtils进行参数化测试。\n下载练习\n小结\n使用参数化测试，可以提供一组测试数据，对一个测试方法反复测试；\n参数既可以在测试代码中写死，也可以通过@CsvFileSource放到外部的CSV文件中。\n","dateCreated":"2018-02-07T15:44:16+08:00","dateModified":"2025-06-17T18:07:51+08:00","datePublished":"2018-02-07T15:44:16+08:00","description":"","headline":"JAVA-单元测试","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/","keywords":"Java, Junit"}</script>
     <meta name="description" content="什么是单元测试呢？单元测试就是针对最小的功能单元编写测试代码。Java程序最小的功能单元是方法，因此，对Java程序进行单元测试就是针对单个Java方法的测试。 单元测试有什么好处呢？在学习单元测试前，我们可以先了解一下测试驱动开发。 所谓测试驱动开发，是指先编写接口，紧接着编写测试。编写完测试后，我们才开始真正编写实现代码。在编写实现代码的过程中，一边写，一边测，什么时候测试全部通过了，那就表示">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="JAVA-单元测试">
-<meta property="og:url" content="https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/index.html">
+<meta property="og:url" content="https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="什么是单元测试呢？单元测试就是针对最小的功能单元编写测试代码。Java程序最小的功能单元是方法，因此，对Java程序进行单元测试就是针对单个Java方法的测试。 单元测试有什么好处呢？在学习单元测试前，我们可以先了解一下测试驱动开发。 所谓测试驱动开发，是指先编写接口，紧接着编写测试。编写完测试后，我们才开始真正编写实现代码。在编写实现代码的过程中，一边写，一边测，什么时候测试全部通过了，那就表示">
 <meta property="og:locale" content="zh_TW">
@@ -58,7 +58,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -556,7 +556,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -567,7 +567,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -580,7 +580,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -593,7 +593,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -606,7 +606,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -619,7 +619,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -684,7 +684,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -695,7 +695,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -708,7 +708,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -721,7 +721,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -734,7 +734,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -747,7 +747,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -768,7 +768,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -781,7 +781,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -794,7 +794,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -807,7 +807,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -883,7 +883,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -906,7 +906,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -929,7 +929,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -952,7 +952,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -975,7 +975,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -998,7 +998,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1021,7 +1021,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1044,7 +1044,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1067,7 +1067,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1090,7 +1090,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

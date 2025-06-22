@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"underscore\n前面我们已经讲过了，JavaScript是函数式编程语言，支持高阶函数和闭包。函数式编程非常强大，可以写出非常简洁的代码。例如Array的map()和filter()方法：\n123let a1 = [1, 4, 9, 16];let a2 = a1.map(Math.sqrt); // [1, 2, 3, 4]let a3 = a2.filter((x) =&gt; &#123; return x % 2 === 0; &#125;); // [2, 4]\n现在问题来了，Array有map()和filter()方法，可是Object没有这些方法。此外，低版本的浏览器例如IE6～8也没有这些方法，怎么办？\n方法一，自己把这些方法添加到Array.prototype中，然后给Object.prototype也加上mapObject()等类似的方法。\n方法二，直接找一个成熟可靠的第三方开源库，使用统一的函数来实现map()、filter()这些操作。\n我们采用方法二，选择的第三方库就是underscore。\n正如jQuery统一了不同浏览器之间的DOM操作的差异，让我们可以简单地对DOM进行操作，underscore则提供了一套完善的函数式编程的接口，让我们更方便地在JavaScript中实现函数式编程。\njQuery在加载时，会把自身绑定到唯一的全局变量$上，underscore与其类似，会把自身绑定到唯一的全局变量_上，这也是为啥它的名字叫underscore的原因。\n用underscore实现map()操作如下：\n12let r = _.map([1, 2, 3], (x) =&gt; x * x);console.log(r); // [1, 4, 9]\n咋一看比直接用Array.map()要麻烦一点，可是underscore的map()还可以作用于Object：\n1_.map(&#123; a: 1, b: 2, c: 3 &#125;, (v, k) =&gt; k + &#x27;=&#x27; + v); // [&#x27;a=1&#x27;, &#x27;b=2&#x27;, &#x27;c=3&#x27;]\n后面我们会详细介绍underscore提供了一系列函数式接口。\n\n\nunderscore为集合类对象提供了一致的接口。集合类是指Array和Object，暂不支持Map和Set。\nmap/filter\n和Array的map()与filter()类似，但是underscore的map()和filter()可以作用于Object。当作用于Object时，传入的函数为function (value, key)，第一个参数接收value，第二个参数接收key：\n1234567891011let obj = &#123;    name: &#x27;bob&#x27;,    school: &#x27;No.1 middle school&#x27;,    address: &#x27;xueyuan road&#x27;&#125;;let upper = _.map(obj, function (value, key) &#123;    return ???;&#125;);console.log(JSON.stringify(upper));\n你也许会想，为啥对Object作map()操作的返回结果是Array？应该是Object才合理啊！把_.map换成_.mapObject再试试。\nevery / some\n当集合的所有元素都满足条件时，_.every()函数返回true，当集合的至少一个元素满足条件时，_.some()函数返回true：\n1234// 所有元素都大于0？_.every([1, 4, 7, -3, -9], (x) =&gt; x &gt; 0); // false// 至少一个元素大于0？_.some([1, 4, 7, -3, -9], (x) =&gt; x &gt; 0); // true\n当集合是Object时，我们可以同时获得value和key：\n123456789101112131415let obj = &#123;    name: &#x27;bob&#x27;,    school: &#x27;No.1 middle school&#x27;,    address: &#x27;xueyuan road&#x27;&#125;;// 判断key和value是否全部是小写：let r1 = _.every(obj, function (value, key) &#123;    return ???;&#125;);let r2 = _.some(obj, function (value, key) &#123;    return ???;&#125;);console.log(&#x27;every key-value are lowercase: &#x27; + r1 + &#x27;\\nsome key-value are lowercase: &#x27; + r2);\nmax / min\n这两个函数直接返回集合中最大和最小的数：\n123456789let arr = [3, 5, 7, 9];_.max(arr); // 9_.min(arr); // 3// 空集合会返回-Infinity和Infinity，所以要先判断集合不为空：_.max([])-Infinity_.min([])Infinity\n注意，如果集合是Object，max()和min()只作用于value，忽略掉key：\n1_.max(&#123; a: 1, b: 2, c: 3 &#125;); // 3\ngroupBy\ngroupBy()把集合的元素按照key归类，key由传入的函数返回：\n12345678910111213141516let scores = [20, 81, 75, 40, 91, 59, 77, 66, 72, 88, 99];let groups = _.groupBy(scores, function (x) &#123;    if (x &lt; 60) &#123;        return &#x27;C&#x27;;    &#125; else if (x &lt; 80) &#123;        return &#x27;B&#x27;;    &#125; else &#123;        return &#x27;A&#x27;;    &#125;&#125;);// 结果:// &#123;//   A: [81, 91, 88, 99],//   B: [75, 77, 66, 72],//   C: [20, 40, 59]// &#125;\n可见groupBy()用来分组是非常方便的。\nshuffle / sample\nshuffle()用洗牌算法随机打乱一个集合：\n12// 注意每次结果都不一样：_.shuffle([1, 2, 3, 4, 5, 6]); // [3, 5, 4, 6, 2, 1]\nsample()则是随机选择一个或多个元素：\n12345// 注意每次结果都不一样：// 随机选1个：_.sample([1, 2, 3, 4, 5, 6]); // 2// 随机选3个：_.sample([1, 2, 3, 4, 5, 6], 3); // [6, 1, 4]\n更多完整的函数请参考underscore的文档：https://underscorejs.org/#collections\nunderscore为Array提供了许多工具类方法，可以更方便快捷地操作Array。\nfirst / last\n顾名思义，这两个函数分别取第一个和最后一个元素：\n123let arr = [2, 4, 6, 8];_.first(arr); // 2_.last(arr); // 8\nflatten\nflatten()接收一个Array，无论这个Array里面嵌套了多少个Array，flatten()最后都把它们变成一个一维数组：\n1_.flatten([1, [2], [3, [[4], [5]]]]); // [1, 2, 3, 4, 5]\nzip / unzip\nzip()把两个或多个数组的所有元素按索引对齐，然后按索引合并成新数组。例如，你有一个Array保存了名字，另一个Array保存了分数，现在，要把名字和分数给对上，用zip()轻松实现：\n1234let names = [&#x27;Adam&#x27;, &#x27;Lisa&#x27;, &#x27;Bart&#x27;];let scores = [85, 92, 59];_.zip(names, scores);// [[&#x27;Adam&#x27;, 85], [&#x27;Lisa&#x27;, 92], [&#x27;Bart&#x27;, 59]]\nunzip()则是反过来：\n123let namesAndScores = [[&#x27;Adam&#x27;, 85], [&#x27;Lisa&#x27;, 92], [&#x27;Bart&#x27;, 59]];_.unzip(namesAndScores);// [[&#x27;Adam&#x27;, &#x27;Lisa&#x27;, &#x27;Bart&#x27;], [85, 92, 59]]\nobject\n有时候你会想，与其用zip()，为啥不把名字和分数直接对应成Object呢？别急，object()函数就是干这个的：\n1234let names = [&#x27;Adam&#x27;, &#x27;Lisa&#x27;, &#x27;Bart&#x27;];let scores = [85, 92, 59];_.object(names, scores);// &#123;Adam: 85, Lisa: 92, Bart: 59&#125;\n注意_.object()是一个函数，不是JavaScript的Object对象。\nrange\nrange()让你快速生成一个序列，不再需要用for循环实现了：\n1234567891011// 从0开始小于10:_.range(10); // [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]// 从1开始小于11：_.range(1, 11); // [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]// 从0开始小于30，步长5:_.range(0, 30, 5); // [0, 5, 10, 15, 20, 25]// 从0开始大于-10，步长-1:_.range(0, -10, -1); // [0, -1, -2, -3, -4, -5, -6, -7, -8, -9]\n更多完整的函数请参考underscore的文档：https://underscorejs.org/#arrays\n练习\n请根据underscore官方文档，使用_.uniq对数组元素进行不区分大小写去重：\n123456789let arr = [&#x27;Apple&#x27;, &#x27;orange&#x27;, &#x27;banana&#x27;, &#x27;ORANGE&#x27;, &#x27;apple&#x27;, &#x27;PEAR&#x27;];let result = ???// 测试if (result.toString() === [&quot;Apple&quot;, &quot;orange&quot;, &quot;banana&quot;, &quot;PEAR&quot;].toString()) &#123;    console.log(&#x27;测试成功!&#x27;);&#125; else &#123;    console.log(&#x27;测试失败!&#x27;);&#125;\n因为underscore本来就是为了充分发挥JavaScript的函数式编程特性，所以也提供了大量JavaScript本身没有的高阶函数。\nbind\nbind()有什么用？我们先看一个常见的错误用法：\n1234567let s = &#x27; Hello  &#x27;;s.trim();// 输出&#x27;Hello&#x27;let fn = s.trim;fn();// Uncaught TypeError: String.prototype.trim called on null or undefined\n如果你想用fn()取代s.trim()，按照上面的做法是不行的，因为直接调用fn()传入的this指针是undefined，必须这么用：\n12345let s = &#x27; Hello  &#x27;;let fn = s.trim;// 调用call并传入s对象作为this:fn.call(s)// 输出Hello\n这样搞多麻烦！还不如直接用s.trim()。但是，bind()可以帮我们把s对象直接绑定在fn()的this指针上，以后调用fn()就可以直接正常调用了：\n1234let s = &#x27; Hello  &#x27;;let fn = _.bind(s.trim, s);fn();// 输出Hello\n结论：当用一个变量fn指向一个对象的方法时，直接调用fn()是不行的，因为丢失了this对象的引用。用bind可以修复这个问题。\npartial\npartial()就是为一个函数创建偏函数。偏函数是什么东东？看例子：\n假设我们要计算xy，这时只需要调用Math.pow(x, y)就可以了。\n假设我们经常计算2y，每次都写Math.pow(2, y)就比较麻烦，如果创建一个新的函数能直接这样写pow2N(y)就好了，这个新函数pow2N(y)就是根据Math.pow(x, y)创建出来的偏函数，它固定住了原函数的第一个参数（始终为2）：\n1234let pow2N = _.partial(Math.pow, 2);pow2N(3); // 8pow2N(5); // 32pow2N(10); // 1024\n如果我们不想固定第一个参数，想固定第二个参数怎么办？比如，希望创建一个偏函数cube(x)，计算x3，可以用_作占位符，固定住第二个参数：\n1234let cube = _.partial(Math.pow, _, 3);cube(3); // 27cube(5); // 125cube(10); // 1000\n可见，创建偏函数的目的是将原函数的某些参数固定住，可以降低新函数调用的难度。\nmemoize\n如果一个函数调用开销很大，我们就可能希望能把结果缓存下来，以便后续调用时直接获得结果。举个例子，计算阶乘就比较耗时：\n123456789101112131415function factorial(n) &#123;    console.log(&#x27;start calculate &#x27; + n + &#x27;!...&#x27;);    let s = 1, i = n;    while (i &gt; 1) &#123;        s = s * i;        i --;    &#125;    console.log(n + &#x27;! = &#x27; + s);    return s;&#125;factorial(10); // 3628800// 注意控制台输出:// start calculate 10!...// 10! = 3628800\n用memoize()就可以自动缓存函数计算的结果：\n1234567891011121314151617181920let factorial = _.memoize(function(n) &#123;    console.log(&#x27;start calculate &#x27; + n + &#x27;!...&#x27;);    let s = 1, i = n;    while (i &gt; 1) &#123;        s = s * i;        i --;    &#125;    console.log(n + &#x27;! = &#x27; + s);    return s;&#125;);// 第一次调用:factorial(10); // 3628800// 注意控制台输出:// start calculate 10!...// 10! = 3628800// 第二次调用:factorial(10); // 3628800// 控制台没有输出\n对于相同的调用，比如连续两次调用factorial(10)，第二次调用并没有计算，而是直接返回上次计算后缓存的结果。不过，当你计算factorial(9)的时候，仍然会重新计算。\n可以对factorial()进行改进，让其递归调用：\n1234567891011121314151617181920212223let factorial = _.memoize(function(n) &#123;    console.log(&#x27;start calculate &#x27; + n + &#x27;!...&#x27;);    if (n &lt; 2) &#123;        return 1;    &#125;    return n * factorial(n - 1);&#125;);factorial(10); // 3628800// 输出结果说明factorial(1)~factorial(10)都已经缓存了:// start calculate 10!...// start calculate 9!...// start calculate 8!...// start calculate 7!...// start calculate 6!...// start calculate 5!...// start calculate 4!...// start calculate 3!...// start calculate 2!...// start calculate 1!...factorial(9); // 362880// console无输出\nonce\n顾名思义，once()保证某个函数执行且仅执行一次。如果你有一个方法叫register()，用户在页面上点两个按钮的任何一个都可以执行的话，就可以用once()保证函数仅调用一次，无论用户点击多少次：\n12345678let register = _.once(function () &#123;    console.log(&#x27;Register ok!&#x27;);&#125;);// 测试效果:register();register();register();\ndelay\ndelay()可以让一个函数延迟执行，效果和setTimeout()是一样的，但是代码明显简单了：\n12// 2秒后调用alert():_.delay(alert, 2000);\n如果要延迟调用的函数有参数，把参数也传进去：\n123let log = _.bind(console.log, console);_.delay(log, 2000, &#x27;Hello,&#x27;, &#x27;world!&#x27;);// 2秒后打印&#x27;Hello, world!&#x27;:\n更多完整的函数请参考underscore的文档：https://underscorejs.org/#functions\n和Array类似，underscore也提供了大量针对Object的函数。\nkeys / allKeys\nkeys()可以非常方便地返回一个object自身所有的key，但不包含从原型链继承下来的：\n1234567function Student(name, age) &#123;    this.name = name;    this.age = age;&#125;let xiaoming = new Student(&#x27;小明&#x27;, 20);_.keys(xiaoming); // [&#x27;name&#x27;, &#x27;age&#x27;]\nallKeys()除了object自身的key，还包含从原型链继承下来的：\n1234567function Student(name, age) &#123;    this.name = name;    this.age = age;&#125;Student.prototype.school = &#x27;No.1 Middle School&#x27;;let xiaoming = new Student(&#x27;小明&#x27;, 20);_.allKeys(xiaoming); // [&#x27;name&#x27;, &#x27;age&#x27;, &#x27;school&#x27;]\nvalues\n和keys()类似，values()返回object自身但不包含原型链继承的所有值：\n123456let obj = &#123;    name: &#x27;小明&#x27;,    age: 20&#125;;_.values(obj); // [&#x27;小明&#x27;, 20]\n注意，没有allValues()，原因我也不知道。\nmapObject\nmapObject()就是针对object的map版本：\n123let obj = &#123; a: 1, b: 2, c: 3 &#125;;// 注意传入的函数签名，value在前，key在后:_.mapObject(obj, (v, k) =&gt; 100 + v); // &#123; a: 101, b: 102, c: 103 &#125;\ninvert\ninvert()把object的每个key-value来个交换，key变成value，value变成key：\n123456let obj = &#123;    Adam: 90,    Lisa: 85,    Bart: 59&#125;;_.invert(obj); // &#123; &#x27;59&#x27;: &#x27;Bart&#x27;, &#x27;85&#x27;: &#x27;Lisa&#x27;, &#x27;90&#x27;: &#x27;Adam&#x27; &#125;\nextend / extendOwn\nextend()把多个object的key-value合并到第一个object并返回：\n1234let a = &#123;name: &#x27;Bob&#x27;, age: 20&#125;;_.extend(a, &#123;age: 15&#125;, &#123;age: 88, city: &#x27;Beijing&#x27;&#125;); // &#123;name: &#x27;Bob&#x27;, age: 88, city: &#x27;Beijing&#x27;&#125;// 变量a的内容也改变了：a; // &#123;name: &#x27;Bob&#x27;, age: 88, city: &#x27;Beijing&#x27;&#125;\n注意：如果有相同的key，后面的object的value将覆盖前面的object的value。\nextendOwn()和extend()类似，但获取属性时忽略从原型链继承下来的属性。\nclone\n如果我们要复制一个object对象，就可以用clone()方法，它会把原有对象的所有属性都复制到新的对象中：\n12345678let source = &#123;    name: &#x27;小明&#x27;,    age: 20,    skills: [&#x27;JavaScript&#x27;, &#x27;CSS&#x27;, &#x27;HTML&#x27;]&#125;;let copied = _.clone(source);console.log(JSON.stringify(copied, null, &#x27;  &#x27;));\n注意，clone()是“浅复制”。所谓“浅复制”就是说，两个对象相同的key所引用的value其实是同一对象：\n1source.skills === copied.skills; // true\n也就是说，修改source.skills会影响copied.skills。\nisEqual\nisEqual()对两个object进行深度比较，如果内容完全相同，则返回true：\n12345let o1 = &#123; name: &#x27;Bob&#x27;, skills: &#123; Java: 90, JavaScript: 99 &#125;&#125;;let o2 = &#123; name: &#x27;Bob&#x27;, skills: &#123; JavaScript: 99, Java: 90 &#125;&#125;;o1 === o2; // false_.isEqual(o1, o2); // true\nisEqual()其实对Array也可以比较：\n12345let o1 = [&#x27;Bob&#x27;, &#123; skills: [&#x27;Java&#x27;, &#x27;JavaScript&#x27;] &#125;];let o2 = [&#x27;Bob&#x27;, &#123; skills: [&#x27;Java&#x27;, &#x27;JavaScript&#x27;] &#125;];o1 === o2; // false_.isEqual(o1, o2); // true\n更多完整的函数请参考underscore的文档：https://underscorejs.org/#objects\nChaining\n还记得jQuery支持链式调用吗？\n123$(&#x27;a&#x27;).attr(&#x27;target&#x27;, &#x27;_blank&#x27;)      .append(&#x27; &lt;i class=&quot;uk-icon-external-link&quot;&gt;&lt;/i&gt;&#x27;)      .click(function () &#123;&#125;);\n如果我们有一组操作，用underscore提供的函数，写出来像这样：\n12_.filter(_.map([1, 4, 9, 16, 25], Math.sqrt), x =&gt; x % 2 === 1);// [1, 3, 5]\n能不能写成链式调用？\n能！\nunderscore提供了把对象包装成能进行链式调用的方法，就是chain()函数：\n12345let r = _.chain([1, 4, 9, 16, 25])         .map(Math.sqrt)         .filter(x =&gt; x % 2 === 1)         .value();console.log(r); // [1, 3, 5]\n因为每一步返回的都是包装对象，所以最后一步的结果需要调用value()获得最终结果。\n小结\n通过学习underscore，是不是对JavaScript的函数式编程又有了进一步的认识？\n\n\n","dateCreated":"2024-01-17T22:15:06+08:00","dateModified":"2025-06-18T12:38:04+08:00","datePublished":"2024-01-17T22:15:06+08:00","description":"","headline":"JavaScript-underscore","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/","keywords":"JavaScript, 前端"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"underscore\n前面我们已经讲过了，JavaScript是函数式编程语言，支持高阶函数和闭包。函数式编程非常强大，可以写出非常简洁的代码。例如Array的map()和filter()方法：\n123let a1 = [1, 4, 9, 16];let a2 = a1.map(Math.sqrt); // [1, 2, 3, 4]let a3 = a2.filter((x) =&gt; &#123; return x % 2 === 0; &#125;); // [2, 4]\n现在问题来了，Array有map()和filter()方法，可是Object没有这些方法。此外，低版本的浏览器例如IE6～8也没有这些方法，怎么办？\n方法一，自己把这些方法添加到Array.prototype中，然后给Object.prototype也加上mapObject()等类似的方法。\n方法二，直接找一个成熟可靠的第三方开源库，使用统一的函数来实现map()、filter()这些操作。\n我们采用方法二，选择的第三方库就是underscore。\n正如jQuery统一了不同浏览器之间的DOM操作的差异，让我们可以简单地对DOM进行操作，underscore则提供了一套完善的函数式编程的接口，让我们更方便地在JavaScript中实现函数式编程。\njQuery在加载时，会把自身绑定到唯一的全局变量$上，underscore与其类似，会把自身绑定到唯一的全局变量_上，这也是为啥它的名字叫underscore的原因。\n用underscore实现map()操作如下：\n12let r = _.map([1, 2, 3], (x) =&gt; x * x);console.log(r); // [1, 4, 9]\n咋一看比直接用Array.map()要麻烦一点，可是underscore的map()还可以作用于Object：\n1_.map(&#123; a: 1, b: 2, c: 3 &#125;, (v, k) =&gt; k + &#x27;=&#x27; + v); // [&#x27;a=1&#x27;, &#x27;b=2&#x27;, &#x27;c=3&#x27;]\n后面我们会详细介绍underscore提供了一系列函数式接口。\n\n\nunderscore为集合类对象提供了一致的接口。集合类是指Array和Object，暂不支持Map和Set。\nmap/filter\n和Array的map()与filter()类似，但是underscore的map()和filter()可以作用于Object。当作用于Object时，传入的函数为function (value, key)，第一个参数接收value，第二个参数接收key：\n1234567891011let obj = &#123;    name: &#x27;bob&#x27;,    school: &#x27;No.1 middle school&#x27;,    address: &#x27;xueyuan road&#x27;&#125;;let upper = _.map(obj, function (value, key) &#123;    return ???;&#125;);console.log(JSON.stringify(upper));\n你也许会想，为啥对Object作map()操作的返回结果是Array？应该是Object才合理啊！把_.map换成_.mapObject再试试。\nevery / some\n当集合的所有元素都满足条件时，_.every()函数返回true，当集合的至少一个元素满足条件时，_.some()函数返回true：\n1234// 所有元素都大于0？_.every([1, 4, 7, -3, -9], (x) =&gt; x &gt; 0); // false// 至少一个元素大于0？_.some([1, 4, 7, -3, -9], (x) =&gt; x &gt; 0); // true\n当集合是Object时，我们可以同时获得value和key：\n123456789101112131415let obj = &#123;    name: &#x27;bob&#x27;,    school: &#x27;No.1 middle school&#x27;,    address: &#x27;xueyuan road&#x27;&#125;;// 判断key和value是否全部是小写：let r1 = _.every(obj, function (value, key) &#123;    return ???;&#125;);let r2 = _.some(obj, function (value, key) &#123;    return ???;&#125;);console.log(&#x27;every key-value are lowercase: &#x27; + r1 + &#x27;\\nsome key-value are lowercase: &#x27; + r2);\nmax / min\n这两个函数直接返回集合中最大和最小的数：\n123456789let arr = [3, 5, 7, 9];_.max(arr); // 9_.min(arr); // 3// 空集合会返回-Infinity和Infinity，所以要先判断集合不为空：_.max([])-Infinity_.min([])Infinity\n注意，如果集合是Object，max()和min()只作用于value，忽略掉key：\n1_.max(&#123; a: 1, b: 2, c: 3 &#125;); // 3\ngroupBy\ngroupBy()把集合的元素按照key归类，key由传入的函数返回：\n12345678910111213141516let scores = [20, 81, 75, 40, 91, 59, 77, 66, 72, 88, 99];let groups = _.groupBy(scores, function (x) &#123;    if (x &lt; 60) &#123;        return &#x27;C&#x27;;    &#125; else if (x &lt; 80) &#123;        return &#x27;B&#x27;;    &#125; else &#123;        return &#x27;A&#x27;;    &#125;&#125;);// 结果:// &#123;//   A: [81, 91, 88, 99],//   B: [75, 77, 66, 72],//   C: [20, 40, 59]// &#125;\n可见groupBy()用来分组是非常方便的。\nshuffle / sample\nshuffle()用洗牌算法随机打乱一个集合：\n12// 注意每次结果都不一样：_.shuffle([1, 2, 3, 4, 5, 6]); // [3, 5, 4, 6, 2, 1]\nsample()则是随机选择一个或多个元素：\n12345// 注意每次结果都不一样：// 随机选1个：_.sample([1, 2, 3, 4, 5, 6]); // 2// 随机选3个：_.sample([1, 2, 3, 4, 5, 6], 3); // [6, 1, 4]\n更多完整的函数请参考underscore的文档：https://underscorejs.org/#collections\nunderscore为Array提供了许多工具类方法，可以更方便快捷地操作Array。\nfirst / last\n顾名思义，这两个函数分别取第一个和最后一个元素：\n123let arr = [2, 4, 6, 8];_.first(arr); // 2_.last(arr); // 8\nflatten\nflatten()接收一个Array，无论这个Array里面嵌套了多少个Array，flatten()最后都把它们变成一个一维数组：\n1_.flatten([1, [2], [3, [[4], [5]]]]); // [1, 2, 3, 4, 5]\nzip / unzip\nzip()把两个或多个数组的所有元素按索引对齐，然后按索引合并成新数组。例如，你有一个Array保存了名字，另一个Array保存了分数，现在，要把名字和分数给对上，用zip()轻松实现：\n1234let names = [&#x27;Adam&#x27;, &#x27;Lisa&#x27;, &#x27;Bart&#x27;];let scores = [85, 92, 59];_.zip(names, scores);// [[&#x27;Adam&#x27;, 85], [&#x27;Lisa&#x27;, 92], [&#x27;Bart&#x27;, 59]]\nunzip()则是反过来：\n123let namesAndScores = [[&#x27;Adam&#x27;, 85], [&#x27;Lisa&#x27;, 92], [&#x27;Bart&#x27;, 59]];_.unzip(namesAndScores);// [[&#x27;Adam&#x27;, &#x27;Lisa&#x27;, &#x27;Bart&#x27;], [85, 92, 59]]\nobject\n有时候你会想，与其用zip()，为啥不把名字和分数直接对应成Object呢？别急，object()函数就是干这个的：\n1234let names = [&#x27;Adam&#x27;, &#x27;Lisa&#x27;, &#x27;Bart&#x27;];let scores = [85, 92, 59];_.object(names, scores);// &#123;Adam: 85, Lisa: 92, Bart: 59&#125;\n注意_.object()是一个函数，不是JavaScript的Object对象。\nrange\nrange()让你快速生成一个序列，不再需要用for循环实现了：\n1234567891011// 从0开始小于10:_.range(10); // [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]// 从1开始小于11：_.range(1, 11); // [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]// 从0开始小于30，步长5:_.range(0, 30, 5); // [0, 5, 10, 15, 20, 25]// 从0开始大于-10，步长-1:_.range(0, -10, -1); // [0, -1, -2, -3, -4, -5, -6, -7, -8, -9]\n更多完整的函数请参考underscore的文档：https://underscorejs.org/#arrays\n练习\n请根据underscore官方文档，使用_.uniq对数组元素进行不区分大小写去重：\n123456789let arr = [&#x27;Apple&#x27;, &#x27;orange&#x27;, &#x27;banana&#x27;, &#x27;ORANGE&#x27;, &#x27;apple&#x27;, &#x27;PEAR&#x27;];let result = ???// 测试if (result.toString() === [&quot;Apple&quot;, &quot;orange&quot;, &quot;banana&quot;, &quot;PEAR&quot;].toString()) &#123;    console.log(&#x27;测试成功!&#x27;);&#125; else &#123;    console.log(&#x27;测试失败!&#x27;);&#125;\n因为underscore本来就是为了充分发挥JavaScript的函数式编程特性，所以也提供了大量JavaScript本身没有的高阶函数。\nbind\nbind()有什么用？我们先看一个常见的错误用法：\n1234567let s = &#x27; Hello  &#x27;;s.trim();// 输出&#x27;Hello&#x27;let fn = s.trim;fn();// Uncaught TypeError: String.prototype.trim called on null or undefined\n如果你想用fn()取代s.trim()，按照上面的做法是不行的，因为直接调用fn()传入的this指针是undefined，必须这么用：\n12345let s = &#x27; Hello  &#x27;;let fn = s.trim;// 调用call并传入s对象作为this:fn.call(s)// 输出Hello\n这样搞多麻烦！还不如直接用s.trim()。但是，bind()可以帮我们把s对象直接绑定在fn()的this指针上，以后调用fn()就可以直接正常调用了：\n1234let s = &#x27; Hello  &#x27;;let fn = _.bind(s.trim, s);fn();// 输出Hello\n结论：当用一个变量fn指向一个对象的方法时，直接调用fn()是不行的，因为丢失了this对象的引用。用bind可以修复这个问题。\npartial\npartial()就是为一个函数创建偏函数。偏函数是什么东东？看例子：\n假设我们要计算xy，这时只需要调用Math.pow(x, y)就可以了。\n假设我们经常计算2y，每次都写Math.pow(2, y)就比较麻烦，如果创建一个新的函数能直接这样写pow2N(y)就好了，这个新函数pow2N(y)就是根据Math.pow(x, y)创建出来的偏函数，它固定住了原函数的第一个参数（始终为2）：\n1234let pow2N = _.partial(Math.pow, 2);pow2N(3); // 8pow2N(5); // 32pow2N(10); // 1024\n如果我们不想固定第一个参数，想固定第二个参数怎么办？比如，希望创建一个偏函数cube(x)，计算x3，可以用_作占位符，固定住第二个参数：\n1234let cube = _.partial(Math.pow, _, 3);cube(3); // 27cube(5); // 125cube(10); // 1000\n可见，创建偏函数的目的是将原函数的某些参数固定住，可以降低新函数调用的难度。\nmemoize\n如果一个函数调用开销很大，我们就可能希望能把结果缓存下来，以便后续调用时直接获得结果。举个例子，计算阶乘就比较耗时：\n123456789101112131415function factorial(n) &#123;    console.log(&#x27;start calculate &#x27; + n + &#x27;!...&#x27;);    let s = 1, i = n;    while (i &gt; 1) &#123;        s = s * i;        i --;    &#125;    console.log(n + &#x27;! = &#x27; + s);    return s;&#125;factorial(10); // 3628800// 注意控制台输出:// start calculate 10!...// 10! = 3628800\n用memoize()就可以自动缓存函数计算的结果：\n1234567891011121314151617181920let factorial = _.memoize(function(n) &#123;    console.log(&#x27;start calculate &#x27; + n + &#x27;!...&#x27;);    let s = 1, i = n;    while (i &gt; 1) &#123;        s = s * i;        i --;    &#125;    console.log(n + &#x27;! = &#x27; + s);    return s;&#125;);// 第一次调用:factorial(10); // 3628800// 注意控制台输出:// start calculate 10!...// 10! = 3628800// 第二次调用:factorial(10); // 3628800// 控制台没有输出\n对于相同的调用，比如连续两次调用factorial(10)，第二次调用并没有计算，而是直接返回上次计算后缓存的结果。不过，当你计算factorial(9)的时候，仍然会重新计算。\n可以对factorial()进行改进，让其递归调用：\n1234567891011121314151617181920212223let factorial = _.memoize(function(n) &#123;    console.log(&#x27;start calculate &#x27; + n + &#x27;!...&#x27;);    if (n &lt; 2) &#123;        return 1;    &#125;    return n * factorial(n - 1);&#125;);factorial(10); // 3628800// 输出结果说明factorial(1)~factorial(10)都已经缓存了:// start calculate 10!...// start calculate 9!...// start calculate 8!...// start calculate 7!...// start calculate 6!...// start calculate 5!...// start calculate 4!...// start calculate 3!...// start calculate 2!...// start calculate 1!...factorial(9); // 362880// console无输出\nonce\n顾名思义，once()保证某个函数执行且仅执行一次。如果你有一个方法叫register()，用户在页面上点两个按钮的任何一个都可以执行的话，就可以用once()保证函数仅调用一次，无论用户点击多少次：\n12345678let register = _.once(function () &#123;    console.log(&#x27;Register ok!&#x27;);&#125;);// 测试效果:register();register();register();\ndelay\ndelay()可以让一个函数延迟执行，效果和setTimeout()是一样的，但是代码明显简单了：\n12// 2秒后调用alert():_.delay(alert, 2000);\n如果要延迟调用的函数有参数，把参数也传进去：\n123let log = _.bind(console.log, console);_.delay(log, 2000, &#x27;Hello,&#x27;, &#x27;world!&#x27;);// 2秒后打印&#x27;Hello, world!&#x27;:\n更多完整的函数请参考underscore的文档：https://underscorejs.org/#functions\n和Array类似，underscore也提供了大量针对Object的函数。\nkeys / allKeys\nkeys()可以非常方便地返回一个object自身所有的key，但不包含从原型链继承下来的：\n1234567function Student(name, age) &#123;    this.name = name;    this.age = age;&#125;let xiaoming = new Student(&#x27;小明&#x27;, 20);_.keys(xiaoming); // [&#x27;name&#x27;, &#x27;age&#x27;]\nallKeys()除了object自身的key，还包含从原型链继承下来的：\n1234567function Student(name, age) &#123;    this.name = name;    this.age = age;&#125;Student.prototype.school = &#x27;No.1 Middle School&#x27;;let xiaoming = new Student(&#x27;小明&#x27;, 20);_.allKeys(xiaoming); // [&#x27;name&#x27;, &#x27;age&#x27;, &#x27;school&#x27;]\nvalues\n和keys()类似，values()返回object自身但不包含原型链继承的所有值：\n123456let obj = &#123;    name: &#x27;小明&#x27;,    age: 20&#125;;_.values(obj); // [&#x27;小明&#x27;, 20]\n注意，没有allValues()，原因我也不知道。\nmapObject\nmapObject()就是针对object的map版本：\n123let obj = &#123; a: 1, b: 2, c: 3 &#125;;// 注意传入的函数签名，value在前，key在后:_.mapObject(obj, (v, k) =&gt; 100 + v); // &#123; a: 101, b: 102, c: 103 &#125;\ninvert\ninvert()把object的每个key-value来个交换，key变成value，value变成key：\n123456let obj = &#123;    Adam: 90,    Lisa: 85,    Bart: 59&#125;;_.invert(obj); // &#123; &#x27;59&#x27;: &#x27;Bart&#x27;, &#x27;85&#x27;: &#x27;Lisa&#x27;, &#x27;90&#x27;: &#x27;Adam&#x27; &#125;\nextend / extendOwn\nextend()把多个object的key-value合并到第一个object并返回：\n1234let a = &#123;name: &#x27;Bob&#x27;, age: 20&#125;;_.extend(a, &#123;age: 15&#125;, &#123;age: 88, city: &#x27;Beijing&#x27;&#125;); // &#123;name: &#x27;Bob&#x27;, age: 88, city: &#x27;Beijing&#x27;&#125;// 变量a的内容也改变了：a; // &#123;name: &#x27;Bob&#x27;, age: 88, city: &#x27;Beijing&#x27;&#125;\n注意：如果有相同的key，后面的object的value将覆盖前面的object的value。\nextendOwn()和extend()类似，但获取属性时忽略从原型链继承下来的属性。\nclone\n如果我们要复制一个object对象，就可以用clone()方法，它会把原有对象的所有属性都复制到新的对象中：\n12345678let source = &#123;    name: &#x27;小明&#x27;,    age: 20,    skills: [&#x27;JavaScript&#x27;, &#x27;CSS&#x27;, &#x27;HTML&#x27;]&#125;;let copied = _.clone(source);console.log(JSON.stringify(copied, null, &#x27;  &#x27;));\n注意，clone()是“浅复制”。所谓“浅复制”就是说，两个对象相同的key所引用的value其实是同一对象：\n1source.skills === copied.skills; // true\n也就是说，修改source.skills会影响copied.skills。\nisEqual\nisEqual()对两个object进行深度比较，如果内容完全相同，则返回true：\n12345let o1 = &#123; name: &#x27;Bob&#x27;, skills: &#123; Java: 90, JavaScript: 99 &#125;&#125;;let o2 = &#123; name: &#x27;Bob&#x27;, skills: &#123; JavaScript: 99, Java: 90 &#125;&#125;;o1 === o2; // false_.isEqual(o1, o2); // true\nisEqual()其实对Array也可以比较：\n12345let o1 = [&#x27;Bob&#x27;, &#123; skills: [&#x27;Java&#x27;, &#x27;JavaScript&#x27;] &#125;];let o2 = [&#x27;Bob&#x27;, &#123; skills: [&#x27;Java&#x27;, &#x27;JavaScript&#x27;] &#125;];o1 === o2; // false_.isEqual(o1, o2); // true\n更多完整的函数请参考underscore的文档：https://underscorejs.org/#objects\nChaining\n还记得jQuery支持链式调用吗？\n123$(&#x27;a&#x27;).attr(&#x27;target&#x27;, &#x27;_blank&#x27;)      .append(&#x27; &lt;i class=&quot;uk-icon-external-link&quot;&gt;&lt;/i&gt;&#x27;)      .click(function () &#123;&#125;);\n如果我们有一组操作，用underscore提供的函数，写出来像这样：\n12_.filter(_.map([1, 4, 9, 16, 25], Math.sqrt), x =&gt; x % 2 === 1);// [1, 3, 5]\n能不能写成链式调用？\n能！\nunderscore提供了把对象包装成能进行链式调用的方法，就是chain()函数：\n12345let r = _.chain([1, 4, 9, 16, 25])         .map(Math.sqrt)         .filter(x =&gt; x % 2 === 1)         .value();console.log(r); // [1, 3, 5]\n因为每一步返回的都是包装对象，所以最后一步的结果需要调用value()获得最终结果。\n小结\n通过学习underscore，是不是对JavaScript的函数式编程又有了进一步的认识？\n\n\n","dateCreated":"2024-01-17T22:15:06+08:00","dateModified":"2025-06-18T12:38:04+08:00","datePublished":"2024-01-17T22:15:06+08:00","description":"","headline":"JavaScript-underscore","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/","keywords":"JavaScript, 前端"}</script>
     <meta name="description" content="underscore 前面我们已经讲过了，JavaScript是函数式编程语言，支持高阶函数和闭包。函数式编程非常强大，可以写出非常简洁的代码。例如Array的map()和filter()方法： 123let a1 &#x3D; [1, 4, 9, 16];let a2 &#x3D; a1.map(Math.sqrt); &#x2F;&#x2F; [1, 2, 3, 4]let a3 &#x3D; a2.filter((x) &#x3D;&gt; &amp;#12">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="JavaScript-underscore">
-<meta property="og:url" content="https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/index.html">
+<meta property="og:url" content="https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="underscore 前面我们已经讲过了，JavaScript是函数式编程语言，支持高阶函数和闭包。函数式编程非常强大，可以写出非常简洁的代码。例如Array的map()和filter()方法： 123let a1 &#x3D; [1, 4, 9, 16];let a2 &#x3D; a1.map(Math.sqrt); &#x2F;&#x2F; [1, 2, 3, 4]let a3 &#x3D; a2.filter((x) &#x3D;&gt; &amp;#12">
 <meta property="og:locale" content="zh_TW">
@@ -51,7 +51,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -529,7 +529,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -540,7 +540,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -553,7 +553,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -566,7 +566,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -579,7 +579,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -592,7 +592,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -657,7 +657,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -668,7 +668,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -681,7 +681,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -694,7 +694,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -707,7 +707,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -720,7 +720,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -741,7 +741,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -754,7 +754,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -767,7 +767,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -780,7 +780,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2024/01/17/JavaScript/JavaScript-underscore/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2024/01/17/JavaScript/JavaScript-underscore/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -856,7 +856,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -879,7 +879,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -902,7 +902,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -925,7 +925,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -948,7 +948,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -971,7 +971,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -994,7 +994,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1017,7 +1017,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1040,7 +1040,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1063,7 +1063,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

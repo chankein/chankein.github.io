@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"守护进程管理与系统安全笔记整理\n守护进程管理\nSuper Server (超级服务器)\n\n作用：代替其他服务监视服务请求，建立连接后转交给实际服务处理\n优势：降低系统负载，不需要为每个服务都启动独立进程\n\ninetd (Internet Daemon)\n\n传统的超级服务器守护进程\n配置文件：/etc/inetd.conf\n\ninetd.conf 字段说明\n\n\n\n字段\n说明\n\n\n\n\nservice_name\n/etc/services中定义的服务名\n\n\nsocket_type\nsocket类型(TCP=stream, UDP=dgram)\n\n\nprotocol\n协议类型(通常TCP/UDP)\n\n\nflags\n请求处理方式(wait=等待处理完成, nowait=立即处理下一个)\n\n\nuser\n执行用户\n\n\nprogram\n程序绝对路径\n\n\nargs\n转发参数\n\n\n\n重启inetd\n123kill -HUP inetd的PIDkillall -HUP inetd/etc/init.d/inetd restart\nTCP Wrapper\n\n访问控制机制，检查顺序：\n\n先查/etc/hosts.allow → 匹配则允许\n再查/etc/hosts.deny → 匹配则拒绝\n都不匹配则允许\n\n\n\n通配符说明\n\n\n\n通配符\n说明\n\n\n\n\nALL\n所有服务和主机\n\n\nA EXCEPT B\n除B以外的A\n\n\nLOCAL\n本地主机(不含.)\n\n\nPARANOID\n主机名与DNS解析IP不一致的情况\n\n\n\n示例配置\n12in.telnetd: .lpic.jp  # 允许lpic.jp域访问telnetALL: 192.168.2.      # 允许192.168.2.x网段所有服务\nxinetd (扩展的inetd)\n\n更安全的超级服务器，支持分服务配置\n主配置文件：/etc/xinetd.conf\n服务配置文件：/etc/xinetd.d/\n\nxinetd.conf 主要参数\n123456789default&#123;    instance = 60               # 最大守护进程数    log_type = SYSLOG authpriv  # 日志类型    log_on_success = HOST PID   # 成功日志内容    log_on_failure = HOST       # 失败日志内容    cps = 25 30                 # 每秒最大连接数(超限后暂停30秒)&#125;includedir /etc/xinetd.d        # 包含服务配置目录\n服务配置示例(telnet)\n123456789service telnet&#123;    disable = no    socket_type = stream    wait = no    user = root    server = /usr/sbin/in.telnetd    log_on_failure += USERID&#125;\n重启xinetd\n1/etc/init.d/xinetd restart\n端口安全\n检查开放端口\n1234netstat -atun       # 显示所有TCP/UDP端口lsof -i -n          # 查看网络连接lsof -i :22         # 查看指定端口lsof -c ssh         # 查看指定进程\nnmap 扫描\n1nmap 目标主机       # 扫描主机开放端口\n查找特殊权限文件\n123find / -perm -u+s -ls   # 查找SUID文件find / -perm -g+s -ls   # 查找SGID文件find / -perm -o+t -ls   # 查找sticky bit文件\n用户安全\n密码有效期设置(chage)\n1chage [选项] 用户名\n\n\n\n选项\n说明\n\n\n\n\n-l\n显示有效期\n\n\n-m 天数\n密码最小使用天数\n\n\n-M 天数\n密码最大有效期\n\n\n-d 日期\n最后修改日期\n\n\n-W 天数\n密码过期前警告天数\n\n\n-I 天数\n密码过期后锁定前天数\n\n\n-E 日期\n账号失效日期\n\n\n\n禁止登录方法\n\n创建/etc/nologin文件：禁止所有非root用户登录1touch /etc/nologin\n\n修改用户shell：1usermod -s /sbin/nologin 用户名  # 禁止指定用户登录\n\n\nsu/sudo\nsu (切换用户)\n12su - 用户名   # 完全切换(加载环境变量)su 用户名     # 部分切换(保留当前环境)\nsudo (超级用户权限)\n\n配置文件：/etc/sudoers (使用visudo编辑)\n示例配置：12345# 允许student用户执行shutdownstudent ALL=(ALL) /sbin/shutdown# 允许wheel组成员执行所有命令且不输密码%wheel ALL=(ALL) NOPASSWD:ALL\n\n\n资源限制(ulimit)\n1ulimit [选项] [限制值]\n\n\n\n选项\n说明\n\n\n\n\n-a\n显示所有限制\n\n\n-c size\n核心文件大小\n\n\n-f size\n最大文件大小\n\n\n-n num\n打开文件数限制\n\n\n-u num\n用户最大进程数\n\n\n-v size\n最大虚拟内存\n\n\n\nOpenSSH 安全\nSSH密钥文件\n\n\n\n文件名\n说明\n\n\n\n\nssh_host_key\nSSH1私钥\n\n\nssh_host_dsa_key\nSSH2 DSA私钥\n\n\nssh_host_rsa_key\nSSH2 RSA私钥\n\n\n*.pub\n对应公钥\n\n\n\nsshd配置(/etc/ssh/sshd_config)\n\n\n\n参数\n说明\n\n\n\n\nPort\nSSH端口(默认22)\n\n\nProtocol\nSSH版本(1,2)\n\n\nHostKey\n私钥文件路径\n\n\nPermitRootLogin\n是否允许root登录\n\n\nRSAAuthentication\n是否启用SSH1公钥认证\n\n\nPubkeyAuthentication\n是否启用SSH2公钥认证\n\n\nAuthorizedKeysFile\n授权公钥文件路径\n\n\nPermitEmptyPasswords\n是否允许空密码\n\n\nPasswordAuthentication\n是否启用密码认证\n\n\nX11Forwarding\n是否允许X11转发\n\n\n\nSSH密钥认证流程\n\n客户端生成密钥对：1ssh-keygen -t rsa   # 生成RSA密钥对\n\n上传公钥到服务器：1ssh-copy-id 用户名@服务器\n\n服务器端公钥存储在：~/.ssh/authorized_keys\n\nSSH实用命令\nscp (安全复制)\n12scp 文件 用户@主机:路径   # 上传scp -r 目录 用户@主机:路径 # 递归复制目录\nssh-agent (密钥代理)\n123eval `ssh-agent`   # 启动代理ssh-add            # 添加密钥ssh-add -l         # 列出已加载密钥\n端口转发\n12345# 本地端口转发ssh -L 本地端口:远程主机:远程端口 用户@网关# X11转发ssh -X 用户@主机\nGnuPG 文件加密\n密钥管理\n1234gpg --gen-key              # 生成密钥对gpg --list-keys            # 列出密钥gpg --export -a &quot;用户&quot; &gt; pubkey.asc  # 导出公钥gpg --import pubkey.asc    # 导入公钥\n文件加密/解密\n12345# 加密文件(给指定用户)gpg -e -a -r 接收者邮件 文件# 解密文件gpg 加密文件.asc\n密钥吊销\n12gpg --gen-revoke 用户邮件 &gt; revoke.asc  # 生成吊销证书gpg --import revoke.asc                 # 导入吊销证书\n","dateCreated":"2020-06-24T21:06:24+08:00","dateModified":"2025-05-09T18:35:53+08:00","datePublished":"2020-06-24T21:06:24+08:00","description":"","headline":"10.安全","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/","keywords":"linux, LPIC"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"守护进程管理与系统安全笔记整理\n守护进程管理\nSuper Server (超级服务器)\n\n作用：代替其他服务监视服务请求，建立连接后转交给实际服务处理\n优势：降低系统负载，不需要为每个服务都启动独立进程\n\ninetd (Internet Daemon)\n\n传统的超级服务器守护进程\n配置文件：/etc/inetd.conf\n\ninetd.conf 字段说明\n\n\n\n字段\n说明\n\n\n\n\nservice_name\n/etc/services中定义的服务名\n\n\nsocket_type\nsocket类型(TCP=stream, UDP=dgram)\n\n\nprotocol\n协议类型(通常TCP/UDP)\n\n\nflags\n请求处理方式(wait=等待处理完成, nowait=立即处理下一个)\n\n\nuser\n执行用户\n\n\nprogram\n程序绝对路径\n\n\nargs\n转发参数\n\n\n\n重启inetd\n123kill -HUP inetd的PIDkillall -HUP inetd/etc/init.d/inetd restart\nTCP Wrapper\n\n访问控制机制，检查顺序：\n\n先查/etc/hosts.allow → 匹配则允许\n再查/etc/hosts.deny → 匹配则拒绝\n都不匹配则允许\n\n\n\n通配符说明\n\n\n\n通配符\n说明\n\n\n\n\nALL\n所有服务和主机\n\n\nA EXCEPT B\n除B以外的A\n\n\nLOCAL\n本地主机(不含.)\n\n\nPARANOID\n主机名与DNS解析IP不一致的情况\n\n\n\n示例配置\n12in.telnetd: .lpic.jp  # 允许lpic.jp域访问telnetALL: 192.168.2.      # 允许192.168.2.x网段所有服务\nxinetd (扩展的inetd)\n\n更安全的超级服务器，支持分服务配置\n主配置文件：/etc/xinetd.conf\n服务配置文件：/etc/xinetd.d/\n\nxinetd.conf 主要参数\n123456789default&#123;    instance = 60               # 最大守护进程数    log_type = SYSLOG authpriv  # 日志类型    log_on_success = HOST PID   # 成功日志内容    log_on_failure = HOST       # 失败日志内容    cps = 25 30                 # 每秒最大连接数(超限后暂停30秒)&#125;includedir /etc/xinetd.d        # 包含服务配置目录\n服务配置示例(telnet)\n123456789service telnet&#123;    disable = no    socket_type = stream    wait = no    user = root    server = /usr/sbin/in.telnetd    log_on_failure += USERID&#125;\n重启xinetd\n1/etc/init.d/xinetd restart\n端口安全\n检查开放端口\n1234netstat -atun       # 显示所有TCP/UDP端口lsof -i -n          # 查看网络连接lsof -i :22         # 查看指定端口lsof -c ssh         # 查看指定进程\nnmap 扫描\n1nmap 目标主机       # 扫描主机开放端口\n查找特殊权限文件\n123find / -perm -u+s -ls   # 查找SUID文件find / -perm -g+s -ls   # 查找SGID文件find / -perm -o+t -ls   # 查找sticky bit文件\n用户安全\n密码有效期设置(chage)\n1chage [选项] 用户名\n\n\n\n选项\n说明\n\n\n\n\n-l\n显示有效期\n\n\n-m 天数\n密码最小使用天数\n\n\n-M 天数\n密码最大有效期\n\n\n-d 日期\n最后修改日期\n\n\n-W 天数\n密码过期前警告天数\n\n\n-I 天数\n密码过期后锁定前天数\n\n\n-E 日期\n账号失效日期\n\n\n\n禁止登录方法\n\n创建/etc/nologin文件：禁止所有非root用户登录1touch /etc/nologin\n\n修改用户shell：1usermod -s /sbin/nologin 用户名  # 禁止指定用户登录\n\n\nsu/sudo\nsu (切换用户)\n12su - 用户名   # 完全切换(加载环境变量)su 用户名     # 部分切换(保留当前环境)\nsudo (超级用户权限)\n\n配置文件：/etc/sudoers (使用visudo编辑)\n示例配置：12345# 允许student用户执行shutdownstudent ALL=(ALL) /sbin/shutdown# 允许wheel组成员执行所有命令且不输密码%wheel ALL=(ALL) NOPASSWD:ALL\n\n\n资源限制(ulimit)\n1ulimit [选项] [限制值]\n\n\n\n选项\n说明\n\n\n\n\n-a\n显示所有限制\n\n\n-c size\n核心文件大小\n\n\n-f size\n最大文件大小\n\n\n-n num\n打开文件数限制\n\n\n-u num\n用户最大进程数\n\n\n-v size\n最大虚拟内存\n\n\n\nOpenSSH 安全\nSSH密钥文件\n\n\n\n文件名\n说明\n\n\n\n\nssh_host_key\nSSH1私钥\n\n\nssh_host_dsa_key\nSSH2 DSA私钥\n\n\nssh_host_rsa_key\nSSH2 RSA私钥\n\n\n*.pub\n对应公钥\n\n\n\nsshd配置(/etc/ssh/sshd_config)\n\n\n\n参数\n说明\n\n\n\n\nPort\nSSH端口(默认22)\n\n\nProtocol\nSSH版本(1,2)\n\n\nHostKey\n私钥文件路径\n\n\nPermitRootLogin\n是否允许root登录\n\n\nRSAAuthentication\n是否启用SSH1公钥认证\n\n\nPubkeyAuthentication\n是否启用SSH2公钥认证\n\n\nAuthorizedKeysFile\n授权公钥文件路径\n\n\nPermitEmptyPasswords\n是否允许空密码\n\n\nPasswordAuthentication\n是否启用密码认证\n\n\nX11Forwarding\n是否允许X11转发\n\n\n\nSSH密钥认证流程\n\n客户端生成密钥对：1ssh-keygen -t rsa   # 生成RSA密钥对\n\n上传公钥到服务器：1ssh-copy-id 用户名@服务器\n\n服务器端公钥存储在：~/.ssh/authorized_keys\n\nSSH实用命令\nscp (安全复制)\n12scp 文件 用户@主机:路径   # 上传scp -r 目录 用户@主机:路径 # 递归复制目录\nssh-agent (密钥代理)\n123eval `ssh-agent`   # 启动代理ssh-add            # 添加密钥ssh-add -l         # 列出已加载密钥\n端口转发\n12345# 本地端口转发ssh -L 本地端口:远程主机:远程端口 用户@网关# X11转发ssh -X 用户@主机\nGnuPG 文件加密\n密钥管理\n1234gpg --gen-key              # 生成密钥对gpg --list-keys            # 列出密钥gpg --export -a &quot;用户&quot; &gt; pubkey.asc  # 导出公钥gpg --import pubkey.asc    # 导入公钥\n文件加密/解密\n12345# 加密文件(给指定用户)gpg -e -a -r 接收者邮件 文件# 解密文件gpg 加密文件.asc\n密钥吊销\n12gpg --gen-revoke 用户邮件 &gt; revoke.asc  # 生成吊销证书gpg --import revoke.asc                 # 导入吊销证书\n","dateCreated":"2020-06-24T21:06:24+08:00","dateModified":"2025-05-09T18:35:53+08:00","datePublished":"2020-06-24T21:06:24+08:00","description":"","headline":"10.安全","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/","keywords":"linux, LPIC"}</script>
     <meta name="description" content="守护进程管理与系统安全笔记整理 守护进程管理 Super Server (超级服务器)  作用：代替其他服务监视服务请求，建立连接后转交给实际服务处理 优势：降低系统负载，不需要为每个服务都启动独立进程  inetd (Internet Daemon)  传统的超级服务器守护进程 配置文件：&#x2F;etc&#x2F;inetd.conf  inetd.conf 字段说明    字段 说明     service_">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="10.安全">
-<meta property="og:url" content="https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/index.html">
+<meta property="og:url" content="https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="守护进程管理与系统安全笔记整理 守护进程管理 Super Server (超级服务器)  作用：代替其他服务监视服务请求，建立连接后转交给实际服务处理 优势：降低系统负载，不需要为每个服务都启动独立进程  inetd (Internet Daemon)  传统的超级服务器守护进程 配置文件：&#x2F;etc&#x2F;inetd.conf  inetd.conf 字段说明    字段 说明     service_">
 <meta property="og:locale" content="zh_TW">
@@ -51,7 +51,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -689,7 +689,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -700,7 +700,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -713,7 +713,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -726,7 +726,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -739,7 +739,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -752,7 +752,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -817,7 +817,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -828,7 +828,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -841,7 +841,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -854,7 +854,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -867,7 +867,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -880,7 +880,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -901,7 +901,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -914,7 +914,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -927,7 +927,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -940,7 +940,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/06/24/linux/10-%E5%AE%89%E5%85%A8/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -1016,7 +1016,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -1039,7 +1039,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -1062,7 +1062,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -1085,7 +1085,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -1108,7 +1108,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -1131,7 +1131,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1154,7 +1154,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1177,7 +1177,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1200,7 +1200,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1223,7 +1223,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"123# X Window 系统架构详解## 基础架构\nlocalhost(X server) --X protocol-- remotehost(X client)\n12345678910111213141516171819202122232425262728### 核心组件说明1. **X Server**：   - 负责硬件管理（显卡、显示器、输入设备等）   - 屏幕绘制与渲染   - 提供字体服务功能   - 典型实现：Xorg2. **X Client**：   - 应用程序逻辑处理   - 响应X Server的事件请求   - 例如：xterm、Firefox等GUI程序3. **X Window Manager**：   - 特殊的X Client   - 负责管理窗口布局、装饰和交互   - 常见WM：twm、KWin、Metacity等4. **Display Manager**：   - 提供图形化登录界面   - 负责加载用户选择的WM和语言环境   - 常见实现：GDM、KDM、XDM## startx 启动流程### 命令语法```bashstartx [X client 参数] -- [X server 参数]\nX server 参数查找顺序\n\nstartx 命令行参数\n用户主目录 ~/.xserverrc\n系统默认 /etc/X11/xinit/xserverrc\n最终回退 /usr/bin/X (X server可执行文件)\n\nX client 参数查找顺序\n\nstartx 命令行参数\n用户主目录 ~/.xinitrc\n系统默认 /etc/X11/xinit/xinitrc\n最终回退 xterm (基础终端模拟器)\n\n底层调用\nstartx 最终调用 xinit 启动X系统：\n1xinit [client option] -- [server or display option]\n默认等效命令：\n1xinit /etc/X11/xinit/xinitrc -- /usr/bin/X\n最小化启动示例：\n1xinit xterm -geometry +1+1 -n login -display :0 -- X :0\n配置文件体系\n核心配置文件\n\n主配置文件：/etc/X11/xorg.conf\n模块目录：/usr/lib64/xorg/modules/\n字体目录：/usr/share/X11/fonts/\n显卡驱动：/usr/lib64/xorg/modules/drivers/\n\n配置段落(Section)\n\n\n\nSection名称\n功能描述\n\n\n\n\nModule\nX Server加载的功能模块\n\n\nInputDevice\n输入设备配置（键盘/鼠标）\n\n\nFiles\n字体和颜色资源路径\n\n\nMonitor\n显示器参数（刷新率等）\n\n\nDevice\n显卡芯片组配置\n\n\nScreen\n显示分辨率和色深设置\n\n\nServerLayout\n各模块的组合配置\n\n\n\n配置生成工具\n123Xorg -configure# 生成测试配置文件：/root/xorg.conf.new# 测试命令：X -config /root/xorg.conf.new\n实用命令工具\n显示调节\n\nxvidtune：GUI显示器频率调节工具\nxhost：X server访问控制1234xhost +hostname  # 添加访问权限xhost -hostname  # 移除访问权限xhost +          # 允许所有主机xhost -          # 禁用所有远程访问\n\n\n环境变量\n12DISPLAY=localhost:0  # 指定显示目标export DISPLAY\n信息查询\n\n\n\n命令\n功能描述\n\n\n\n\nshowrgb\n显示可用RGB颜色值\n\n\nxlsclients\n列出运行中的X客户端\n\n\nxwininfo\n查询窗口几何属性\n\n\nxdpyinfo\n显示X Server详细信息\n\n\n\n显示管理器(XDM)\n类型对比\n\n\n\n类型\n描述\n\n\n\n\nXDM\n基础X Display Manager\n\n\nGDM\nGNOME显示管理器\n\n\nKDM\nKDE显示管理器\n\n\n\nXDM启动流程\n\n启动XDM服务\n加载 /etc/X11/Xsession\n执行 /etc/X11/xinit/xinitrc.d/ 下脚本\n读取用户配置 ~/.xsession\n加载 ~/.Xclients 或 /etc/X11/xinit/Xclients\n\n关键配置文件\n\n\n\n文件名\n用途描述\n\n\n\n\nxdm-config\n基础配置和访问控制\n\n\nXaccess\n主机访问权限设置\n\n\nXresources\n登录界面样式和X资源定义\n\n\nXservers\nX Server与Display映射\n\n\nXsetup_0\n登录前环境设置（如壁纸）\n\n\nXsession\n会话启动流程控制\n\n\n\n窗口管理器列表\n\n\n\n名称\n特点描述\n\n\n\n\ntwm\n最基本的窗口管理器\n\n\nfvwm\n轻量级窗口管理器\n\n\nsawfish\nGNOME集成WM\n\n\nenlightenment\n高定制化WM\n\n\nmetacity\nGNOME默认WM\n\n\nfluxbox\n轻量级高自由度WM\n\n\nWindowMaker\nNeXTSTEP风格WM\n\n\nKWin\nKDE标准窗口管理器\n\n\n\n辅助功能技术\nAccessX 功能\n\n\n\n功能\n描述\n\n\n\n\n粘滞键\n分离组合键输入\n\n\n慢速键\n调整按键响应时间\n\n\n防反弹键\n防止重复输入\n\n\n切换键\n切换状态声音反馈\n\n\n鼠标键\n键盘模拟鼠标操作\n\n\n\n其他辅助工具\n\n高对比度显示：增强视觉可读性\n屏幕阅读器：Orca等文本转语音工具\n盲文显示器：触觉输出设备\n屏幕放大镜：视觉辅助工具\n屏幕键盘：GOK等虚拟输入工具\n\n专用软件\n\nOrca：GNOME屏幕阅读器和放大镜\nGOK：GNOME屏幕键盘\nemacspeak：为Emacs添加语音功能\n\n","dateCreated":"2020-05-08T20:06:24+08:00","dateModified":"2025-05-09T18:35:47+08:00","datePublished":"2020-05-08T20:06:24+08:00","description":"","headline":"7.XWindow","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/05/08/linux/7-XWindow/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/05/08/linux/7-XWindow/","keywords":"linux, LPIC"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"123# X Window 系统架构详解## 基础架构\nlocalhost(X server) --X protocol-- remotehost(X client)\n12345678910111213141516171819202122232425262728### 核心组件说明1. **X Server**：   - 负责硬件管理（显卡、显示器、输入设备等）   - 屏幕绘制与渲染   - 提供字体服务功能   - 典型实现：Xorg2. **X Client**：   - 应用程序逻辑处理   - 响应X Server的事件请求   - 例如：xterm、Firefox等GUI程序3. **X Window Manager**：   - 特殊的X Client   - 负责管理窗口布局、装饰和交互   - 常见WM：twm、KWin、Metacity等4. **Display Manager**：   - 提供图形化登录界面   - 负责加载用户选择的WM和语言环境   - 常见实现：GDM、KDM、XDM## startx 启动流程### 命令语法```bashstartx [X client 参数] -- [X server 参数]\nX server 参数查找顺序\n\nstartx 命令行参数\n用户主目录 ~/.xserverrc\n系统默认 /etc/X11/xinit/xserverrc\n最终回退 /usr/bin/X (X server可执行文件)\n\nX client 参数查找顺序\n\nstartx 命令行参数\n用户主目录 ~/.xinitrc\n系统默认 /etc/X11/xinit/xinitrc\n最终回退 xterm (基础终端模拟器)\n\n底层调用\nstartx 最终调用 xinit 启动X系统：\n1xinit [client option] -- [server or display option]\n默认等效命令：\n1xinit /etc/X11/xinit/xinitrc -- /usr/bin/X\n最小化启动示例：\n1xinit xterm -geometry +1+1 -n login -display :0 -- X :0\n配置文件体系\n核心配置文件\n\n主配置文件：/etc/X11/xorg.conf\n模块目录：/usr/lib64/xorg/modules/\n字体目录：/usr/share/X11/fonts/\n显卡驱动：/usr/lib64/xorg/modules/drivers/\n\n配置段落(Section)\n\n\n\nSection名称\n功能描述\n\n\n\n\nModule\nX Server加载的功能模块\n\n\nInputDevice\n输入设备配置（键盘/鼠标）\n\n\nFiles\n字体和颜色资源路径\n\n\nMonitor\n显示器参数（刷新率等）\n\n\nDevice\n显卡芯片组配置\n\n\nScreen\n显示分辨率和色深设置\n\n\nServerLayout\n各模块的组合配置\n\n\n\n配置生成工具\n123Xorg -configure# 生成测试配置文件：/root/xorg.conf.new# 测试命令：X -config /root/xorg.conf.new\n实用命令工具\n显示调节\n\nxvidtune：GUI显示器频率调节工具\nxhost：X server访问控制1234xhost +hostname  # 添加访问权限xhost -hostname  # 移除访问权限xhost +          # 允许所有主机xhost -          # 禁用所有远程访问\n\n\n环境变量\n12DISPLAY=localhost:0  # 指定显示目标export DISPLAY\n信息查询\n\n\n\n命令\n功能描述\n\n\n\n\nshowrgb\n显示可用RGB颜色值\n\n\nxlsclients\n列出运行中的X客户端\n\n\nxwininfo\n查询窗口几何属性\n\n\nxdpyinfo\n显示X Server详细信息\n\n\n\n显示管理器(XDM)\n类型对比\n\n\n\n类型\n描述\n\n\n\n\nXDM\n基础X Display Manager\n\n\nGDM\nGNOME显示管理器\n\n\nKDM\nKDE显示管理器\n\n\n\nXDM启动流程\n\n启动XDM服务\n加载 /etc/X11/Xsession\n执行 /etc/X11/xinit/xinitrc.d/ 下脚本\n读取用户配置 ~/.xsession\n加载 ~/.Xclients 或 /etc/X11/xinit/Xclients\n\n关键配置文件\n\n\n\n文件名\n用途描述\n\n\n\n\nxdm-config\n基础配置和访问控制\n\n\nXaccess\n主机访问权限设置\n\n\nXresources\n登录界面样式和X资源定义\n\n\nXservers\nX Server与Display映射\n\n\nXsetup_0\n登录前环境设置（如壁纸）\n\n\nXsession\n会话启动流程控制\n\n\n\n窗口管理器列表\n\n\n\n名称\n特点描述\n\n\n\n\ntwm\n最基本的窗口管理器\n\n\nfvwm\n轻量级窗口管理器\n\n\nsawfish\nGNOME集成WM\n\n\nenlightenment\n高定制化WM\n\n\nmetacity\nGNOME默认WM\n\n\nfluxbox\n轻量级高自由度WM\n\n\nWindowMaker\nNeXTSTEP风格WM\n\n\nKWin\nKDE标准窗口管理器\n\n\n\n辅助功能技术\nAccessX 功能\n\n\n\n功能\n描述\n\n\n\n\n粘滞键\n分离组合键输入\n\n\n慢速键\n调整按键响应时间\n\n\n防反弹键\n防止重复输入\n\n\n切换键\n切换状态声音反馈\n\n\n鼠标键\n键盘模拟鼠标操作\n\n\n\n其他辅助工具\n\n高对比度显示：增强视觉可读性\n屏幕阅读器：Orca等文本转语音工具\n盲文显示器：触觉输出设备\n屏幕放大镜：视觉辅助工具\n屏幕键盘：GOK等虚拟输入工具\n\n专用软件\n\nOrca：GNOME屏幕阅读器和放大镜\nGOK：GNOME屏幕键盘\nemacspeak：为Emacs添加语音功能\n\n","dateCreated":"2020-05-08T20:06:24+08:00","dateModified":"2025-05-09T18:35:47+08:00","datePublished":"2020-05-08T20:06:24+08:00","description":"","headline":"7.XWindow","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2020/05/08/linux/7-XWindow/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2020/05/08/linux/7-XWindow/","keywords":"linux, LPIC"}</script>
     <meta name="description" content="123# X Window 系统架构详解## 基础架构 localhost(X server) --X protocol-- remotehost(X client) 12345678910111213141516171819202122232425262728### 核心组件说明1. **X Server**：   - 负责硬件管理（显卡、显示器、输入设备等）   - 屏幕绘制与渲染   - 提">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="7.XWindow">
-<meta property="og:url" content="https://chankein.github.io/2020/05/08/linux/7-XWindow/index.html">
+<meta property="og:url" content="https://keinchan.com/2020/05/08/linux/7-XWindow/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="123# X Window 系统架构详解## 基础架构 localhost(X server) --X protocol-- remotehost(X client) 12345678910111213141516171819202122232425262728### 核心组件说明1. **X Server**：   - 负责硬件管理（显卡、显示器、输入设备等）   - 屏幕绘制与渲染   - 提">
 <meta property="og:locale" content="zh_TW">
@@ -51,7 +51,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -649,7 +649,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -660,7 +660,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/05/08/linux/7-XWindow/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -673,7 +673,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/05/08/linux/7-XWindow/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -686,7 +686,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/05/08/linux/7-XWindow/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -699,7 +699,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/05/08/linux/7-XWindow/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -712,7 +712,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -777,7 +777,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -788,7 +788,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/05/08/linux/7-XWindow/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -801,7 +801,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/05/08/linux/7-XWindow/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -814,7 +814,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/05/08/linux/7-XWindow/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -827,7 +827,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/05/08/linux/7-XWindow/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -840,7 +840,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -861,7 +861,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/05/08/linux/7-XWindow/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -874,7 +874,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/05/08/linux/7-XWindow/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -887,7 +887,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/05/08/linux/7-XWindow/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -900,7 +900,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/05/08/linux/7-XWindow/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/05/08/linux/7-XWindow/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -976,7 +976,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -999,7 +999,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -1022,7 +1022,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -1045,7 +1045,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -1068,7 +1068,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -1091,7 +1091,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1114,7 +1114,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1137,7 +1137,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1160,7 +1160,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1183,7 +1183,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

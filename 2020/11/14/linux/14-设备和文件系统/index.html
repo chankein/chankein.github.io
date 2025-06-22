@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. 文件系统基础\n/etc/fstab 文件格式解析\n1设备/标签/UUID  挂载点  文件系统类型  挂载选项  dump标志  fsck顺序\n字段说明：\n\n\n\n字段\n说明\n示例\n\n\n\n\n1\n设备标识\n/dev/sda1, UUID=xxxx, LABEL=root\n\n\n2\n挂载路径\n/, /home, /boot\n\n\n3\n文件系统类型\next4, xfs, nfs\n\n\n4\n挂载选项\ndefaults, noatime\n\n\n5\ndump备份标志\n0(不备份), 1(备份)\n\n\n6\nfsck检查顺序\n0(不检查), 1(优先), 2(次级)\n\n\n\n文件系统类型对比\n\n\n\n类型\n特点\n适用场景\n\n\n\n\next4\n日志式, 最大16TB文件\n通用Linux系统\n\n\nXFS\n高性能, 最大8EB文件\n大文件处理\n\n\nBtrfs\n写时复制, 快照功能\n高级存储需求\n\n\nFAT32\n兼容性好\nU盘/移动设备\n\n\nNTFS\nWindows兼容\n双系统共享分区\n\n\n\n常用挂载选项\n\n\n\n选项\n作用\n性能影响\n\n\n\n\nasync\n异步写入\n提升性能\n\n\nnoatime\n不更新访问时间\n显著提升\n\n\nnodiratime\n不更新目录访问时间\n小幅提升\n\n\ndiscard\nTRIM支持(SSD)\n延长SSD寿命\n\n\ndata=writeback\next4日志模式\n性能最佳\n\n\n\n查看支持的文件系统：\n1cat /proc/filesystems\n查看已挂载文件系统：\n12cat /etc/mtab   # 或cat /proc/mounts\n2. 挂载管理命令\nmount 命令详解\n1mount [选项] [设备] [挂载点]\n常用选项：\n\n\n\n选项\n说明\n\n\n\n\n-t\n指定文件系统类型\n\n\n-o\n指定挂载选项(多选项用逗号分隔)\n\n\n-a\n挂载/etc/fstab中所有文件系统\n\n\n–bind\n目录绑定挂载\n\n\n-l\n显示标签\n\n\n\n示例：\n1mount -t ext4 -o noatime /dev/sdb1 /mnt/data\numount 命令\n1umount [选项] [设备|挂载点]\n\n\n\n选项\n说明\n\n\n\n\n-a\n卸载所有文件系统\n\n\n-t\n按类型卸载\n\n\n-l\n延迟卸载(强制)\n\n\n-f\n强制卸载\n\n\n\n强制卸载流程：\n\nfuser -vm /mountpoint 查看占用进程\nkill -9 PID 结束进程\numount -f /mountpoint\n\n3. SWAP 管理\n创建SWAP文件\n12345# 创建1GB交换文件dd if=/dev/zero of=/swapfile bs=1M count=1024chmod 600 /swapfilemkswap /swapfileswapon /swapfile\nSWAP管理命令\n\n\n\n命令\n功能\n\n\n\n\nswapon -a\n启用所有swap\n\n\nswapon -s\n查看swap使用\n\n\nswapoff -a\n禁用所有swap\n\n\n\n优化建议：\n\n物理内存&lt;8GB时，SWAP=1.5倍内存\n物理内存≥8GB时，SWAP=8GB\n\n4. 文件系统创建与维护\n创建工具对比\n\n\n\n命令\n对应文件系统\n特点\n\n\n\n\nmkfs.ext4\next4\n默认日志模式\n\n\nmkfs.xfs\nXFS\n高性能大文件\n\n\nmkfs.btrfs\nBtrfs\n高级功能支持\n\n\n\next4创建示例：\n1mkfs.ext4 -b 4096 -m 1 -L DATA /dev/sdb1\nXFS创建示例：\n1mkfs.xfs -f -L BIGDATA /dev/sdc1\n文件系统检查\next系列检查：\n12fsck -y /dev/sda1   # 自动修复e2fsck -f /dev/sda1 # 强制检查\nXFS检查：\n1xfs_repair /dev/sdb1\n检查时机：\n\n异常关机后\n定期维护时(建议每6个月)\n出现I/O错误时\n\n5. 高级文件系统特性\next4 特性管理\n转换ext3→ext4：\n12tune2fs -O extent,uninit_bg,dir_index /dev/sda1fsck -pf /dev/sda1\n调整参数：\n12tune2fs -c 30 -i 7d /dev/sda1  # 每30次挂载或7天检查tune2fs -m 5 /dev/sda1         # 保留5%空间\nXFS 高级功能\n查看信息：\n12xfs_info /dev/sdb1xfs_admin -l /dev/sdb1\n备份恢复：\n12xfsdump -l 0 -f /backup/root.xfsdump /dev/sda1xfsrestore -f /backup/root.xfsdump /mnt/restore\n6. 光盘与加密文件系统\n光盘制作\n12345# 创建ISOmkisofs -JR -V &quot;BACKUP_2023&quot; -o backup.iso /backup# 刻录光盘cdrecord -v dev=1,0,0 speed=24 backup.iso\n加密文件系统\nLUKS加密：\n1234cryptsetup luksFormat /dev/sdb1cryptsetup luksOpen /dev/sdb1 secretmkfs.ext4 /dev/mapper/secretmount /dev/mapper/secret /mnt/secure\n关闭加密卷：\n12umount /mnt/securecryptsetup luksClose secret\n7. 磁盘健康监控\nS.M.A.R.T. 监控\n123smartctl -a /dev/sda          # 查看详细信息smartctl -H /dev/sda          # 健康状态smartctl -t long /dev/sda     # 启动长测试\n关键监控指标：\n\nReallocated_Sector_Ct\nCurrent_Pending_Sector\nTemperature_Celsius\n\n8. 故障处理流程\n文件系统修复步骤\n\n\n卸载文件系统：\n1umount /dev/sda1\n\n\n进入单用户模式：\n1init 1\n\n\n执行检查修复：\n1fsck -y /dev/sda1\n\n\n严重损坏时：\n123debugfs /dev/sda1&gt; lsdel      # 查看已删除inode&gt; dump &lt;inode&gt; /tmp/recover_file\n\n\n应急恢复方案\n\n\n\n问题现象\n解决方案\n\n\n\n\n无法挂载\nfsck -y /dev/sdX\n\n\nSuperblock损坏\ne2fsck -b 32768 /dev/sdX\n\n\n只读文件系统\nmount -o remount,rw /\n\n\n\n","dateCreated":"2020-11-14T14:01:10+08:00","dateModified":"2025-05-12T14:57:46+08:00","datePublished":"2020-11-14T14:01:10+08:00","description":"","headline":"14.设备和文件系统","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/","keywords":"linux, LPIC"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"1. 文件系统基础\n/etc/fstab 文件格式解析\n1设备/标签/UUID  挂载点  文件系统类型  挂载选项  dump标志  fsck顺序\n字段说明：\n\n\n\n字段\n说明\n示例\n\n\n\n\n1\n设备标识\n/dev/sda1, UUID=xxxx, LABEL=root\n\n\n2\n挂载路径\n/, /home, /boot\n\n\n3\n文件系统类型\next4, xfs, nfs\n\n\n4\n挂载选项\ndefaults, noatime\n\n\n5\ndump备份标志\n0(不备份), 1(备份)\n\n\n6\nfsck检查顺序\n0(不检查), 1(优先), 2(次级)\n\n\n\n文件系统类型对比\n\n\n\n类型\n特点\n适用场景\n\n\n\n\next4\n日志式, 最大16TB文件\n通用Linux系统\n\n\nXFS\n高性能, 最大8EB文件\n大文件处理\n\n\nBtrfs\n写时复制, 快照功能\n高级存储需求\n\n\nFAT32\n兼容性好\nU盘/移动设备\n\n\nNTFS\nWindows兼容\n双系统共享分区\n\n\n\n常用挂载选项\n\n\n\n选项\n作用\n性能影响\n\n\n\n\nasync\n异步写入\n提升性能\n\n\nnoatime\n不更新访问时间\n显著提升\n\n\nnodiratime\n不更新目录访问时间\n小幅提升\n\n\ndiscard\nTRIM支持(SSD)\n延长SSD寿命\n\n\ndata=writeback\next4日志模式\n性能最佳\n\n\n\n查看支持的文件系统：\n1cat /proc/filesystems\n查看已挂载文件系统：\n12cat /etc/mtab   # 或cat /proc/mounts\n2. 挂载管理命令\nmount 命令详解\n1mount [选项] [设备] [挂载点]\n常用选项：\n\n\n\n选项\n说明\n\n\n\n\n-t\n指定文件系统类型\n\n\n-o\n指定挂载选项(多选项用逗号分隔)\n\n\n-a\n挂载/etc/fstab中所有文件系统\n\n\n–bind\n目录绑定挂载\n\n\n-l\n显示标签\n\n\n\n示例：\n1mount -t ext4 -o noatime /dev/sdb1 /mnt/data\numount 命令\n1umount [选项] [设备|挂载点]\n\n\n\n选项\n说明\n\n\n\n\n-a\n卸载所有文件系统\n\n\n-t\n按类型卸载\n\n\n-l\n延迟卸载(强制)\n\n\n-f\n强制卸载\n\n\n\n强制卸载流程：\n\nfuser -vm /mountpoint 查看占用进程\nkill -9 PID 结束进程\numount -f /mountpoint\n\n3. SWAP 管理\n创建SWAP文件\n12345# 创建1GB交换文件dd if=/dev/zero of=/swapfile bs=1M count=1024chmod 600 /swapfilemkswap /swapfileswapon /swapfile\nSWAP管理命令\n\n\n\n命令\n功能\n\n\n\n\nswapon -a\n启用所有swap\n\n\nswapon -s\n查看swap使用\n\n\nswapoff -a\n禁用所有swap\n\n\n\n优化建议：\n\n物理内存&lt;8GB时，SWAP=1.5倍内存\n物理内存≥8GB时，SWAP=8GB\n\n4. 文件系统创建与维护\n创建工具对比\n\n\n\n命令\n对应文件系统\n特点\n\n\n\n\nmkfs.ext4\next4\n默认日志模式\n\n\nmkfs.xfs\nXFS\n高性能大文件\n\n\nmkfs.btrfs\nBtrfs\n高级功能支持\n\n\n\next4创建示例：\n1mkfs.ext4 -b 4096 -m 1 -L DATA /dev/sdb1\nXFS创建示例：\n1mkfs.xfs -f -L BIGDATA /dev/sdc1\n文件系统检查\next系列检查：\n12fsck -y /dev/sda1   # 自动修复e2fsck -f /dev/sda1 # 强制检查\nXFS检查：\n1xfs_repair /dev/sdb1\n检查时机：\n\n异常关机后\n定期维护时(建议每6个月)\n出现I/O错误时\n\n5. 高级文件系统特性\next4 特性管理\n转换ext3→ext4：\n12tune2fs -O extent,uninit_bg,dir_index /dev/sda1fsck -pf /dev/sda1\n调整参数：\n12tune2fs -c 30 -i 7d /dev/sda1  # 每30次挂载或7天检查tune2fs -m 5 /dev/sda1         # 保留5%空间\nXFS 高级功能\n查看信息：\n12xfs_info /dev/sdb1xfs_admin -l /dev/sdb1\n备份恢复：\n12xfsdump -l 0 -f /backup/root.xfsdump /dev/sda1xfsrestore -f /backup/root.xfsdump /mnt/restore\n6. 光盘与加密文件系统\n光盘制作\n12345# 创建ISOmkisofs -JR -V &quot;BACKUP_2023&quot; -o backup.iso /backup# 刻录光盘cdrecord -v dev=1,0,0 speed=24 backup.iso\n加密文件系统\nLUKS加密：\n1234cryptsetup luksFormat /dev/sdb1cryptsetup luksOpen /dev/sdb1 secretmkfs.ext4 /dev/mapper/secretmount /dev/mapper/secret /mnt/secure\n关闭加密卷：\n12umount /mnt/securecryptsetup luksClose secret\n7. 磁盘健康监控\nS.M.A.R.T. 监控\n123smartctl -a /dev/sda          # 查看详细信息smartctl -H /dev/sda          # 健康状态smartctl -t long /dev/sda     # 启动长测试\n关键监控指标：\n\nReallocated_Sector_Ct\nCurrent_Pending_Sector\nTemperature_Celsius\n\n8. 故障处理流程\n文件系统修复步骤\n\n\n卸载文件系统：\n1umount /dev/sda1\n\n\n进入单用户模式：\n1init 1\n\n\n执行检查修复：\n1fsck -y /dev/sda1\n\n\n严重损坏时：\n123debugfs /dev/sda1&gt; lsdel      # 查看已删除inode&gt; dump &lt;inode&gt; /tmp/recover_file\n\n\n应急恢复方案\n\n\n\n问题现象\n解决方案\n\n\n\n\n无法挂载\nfsck -y /dev/sdX\n\n\nSuperblock损坏\ne2fsck -b 32768 /dev/sdX\n\n\n只读文件系统\nmount -o remount,rw /\n\n\n\n","dateCreated":"2020-11-14T14:01:10+08:00","dateModified":"2025-05-12T14:57:46+08:00","datePublished":"2020-11-14T14:01:10+08:00","description":"","headline":"14.设备和文件系统","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/","keywords":"linux, LPIC"}</script>
     <meta name="description" content="1. 文件系统基础 &#x2F;etc&#x2F;fstab 文件格式解析 1设备&#x2F;标签&#x2F;UUID  挂载点  文件系统类型  挂载选项  dump标志  fsck顺序 字段说明：    字段 说明 示例     1 设备标识 &#x2F;dev&#x2F;sda1, UUID&#x3D;xxxx, LABEL&#x3D;root   2 挂载路径 &#x2F;, &#x2F;home, &#x2F;boot   3 文件系统类型 ext4, xfs, nfs   4 挂载选项 def">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="14.设备和文件系统">
-<meta property="og:url" content="https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/index.html">
+<meta property="og:url" content="https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="1. 文件系统基础 &#x2F;etc&#x2F;fstab 文件格式解析 1设备&#x2F;标签&#x2F;UUID  挂载点  文件系统类型  挂载选项  dump标志  fsck顺序 字段说明：    字段 说明 示例     1 设备标识 &#x2F;dev&#x2F;sda1, UUID&#x3D;xxxx, LABEL&#x3D;root   2 挂载路径 &#x2F;, &#x2F;home, &#x2F;boot   3 文件系统类型 ext4, xfs, nfs   4 挂载选项 def">
 <meta property="og:locale" content="zh_TW">
@@ -51,7 +51,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -722,7 +722,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -733,7 +733,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -746,7 +746,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -759,7 +759,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -772,7 +772,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -785,7 +785,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -850,7 +850,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -861,7 +861,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -874,7 +874,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -887,7 +887,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -900,7 +900,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -913,7 +913,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -934,7 +934,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -947,7 +947,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -960,7 +960,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -973,7 +973,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2020/11/14/linux/14-%E8%AE%BE%E5%A4%87%E5%92%8C%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -1049,7 +1049,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -1072,7 +1072,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -1095,7 +1095,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -1118,7 +1118,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -1141,7 +1141,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -1164,7 +1164,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1187,7 +1187,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1210,7 +1210,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1233,7 +1233,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1256,7 +1256,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

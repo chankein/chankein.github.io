@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"Python支持多种图形界面的第三方库，包括：\n\nTk\nwxWidgets\nQt\nGTK\n\n等等。\n但是Python自带的库是支持Tk的Tkinter，使用Tkinter，无需安装任何包，就可以直接使用。本章简单介绍如何使用Tkinter进行GUI编程。\nTkinter\n我们来梳理一下概念：\n我们编写的Python代码会调用内置的Tkinter，Tkinter封装了访问Tk的接口；\nTk是一个图形库，支持多个操作系统，使用Tcl语言开发；\nTk会调用操作系统提供的本地GUI接口，完成最终的GUI。\n所以，我们的代码只需要调用Tkinter提供的接口就可以了。\n第一个GUI程序\n使用Tkinter十分简单，我们来编写一个GUI版本的“Hello, world!”。\n第一步是导入Tkinter包的所有内容：\n1from tkinter import *\n第二步是从Frame派生一个Application类，这是所有Widget的父容器：\n1234567891011class Application(Frame):    def __init__(self, master=None):        Frame.__init__(self, master)        self.pack()        self.createWidgets()    def createWidgets(self):        self.helloLabel = Label(self, text=&#x27;Hello, world!&#x27;)        self.helloLabel.pack()        self.quitButton = Button(self, text=&#x27;Quit&#x27;, command=self.quit)        self.quitButton.pack()\n在GUI中，每个Button、Label、输入框等，都是一个Widget。Frame则是可以容纳其他Widget的Widget，所有的Widget组合起来就是一棵树。\npack()方法把Widget加入到父容器中，并实现布局。pack()是最简单的布局，grid()可以实现更复杂的布局。\n在createWidgets()方法中，我们创建一个Label和一个Button，当Button被点击时，触发self.quit()使程序退出。\n第三步，实例化Application，并启动消息循环：\n12345app = Application()# 设置窗口标题:app.master.title(&#x27;Hello World&#x27;)# 主消息循环:app.mainloop()\nGUI程序的主线程负责监听来自操作系统的消息，并依次处理每一条消息。因此，如果消息处理非常耗时，就需要在新线程中处理。\n运行这个GUI程序，可以看到下面的窗口：\n\n点击“Quit”按钮或者窗口的“x”结束程序。\n输入文本\n我们再对这个GUI程序改进一下，加入一个文本框，让用户可以输入文本，然后点按钮后，弹出消息对话框。\n123456789101112131415161718192021222324from tkinter import *import tkinter.messagebox as messageboxclass Application(Frame):    def __init__(self, master=None):        Frame.__init__(self, master)        self.pack()        self.createWidgets()    def createWidgets(self):        self.nameInput = Entry(self)        self.nameInput.pack()        self.alertButton = Button(self, text=&#x27;Hello&#x27;, command=self.hello)        self.alertButton.pack()    def hello(self):        name = self.nameInput.get() or &#x27;world&#x27;        messagebox.showinfo(&#x27;Message&#x27;, &#x27;Hello, %s&#x27; % name)app = Application()# 设置窗口标题:app.master.title(&#x27;Hello World&#x27;)# 主消息循环:app.mainloop()\n当用户点击按钮时，触发hello()，通过self.nameInput.get()获得用户输入的文本后，使用tkMessageBox.showinfo()可以弹出消息对话框。\n程序运行结果如下：\n\n小结\nPython内置的Tkinter可以满足基本的GUI程序的要求，如果是非常复杂的GUI程序，建议用操作系统原生支持的语言和库来编写。\n参考源码\nhello_gui.py\n海龟绘图\n在1966年，Seymour Papert和Wally Feurzig发明了一种专门给儿童学习编程的语言——LOGO语言，它的特色就是通过编程指挥一个小海龟（turtle）在屏幕上绘图。\n海龟绘图（Turtle Graphics）后来被移植到各种高级语言中，Python内置了turtle库，基本上100%复制了原始的Turtle Graphics的所有功能。\n我们来看一个指挥小海龟绘制一个长方形的简单代码：\n1234567891011121314151617181920212223242526# 导入turtle包的所有内容:from turtle import *# 设置笔刷宽度:width(4)# 前进:forward(200)# 右转90度:right(90)# 笔刷颜色:pencolor(&#x27;red&#x27;)forward(100)right(90)pencolor(&#x27;green&#x27;)forward(200)right(90)pencolor(&#x27;blue&#x27;)forward(100)right(90)# 调用done()使得窗口等待被关闭，否则将立刻关闭窗口:done()\n在命令行运行上述代码，会自动弹出一个绘图窗口，然后绘制出一个长方形：\n\n从程序代码可以看出，海龟绘图就是指挥海龟前进、转向，海龟移动的轨迹就是绘制的线条。要绘制一个长方形，只需要让海龟前进、右转90度，反复4次。\n调用width()函数可以设置笔刷宽度，调用pencolor()函数可以设置颜色。更多操作请参考turtle库的说明。\n绘图完成后，记得调用done()函数，让窗口进入消息循环，等待被关闭。否则，由于Python进程会立刻结束，将导致窗口被立刻关闭。\nturtle包本身只是一个绘图库，但是配合Python代码，就可以绘制各种复杂的图形。例如，通过循环绘制5个五角星：\n12345678910111213141516from turtle import *def drawStar(x, y):    pu()    goto(x, y)    pd()    # set heading: 0    seth(0)    for i in range(5):        fd(40)        rt(144)for x in range(0, 250, 50):    drawStar(x, 0)done()\n程序执行效果如下：\n\n使用递归，可以绘制出非常复杂的图形。例如，下面的代码可以绘制一棵分型树：\n12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758596061from turtle import *# 设置色彩模式是RGB:colormode(255)lt(90)lv = 14l = 120s = 45width(lv)# 初始化RGB颜色:r = 0g = 0b = 0pencolor(r, g, b)penup()bk(l)pendown()fd(l)def draw_tree(l, level):    global r, g, b    # save the current pen width    w = width()    # narrow the pen width    width(w * 3.0 / 4.0)    # set color:    r = r + 1    g = g + 2    b = b + 3    pencolor(r % 200, g % 200, b % 200)    l = 3.0 / 4.0 * l    lt(s)    fd(l)    if level &lt; lv:        draw_tree(l, level + 1)    bk(l)    rt(2 * s)    fd(l)    if level &lt; lv:        draw_tree(l, level + 1)    bk(l)    lt(s)    # restore the previous pen width    width(w)speed(&quot;fastest&quot;)draw_tree(l, 4)done()\n执行上述程序需要花费一定的时间，最后的效果如下：\n\n参考源码\nrect.py\nstarts.py\ntree.py\n","dateCreated":"2016-04-27T23:10:34+08:00","dateModified":"2025-06-18T11:28:49+08:00","datePublished":"2016-04-27T23:10:34+08:00","description":"","headline":"14.python图形界面","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/","keywords":"python"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"Python支持多种图形界面的第三方库，包括：\n\nTk\nwxWidgets\nQt\nGTK\n\n等等。\n但是Python自带的库是支持Tk的Tkinter，使用Tkinter，无需安装任何包，就可以直接使用。本章简单介绍如何使用Tkinter进行GUI编程。\nTkinter\n我们来梳理一下概念：\n我们编写的Python代码会调用内置的Tkinter，Tkinter封装了访问Tk的接口；\nTk是一个图形库，支持多个操作系统，使用Tcl语言开发；\nTk会调用操作系统提供的本地GUI接口，完成最终的GUI。\n所以，我们的代码只需要调用Tkinter提供的接口就可以了。\n第一个GUI程序\n使用Tkinter十分简单，我们来编写一个GUI版本的“Hello, world!”。\n第一步是导入Tkinter包的所有内容：\n1from tkinter import *\n第二步是从Frame派生一个Application类，这是所有Widget的父容器：\n1234567891011class Application(Frame):    def __init__(self, master=None):        Frame.__init__(self, master)        self.pack()        self.createWidgets()    def createWidgets(self):        self.helloLabel = Label(self, text=&#x27;Hello, world!&#x27;)        self.helloLabel.pack()        self.quitButton = Button(self, text=&#x27;Quit&#x27;, command=self.quit)        self.quitButton.pack()\n在GUI中，每个Button、Label、输入框等，都是一个Widget。Frame则是可以容纳其他Widget的Widget，所有的Widget组合起来就是一棵树。\npack()方法把Widget加入到父容器中，并实现布局。pack()是最简单的布局，grid()可以实现更复杂的布局。\n在createWidgets()方法中，我们创建一个Label和一个Button，当Button被点击时，触发self.quit()使程序退出。\n第三步，实例化Application，并启动消息循环：\n12345app = Application()# 设置窗口标题:app.master.title(&#x27;Hello World&#x27;)# 主消息循环:app.mainloop()\nGUI程序的主线程负责监听来自操作系统的消息，并依次处理每一条消息。因此，如果消息处理非常耗时，就需要在新线程中处理。\n运行这个GUI程序，可以看到下面的窗口：\n\n点击“Quit”按钮或者窗口的“x”结束程序。\n输入文本\n我们再对这个GUI程序改进一下，加入一个文本框，让用户可以输入文本，然后点按钮后，弹出消息对话框。\n123456789101112131415161718192021222324from tkinter import *import tkinter.messagebox as messageboxclass Application(Frame):    def __init__(self, master=None):        Frame.__init__(self, master)        self.pack()        self.createWidgets()    def createWidgets(self):        self.nameInput = Entry(self)        self.nameInput.pack()        self.alertButton = Button(self, text=&#x27;Hello&#x27;, command=self.hello)        self.alertButton.pack()    def hello(self):        name = self.nameInput.get() or &#x27;world&#x27;        messagebox.showinfo(&#x27;Message&#x27;, &#x27;Hello, %s&#x27; % name)app = Application()# 设置窗口标题:app.master.title(&#x27;Hello World&#x27;)# 主消息循环:app.mainloop()\n当用户点击按钮时，触发hello()，通过self.nameInput.get()获得用户输入的文本后，使用tkMessageBox.showinfo()可以弹出消息对话框。\n程序运行结果如下：\n\n小结\nPython内置的Tkinter可以满足基本的GUI程序的要求，如果是非常复杂的GUI程序，建议用操作系统原生支持的语言和库来编写。\n参考源码\nhello_gui.py\n海龟绘图\n在1966年，Seymour Papert和Wally Feurzig发明了一种专门给儿童学习编程的语言——LOGO语言，它的特色就是通过编程指挥一个小海龟（turtle）在屏幕上绘图。\n海龟绘图（Turtle Graphics）后来被移植到各种高级语言中，Python内置了turtle库，基本上100%复制了原始的Turtle Graphics的所有功能。\n我们来看一个指挥小海龟绘制一个长方形的简单代码：\n1234567891011121314151617181920212223242526# 导入turtle包的所有内容:from turtle import *# 设置笔刷宽度:width(4)# 前进:forward(200)# 右转90度:right(90)# 笔刷颜色:pencolor(&#x27;red&#x27;)forward(100)right(90)pencolor(&#x27;green&#x27;)forward(200)right(90)pencolor(&#x27;blue&#x27;)forward(100)right(90)# 调用done()使得窗口等待被关闭，否则将立刻关闭窗口:done()\n在命令行运行上述代码，会自动弹出一个绘图窗口，然后绘制出一个长方形：\n\n从程序代码可以看出，海龟绘图就是指挥海龟前进、转向，海龟移动的轨迹就是绘制的线条。要绘制一个长方形，只需要让海龟前进、右转90度，反复4次。\n调用width()函数可以设置笔刷宽度，调用pencolor()函数可以设置颜色。更多操作请参考turtle库的说明。\n绘图完成后，记得调用done()函数，让窗口进入消息循环，等待被关闭。否则，由于Python进程会立刻结束，将导致窗口被立刻关闭。\nturtle包本身只是一个绘图库，但是配合Python代码，就可以绘制各种复杂的图形。例如，通过循环绘制5个五角星：\n12345678910111213141516from turtle import *def drawStar(x, y):    pu()    goto(x, y)    pd()    # set heading: 0    seth(0)    for i in range(5):        fd(40)        rt(144)for x in range(0, 250, 50):    drawStar(x, 0)done()\n程序执行效果如下：\n\n使用递归，可以绘制出非常复杂的图形。例如，下面的代码可以绘制一棵分型树：\n12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152535455565758596061from turtle import *# 设置色彩模式是RGB:colormode(255)lt(90)lv = 14l = 120s = 45width(lv)# 初始化RGB颜色:r = 0g = 0b = 0pencolor(r, g, b)penup()bk(l)pendown()fd(l)def draw_tree(l, level):    global r, g, b    # save the current pen width    w = width()    # narrow the pen width    width(w * 3.0 / 4.0)    # set color:    r = r + 1    g = g + 2    b = b + 3    pencolor(r % 200, g % 200, b % 200)    l = 3.0 / 4.0 * l    lt(s)    fd(l)    if level &lt; lv:        draw_tree(l, level + 1)    bk(l)    rt(2 * s)    fd(l)    if level &lt; lv:        draw_tree(l, level + 1)    bk(l)    lt(s)    # restore the previous pen width    width(w)speed(&quot;fastest&quot;)draw_tree(l, 4)done()\n执行上述程序需要花费一定的时间，最后的效果如下：\n\n参考源码\nrect.py\nstarts.py\ntree.py\n","dateCreated":"2016-04-27T23:10:34+08:00","dateModified":"2025-06-18T11:28:49+08:00","datePublished":"2016-04-27T23:10:34+08:00","description":"","headline":"14.python图形界面","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/","keywords":"python"}</script>
     <meta name="description" content="Python支持多种图形界面的第三方库，包括：  Tk wxWidgets Qt GTK  等等。 但是Python自带的库是支持Tk的Tkinter，使用Tkinter，无需安装任何包，就可以直接使用。本章简单介绍如何使用Tkinter进行GUI编程。 Tkinter 我们来梳理一下概念： 我们编写的Python代码会调用内置的Tkinter，Tkinter封装了访问Tk的接口； Tk是一个图形">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="14.python图形界面">
-<meta property="og:url" content="https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/index.html">
+<meta property="og:url" content="https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="Python支持多种图形界面的第三方库，包括：  Tk wxWidgets Qt GTK  等等。 但是Python自带的库是支持Tk的Tkinter，使用Tkinter，无需安装任何包，就可以直接使用。本章简单介绍如何使用Tkinter进行GUI编程。 Tkinter 我们来梳理一下概念： 我们编写的Python代码会调用内置的Tkinter，Tkinter封装了访问Tk的接口； Tk是一个图形">
 <meta property="og:locale" content="zh_TW">
@@ -56,7 +56,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -451,7 +451,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -462,7 +462,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -475,7 +475,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -488,7 +488,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -501,7 +501,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -514,7 +514,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -579,7 +579,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -590,7 +590,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -603,7 +603,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -616,7 +616,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -629,7 +629,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -642,7 +642,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -663,7 +663,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -676,7 +676,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -689,7 +689,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -702,7 +702,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2016/04/27/python/14.python%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -778,7 +778,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -801,7 +801,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -824,7 +824,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -847,7 +847,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -870,7 +870,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -893,7 +893,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -916,7 +916,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -939,7 +939,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -962,7 +962,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -985,7 +985,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

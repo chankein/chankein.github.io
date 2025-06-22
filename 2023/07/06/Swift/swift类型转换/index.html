@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"类型转换\n类型转换可以判断实例的类型，也可以将实例看做是其父类或者子类的实例。\n类型转换在 Swift 中使用 is 和 as 操作符实现。这两个操作符分别提供了一种简单达意的方式去检查值的类型或者转换它的类型。\n你也可以用它来检查一个类型是否遵循了某个协议，就像在 检验协议遵循 部分讲述的一样。\n为类型转换定义类层次\n你可以将类型转换用在类和子类的层次结构上，检查特定类实例的类型并且转换这个类实例的类型成为这个层次结构中的其他类型。下面的三个代码段定义了一个类层次和一个包含了这些类实例的数组，作为类型转换的例子。\n第一个代码片段定义了一个新的基类 MediaItem。这个类为任何出现在数字媒体库的媒体项提供基础功能。特别的，它声明了一个 String 类型的 name 属性，和一个 init(name:) 初始化器。（假定所有的媒体项都有个名称。）\n123456class MediaItem &#123;    var name: String    init(name: String) &#123;        self.name = name    &#125;&#125;\n下一个代码段定义了 MediaItem 的两个子类。第一个子类 Movie 封装了与电影相关的额外信息，在父类（或者说基类）的基础上增加了一个 director（导演）属性，和相应的初始化器。第二个子类 Song，在父类的基础上增加了一个 artist（艺术家）属性，和相应的初始化器：\n123456789101112131415class Movie: MediaItem &#123;    var director: String    init(name: String, director: String) &#123;        self.director = director        super.init(name: name)    &#125;&#125;class Song: MediaItem &#123;    var artist: String    init(name: String, artist: String) &#123;        self.artist = artist        super.init(name: name)    &#125;&#125;\n最后一个代码段创建了一个数组常量 library，包含两个 Movie 实例和三个 Song 实例。library 的类型是在它被初始化时根据它数组中所包含的内容推断来的。Swift 的类型检测器能够推断出 Movie 和 Song 有共同的父类 MediaItem，所以它推断出 [MediaItem] 类作为 library 的类型：\n12345678let library = [    Movie(name: &quot;Casablanca&quot;, director: &quot;Michael Curtiz&quot;),    Song(name: &quot;Blue Suede Shoes&quot;, artist: &quot;Elvis Presley&quot;),    Movie(name: &quot;Citizen Kane&quot;, director: &quot;Orson Welles&quot;),    Song(name: &quot;The One And Only&quot;, artist: &quot;Chesney Hawkes&quot;),    Song(name: &quot;Never Gonna Give You Up&quot;, artist: &quot;Rick Astley&quot;)]// 数组 library 的类型被推断为 [MediaItem]\n在幕后 library 里存储的媒体项依然是 Movie 和 Song 类型的。但是，若你迭代它，依次取出的实例会是 MediaItem 类型的，而不是 Movie 和 Song 类型。为了让它们作为原本的类型工作，你需要检查它们的类型或者向下转换它们到其它类型，就像下面描述的一样。\n检查类型\n用类型检查操作符（is）来检查一个实例是否属于特定子类型。若实例属于那个子类型，类型检查操作符返回 true，否则返回 false。\n下面的例子定义了两个变量，movieCount 和 songCount，用来计算数组 library 中 Movie 和 Song 类型的实例数量：\n12345678910111213var movieCount = 0var songCount = 0for item in library &#123;    if item is Movie &#123;        movieCount += 1    &#125; else if item is Song &#123;        songCount += 1    &#125;&#125;print(&quot;Media library contains \\(movieCount) movies and \\(songCount) songs&quot;)// 打印“Media library contains 2 movies and 3 songs”\n示例迭代了数组 library 中的所有项。每一次，for-in 循环设置 item 常量为数组中的下一个 MediaItem 实例。\n若当前 MediaItem 是一个 Movie 类型的实例，item is Movie 返回 true，否则返回 false。同样的，item is Song 检查 item 是否为 Song 类型的实例。在循环结束后，movieCount 和 songCount 的值就是被找到的属于各自类型的实例的数量。\n向下转型\n某类型的一个常量或变量可能在幕后实际上属于一个子类。当确定是这种情况时，你可以尝试用类型转换操作符（as? 或 as!）向下转到它的子类型。\n因为向下转型可能会失败，类型转型操作符带有两种不同形式。条件形式 as? 返回一个你试图向下转成的类型的可选值。强制形式 as! 把试图向下转型和强制解包转换结果结合为一个操作。\n当你不确定向下转型可以成功时，用类型转换的条件形式（as?）。条件形式的类型转换总是返回一个可选值，并且若下转是不可能的，可选值将是 nil。这使你能够检查向下转型是否成功。\n只有你可以确定向下转型一定会成功时，才使用强制形式（as!）。当你试图向下转型为一个不正确的类型时，强制形式的类型转换会触发一个运行时错误。\n下面的例子，迭代了 library 里的每一个 MediaItem，并打印出适当的描述。要这样做，item 需要真正作为 Movie 或 Song 的类型来使用，而不仅仅是作为 MediaItem。为了能够在描述中使用 Movie 或 Song 的 director 或 artist 属性，这是必要的。\n在这个示例中，数组中的每一个 item 可能是 Movie 或 Song。事前你不知道每个 item 的真实类型，所以这里使用条件形式的类型转换（as?）去检查循环里的每次下转：\n12345678910111213for item in library &#123;    if let movie = item as? Movie &#123;        print(&quot;Movie: \\(movie.name), dir. \\(movie.director)&quot;)    &#125; else if let song = item as? Song &#123;        print(&quot;Song: \\(song.name), by \\(song.artist)&quot;)    &#125;&#125;// Movie: Casablanca, dir. Michael Curtiz// Song: Blue Suede Shoes, by Elvis Presley// Movie: Citizen Kane, dir. Orson Welles// Song: The One And Only, by Chesney Hawkes// Song: Never Gonna Give You Up, by Rick Astley\n示例首先试图将 item 下转为 Movie。因为 item 是一个 MediaItem 类型的实例，它可能是一个 Movie；同样，它也可能是一个 Song，或者仅仅是基类 MediaItem。因为不确定，as? 形式在试图下转时将返回一个可选值。item as? Movie 的返回值是 Movie? 或者说“可选 Movie”。\n当向下转型为 Movie 应用在两个 Song 实例时将会失败。为了处理这种情况，上面的例子使用了可选绑定（optional binding）来检查可选 Movie 真的包含一个值（这个是为了判断下转是否成功。）可选绑定是这样写的“if let movie = item as? Movie”，可以这样解读：\n“尝试将 item 转为 Movie 类型。若成功，设置一个新的临时常量 movie 来存储返回的可选 Movie 中的值”\n若向下转型成功，然后 movie 的属性将用于打印一个 Movie 实例的描述，包括它的导演的名字 director。相似的原理被用来检测 Song 实例，当 Song 被找到时则打印它的描述（包含 artist 的名字）。\n\n注意\n转换没有真的改变实例或它的值。根本的实例保持不变；只是简单地把它作为它被转换成的类型来使用。\n\nAny 和 AnyObject 的类型转换\nSwift 为不确定类型提供了两种特殊的类型别名：\n\nAny 可以表示任何类型，包括函数类型。\nAnyObject 可以表示任何类类型的实例。\n\n只有当你确实需要它们的行为和功能时才使用 Any 和 AnyObject。最好还是在代码中指明需要使用的类型。\n这里有个示例，使用 Any 类型来和混合的不同类型一起工作，包括函数类型和非类类型。它创建了一个可以存储 Any 类型的数组 things：\n12345678910var things = [Any]()things.append(0)things.append(0.0)things.append(42)things.append(3.14159)things.append(&quot;hello&quot;)things.append((3.0, 5.0))things.append(Movie(name: &quot;Ghostbusters&quot;, director: &quot;Ivan Reitman&quot;))things.append(&#123; (name: String) -&gt; String in &quot;Hello, \\(name)&quot; &#125;)\nthings 数组包含两个 Int 值，两个 Double 值，一个 String 值，一个元组 (Double, Double)，一个 Movie 实例“Ghostbusters”，以及一个接受 String 值并返回另一个 String 值的闭包表达式。\n你可以在 switch 表达式的 case 中使用 is 和 as 操作符来找出只知道是 Any 或 AnyObject 类型的常量或变量的具体类型。下面的示例迭代 things 数组中的每一项，并用 switch 语句查找每一项的类型。有几个 switch 语句的 case 绑定它们匹配到的值到一个指定类型的常量，从而可以打印这些值：\n123456789101112131415161718192021222324252627282930313233for thing in things &#123;    switch thing &#123;    case 0 as Int:        print(&quot;zero as an Int&quot;)    case 0 as Double:        print(&quot;zero as a Double&quot;)    case let someInt as Int:        print(&quot;an integer value of \\(someInt)&quot;)    case let someDouble as Double where someDouble &gt; 0:        print(&quot;a positive double value of \\(someDouble)&quot;)    case is Double:        print(&quot;some other double value that I don&#x27;t want to print&quot;)    case let someString as String:        print(&quot;a string value of \\&quot;\\(someString)\\&quot;&quot;)    case let (x, y) as (Double, Double):        print(&quot;an (x, y) point at \\(x), \\(y)&quot;)    case let movie as Movie:        print(&quot;a movie called \\(movie.name), dir. \\(movie.director)&quot;)    case let stringConverter as (String) -&gt; String:        print(stringConverter(&quot;Michael&quot;))    default:        print(&quot;something else&quot;)    &#125;&#125;// zero as an Int// zero as a Double// an integer value of 42// a positive double value of 3.14159// a string value of &quot;hello&quot;// an (x, y) point at 3.0, 5.0// a movie called Ghostbusters, dir. Ivan Reitman// Hello, Michael\n\n注意\nAny 类型可以表示所有类型的值，包括可选类型。Swift 会在你用 Any 类型来表示一个可选值的时候，给你一个警告。如果你确实想使用 Any 类型来承载可选值，你可以使用 as 操作符显式转换为 Any，如下所示：\n\n123let optionalNumber: Int? = 3things.append(optionalNumber)        // 警告things.append(optionalNumber as Any) // 没有警告\n","dateCreated":"2023-07-06T10:13:17+08:00","dateModified":"2025-06-18T12:24:11+08:00","datePublished":"2023-07-06T10:13:17+08:00","description":"","headline":"swift类型转换","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/","keywords":"swift"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"类型转换\n类型转换可以判断实例的类型，也可以将实例看做是其父类或者子类的实例。\n类型转换在 Swift 中使用 is 和 as 操作符实现。这两个操作符分别提供了一种简单达意的方式去检查值的类型或者转换它的类型。\n你也可以用它来检查一个类型是否遵循了某个协议，就像在 检验协议遵循 部分讲述的一样。\n为类型转换定义类层次\n你可以将类型转换用在类和子类的层次结构上，检查特定类实例的类型并且转换这个类实例的类型成为这个层次结构中的其他类型。下面的三个代码段定义了一个类层次和一个包含了这些类实例的数组，作为类型转换的例子。\n第一个代码片段定义了一个新的基类 MediaItem。这个类为任何出现在数字媒体库的媒体项提供基础功能。特别的，它声明了一个 String 类型的 name 属性，和一个 init(name:) 初始化器。（假定所有的媒体项都有个名称。）\n123456class MediaItem &#123;    var name: String    init(name: String) &#123;        self.name = name    &#125;&#125;\n下一个代码段定义了 MediaItem 的两个子类。第一个子类 Movie 封装了与电影相关的额外信息，在父类（或者说基类）的基础上增加了一个 director（导演）属性，和相应的初始化器。第二个子类 Song，在父类的基础上增加了一个 artist（艺术家）属性，和相应的初始化器：\n123456789101112131415class Movie: MediaItem &#123;    var director: String    init(name: String, director: String) &#123;        self.director = director        super.init(name: name)    &#125;&#125;class Song: MediaItem &#123;    var artist: String    init(name: String, artist: String) &#123;        self.artist = artist        super.init(name: name)    &#125;&#125;\n最后一个代码段创建了一个数组常量 library，包含两个 Movie 实例和三个 Song 实例。library 的类型是在它被初始化时根据它数组中所包含的内容推断来的。Swift 的类型检测器能够推断出 Movie 和 Song 有共同的父类 MediaItem，所以它推断出 [MediaItem] 类作为 library 的类型：\n12345678let library = [    Movie(name: &quot;Casablanca&quot;, director: &quot;Michael Curtiz&quot;),    Song(name: &quot;Blue Suede Shoes&quot;, artist: &quot;Elvis Presley&quot;),    Movie(name: &quot;Citizen Kane&quot;, director: &quot;Orson Welles&quot;),    Song(name: &quot;The One And Only&quot;, artist: &quot;Chesney Hawkes&quot;),    Song(name: &quot;Never Gonna Give You Up&quot;, artist: &quot;Rick Astley&quot;)]// 数组 library 的类型被推断为 [MediaItem]\n在幕后 library 里存储的媒体项依然是 Movie 和 Song 类型的。但是，若你迭代它，依次取出的实例会是 MediaItem 类型的，而不是 Movie 和 Song 类型。为了让它们作为原本的类型工作，你需要检查它们的类型或者向下转换它们到其它类型，就像下面描述的一样。\n检查类型\n用类型检查操作符（is）来检查一个实例是否属于特定子类型。若实例属于那个子类型，类型检查操作符返回 true，否则返回 false。\n下面的例子定义了两个变量，movieCount 和 songCount，用来计算数组 library 中 Movie 和 Song 类型的实例数量：\n12345678910111213var movieCount = 0var songCount = 0for item in library &#123;    if item is Movie &#123;        movieCount += 1    &#125; else if item is Song &#123;        songCount += 1    &#125;&#125;print(&quot;Media library contains \\(movieCount) movies and \\(songCount) songs&quot;)// 打印“Media library contains 2 movies and 3 songs”\n示例迭代了数组 library 中的所有项。每一次，for-in 循环设置 item 常量为数组中的下一个 MediaItem 实例。\n若当前 MediaItem 是一个 Movie 类型的实例，item is Movie 返回 true，否则返回 false。同样的，item is Song 检查 item 是否为 Song 类型的实例。在循环结束后，movieCount 和 songCount 的值就是被找到的属于各自类型的实例的数量。\n向下转型\n某类型的一个常量或变量可能在幕后实际上属于一个子类。当确定是这种情况时，你可以尝试用类型转换操作符（as? 或 as!）向下转到它的子类型。\n因为向下转型可能会失败，类型转型操作符带有两种不同形式。条件形式 as? 返回一个你试图向下转成的类型的可选值。强制形式 as! 把试图向下转型和强制解包转换结果结合为一个操作。\n当你不确定向下转型可以成功时，用类型转换的条件形式（as?）。条件形式的类型转换总是返回一个可选值，并且若下转是不可能的，可选值将是 nil。这使你能够检查向下转型是否成功。\n只有你可以确定向下转型一定会成功时，才使用强制形式（as!）。当你试图向下转型为一个不正确的类型时，强制形式的类型转换会触发一个运行时错误。\n下面的例子，迭代了 library 里的每一个 MediaItem，并打印出适当的描述。要这样做，item 需要真正作为 Movie 或 Song 的类型来使用，而不仅仅是作为 MediaItem。为了能够在描述中使用 Movie 或 Song 的 director 或 artist 属性，这是必要的。\n在这个示例中，数组中的每一个 item 可能是 Movie 或 Song。事前你不知道每个 item 的真实类型，所以这里使用条件形式的类型转换（as?）去检查循环里的每次下转：\n12345678910111213for item in library &#123;    if let movie = item as? Movie &#123;        print(&quot;Movie: \\(movie.name), dir. \\(movie.director)&quot;)    &#125; else if let song = item as? Song &#123;        print(&quot;Song: \\(song.name), by \\(song.artist)&quot;)    &#125;&#125;// Movie: Casablanca, dir. Michael Curtiz// Song: Blue Suede Shoes, by Elvis Presley// Movie: Citizen Kane, dir. Orson Welles// Song: The One And Only, by Chesney Hawkes// Song: Never Gonna Give You Up, by Rick Astley\n示例首先试图将 item 下转为 Movie。因为 item 是一个 MediaItem 类型的实例，它可能是一个 Movie；同样，它也可能是一个 Song，或者仅仅是基类 MediaItem。因为不确定，as? 形式在试图下转时将返回一个可选值。item as? Movie 的返回值是 Movie? 或者说“可选 Movie”。\n当向下转型为 Movie 应用在两个 Song 实例时将会失败。为了处理这种情况，上面的例子使用了可选绑定（optional binding）来检查可选 Movie 真的包含一个值（这个是为了判断下转是否成功。）可选绑定是这样写的“if let movie = item as? Movie”，可以这样解读：\n“尝试将 item 转为 Movie 类型。若成功，设置一个新的临时常量 movie 来存储返回的可选 Movie 中的值”\n若向下转型成功，然后 movie 的属性将用于打印一个 Movie 实例的描述，包括它的导演的名字 director。相似的原理被用来检测 Song 实例，当 Song 被找到时则打印它的描述（包含 artist 的名字）。\n\n注意\n转换没有真的改变实例或它的值。根本的实例保持不变；只是简单地把它作为它被转换成的类型来使用。\n\nAny 和 AnyObject 的类型转换\nSwift 为不确定类型提供了两种特殊的类型别名：\n\nAny 可以表示任何类型，包括函数类型。\nAnyObject 可以表示任何类类型的实例。\n\n只有当你确实需要它们的行为和功能时才使用 Any 和 AnyObject。最好还是在代码中指明需要使用的类型。\n这里有个示例，使用 Any 类型来和混合的不同类型一起工作，包括函数类型和非类类型。它创建了一个可以存储 Any 类型的数组 things：\n12345678910var things = [Any]()things.append(0)things.append(0.0)things.append(42)things.append(3.14159)things.append(&quot;hello&quot;)things.append((3.0, 5.0))things.append(Movie(name: &quot;Ghostbusters&quot;, director: &quot;Ivan Reitman&quot;))things.append(&#123; (name: String) -&gt; String in &quot;Hello, \\(name)&quot; &#125;)\nthings 数组包含两个 Int 值，两个 Double 值，一个 String 值，一个元组 (Double, Double)，一个 Movie 实例“Ghostbusters”，以及一个接受 String 值并返回另一个 String 值的闭包表达式。\n你可以在 switch 表达式的 case 中使用 is 和 as 操作符来找出只知道是 Any 或 AnyObject 类型的常量或变量的具体类型。下面的示例迭代 things 数组中的每一项，并用 switch 语句查找每一项的类型。有几个 switch 语句的 case 绑定它们匹配到的值到一个指定类型的常量，从而可以打印这些值：\n123456789101112131415161718192021222324252627282930313233for thing in things &#123;    switch thing &#123;    case 0 as Int:        print(&quot;zero as an Int&quot;)    case 0 as Double:        print(&quot;zero as a Double&quot;)    case let someInt as Int:        print(&quot;an integer value of \\(someInt)&quot;)    case let someDouble as Double where someDouble &gt; 0:        print(&quot;a positive double value of \\(someDouble)&quot;)    case is Double:        print(&quot;some other double value that I don&#x27;t want to print&quot;)    case let someString as String:        print(&quot;a string value of \\&quot;\\(someString)\\&quot;&quot;)    case let (x, y) as (Double, Double):        print(&quot;an (x, y) point at \\(x), \\(y)&quot;)    case let movie as Movie:        print(&quot;a movie called \\(movie.name), dir. \\(movie.director)&quot;)    case let stringConverter as (String) -&gt; String:        print(stringConverter(&quot;Michael&quot;))    default:        print(&quot;something else&quot;)    &#125;&#125;// zero as an Int// zero as a Double// an integer value of 42// a positive double value of 3.14159// a string value of &quot;hello&quot;// an (x, y) point at 3.0, 5.0// a movie called Ghostbusters, dir. Ivan Reitman// Hello, Michael\n\n注意\nAny 类型可以表示所有类型的值，包括可选类型。Swift 会在你用 Any 类型来表示一个可选值的时候，给你一个警告。如果你确实想使用 Any 类型来承载可选值，你可以使用 as 操作符显式转换为 Any，如下所示：\n\n123let optionalNumber: Int? = 3things.append(optionalNumber)        // 警告things.append(optionalNumber as Any) // 没有警告\n","dateCreated":"2023-07-06T10:13:17+08:00","dateModified":"2025-06-18T12:24:11+08:00","datePublished":"2023-07-06T10:13:17+08:00","description":"","headline":"swift类型转换","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/","keywords":"swift"}</script>
     <meta name="description" content="类型转换 类型转换可以判断实例的类型，也可以将实例看做是其父类或者子类的实例。 类型转换在 Swift 中使用 is 和 as 操作符实现。这两个操作符分别提供了一种简单达意的方式去检查值的类型或者转换它的类型。 你也可以用它来检查一个类型是否遵循了某个协议，就像在 检验协议遵循 部分讲述的一样。 为类型转换定义类层次 你可以将类型转换用在类和子类的层次结构上，检查特定类实例的类型并且转换这个类实">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="swift类型转换">
-<meta property="og:url" content="https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/index.html">
+<meta property="og:url" content="https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="类型转换 类型转换可以判断实例的类型，也可以将实例看做是其父类或者子类的实例。 类型转换在 Swift 中使用 is 和 as 操作符实现。这两个操作符分别提供了一种简单达意的方式去检查值的类型或者转换它的类型。 你也可以用它来检查一个类型是否遵循了某个协议，就像在 检验协议遵循 部分讲述的一样。 为类型转换定义类层次 你可以将类型转换用在类和子类的层次结构上，检查特定类实例的类型并且转换这个类实">
 <meta property="og:locale" content="zh_TW">
@@ -50,7 +50,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../../assets/images/profile.jpg"/>
     
     
     
@@ -435,7 +435,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -446,7 +446,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -459,7 +459,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -472,7 +472,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -485,7 +485,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -498,7 +498,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -563,7 +563,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -574,7 +574,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -587,7 +587,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -600,7 +600,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -613,7 +613,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -626,7 +626,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -647,7 +647,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -660,7 +660,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -673,7 +673,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -686,7 +686,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2023/07/06/Swift/swift%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -762,7 +762,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -785,7 +785,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -808,7 +808,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -831,7 +831,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -854,7 +854,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -877,7 +877,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -900,7 +900,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -923,7 +923,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -946,7 +946,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -969,7 +969,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>

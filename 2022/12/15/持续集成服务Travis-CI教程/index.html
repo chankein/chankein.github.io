@@ -32,11 +32,11 @@
     
     
     
-    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"编写代码只是软件开发的一小部分，更多的时间往往花在构建（build）和测试（test）。\n为了提高软件开发的效率，构建和测试的自动化工具层出不穷。Travis CI 就是这类工具之中，市场份额最大的一个。\n\n本文介绍 Travis CI 的基本用法。用好这个工具不仅可以提高效率，还能使开发流程更可靠和专业化，从而提高软件的价值。而且，它对于开源项目是免费的，不花一分钱，就能帮你做掉很多事情。\n一、什么是持续集成？\nTravis CI 提供的是持续集成服务（Continuous Integration，简称 CI）。它绑定 Github 上面的项目，只要有新的代码，就会自动抓取。然后，提供一个运行环境，执行测试，完成构建，还能部署到服务器。\n持续集成指的是只要代码有变更，就自动运行构建和测试，反馈运行结果。确保符合预期以后，再将新代码&quot;集成&quot;到主干。\n持续集成的好处在于，每次代码的小幅变更，就能看到运行结果，从而不断累积小的变更，而不是在开发周期结束时，一下子合并一大块代码。\n二、使用准备\nTravis CI 只支持 Github，不支持其他代码托管服务。这意味着，你必须满足以下条件，才能使用 Travis CI。\n\n\n拥有 GitHub 帐号\n该帐号下面有一个项目\n该项目里面有可运行的代码\n该项目还包含构建或测试脚本\n\n\n如果这些条件都没问题，就可以开始使用 Travis CI 了。\n首先，访问官方网站 travis-ci.org，点击右上角的个人头像，使用 Github 账户登入 Travis CI。\nTravis 会列出 Github 上面你的所有仓库，以及你所属于的组织。此时，选择你需要 Travis 帮你构建的仓库，打开仓库旁边的开关。一旦激活了一个仓库，Travis 会监听这个仓库的所有变化。\n\n三、.travis.yml\nTravis 要求项目的根目录下面，必须有一个.travis.yml文件。这是配置文件，指定了 Travis 的行为。该文件必须保存在 Github 仓库里面，一旦代码仓库有新的 Commit，Travis 就会去找这个文件，执行里面的命令。\n这个文件采用 YAML 格式。下面是一个最简单的 Python 项目的.travis.yml文件。\n\n123language: pythonscript: true\n\n上面代码中，设置了两个字段。language字段指定了默认运行环境，这里设定使用 Python 环境。script字段指定要运行的脚本，script: true表示不执行任何脚本，状态直接设为成功。\nTravis 默认提供的运行环境，请参考官方文档 。目前一共支持31种语言，以后还会不断增加。\n下面是一个稍微复杂一点的.travis.yml。\n\n12345language: pythonsudo: requiredbefore_install: sudo pip install fooscript: py.test\n\n上面代码中，设置了四个字段：运行环境是 Python，需要sudo权限，在安装依赖之前需要安装foo模块，然后执行脚本py.test。\n四、运行流程\nTravis 的运行流程很简单，任何项目都会经过两个阶段。\n\n\ninstall 阶段：安装依赖\nscript 阶段：运行脚本\n\n\n4.1 install 字段\ninstall字段用来指定安装脚本。\n\n12install: ./install-dependencies.sh\n\n如果有多个脚本，可以写成下面的形式。\n\n1234install:  - command1  - command2\n\n上面代码中，如果command1失败了，整个构建就会停下来，不再往下进行。\n如果不需要安装，即跳过安装阶段，就直接设为true。\n\n12install: true\n\n4.2、script 字段\nscript字段用来指定构建或测试脚本。\n\n12script: bundle exec thor build\n\n如果有多个脚本，可以写成下面的形式。\n\n1234script:  - command1  - command2\n\n注意，script与install不一样，如果command1失败，command2会继续执行。但是，整个构建阶段的状态是失败。\n如果command2只有在command1成功后才能执行，就要写成下面这样。\n\n12script: command1 &amp;&amp; command2\n\n4.3 实例：Node 项目\nNode 项目的环境需要写成下面这样。\n\n1234language: node_jsnode_js:  - &quot;8&quot;\n\n上面代码中，node_js字段用来指定 Node 版本。\nNode 项目的install和script阶段都有默认脚本，可以省略。\n\n\ninstall默认值：npm install\nscript默认值：npm test\n\n\n更多设置请看官方文档。\n4.4 部署\nscript阶段结束以后，还可以设置通知步骤（notification）和部署步骤（deployment），它们不是必须的。\n部署的脚本可以在script阶段执行，也可以使用 Travis 为几十种常见服务提供的快捷部署功能。比如，要部署到 Github Pages，可以写成下面这样。\n\n1234567deploy:  provider: pages  skip_cleanup: true  github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard  on:    branch: master\n\n其他部署方式，请看官方文档。\n4.5 钩子方法\nTravis 为上面这些阶段提供了7个钩子。\n\n\nbefore_install：install 阶段之前执行\nbefore_script：script 阶段之前执行\nafter_failure：script 阶段失败时执行\nafter_success：script 阶段成功时执行\nbefore_deploy：deploy 步骤之前执行\nafter_deploy：deploy 步骤之后执行\nafter_script：script 阶段之后执行\n\n\n完整的生命周期，从开始到结束是下面的流程。\n\n\nbefore_install\ninstall\nbefore_script\nscript\naftersuccess or afterfailure\n[OPTIONAL] before_deploy\n[OPTIONAL] deploy\n[OPTIONAL] after_deploy\nafter_script\n\n\n下面是一个before_install钩子的例子。\n\n1234before_install:  - sudo apt-get -qq update  - sudo apt-get install -y libxml2-dev\n\n上面代码表示before_install阶段要做两件事，第一件事是要更新依赖，第二件事是安装libxml2-dev。用到的几个参数的含义如下：-qq表示减少中间步骤的输出，-y表示如果需要用户输入，总是输入yes。\n4.6 运行状态\n最后，Travis 每次运行，可能会返回四种状态。\n\n\npassed：运行成功，所有步骤的退出码都是0\ncanceled：用户取消执行\nerrored：before_install、install、before_script有非零退出码，运行会立即停止\nfailed ：script有非零状态码 ，会继续运行\n\n\n五、使用技巧\n5.1 环境变量\n.travis.yml的env字段可以定义环境变量。\n\n12345env:  - DB=postgres  - SH=bash  - PACKAGE_VERSION=&quot;1.0.*&quot;\n\n然后，脚本内部就使用这些变量了。\n有些环境变量（比如用户名和密码）不能公开，这时可以通过 Travis 网站，写在每个仓库的设置页里面，Travis 会自动把它们加入环境变量。这样一来，脚本内部依然可以使用这些环境变量，但是只有管理员才能看到变量的值。具体操作请看官方文档。\n\n5.2 加密信息\n如果不放心保密信息明文存在 Travis 的网站，可以使用 Travis 提供的加密功能。\n首先，安装 Ruby 的包travis。\n\n12$ gem install travis\n\n然后，就可以用travis encrypt命令加密信息。\n在项目的根目录下，执行下面的命令。\n\n12$ travis encrypt SOMEVAR=secretvalue\n\n上面命令中，SOMEVAR是要加密的变量名，secretvalue是要加密的变量值。执行以后，屏幕上会输出如下信息。\n\n12secure: &quot;.... encrypted data ....&quot;\n\n现在，就可以把这一行加入.travis.yml。\n\n1234env:  global:    - secure: &quot;.... encrypted data ....&quot;\n\n然后，脚本里面就可以使用环境变量$SOMEVAR了，Travis 会在运行时自动对它解密。\ntravis encrypt命令的--add参数会把输出自动写入.travis.yml，省掉了修改env字段的步骤。\n\n12$ travis encrypt SOMEVAR=secretvalue --add\n\n详细信息请看官方文档。\n5.3 加密文件\n如果要加密的是文件（比如私钥），Travis 提供了加密文件功能。\n安装命令行客户端以后，使用下面的命令登入 Travis CI。\n\n12$ travis login \n\n然后，进入项目的根目录，使用travis encrypt-file命令加密那些想要加密的文件。\n\n12345678910111213141516$ travis encrypt-file bacon.txtencrypting bacon.txt for rkh/travis-encrypt-file-examplestoring result as bacon.txt.encstoring secure env variables for decryptionPlease add the following to your build script (before_install stage in your .travis.yml, for instance):    openssl aes-256-cbc -K $encrypted_0a6446eb3ae3_key -iv $encrypted_0a6446eb3ae3_key -in bacon.txt.enc -out bacon.txt -dPro Tip: You can add it automatically by running with --add.Make sure to add bacon.txt.enc to the git repository.Make sure not to add bacon.txt to the git repository.Commit all changes to your .travis.yml.\n\n上面的代码对文件bacon.txt进行加密，加密后会生成bacon.txt.enc，该文件需要提交到代码库。此外，该命令还会生成一个环境变量$encrypted_0a6446eb3ae3_key，保存密钥，储存在 Travis CI，文件解密时需要这个环境变量。你需要把解密所需的openssl命令，写在.travis.yml的before_install字段里面。这些都写在上面的命令行提示里面。\n--add参数可以自动把环境变量写入.travis.yml。\n\n12345678910$ travis encrypt-file bacon.txt --addencrypting bacon.txt for rkh/travis-encrypt-file-examplestoring result as bacon.txt.encstoring secure env variables for decryptionMake sure to add bacon.txt.enc to the git repository.Make sure not to add bacon.txt to the git repository.Commit all changes to your .travis.yml.\n\n详细信息请看官方文档，实际的例子可以参考下面两篇文章。\n\n\nAuto-deploying built products to gh-pages with Travis\nSSH deploys with Travis CI\n\n\n（完）\n","dateCreated":"2022-12-15T15:15:55+08:00","dateModified":"2025-06-15T15:18:41+08:00","datePublished":"2022-12-15T15:15:55+08:00","description":"","headline":"持续集成服务Travis CI教程","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/","keywords":"devops, TravisCI"}</script>
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg"},"articleBody":"编写代码只是软件开发的一小部分，更多的时间往往花在构建（build）和测试（test）。\n为了提高软件开发的效率，构建和测试的自动化工具层出不穷。Travis CI 就是这类工具之中，市场份额最大的一个。\n\n本文介绍 Travis CI 的基本用法。用好这个工具不仅可以提高效率，还能使开发流程更可靠和专业化，从而提高软件的价值。而且，它对于开源项目是免费的，不花一分钱，就能帮你做掉很多事情。\n一、什么是持续集成？\nTravis CI 提供的是持续集成服务（Continuous Integration，简称 CI）。它绑定 Github 上面的项目，只要有新的代码，就会自动抓取。然后，提供一个运行环境，执行测试，完成构建，还能部署到服务器。\n持续集成指的是只要代码有变更，就自动运行构建和测试，反馈运行结果。确保符合预期以后，再将新代码&quot;集成&quot;到主干。\n持续集成的好处在于，每次代码的小幅变更，就能看到运行结果，从而不断累积小的变更，而不是在开发周期结束时，一下子合并一大块代码。\n二、使用准备\nTravis CI 只支持 Github，不支持其他代码托管服务。这意味着，你必须满足以下条件，才能使用 Travis CI。\n\n\n拥有 GitHub 帐号\n该帐号下面有一个项目\n该项目里面有可运行的代码\n该项目还包含构建或测试脚本\n\n\n如果这些条件都没问题，就可以开始使用 Travis CI 了。\n首先，访问官方网站 travis-ci.org，点击右上角的个人头像，使用 Github 账户登入 Travis CI。\nTravis 会列出 Github 上面你的所有仓库，以及你所属于的组织。此时，选择你需要 Travis 帮你构建的仓库，打开仓库旁边的开关。一旦激活了一个仓库，Travis 会监听这个仓库的所有变化。\n\n三、.travis.yml\nTravis 要求项目的根目录下面，必须有一个.travis.yml文件。这是配置文件，指定了 Travis 的行为。该文件必须保存在 Github 仓库里面，一旦代码仓库有新的 Commit，Travis 就会去找这个文件，执行里面的命令。\n这个文件采用 YAML 格式。下面是一个最简单的 Python 项目的.travis.yml文件。\n\n123language: pythonscript: true\n\n上面代码中，设置了两个字段。language字段指定了默认运行环境，这里设定使用 Python 环境。script字段指定要运行的脚本，script: true表示不执行任何脚本，状态直接设为成功。\nTravis 默认提供的运行环境，请参考官方文档 。目前一共支持31种语言，以后还会不断增加。\n下面是一个稍微复杂一点的.travis.yml。\n\n12345language: pythonsudo: requiredbefore_install: sudo pip install fooscript: py.test\n\n上面代码中，设置了四个字段：运行环境是 Python，需要sudo权限，在安装依赖之前需要安装foo模块，然后执行脚本py.test。\n四、运行流程\nTravis 的运行流程很简单，任何项目都会经过两个阶段。\n\n\ninstall 阶段：安装依赖\nscript 阶段：运行脚本\n\n\n4.1 install 字段\ninstall字段用来指定安装脚本。\n\n12install: ./install-dependencies.sh\n\n如果有多个脚本，可以写成下面的形式。\n\n1234install:  - command1  - command2\n\n上面代码中，如果command1失败了，整个构建就会停下来，不再往下进行。\n如果不需要安装，即跳过安装阶段，就直接设为true。\n\n12install: true\n\n4.2、script 字段\nscript字段用来指定构建或测试脚本。\n\n12script: bundle exec thor build\n\n如果有多个脚本，可以写成下面的形式。\n\n1234script:  - command1  - command2\n\n注意，script与install不一样，如果command1失败，command2会继续执行。但是，整个构建阶段的状态是失败。\n如果command2只有在command1成功后才能执行，就要写成下面这样。\n\n12script: command1 &amp;&amp; command2\n\n4.3 实例：Node 项目\nNode 项目的环境需要写成下面这样。\n\n1234language: node_jsnode_js:  - &quot;8&quot;\n\n上面代码中，node_js字段用来指定 Node 版本。\nNode 项目的install和script阶段都有默认脚本，可以省略。\n\n\ninstall默认值：npm install\nscript默认值：npm test\n\n\n更多设置请看官方文档。\n4.4 部署\nscript阶段结束以后，还可以设置通知步骤（notification）和部署步骤（deployment），它们不是必须的。\n部署的脚本可以在script阶段执行，也可以使用 Travis 为几十种常见服务提供的快捷部署功能。比如，要部署到 Github Pages，可以写成下面这样。\n\n1234567deploy:  provider: pages  skip_cleanup: true  github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard  on:    branch: master\n\n其他部署方式，请看官方文档。\n4.5 钩子方法\nTravis 为上面这些阶段提供了7个钩子。\n\n\nbefore_install：install 阶段之前执行\nbefore_script：script 阶段之前执行\nafter_failure：script 阶段失败时执行\nafter_success：script 阶段成功时执行\nbefore_deploy：deploy 步骤之前执行\nafter_deploy：deploy 步骤之后执行\nafter_script：script 阶段之后执行\n\n\n完整的生命周期，从开始到结束是下面的流程。\n\n\nbefore_install\ninstall\nbefore_script\nscript\naftersuccess or afterfailure\n[OPTIONAL] before_deploy\n[OPTIONAL] deploy\n[OPTIONAL] after_deploy\nafter_script\n\n\n下面是一个before_install钩子的例子。\n\n1234before_install:  - sudo apt-get -qq update  - sudo apt-get install -y libxml2-dev\n\n上面代码表示before_install阶段要做两件事，第一件事是要更新依赖，第二件事是安装libxml2-dev。用到的几个参数的含义如下：-qq表示减少中间步骤的输出，-y表示如果需要用户输入，总是输入yes。\n4.6 运行状态\n最后，Travis 每次运行，可能会返回四种状态。\n\n\npassed：运行成功，所有步骤的退出码都是0\ncanceled：用户取消执行\nerrored：before_install、install、before_script有非零退出码，运行会立即停止\nfailed ：script有非零状态码 ，会继续运行\n\n\n五、使用技巧\n5.1 环境变量\n.travis.yml的env字段可以定义环境变量。\n\n12345env:  - DB=postgres  - SH=bash  - PACKAGE_VERSION=&quot;1.0.*&quot;\n\n然后，脚本内部就使用这些变量了。\n有些环境变量（比如用户名和密码）不能公开，这时可以通过 Travis 网站，写在每个仓库的设置页里面，Travis 会自动把它们加入环境变量。这样一来，脚本内部依然可以使用这些环境变量，但是只有管理员才能看到变量的值。具体操作请看官方文档。\n\n5.2 加密信息\n如果不放心保密信息明文存在 Travis 的网站，可以使用 Travis 提供的加密功能。\n首先，安装 Ruby 的包travis。\n\n12$ gem install travis\n\n然后，就可以用travis encrypt命令加密信息。\n在项目的根目录下，执行下面的命令。\n\n12$ travis encrypt SOMEVAR=secretvalue\n\n上面命令中，SOMEVAR是要加密的变量名，secretvalue是要加密的变量值。执行以后，屏幕上会输出如下信息。\n\n12secure: &quot;.... encrypted data ....&quot;\n\n现在，就可以把这一行加入.travis.yml。\n\n1234env:  global:    - secure: &quot;.... encrypted data ....&quot;\n\n然后，脚本里面就可以使用环境变量$SOMEVAR了，Travis 会在运行时自动对它解密。\ntravis encrypt命令的--add参数会把输出自动写入.travis.yml，省掉了修改env字段的步骤。\n\n12$ travis encrypt SOMEVAR=secretvalue --add\n\n详细信息请看官方文档。\n5.3 加密文件\n如果要加密的是文件（比如私钥），Travis 提供了加密文件功能。\n安装命令行客户端以后，使用下面的命令登入 Travis CI。\n\n12$ travis login \n\n然后，进入项目的根目录，使用travis encrypt-file命令加密那些想要加密的文件。\n\n12345678910111213141516$ travis encrypt-file bacon.txtencrypting bacon.txt for rkh/travis-encrypt-file-examplestoring result as bacon.txt.encstoring secure env variables for decryptionPlease add the following to your build script (before_install stage in your .travis.yml, for instance):    openssl aes-256-cbc -K $encrypted_0a6446eb3ae3_key -iv $encrypted_0a6446eb3ae3_key -in bacon.txt.enc -out bacon.txt -dPro Tip: You can add it automatically by running with --add.Make sure to add bacon.txt.enc to the git repository.Make sure not to add bacon.txt to the git repository.Commit all changes to your .travis.yml.\n\n上面的代码对文件bacon.txt进行加密，加密后会生成bacon.txt.enc，该文件需要提交到代码库。此外，该命令还会生成一个环境变量$encrypted_0a6446eb3ae3_key，保存密钥，储存在 Travis CI，文件解密时需要这个环境变量。你需要把解密所需的openssl命令，写在.travis.yml的before_install字段里面。这些都写在上面的命令行提示里面。\n--add参数可以自动把环境变量写入.travis.yml。\n\n12345678910$ travis encrypt-file bacon.txt --addencrypting bacon.txt for rkh/travis-encrypt-file-examplestoring result as bacon.txt.encstoring secure env variables for decryptionMake sure to add bacon.txt.enc to the git repository.Make sure not to add bacon.txt to the git repository.Commit all changes to your .travis.yml.\n\n详细信息请看官方文档，实际的例子可以参考下面两篇文章。\n\n\nAuto-deploying built products to gh-pages with Travis\nSSH deploys with Travis CI\n\n\n（完）\n","dateCreated":"2022-12-15T15:15:55+08:00","dateModified":"2025-06-15T15:18:41+08:00","datePublished":"2022-12-15T15:15:55+08:00","description":"","headline":"持续集成服务Travis CI教程","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"},"publisher":{"@type":"Organization","name":"Kein Chan","sameAs":["https://github.com/chankein/","https://www.linkedin.com/profile/","mailto:kein.chan85@gmail.com"],"image":"profile.jpg","logo":{"@type":"ImageObject","url":"profile.jpg"}},"url":"https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/","keywords":"devops, TravisCI"}</script>
     <meta name="description" content="编写代码只是软件开发的一小部分，更多的时间往往花在构建（build）和测试（test）。 为了提高软件开发的效率，构建和测试的自动化工具层出不穷。Travis CI 就是这类工具之中，市场份额最大的一个。  本文介绍 Travis CI 的基本用法。用好这个工具不仅可以提高效率，还能使开发流程更可靠和专业化，从而提高软件的价值。而且，它对于开源项目是免费的，不花一分钱，就能帮你做掉很多事情。 一、">
 <meta property="og:type" content="blog">
 <meta property="og:title" content="持续集成服务Travis CI教程">
-<meta property="og:url" content="https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/index.html">
+<meta property="og:url" content="https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/index.html">
 <meta property="og:site_name" content="Kein&#39;s blog">
 <meta property="og:description" content="编写代码只是软件开发的一小部分，更多的时间往往花在构建（build）和测试（test）。 为了提高软件开发的效率，构建和测试的自动化工具层出不穷。Travis CI 就是这类工具之中，市场份额最大的一个。  本文介绍 Travis CI 的基本用法。用好这个工具不仅可以提高效率，还能使开发流程更可靠和专业化，从而提高软件的价值。而且，它对于开源项目是免费的，不花一分钱，就能帮你做掉很多事情。 一、">
 <meta property="og:locale" content="zh_TW">
@@ -55,7 +55,7 @@
         
     
     
-        <meta property="og:image" content="https://chankein.github.io../../../../assets/images/profile.jpg"/>
+        <meta property="og:image" content="https://keinchan.com../../../../assets/images/profile.jpg"/>
     
     
     
@@ -579,7 +579,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -590,7 +590,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -603,7 +603,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -616,7 +616,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -629,7 +629,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -642,7 +642,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -707,7 +707,7 @@
             <a
                 class="post-action-btn btn btn--default btn-open-shareoptions"
                 href="#btn-open-shareoptions"
-                aria-label="Share this post"
+                aria-label="Diesen Beitrag teilen"
             >
                 <i class="fa fa-share-alt" aria-hidden="true"></i>
             </a>
@@ -718,7 +718,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                    target="new" href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
                     title="分享到 Facebook"
                     aria-label="分享到 Facebook"
                 >
@@ -731,7 +731,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                    target="new" href="https://twitter.com/intent/tweet?text=https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
                     title="分享到 Twitter"
                     aria-label="分享到 Twitter"
                 >
@@ -744,7 +744,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                    target="new" href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
                     title="global.share_on_linkedin"
                     aria-label="global.share_on_linkedin"
                 >
@@ -757,7 +757,7 @@
             <li class="post-action hide-xs">
                 <a
                     class="post-action-btn btn btn--default"
-                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
                     title="分享到 Weibo"
                     aria-label="分享到 Weibo"
                 >
@@ -770,7 +770,7 @@
         
         <li class="post-action">
             
-                <a class="post-action-btn btn btn--default" href="#" aria-label="Back to top">
+                <a class="post-action-btn btn btn--default" href="#" aria-label="Nach oben">
             
                 <i class="fa fa-list" aria-hidden="true"></i>
             </a>
@@ -791,7 +791,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.facebook.com/sharer/sharer.php?u=https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                        href="https://www.facebook.com/sharer/sharer.php?u=https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
                         aria-label="分享到 Facebook"
                     >
                         <i class="fab fa-facebook" aria-hidden="true"></i><span>分享到 Facebook</span>
@@ -804,7 +804,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://twitter.com/intent/tweet?text=https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                        href="https://twitter.com/intent/tweet?text=https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
                         aria-label="分享到 Twitter"
                     >
                         <i class="fab fa-twitter" aria-hidden="true"></i><span>分享到 Twitter</span>
@@ -817,7 +817,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                        href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
                         aria-label="global.share_on_linkedin"
                     >
                         <i class="fab fa-linkedin" aria-hidden="true"></i><span>global.share_on_linkedin</span>
@@ -830,7 +830,7 @@
                     <a
                         class="share-option-btn"
                         target="new"
-                        href="http://service.weibo.com/share/share.php?&amp;title=https://chankein.github.io/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
+                        href="http://service.weibo.com/share/share.php?&amp;title=https://keinchan.com/2022/12/15/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E6%9C%8D%E5%8A%A1Travis-CI%E6%95%99%E7%A8%8B/"
                         aria-label="分享到 Weibo"
                     >
                         <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
@@ -906,7 +906,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
+                            href="https://keinchan.com/2013/04/27/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85/"
                             aria-label=": R语言-环境安装"
                         >
                             <h3 class="media-heading">R语言-环境安装</h3>
@@ -929,7 +929,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2013/04/28/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E5%9F%BA%E7%A1%80/"
                             aria-label=": R语言-基础"
                         >
                             <h3 class="media-heading">R语言-基础</h3>
@@ -952,7 +952,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
+                            href="https://keinchan.com/2013/05/01/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE/"
                             aria-label=": R语言-读取数据"
                         >
                             <h3 class="media-heading">R语言-读取数据</h3>
@@ -975,7 +975,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
+                            href="https://keinchan.com/2013/05/02/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BB%98%E5%9B%BE/"
                             aria-label=": R语言-绘图"
                         >
                             <h3 class="media-heading">R语言-绘图</h3>
@@ -998,7 +998,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
+                            href="https://keinchan.com/2013/05/03/R%E8%AF%AD%E8%A8%80/R%E8%AF%AD%E8%A8%80-%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/"
                             aria-label=": R语言-线性回归"
                         >
                             <h3 class="media-heading">R语言-线性回归</h3>
@@ -1021,7 +1021,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
+                            href="https://keinchan.com/2015/02/22/Algorithms/1.%E7%AE%97%E6%B3%95%E5%9C%A8%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8/"
                             aria-label=": 1. 算法在计算中的作用"
                         >
                             <h3 class="media-heading">1. 算法在计算中的作用</h3>
@@ -1044,7 +1044,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
+                            href="https://keinchan.com/2015/02/23/Algorithms/2.%E7%AE%97%E6%B3%95%E5%9F%BA%E7%A1%80/"
                             aria-label=": 2. 算法基础"
                         >
                             <h3 class="media-heading">2. 算法基础</h3>
@@ -1067,7 +1067,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
+                            href="https://keinchan.com/2015/02/24/Algorithms/3.%E5%87%BD%E6%95%B0%E7%9A%84%E5%A2%9E%E9%95%BF/"
                             aria-label=": 3. 函数的增长"
                         >
                             <h3 class="media-heading">3. 函数的增长</h3>
@@ -1090,7 +1090,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
+                            href="https://keinchan.com/2015/02/25/Algorithms/4.%E5%88%86%E6%B2%BB%E7%AD%96%E7%95%A5/"
                             aria-label=": 4. 分治策略"
                         >
                             <h3 class="media-heading">4. 分治策略</h3>
@@ -1113,7 +1113,7 @@
                     <div class="media-body">
                         <a
                             class="link-unstyled"
-                            href="https://chankein.github.io/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
+                            href="https://keinchan.com/2015/02/26/Algorithms/5.%E6%A6%82%E7%8E%87%E5%88%86%E6%9E%90%E5%92%8C%E9%9A%8F%E6%9C%BA%E7%AE%97%E6%B3%95/"
                             aria-label=": 5. 概率分析和随机算法"
                         >
                             <h3 class="media-heading">5. 概率分析和随机算法</h3>
