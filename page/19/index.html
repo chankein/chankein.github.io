@@ -301,337 +301,6 @@
                     
                         <a
                             class="link-unstyled"
-                            href="../../2017/09/16/git/git-rebase/"
-                            aria-label=": git rebase"
-                        >
-                            git rebase
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2017-09-16T22:51:00+08:00">
-	
-		    2017 年 9 月 16 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/devops/">devops</a>, <a class="category-link" href="../../categories/devops/git/">git</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h2 id="变基">变基</h2>
-<p>在 Git 中整合来自不同分支的修改主要有两种方法：<code>merge</code> 以及 <code>rebase</code>。 在本节中我们将学习什么是“变基”，怎样使用“变基”，并将展示该操作的惊艳之处，以及指出在何种情况下你应避免使用它。</p>
-<h3 id="变基的基本操作">变基的基本操作</h3>
-<p>请回顾之前在 <a target="_blank" rel="noopener" href="https://git-scm.com/book/zh/v2/ch00/_basic_merging">分支的合并</a> 中的一个例子，你会看到开发任务分叉到两个不同分支，又各自提交了更新。</p>
-<p><img src="https://git-scm.com/book/zh/v2/images/basic-rebase-1.png" alt="分叉的提交历史。"></p>
-<p>Figure 35. 分叉的提交历史</p>
-<p>之前介绍过，整合分支最容易的方法是 <code>merge</code> 命令。 它会把两个分支的最新快照（<code>C3</code> 和 <code>C4</code>）以及二者最近的共同祖先（<code>C2</code>）进行三方合并，合并的结果是生成一个新的快照（并提交）。</p>
-<p><img src="https://git-scm.com/book/zh/v2/images/basic-rebase-2.png" alt="通过合并操作来整合分叉了的历史。"></p>
-<p>Figure 36. 通过合并操作来整合分叉的历史</p>
-<p>其实，还有一种方法：你可以提取在 <code>C4</code> 中引入的补丁和修改，然后在 <code>C3</code> 的基础上应用一次。 在 Git 中，这种操作就叫做 <strong>变基（rebase）</strong>。 你可以使用 <code>rebase</code> 命令将提交到某一分支上的所有修改都移至另一分支上，就好像“重新播放”一样。</p>
-<p>在这个例子中，你可以检出 <code>experiment</code> 分支，然后将它变基到 <code>master</code> 分支上：</p>
-<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git checkout experiment</span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git rebase master</span></span><br><span class="line">First, rewinding head to replay your work on top of it...</span><br><span class="line">Applying: added staged command</span><br></pre></td></tr></table></figure>
-<p>它的原理是首先找到这两个分支（即当前分支 <code>experiment</code>、变基操作的目标基底分支 <code>master</code>） 的最近共同祖先 <code>C2</code>，然后对比当前分支相对于该祖先的历次提交，提取相应的修改并存为临时文件， 然后将当前分支指向目标基底 <code>C3</code>, 最后以此将之前另存为临时文件的修改依序应用。 （译注：写明了 commit id，以便理解，下同）</p>
-<p><img src="https://git-scm.com/book/zh/v2/images/basic-rebase-3.png" alt="将  中的修改变基到  上。"></p>
-<p>Figure 37. 将 <code>C4</code> 中的修改变基到 <code>C3</code> 上</p>
-<p>现在回到 <code>master</code> 分支，进行一次快进合并。</p>
-<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git checkout master</span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git merge experiment</span></span><br></pre></td></tr></table></figure>
-<p><img src="https://git-scm.com/book/zh/v2/images/basic-rebase-4.png" alt=" 分支的快进合并。"></p>
-<p>Figure 38. <code>master</code> 分支的快进合并</p>
-<p>此时，<code>C4'</code> 指向的快照就和 <a target="_blank" rel="noopener" href="https://git-scm.com/book/zh/v2/ch00/ebasing-merging-example">the merge example</a> 中 <code>C5</code> 指向的快照一模一样了。 这两种整合方法的最终结果没有任何区别，但是变基使得提交历史更加整洁。 你在查看一个经过变基的分支的历史记录时会发现，尽管实际的开发工作是并行的， 但它们看上去就像是串行的一样，提交历史是一条直线没有分叉。</p>
-<p>一般我们这样做的目的是为了确保在向远程分支推送时能保持提交历史的整洁——例如向某个其他人维护的项目贡献代码时。 在这种情况下，你首先在自己的分支里进行开发，当开发完成时你需要先将你的代码变基到 <code>origin/master</code> 上，然后再向主项目提交修改。 这样的话，该项目的维护者就不再需要进行整合工作，只需要快进合并便可。</p>
-<p>请注意，无论是通过变基，还是通过三方合并，整合的最终结果所指向的快照始终是一样的，只不过提交历史不同罢了。 变基是将一系列提交按照原有次序依次应用到另一分支上，而合并是把最终结果合在一起。</p>
-<h3 id="更有趣的变基例子">更有趣的变基例子</h3>
-<p>在对两个分支进行变基时，所生成的“重放”并不一定要在目标分支上应用，你也可以指定另外的一个分支进行应用。 就像 <a target="_blank" rel="noopener" href="https://git-scm.com/book/zh/v2/ch00/bdiag_e">从一个主题分支里再分出一个主题分支的提交历史</a> 中的例子那样。 你创建了一个主题分支 <code>server</code>，为服务端添加了一些功能，提交了 <code>C3</code> 和 <code>C4</code>。 然后从 <code>C3</code> 上创建了主题分支 <code>client</code>，为客户端添加了一些功能，提交了 <code>C8</code> 和 <code>C9</code>。 最后，你回到 <code>server</code> 分支，又提交了 <code>C10</code>。</p>
-<p><img src="https://git-scm.com/book/zh/v2/images/interesting-rebase-1.png" alt="从一个主题分支里再分出一个主题分支的提交历史。"></p>
-<p>Figure 39. 从一个主题分支里再分出一个主题分支的提交历史</p>
-<p>假设你希望将 <code>client</code> 中的修改合并到主分支并发布，但暂时并不想合并 <code>server</code> 中的修改， 因为它们还需要经过更全面的测试。这时，你就可以使用 <code>git rebase</code> 命令的 <code>--onto</code> 选项， 选中在 <code>client</code> 分支里但不在 <code>server</code> 分支里的修改（即 <code>C8</code> 和 <code>C9</code>），将它们在 <code>master</code> 分支上重放：</p>
-<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git rebase --onto master server client</span></span><br></pre></td></tr></table></figure>
-<p>以上命令的意思是：“取出 <code>client</code> 分支，找出它从 <code>server</code> 分支分歧之后的补丁， 然后把这些补丁在 <code>master</code> 分支上重放一遍，让 <code>client</code> 看起来像直接基于 <code>master</code> 修改一样”。这理解起来有一点复杂，不过效果非常酷。</p>
-<p><img src="https://git-scm.com/book/zh/v2/images/interesting-rebase-2.png" alt="截取主题分支上的另一个主题分支，然后变基到其他分支。"></p>
-<p>Figure 40. 截取主题分支上的另一个主题分支，然后变基到其他分支</p>
-<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git checkout master</span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git merge client</span></span><br></pre></td></tr></table></figure>
-<p><img src="https://git-scm.com/book/zh/v2/images/interesting-rebase-3.png" alt="快进合并  分支，使之包含来自  分支的修改。"></p>
-<p>Figure 41. 快进合并 <code>master</code> 分支，使之包含来自 <code>client</code> 分支的修改</p>
-<p>接下来你决定将 <code>server</code> 分支中的修改也整合进来。 使用 <code>git rebase &lt;basebranch&gt; &lt;topicbranch&gt;</code> 命令可以直接将主题分支 （即本例中的 <code>server</code>）变基到目标分支（即 <code>master</code>）上。 这样做能省去你先切换到 <code>server</code> 分支，再对其执行变基命令的多个步骤。</p>
-<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git rebase master server</span></span><br></pre></td></tr></table></figure>
-<p><img src="https://git-scm.com/book/zh/v2/images/interesting-rebase-4.png" alt="将  中的修改变基到  上。"></p>
-<p>Figure 42. 将 <code>server</code> 中的修改变基到 <code>master</code> 上</p>
-<p>然后就可以快进合并主分支 <code>master</code> 了：</p>
-<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git checkout master</span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git merge server</span></span><br></pre></td></tr></table></figure>
-<p>至此，<code>client</code> 和 <code>server</code> 分支中的修改都已经整合到主分支里了， 你可以删除这两个分支，最终提交历史会变成图 <a target="_blank" rel="noopener" href="https://git-scm.com/book/zh/v2/ch00/bdiag_i">最终的提交历史</a> 中的样子：</p>
-<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git branch -d client</span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git branch -d server</span></span><br></pre></td></tr></table></figure>
-<p><img src="https://git-scm.com/book/zh/v2/images/interesting-rebase-5.png" alt="最终的提交历史。"></p>
-<p>Figure 43. 最终的提交历史</p>
-<h3 id="变基的风险">变基的风险</h3>
-<p>呃，奇妙的变基也并非完美无缺，要用它得遵守一条准则：</p>
-<p><strong>如果提交存在于你的仓库之外，而别人可能基于这些提交进行开发，那么不要执行变基。</strong></p>
-<p>如果你遵循这条金科玉律，就不会出差错。 否则，人民群众会仇恨你，你的朋友和家人也会嘲笑你，唾弃你。</p>
-<p>变基操作的实质是丢弃一些现有的提交，然后相应地新建一些内容一样但实际上不同的提交。 如果你已经将提交推送至某个仓库，而其他人也已经从该仓库拉取提交并进行了后续工作，此时，如果你用 <code>git rebase</code> 命令重新整理了提交并再次推送，你的同伴因此将不得不再次将他们手头的工作与你的提交进行整合，如果接下来你还要拉取并整合他们修改过的提交，事情就会变得一团糟。</p>
-<p>让我们来看一个在公开的仓库上执行变基操作所带来的问题。 假设你从一个中央服务器克隆然后在它的基础上进行了一些开发。 你的提交历史如图所示：</p>
-<p><img src="https://git-scm.com/book/zh/v2/images/perils-of-rebasing-1.png" alt="克隆一个仓库，然后在它的基础上进行了一些开发。"></p>
-<p>Figure 44. 克隆一个仓库，然后在它的基础上进行了一些开发</p>
-<p>然后，某人又向中央服务器提交了一些修改，其中还包括一次合并。 你抓取了这些在远程分支上的修改，并将其合并到你本地的开发分支，然后你的提交历史就会变成这样：</p>
-<p><img src="https://git-scm.com/book/zh/v2/images/perils-of-rebasing-2.png" alt="抓取别人的提交，合并到自己的开发分支。"></p>
-<p>Figure 45. 抓取别人的提交，合并到自己的开发分支</p>
-<p>接下来，这个人又决定把合并操作回滚，改用变基；继而又用 <code>git push --force</code> 命令覆盖了服务器上的提交历史。 之后你从服务器抓取更新，会发现多出来一些新的提交。</p>
-<p><img src="https://git-scm.com/book/zh/v2/images/perils-of-rebasing-3.png" alt="有人推送了经过变基的提交，并丢弃了你的本地开发所基于的一些提交。"></p>
-<p>Figure 46. 有人推送了经过变基的提交，并丢弃了你的本地开发所基于的一些提交</p>
-<p>结果就是你们两人的处境都十分尴尬。 如果你执行 <code>git pull</code> 命令，你将合并来自两条提交历史的内容，生成一个新的合并提交，最终仓库会如图所示：</p>
-<p><img src="https://git-scm.com/book/zh/v2/images/perils-of-rebasing-4.png" alt="你将相同的内容又合并了一次，生成了一个新的提交。"></p>
-<p>Figure 47. 你将相同的内容又合并了一次，生成了一个新的提交</p>
-<p>此时如果你执行 <code>git log</code> 命令，你会发现有两个提交的作者、日期、日志居然是一样的，这会令人感到混乱。 此外，如果你将这一堆又推送到服务器上，你实际上是将那些已经被变基抛弃的提交又找了回来，这会令人感到更加混乱。 很明显对方并不想在提交历史中看到 <code>C4</code> 和 <code>C6</code>，因为之前就是他把这两个提交通过变基丢弃的。</p>
-<h3 id="用变基解决变基">用变基解决变基</h3>
-<p>如果你 <strong>真的</strong> 遭遇了类似的处境，Git 还有一些高级魔法可以帮到你。 如果团队中的某人强制推送并覆盖了一些你所基于的提交，你需要做的就是检查你做了哪些修改，以及他们覆盖了哪些修改。</p>
-<p>实际上，Git 除了对整个提交计算 SHA-1 校验和以外，也对本次提交所引入的修改计算了校验和——即 “patch-id”。</p>
-<p>如果你拉取被覆盖过的更新并将你手头的工作基于此进行变基的话，一般情况下 Git 都能成功分辨出哪些是你的修改，并把它们应用到新分支上。</p>
-<ul>
-<li>
-<p>检查哪些提交是我们的分支上独有的（C2，C3，C4，C6，C7）</p>
-</li>
-<li>
-<p>检查其中哪些提交不是合并操作的结果（C2，C3，C4）</p>
-</li>
-<li>
-<p>检查哪些提交在对方覆盖更新时并没有被纳入目标分支（只有 C2 和 C3，因为 C4 其实就是 C4’）</p>
-</li>
-<li>
-<p>把查到的这些提交应用在 <code>teamone/master</code> 上面</p>
-</li>
-</ul>
-<p><img src="https://git-scm.com/book/zh/v2/images/perils-of-rebasing-5.png" alt="在一个被变基然后强制推送的分支上再次执行变基。"></p>
-<p>Figure 48. 在一个被变基然后强制推送的分支上再次执行变基</p>
-<p>要想上述方案有效，还需要对方在变基时确保 <code>C4'</code> 和 <code>C4</code> 是几乎一样的。 否则变基操作将无法识别，并新建另一个类似 <code>C4</code> 的补丁（而这个补丁很可能无法整洁的整合入历史，因为补丁中的修改已经存在于某个地方了）。</p>
-<p>在本例中另一种简单的方法是使用 <code>git pull --rebase</code> 命令而不是直接 <code>git pull</code>。 又或者你可以自己手动完成这个过程，先 <code>git fetch</code>，再 <code>git rebase teamone/master</code>。</p>
-<p>如果你习惯使用 <code>git pull</code> ，同时又希望默认使用选项 <code>--rebase</code>，你可以执行这条语句 <code>git config --global pull.rebase true</code> 来更改 <code>pull.rebase</code> 的默认配置。</p>
-<p>如果你只对不会离开你电脑的提交执行变基，那就不会有事。 如果你对已经推送过的提交执行变基，但别人没有基于它的提交，那么也不会有事。 如果你对已经推送至共用仓库的提交上执行变基命令，并因此丢失了一些别人的开发所基于的提交， 那你就有大麻烦了，你的同事也会因此鄙视你。</p>
-<p>如果你或你的同事在某些情形下决意要这么做，请一定要通知每个人执行 <code>git pull --rebase</code> 命令，这样尽管不能避免伤痛，但能有所缓解。</p>
-<h3 id="变基-vs-合并">变基 vs. 合并</h3>
-<p>至此，你已在实战中学习了变基和合并的用法，你一定会想问，到底哪种方式更好。 在回答这个问题之前，让我们退后一步，想讨论一下提交历史到底意味着什么。</p>
-<p>有一种观点认为，仓库的提交历史即是 <strong>记录实际发生过什么</strong>。 它是针对历史的文档，本身就有价值，不能乱改。 从这个角度看来，改变提交历史是一种亵渎，你使用 <em>谎言</em> 掩盖了实际发生过的事情。 如果由合并产生的提交历史是一团糟怎么办？ 既然事实就是如此，那么这些痕迹就应该被保留下来，让后人能够查阅。</p>
-<p>另一种观点则正好相反，他们认为提交历史是 <strong>项目过程中发生的事</strong>。 没人会出版一本书的第一版草稿，软件维护手册也是需要反复修订才能方便使用。 持这一观点的人会使用 <code>rebase</code> 及 <code>filter-branch</code> 等工具来编写故事，怎么方便后来的读者就怎么写。</p>
-<p>现在，让我们回到之前的问题上来，到底合并还是变基好？希望你能明白，这并没有一个简单的答案。 Git 是一个非常强大的工具，它允许你对提交历史做许多事情，但每个团队、每个项目对此的需求并不相同。 既然你已经分别学习了两者的用法，相信你能够根据实际情况作出明智的选择。</p>
-<p>总的原则是，只对尚未推送或分享给别人的本地修改执行变基操作清理历史， 从不对已推送至别处的提交执行变基操作，这样，你才能享受到两种方式带来的便利。</p>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2017/09/16/git/git-rebase/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2017/09/15/git/git-flow/"
-                            aria-label=": git flow"
-                        >
-                            git flow
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2017-09-15T22:53:48+08:00">
-	
-		    2017 年 9 月 15 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/devops/">devops</a>, <a class="category-link" href="../../categories/devops/git/">git</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <h2 id="Git-Flow">Git Flow</h2>
-<p>Git Flow 是一种基于 Git 的分支模型，旨在帮助团队更好地管理和发布软件。</p>
-<p>Git Flow 由 Vincent Driessen 在 2010 年提出，并通过一套标准的分支命名和工作流程，使开发、测试和发布过程更加有序和高效。</p>
-<p>Git Flow 主要由以下几类分支组成：<code>master</code>、<code>develop</code>、<code>feature</code>、<code>release</code>、<code>hotfix</code>。</p>
-<h2 id="Git-Flow-安装">Git Flow 安装</h2>
-<h3 id="Linux">Linux</h3>
-<p><strong>Debian/Ubuntu:</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install git-flow</span><br></pre></td></tr></table></figure>
-<p><strong>Fedora:</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo dnf install gitflow</span><br><span class="line">sudo apt-get install git-flow</span><br></pre></td></tr></table></figure>
-<h3 id="macOS">macOS</h3>
-<p>在 macOS 上，你可以使用 Homebrew 来安装 Git Flow:</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install git-flow</span><br></pre></td></tr></table></figure>
-<h3 id="源码安装">源码安装</h3>
-<p>如果你的发行版的包管理器中没有 Git Flow，你也可以从源代码进行安装：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/nvie/gitflow.git</span><br><span class="line">cd gitflow</span><br><span class="line">sudo make install</span><br></pre></td></tr></table></figure>
-<p>安装完成后，你可以通过以下命令验证 Git Flow 是否成功安装：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git flow version</span><br></pre></td></tr></table></figure>
-<h3 id="Windows">Windows</h3>
-<p>在 Windows 上，你可以通过以下方式安装 Git Flow：</p>
-<ul>
-<li>
-<p><strong>使用 Git for Windows</strong>: Git for Windows 包含了 Git Flow。你可以从 <a target="_blank" rel="noopener" href="https://gitforwindows.org/">Git for Windows</a> 安装 Git，然后使用 Git Bash 来使用 Git Flow。</p>
-</li>
-<li>
-<p><strong>使用 Scoop</strong>: 如果你使用 Scoop 包管理工具，可以通过以下命令安装 Git Flow：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">scoop install git-flow</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p><strong>使用 Chocolatey</strong>: 如果你使用 Chocolatey 包管理工具，可以通过以下命令安装 Git Flow：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">choco install gitflow</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<hr>
-<h2 id="Git-Flow-分支模型">Git Flow 分支模型</h2>
-<p><strong><code>master</code> 分支</strong>：</p>
-<ul>
-<li>永远保持稳定和可发布的状态。</li>
-<li>每次发布一个新的版本时，都会从 <code>develop</code> 分支合并到 <code>master</code> 分支。</li>
-</ul>
-<p><strong><code>develop</code> 分支</strong>：</p>
-<ul>
-<li>用于集成所有的开发分支。</li>
-<li>代表了最新的开发进度。</li>
-<li>功能分支、发布分支和修复分支都从这里分支出去，最终合并回这里。</li>
-</ul>
-<p><strong><code>feature</code> 分支</strong>：</p>
-<ul>
-<li>用于开发新功能。</li>
-<li>从 <code>develop</code> 分支创建，开发完成后合并回 <code>develop</code> 分支。</li>
-<li>命名规范：<code>feature/feature-name</code>。</li>
-</ul>
-<p><strong><code>release</code> 分支</strong>：</p>
-<ul>
-<li>用于准备新版本的发布。</li>
-<li>从 <code>develop</code> 分支创建，进行最后的测试和修复，然后合并回 <code>develop</code> 和 <code>master</code> 分支，并打上版本标签。</li>
-<li>命名规范：<code>release/release-name</code>。</li>
-</ul>
-<p><strong><code>hotfix</code> 分支</strong>：</p>
-<ul>
-<li>用于修复紧急问题。</li>
-<li>从 <code>master</code> 分支创建，修复完成后合并回 <code>master</code> 和 <code>develop</code> 分支，并打上版本标签。</li>
-<li>命名规范：<code>hotfix/hotfix-name</code>。</li>
-</ul>
-<p><img src="https://www.runoob.com/wp-content/uploads/2024/07/git-flow.png" alt=""></p>
-<h3 id="分支操作原理">分支操作原理</h3>
-<ul>
-<li>Master 分支上的每个 Commit 应打上 Tag，Develop 分支基于 Master 创建。</li>
-<li>Feature 分支完成后合并回 Develop 分支，并通常删除该分支。</li>
-<li>Release 分支基于 Develop 创建，用于测试和修复 Bug，发布后合并回 Master 和 Develop，并打 Tag 标记版本号。</li>
-<li>Hotfix 分支基于 Master 创建，完成后合并回 Master 和 Develop，并打 Tag 1。</li>
-</ul>
-<h3 id="Git-Flow-命令示例">Git Flow 命令示例</h3>
-<ul>
-<li>开始 Feature 分支：<code>git flow feature start MYFEATURE</code></li>
-<li>完成 Feature 分支：<code>git flow feature finish MYFEATURE</code></li>
-<li>开始 Release 分支：<code>git flow release start RELEASE [BASE]</code></li>
-<li>完成 Release 分支：合并到 Master 和 Develop，打 Tag，删除 Release 分支。</li>
-<li>开始 Hotfix 分支：<code>git flow hotfix start HOTFIX [BASE]</code></li>
-<li>完成 Hotfix 分支：合并到 Master 和 Develop，打 Tag，删除 Hotfix 分支。</li>
-</ul>
-<h3 id="Git-Flow-工作流程">Git Flow 工作流程</h3>
-<h4 id="1-初始化-Git-Flow">1. 初始化 Git Flow</h4>
-<p>首先，在项目中初始化 Git Flow。可以使用 Git Flow 插件（例如 <code>git-flow</code>）来简化操作。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git flow init</span><br></pre></td></tr></table></figure>
-<p>初始化时，你需要设置分支命名规则和默认分支。</p>
-<h4 id="2-创建功能分支">2. 创建功能分支</h4>
-<p>当开始开发一个新功能时，从 <code>develop</code> 分支创建一个功能分支。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git flow feature start feature-name</span><br></pre></td></tr></table></figure>
-<p>完成开发后，将功能分支合并回 <code>develop</code> 分支，并删除功能分支。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git flow feature finish feature-name</span><br></pre></td></tr></table></figure>
-<h4 id="3-创建发布分支">3. 创建发布分支</h4>
-<p>当准备发布一个新版本时，从 <code>develop</code> 分支创建一个发布分支。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git flow release start release-name</span><br></pre></td></tr></table></figure>
-<p>在发布分支上进行最后的测试和修复，准备好发布后，将发布分支合并回 <code>develop</code> 和 <code>master</code> 分支，并打上版本标签。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git flow release finish release-name</span><br></pre></td></tr></table></figure>
-<h4 id="4-创建修复分支">4. 创建修复分支</h4>
-<p>当发现需要紧急修复的问题时，从 <code>master</code> 分支创建一个修复分支。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git flow hotfix start hotfix-name</span><br></pre></td></tr></table></figure>
-<p>修复完成后，将修复分支合并回 <code>master</code> 和 <code>develop</code> 分支，并打上版本标签。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git flow hotfix finish hotfix-name</span><br></pre></td></tr></table></figure>
-<h3 id="实例操作">实例操作</h3>
-<p>以下是一个实际使用 Git Flow 的综合实例。</p>
-<p><strong>初始化 Git Flow</strong>：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git flow init</span><br></pre></td></tr></table></figure>
-<p><strong>创建和完成功能分支</strong>：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git flow feature start new-feature # 开发新功能</span><br><span class="line">git flow feature finish new-feature</span><br></pre></td></tr></table></figure>
-<p><strong>创建和完成发布分支</strong>：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git flow release start v1.0.0 # 测试和修复</span><br><span class="line">git flow release finish v1.0.0</span><br></pre></td></tr></table></figure>
-<p><strong>创建和完成修复分支</strong>：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git flow hotfix start hotfix-1.0.1. # 修复紧急问题</span><br><span class="line">git flow hotfix finish hotfix-1.0.1</span><br></pre></td></tr></table></figure>
-<h3 id="优点和缺点">优点和缺点</h3>
-<p><strong>优点</strong></p>
-<ul>
-<li><strong>明确的分支模型</strong>：清晰的分支命名和使用规则，使得开发过程井然有序。</li>
-<li><strong>隔离开发和发布</strong>：开发和发布过程分离，减少了开发中的不确定性对发布的影响。</li>
-<li><strong>版本管理</strong>：每次发布和修复都会打上版本标签，方便回溯和管理。</li>
-</ul>
-<p><strong>缺点</strong></p>
-<ul>
-<li><strong>复杂性</strong>：对于小型团队或简单项目，Git Flow 的分支模型可能显得过于复杂。</li>
-<li><strong>频繁的合并</strong>：在大型团队中，频繁的分支合并可能导致合并冲突增加。</li>
-</ul>
-<p>Git Flow 是一种结构化的分支管理模型，通过定义明确的分支和工作流程，帮助团队更好地管理软件开发和发布过程。虽然它增加了一定的复杂性，但对于大型项目和团队协作，Git Flow 提供了强大的支持和管理能力。</p>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2017/09/15/git/git-flow/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
                             href="../../2017/08/17/database/MySQL-%E4%BD%BF%E7%94%A8-SSL-%E8%BF%9E%E6%8E%A5-%E9%99%84-Docker-%E4%BE%8B%E5%AD%90/"
                             aria-label=": MySQL 使用 SSL 连接(附 Docker 例子)"
                         >
@@ -953,6 +622,242 @@
                         <p>
                             <a
                                 href="../../2017/08/16/database/CentOs7-3-%E5%AE%89%E8%A3%85-MySQL-5-7-19-%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%89%88%E6%9C%AC/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../2017/08/12/git/git%E6%95%99%E7%A8%8B/"
+                            aria-label=": git教程"
+                        >
+                            git教程
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2017-08-12T15:38:45+08:00">
+	
+		    2017 年 8 月 12 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/devops/">devops</a>, <a class="category-link" href="../../categories/devops/git/">git</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h5 id="初始化仓库">初始化仓库:</h5>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git init</span><br></pre></td></tr></table></figure>
+<p>如果当前目录下有几个文件想要纳入版本控制，需要先用 git add 命令告诉 Git 开始对这些文件进行跟踪，然后提交：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git add *.c</span><br><span class="line">$ git add README</span><br><span class="line">$ git commit -m &#x27;initial project version&#x27;</span><br></pre></td></tr></table></figure>
+<p><img src="/assets/images/fileStatusLifecycle.png" alt="image"></p>
+<h5 id="忽略某些文件">忽略某些文件</h5>
+<p>我们可以创建一个名为 .gitignore 的文件，列出要忽略的文件模式。<br>
+文件 .gitignore 的格式规范如下：</p>
+<ul>
+<li>所有空行或者以注释符号 ＃ 开头的行都会被 Git 忽略。</li>
+<li>可以使用标准的 glob 模式匹配。</li>
+<li>匹配模式最后跟反斜杠（/）说明要忽略的是目录。</li>
+<li>要忽略指定模式以外的文件或目录，可以在模式前加上惊叹号（!）取反。</li>
+</ul>
+<p>所谓的 glob 模式是指 shell 所使用的简化了的正则表达式。星号（*）匹配零个或多个任意字符；[abc] 匹配任何一个列在方括号中的字符（这个例子要么匹配一个 a，要么匹配一个 b，要么匹配一个 c）；问号（?）只匹配一个任意字符；如果在方括号中使用短划线分隔两个字符，表示所有在这两个字符范围内的都可以匹配（比如 [0-9] 表示匹配所有 0 到 9 的数字）。</p>
+<p>我们再看一个 .gitignore 文件的例子：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># 此为注释 – 将被 Git 忽略</span><br><span class="line"># 忽略所有 .a 结尾的文件</span><br><span class="line">*.a</span><br><span class="line"># 但 lib.a 除外</span><br><span class="line">!lib.a</span><br><span class="line"># 仅仅忽略项目根目录下的 TODO 文件，不包括 subdir/TODO</span><br><span class="line">/TODO</span><br><span class="line"># 忽略 build/ 目录下的所有文件</span><br><span class="line">build/</span><br><span class="line"># 会忽略 doc/notes.txt 但不包括 doc/server/arch.txt</span><br><span class="line">doc/*.txt</span><br><span class="line"># 忽略 doc/ 目录下所有扩展名为 txt 的文件</span><br><span class="line">doc/**/*.txt</span><br></pre></td></tr></table></figure>
+<h5 id="跟踪新文件">跟踪新文件</h5>
+<p>使用命令 git add 开始跟踪一个新文件。所以，要跟踪 README 文件，运行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git add README</span><br></pre></td></tr></table></figure>
+<h5 id="提交更新">提交更新</h5>
+<p>每次准备提交前，先用 git status 看下，是不是都已暂存起来了，然后再运行提交命令 git commit：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git commit</span><br></pre></td></tr></table></figure>
+<p>这种方式会启动文本编辑器以便输入本次提交的说明。（默认会启用 shell 的环境变量 $EDITOR 所指定的软件，一般都是 vim 或 emacs。当然也可以按照第一章介绍的方式，使用 ++git config --global core.editor++ 命令设定你喜欢的编辑软件。）</p>
+<p>默认的提交消息包含最后一次运行 git status 的输出，放在注释行里，另外开头还有一空行，供你输入提交说明。你完全可以去掉这些注释行，不过留着也没关系，多少能帮你回想起这次更新的内容有哪些。（如果觉得这还不够，可以用 -v 选项将修改差异的每一行都包含到注释中来。）退出编辑器时，Git 会丢掉注释行，将说明内容和本次更新提交到仓库。</p>
+<p>另外也可以用 +±m++ 参数后跟提交说明的方式，在一行命令中提交更新：</p>
+<p>跳过使用暂存区域<br>
+Git 提供了一个跳过使用暂存区域的方式，只要在提交的时候，给 <strong>git commit 加上 -a</strong> 选项，Git 就会自动把所有已经跟踪过的文件暂存起来一并提交，从而跳过 git add 步骤</p>
+<h5 id="移除文件">移除文件</h5>
+<p>要从 Git 中移除某个文件，就必须要从已跟踪文件清单中移除（确切地说，是从暂存区域移除），然后提交。可以用 <strong>git rm</strong> 命令完成此项工作，并连带从工作目录中删除指定的文件，这样以后就不会出现在未跟踪文件清单中了。</p>
+<h5 id="移动文件">移动文件</h5>
+<p>要在 Git 中对文件改名，可以这么做：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git mv file_from file_to</span><br></pre></td></tr></table></figure>
+<p>运行 git mv 就相当于运行了下面三条命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ mv README.txt README</span><br><span class="line">$ git rm README.txt</span><br><span class="line">$ git add README</span><br></pre></td></tr></table></figure>
+<h5 id="查看提交历史">查看提交历史</h5>
+<p>默认不用任何参数的话，git log 会按提交时间列出所有的更新，最近的更新排在最上面。看到了吗，每次更新都有一个 SHA-1 校验和、作者的名字和电子邮件地址、提交时间，最后缩进一个段落显示提交说明。</p>
+<p>git log 有许多选项可以帮助你搜寻感兴趣的提交，接下来我们介绍些最常用的。</p>
+<p>我们常用 -p 选项展开显示每次提交的内容差异，用 -2 则仅显示最近的两次更新</p>
+<p>某些时候，单词层面的对比，比行层面的对比，更加容易观察。Git 提供了 +±-word-diff++ 选项。我们可以将其添加到 ++git log -p++ 命令的后面，从而获取单词层面上的对比。在程序代码中进行单词层面的对比常常是没什么用的。不过当你需要在书籍、论文这种很大的文本文件上进行对比的时候，这个功能就显出用武之地了。</p>
+<p>另外，git log 还提供了许多摘要选项可以用，比如 --stat，仅显示简要的增改行数统计</p>
+<p>用 oneline 或 format 时结合 --graph 选项，可以看到开头多出一些 ASCII 字符串表示的简单图形，形象地展示了每个提交所在的分支及其分化衍合情况。</p>
+<p>另外还有按照时间作限制的选项，比如 --since 和 --until。</p>
+<h5 id="撤消操作">撤消操作</h5>
+<p>有时候我们提交完了才发现漏掉了几个文件没有加，或者提交信息写错了。想要撤消刚才的提交操作，可以使用 --amend 选项重新提交：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git commit --amend</span><br></pre></td></tr></table></figure>
+<p><a target="_blank" rel="noopener" href="https://git-scm.com/book/zh/v1/Git-%E5%9F%BA%E7%A1%80-%E6%92%A4%E6%B6%88%E6%93%8D%E4%BD%9C">撤消操作</a></p>
+<h5 id="远程仓库的使用">远程仓库的使用</h5>
+<p>查看当前的远程库<br>
+要查看当前配置有哪些远程仓库，可以用 git remote 命令，它会列出每个远程库的简短名字。<br>
+也可以加上 -v 选项（译注：此为 --verbose 的简写，取首字母），显示对应的克隆地址</p>
+<p>添加远程仓库</p>
+<p>要添加一个新的远程仓库，可以指定一个简单的名字，以便将来引用，运行</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote add [shortname] [url]：</span><br></pre></td></tr></table></figure>
+<p>现在可以用字符串 pb 指代对应的仓库地址了。比如说，要抓取所有 Paul 有的，但本地仓库没有的信息，可以运行 git fetch pb</p>
+<p>从远程仓库抓取数据</p>
+<p>正如之前所看到的，可以用下面的命令从远程仓库抓取数据到本地：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git fetch [remote-name]</span><br></pre></td></tr></table></figure>
+<p>推送数据到远程仓库</p>
+<p>目进行到一个阶段，要同别人分享目前的成果，可以将本地仓库中的数据推送到远程仓库。实现这个任务的命令很简单：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push [remote-name] [branch-name]。</span><br></pre></td></tr></table></figure>
+<p>如果要把本地的 master 分支推送到 origin 服务器上（再次说明下，克隆操作会自动使用默认的 master 和 origin 名字），可以运行下面的命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git push origin master</span><br></pre></td></tr></table></figure>
+<p>查看远程仓库信息<br>
+我们可以通过命令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote show [remote-name]</span><br></pre></td></tr></table></figure>
+<p>查看某个远程仓库的详细信息</p>
+<p>远程仓库的删除和重命名<br>
+在新版 Git 中可以用 git remote rename 命令修改某个远程仓库在本地的简称，比如想把 pb 改成 paul，可以这么运行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ git remote rename pb paul</span><br><span class="line">$ git remote</span><br><span class="line">origin</span><br><span class="line">paul</span><br></pre></td></tr></table></figure>
+<p>碰到远端仓库服务器迁移，或者原来的克隆镜像不再使用，又或者某个参与者不再贡献代码，那么需要移除对应的远端仓库，可以运行 git remote rm 命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git remote rm paul</span><br><span class="line">$ git remote</span><br><span class="line">origin</span><br></pre></td></tr></table></figure>
+<h5 id="打标签">打标签</h5>
+<p><a target="_blank" rel="noopener" href="https://git-scm.com/book/zh/v1/Git-%E5%9F%BA%E7%A1%80-%E6%89%93%E6%A0%87%E7%AD%BE/">打标签</a></p>
+<h5 id="Git-命令别名">Git 命令别名</h5>
+<p>Git 并不会推断你输入的几个字符将会是哪条命令，不过如果想偷懒，少敲几个命令的字符，可以用 git config 为命令设置别名。来看看下面的例子：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ git config --global alias.co checkout</span><br><span class="line">$ git config --global alias.br branch</span><br><span class="line">$ git config --global alias.ci commit</span><br><span class="line">$ git config --global alias.st status</span><br></pre></td></tr></table></figure>
+<p>取消暂存文件时的输入比较繁琐，可以自己设置一下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git config --global alias.unstage &#x27;reset HEAD --&#x27;</span><br></pre></td></tr></table></figure>
+<p>这样一来，下面的两条命令完全等同：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git unstage fileA</span><br><span class="line">$ git reset HEAD fileA</span><br></pre></td></tr></table></figure>
+<p>显然，使用别名的方式看起来更清楚。另外，我们还经常设置 last 命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git config --global alias.last &#x27;log -1 HEAD&#x27;</span><br></pre></td></tr></table></figure>
+<p>然后要看最后一次的提交信息，就变得简单多了</p>
+<h5 id="分支的新建与切换">分支的新建与切换</h5>
+<p>要新建并切换到该分支，运行 git checkout 并加上 -b 参数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git checkout -b iss53</span><br><span class="line">Switched to a new branch &#x27;iss53&#x27;</span><br></pre></td></tr></table></figure>
+<p>回到 master 分支并把它合并进来，然后发布到生产服务器。用 git merge 命令来进行合并：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ git checkout master</span><br><span class="line">$ git merge hotfix</span><br><span class="line">Updating f42c576..3a0874c</span><br><span class="line">Fast-forward</span><br><span class="line"> README | 1 -</span><br><span class="line"> 1 file changed, 1 deletion(-)</span><br></pre></td></tr></table></figure>
+<p>这相当于执行下面这两条命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git branch iss53</span><br><span class="line">$ git checkout iss53</span><br></pre></td></tr></table></figure>
+<p>如果顺着一个分支走下去可以到达另一个分支的话，那么 Git 在合并两者时，只会简单地把指针右移，因为这种单线的历史分支不存在任何需要解决的分歧，所以这种合并过程可以称为快进（Fast forward）。</p>
+<p>合并之后，master 分支和 hotfix 分支指向同一位置。<br>
+由于当前 hotfix 分支和 master 都指向相同的提交对象，所以 hotfix 已经完成了历史使命，可以删掉了。使用 git branch 的 -d 选项执行删除操作：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git branch -d hotfix</span><br><span class="line">Deleted branch hotfix (was 3a0874c).</span><br></pre></td></tr></table></figure>
+<h5 id="遇到冲突时的分支合并">遇到冲突时的分支合并</h5>
+<p>有时候合并操作并不会如此顺利。如果在不同的分支中都修改了同一个文件的同一部分，Git 就无法干净地把两者合到一起（译注：逻辑上说，这种问题只能由人来裁决。）。<br>
+Git 作了合并，但没有提交，它会停下来等你解决冲突。要看看哪些文件在合并时发生冲突，可以用 <strong>git status</strong> 查阅</p>
+<p>任何包含未解决冲突的文件都会以未合并（unmerged）的状态列出。Git 会在有冲突的文件里加入标准的冲突解决标记，可以通过它们来手工定位并解决这些冲突。可以看到此文件包含类似下面这样的部分：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</span><br><span class="line">&lt;div id=&quot;footer&quot;&gt;contact : email.support@github.com&lt;/div&gt;</span><br><span class="line">=======</span><br><span class="line">&lt;div id=&quot;footer&quot;&gt;</span><br><span class="line">  please contact us at support@github.com</span><br><span class="line">&lt;/div&gt;</span><br><span class="line">&gt;&gt;&gt;&gt;&gt;&gt;&gt; iss53</span><br></pre></td></tr></table></figure>
+<p>可以看到 ======= 隔开的上半部分，是 HEAD（即 master 分支，在运行 merge 命令时所切换到的分支）中的内容，下半部分是在 iss53 分支中的内容。解决冲突的办法无非是二者选其一或者由你亲自整合到一起。比如你可以通过把这段内容替换为下面这样来解决：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;div id=&quot;footer&quot;&gt;</span><br><span class="line">please contact us at email.support@github.com</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+<p>这个解决方案各采纳了两个分支中的一部分内容，而且我还删除了 &lt;&lt;&lt;&lt;&lt;&lt;&lt;，======= 和 &gt;&gt;&gt;&gt;&gt;&gt;&gt; 这些行。在解决了所有文件里的所有冲突后，运行 git add 将把它们标记为已解决状态（译注：实际上就是来一次快照保存到暂存区域。）。</p>
+<p>再运行一次 git status 来确认所有冲突都已解决：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ git status</span><br><span class="line">On branch master</span><br><span class="line">Changes to be committed:</span><br><span class="line">  (use &quot;git reset HEAD &lt;file&gt;...&quot; to unstage)</span><br><span class="line"></span><br><span class="line">        modified:   index.html</span><br></pre></td></tr></table></figure>
+<p>如果觉得满意了，并且确认所有冲突都已解决，也就是进入了暂存区，就可以用 git commit 来完成这次合并提交。提交的记录差不多是这样：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Merge branch &#x27;iss53&#x27;</span><br><span class="line"></span><br><span class="line">Conflicts:</span><br><span class="line">  index.html</span><br><span class="line">#</span><br><span class="line"># It looks like you may be committing a merge.</span><br><span class="line"># If this is not correct, please remove the file</span><br><span class="line">#       .git/MERGE_HEAD</span><br><span class="line"># and try again.</span><br><span class="line">#</span><br></pre></td></tr></table></figure>
+<h5 id="查看当前的远程库">查看当前的远程库</h5>
+<p>要查看当前配置有哪些远程仓库，可以用 git remote 命令，它会列出每个远程库的简短名字。<br>
+可以加上 -v 选项（译注：此为 --verbose 的简写，取首字母），显示对应的克隆地址</p>
+<h5 id="添加远程仓库">添加远程仓库</h5>
+<p>要添加一个新的远程仓库，可以指定一个简单的名字，以便将来引用，运行</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote add [shortname] [url]：</span><br></pre></td></tr></table></figure>
+<h5 id="从远程仓库抓取数据">从远程仓库抓取数据</h5>
+<p>正如之前所看到的，可以用下面的命令从远程仓库抓取数据到本地：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git fetch [remote-name]</span><br></pre></td></tr></table></figure>
+<p>推送数据到远程仓库<br>
+项目进行到一个阶段，要同别人分享目前的成果，可以将本地仓库中的数据推送到远程仓库。实现这个任务的命令很简单： git push [remote-name] [branch-name]。如果要把本地的 master 分支推送到 origin 服务器上（再次说明下，克隆操作会自动使用默认的 master 和 origin 名字），可以运行下面的命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git push origin master</span><br></pre></td></tr></table></figure>
+<p>只有在所克隆的服务器上有写权限，或者同一时刻没有其他人在推数据，这条命令才会如期完成任务。如果在你推数据前，已经有其他人推送了若干更新，那你的推送操作就会被驳回。你必须先把他们的更新抓取到本地，合并到自己的项目中，然后才可以再次推送。</p>
+<p>查看远程仓库信息<br>
+我们可以通过命令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote show [remote-name]</span><br></pre></td></tr></table></figure>
+<p>查看某个远程仓库的详细信息</p>
+<h1></h1>
+<p>远程仓库的删除和重命名<br>
+在新版 Git 中可以用 git remote rename 命令修改某个远程仓库在本地的简称，比如想把 pb 改成 paul，可以这么运行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ git remote rename pb paul</span><br><span class="line">$ git remote</span><br><span class="line">origin</span><br><span class="line">paul</span><br></pre></td></tr></table></figure>
+<p>注意，对远程仓库的重命名，也会使对应的分支名称发生变化，原来的 pb/master 分支现在成了 paul/master。</p>
+<p>碰到远端仓库服务器迁移，或者原来的克隆镜像不再使用，又或者某个参与者不再贡献代码，那么需要移除对应的远端仓库，可以运行 git remote rm 命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git remote rm paul</span><br><span class="line">$ git remote</span><br><span class="line">origin</span><br></pre></td></tr></table></figure>
+<h5 id="远程分支">远程分支</h5>
+<p>我们用 ==(远程仓库名)/(分支名)== 这样的形式表示远程分支。比如我们想看看上次同 origin 仓库通讯时 master 分支的样子，就应该查看 origin/master 分支。如果你和同伴一起修复某个问题，但他们先推送了一个 iss53 分支到远程仓库，虽然你可能也有一个本地的 iss53 分支，但指向服务器上最新更新的却应该是 origin/iss53 分支。</p>
+<p>可以运行 git fetch origin 来同步远程服务器上的数据到本地。该命令首先找到 origin 是哪个服务器（本例为 <a target="_blank" rel="noopener" href="http://git.ourcompany.com">git.ourcompany.com</a>），从上面获取你尚未拥有的数据，更新你本地的数据库，然后把 origin/master 的指针移到它最新的位置上<br>
+<img src="/assets/images/gitfetch.png" alt="image"></p>
+<p>为了演示拥有多个远程分支（在不同的远程服务器上）的项目是如何工作的，我们假设你还有另一个仅供你的敏捷开发小组使用的内部服务器 <a target="_blank" rel="noopener" href="http://git.team1.ourcompany.com">git.team1.ourcompany.com</a>。可以用第二章中提到的 git remote add 命令把它加为当前项目的远程分支之一。我们把它命名为 teamone，以便代替完整的 Git URL 以方便使用<br>
+<img src="/assets/images/gitaddremote.png" alt="image"><br>
+现在你可以用 git fetch teamone 来获取小组服务器上你还没有的数据了。由于当前该服务器上的内容是你 origin 服务器上的子集，Git 不会下载任何数据，而只是简单地创建一个名为 teamone/master 的远程分支，指向 teamone 服务器上 master 分支所在的提交对象 31b8e（见图 3-26）。</p>
+<p><img src="/assets/images/gitfetchremote.png" alt="image"></p>
+<h5 id="推送本地分支">推送本地分支</h5>
+<p>要想和其他人分享某个本地分支，你需要把它推送到一个你拥有写权限的远程仓库。你创建的本地分支不会因为你的写入操作而被自动同步到你引入的远程服务器上，你需要明确地执行推送分支的操作。</p>
+<p>如果你有个叫 serverfix 的分支需要和他人一起开发，可以运行 git push (远程仓库名) (分支名)：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ git push origin serverfix</span><br><span class="line">Counting objects: 20, done.</span><br><span class="line">Compressing objects: 100% (14/14), done.</span><br><span class="line">Writing objects: 100% (15/15), 1.74 KiB, done.</span><br><span class="line">Total 15 (delta 5), reused 0 (delta 0)</span><br><span class="line">To git@github.com:schacon/simplegit.git</span><br><span class="line"> * [new branch]      serverfix -&gt; serverfix</span><br></pre></td></tr></table></figure>
+<p>这里其实走了一点捷径。Git 自动把 serverfix 分支名扩展为 refs/heads/serverfix:refs/heads/serverfix，意为“取出我在本地的 serverfix 分支，推送到远程仓库的 serverfix 分支中去”。</p>
+<p>也可以运行 ==git push origin serverfix:serverfix== 来实现相同的效果，它的意思是“上传我本地的 serverfix 分支到远程仓库中去，仍旧称它为 serverfix 分支”。通过此语法，你可以把本地分支推送到某个命名不同的远程分支：若想把远程分支叫作 awesomebranch，可以用 git push origin serverfix:awesomebranch 来推送数据。</p>
+<h5 id="跟踪远程分支">跟踪远程分支</h5>
+<p>从远程分支 checkout 出来的本地分支，称为 跟踪分支 (tracking branch)。跟踪分支是一种和某个远程分支有直接联系的本地分支。在跟踪分支里输入 git push，Git 会自行推断应该向哪个服务器的哪个分支推送数据。同样，在这些分支里运行 git pull 会获取所有远程索引，并把它们的数据都合并到本地分支中来。</p>
+<p>在克隆仓库时，Git 通常会自动创建一个名为 master 的分支来跟踪 origin/master。这正是 git push 和 git pull 一开始就能正常工作的原因。当然，你可以随心所欲地设定为其它跟踪分支，比如 origin 上除了 master 之外的其它分支。刚才我们已经看到了这样的一个例子：git checkout -b [分支名] [远程名]/[分支名]。如果你有 1.6.2 以上版本的 Git，还可以用 --track 选项简化：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git checkout --track origin/serverfix</span><br><span class="line">Branch serverfix set up to track remote branch serverfix from origin.</span><br><span class="line">Switched to a new branch &#x27;serverfix&#x27;</span><br></pre></td></tr></table></figure>
+<p>要为本地分支设定不同于远程分支的名字，只需在第一个版本的命令里换个名字：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git checkout -b sf origin/serverfix</span><br><span class="line">Branch sf set up to track remote branch serverfix from origin.</span><br><span class="line">Switched to a new branch &#x27;sf&#x27;</span><br></pre></td></tr></table></figure>
+<p>现在你的本地分支 sf 会自动将推送和抓取数据的位置定位到 origin/serverfix 了</p>
+<h5 id="删除远程分支">删除远程分支</h5>
+<p>如果不再需要某个远程分支了，比如搞定了某个特性并把它合并进了远程的 master 分支（或任何其他存放稳定代码的分支），可以用这个非常无厘头的语法来删除它：git push [远程名] :[分支名]。如果想在服务器上删除 serverfix 分支，运行下面的命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git push origin :serverfix</span><br><span class="line">To git@github.com:schacon/simplegit.git</span><br><span class="line"> - [deleted]         serverfix</span><br></pre></td></tr></table></figure>
+<p>咚！服务器上的分支没了。你最好特别留心这一页，因为你一定会用到那个命令，而且你很可能会忘掉它的语法。有种方便记忆这条命令的方法：==记住我们不久前见过的 git push [远程名] [本地分支]:[远程分支] 语法，如果省略 [本地分支]，那就等于是在说“在这里提取空白然后把它变成[远程分支]”==。</p>
+<h5 id="解决远程分支和本地冲突">解决远程分支和本地冲突</h5>
+<p>1.先将本地修改储存起来</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git stash</span><br></pre></td></tr></table></figure>
+<p>2.pull内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git pull</span><br></pre></td></tr></table></figure>
+<p>3.还原暂存内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git stash pop stash@&#123;0&#125;</span><br></pre></td></tr></table></figure>
+<p>4.解决冲突</p>
+<p>5.提交</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git commit -m &#x27;&#x27;</span><br></pre></td></tr></table></figure>
+<ol start="6">
+<li>打标签</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git tag v1.1 -m &#x27;&#x27;</span><br></pre></td></tr></table></figure>
+<p>7.列标签</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git tag -l</span><br></pre></td></tr></table></figure>
+<p>8.获取标签代码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout </span><br></pre></td></tr></table></figure>
+<p>9.提交标签到远程端</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push tag </span><br></pre></td></tr></table></figure>
+<h5 id="拉取本地没有的远程分支">拉取本地没有的远程分支</h5>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -b 本地分支名 origin/远程分支名</span><br></pre></td></tr></table></figure>
+<p><a target="_blank" rel="noopener" href="https://git-scm.com/book/zh/v1/Git-%E5%88%86%E6%94%AF-%E5%88%86%E6%94%AF%E7%9A%84%E5%8F%98%E5%9F%BA/">后续:变基rebase</a></p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2017/08/12/git/git%E6%95%99%E7%A8%8B/#post-footer"
                                 class="postShorten-excerpt_link link"
                                 aria-label=""
                             >
@@ -2078,6 +1983,265 @@
         
     </article>
     
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/"
+                            aria-label=": 17.python访问数据库"
+                        >
+                            17.python访问数据库
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2016-04-30T23:10:34+08:00">
+	
+		    2016 年 4 月 30 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/python/">python</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <p>程序运行的时候，数据都是在内存中的。当程序终止的时候，通常都需要将数据保存到磁盘上，无论是保存到本地磁盘，还是通过网络保存到服务器上，最终都会将数据写入磁盘文件。</p>
+<p>而如何定义数据的存储格式就是一个大问题。如果我们自己来定义存储格式，比如保存一个班级所有学生的成绩单：</p>
+<table>
+<thead>
+<tr>
+<th>名字</th>
+<th>成绩</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Michael</td>
+<td>99</td>
+</tr>
+<tr>
+<td>Bob</td>
+<td>85</td>
+</tr>
+<tr>
+<td>Bart</td>
+<td>59</td>
+</tr>
+<tr>
+<td>Lisa</td>
+<td>87</td>
+</tr>
+</tbody>
+</table>
+<p>我们可以用一个文本文件保存，一行保存一个学生，用<code>,</code>隔开：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Michael,99</span><br><span class="line">Bob,85</span><br><span class="line">Bart,59</span><br><span class="line">Lisa,87</span><br></pre></td></tr></table></figure>
+<p>还可以用JSON格式保存，也是文本文件：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Michael&quot;</span><span class="punctuation">,</span><span class="attr">&quot;score&quot;</span><span class="punctuation">:</span><span class="number">99</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Bob&quot;</span><span class="punctuation">,</span><span class="attr">&quot;score&quot;</span><span class="punctuation">:</span><span class="number">85</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Bart&quot;</span><span class="punctuation">,</span><span class="attr">&quot;score&quot;</span><span class="punctuation">:</span><span class="number">59</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Lisa&quot;</span><span class="punctuation">,</span><span class="attr">&quot;score&quot;</span><span class="punctuation">:</span><span class="number">87</span><span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">]</span></span><br></pre></td></tr></table></figure>
+<p>还可以定义各种保存格式，但是问题来了：</p>
+<p>存储和读取需要自己实现，JSON还是标准，自己定义的格式就各式各样了；</p>
+<p>不能做快速查询，只有把数据全部读到内存中才能自己遍历，但有时候数据的大小远远超过了内存，根本无法全部读入内存。</p>
+<p>为了便于程序保存和读取数据，而且，能直接通过条件快速查询到指定的数据，就出现了数据库（Database）这种专门用于集中存储和查询的软件。</p>
+<p>数据库软件诞生的历史非常久远，早在1950年数据库就诞生了。经历了网状数据库，层次数据库，我们现在广泛使用的关系数据库是20世纪70年代基于关系模型的基础上诞生的。</p>
+<p>关系模型有一套复杂的数学理论，但是从概念上是十分容易理解的。举个学校的例子：</p>
+<p>假设某个XX省YY市ZZ县第一实验小学有3个年级，要表示出这3个年级，可以在Excel中用一个表格画出来：</p>
+<p><img src="https://liaoxuefeng.com/books/python/database/table_grade.jpg" alt="grade"></p>
+<p>每个年级又有若干个班级，要把所有班级表示出来，可以在Excel中再画一个表格：</p>
+<p><img src="https://liaoxuefeng.com/books/python/database/table_class.jpg" alt="class"></p>
+<p>这两个表格有个映射关系，就是根据Grade_ID可以在班级表中查找到对应的所有班级：</p>
+<p><img src="https://liaoxuefeng.com/books/python/database/table_relationship.jpg" alt="grade-classes"></p>
+<p>也就是Grade表的每一行对应Class表的多行，在关系数据库中，这种基于表（Table）的一对多的关系就是关系数据库的基础。</p>
+<p>根据某个年级的ID就可以查找所有班级的行，这种查询语句在关系数据库中称为SQL语句，可以写成：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> classes <span class="keyword">WHERE</span> grade_id <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span>;</span><br></pre></td></tr></table></figure>
+<p>结果也是一个表：</p>
+<table>
+<thead>
+<tr>
+<th>grade_id</th>
+<th>class_id</th>
+<th>name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>11</td>
+<td>一年级一班</td>
+</tr>
+<tr>
+<td>1</td>
+<td>12</td>
+<td>一年级二班</td>
+</tr>
+<tr>
+<td>1</td>
+<td>13</td>
+<td>一年级三班</td>
+</tr>
+</tbody>
+</table>
+<p>类似的，Class表的一行记录又可以关联到Student表的多行记录：</p>
+<p><img src="https://liaoxuefeng.com/books/python/database/table_relationship2.jpg" alt="class-students"></p>
+<p>由于本教程不涉及到关系数据库的详细内容，如果你想从零学习关系数据库和基本的SQL语句，请参考<a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/sql/index.html">SQL教程</a>。</p>
+<h3 id="NoSQL">NoSQL</h3>
+<p>你也许还听说过NoSQL数据库，很多NoSQL宣传其速度和规模远远超过关系数据库，所以很多同学觉得有了NoSQL是否就不需要SQL了呢？千万不要被他们忽悠了，连SQL都不明白怎么可能搞明白NoSQL呢？</p>
+<h3 id="数据库类别">数据库类别</h3>
+<p>既然我们要使用关系数据库，就必须选择一个关系数据库。目前广泛使用的关系数据库也就这么几种：</p>
+<p>付费的商用数据库：</p>
+<ul>
+<li>Oracle，典型的高富帅；</li>
+<li>SQL Server，微软自家产品，Windows定制专款；</li>
+<li>DB2，IBM的产品，听起来挺高端；</li>
+<li>Sybase，曾经跟微软是好基友，后来关系破裂，现在家境惨淡。</li>
+</ul>
+<p>这些数据库都是不开源而且付费的，最大的好处是花了钱出了问题可以找厂家解决，不过在Web的世界里，常常需要部署成千上万的数据库服务器，当然不能把大把大把的银子扔给厂家，所以，无论是Google、Facebook，还是国内的BAT，无一例外都选择了免费的开源数据库：</p>
+<ul>
+<li>MySQL，大家都在用，一般错不了；</li>
+<li>PostgreSQL，学术气息有点重，其实挺不错，但知名度没有MySQL高；</li>
+<li>SQLite，嵌入式数据库，适合桌面和移动应用。</li>
+</ul>
+<p>作为一个Python工程师，选择哪个免费数据库呢？这里我们会介绍SQLite和MySQL，SQLite适合作为嵌入式数据库，优点是不用安装任何软件，直接能用。生产环境下，应当选择MySQL或者PostgreSQL。</p>
+<p>SQLite是一种嵌入式数据库，它的数据库就是一个文件。由于SQLite本身是C写的，而且体积很小，所以，经常被集成到各种应用程序中，甚至在iOS和Android的App中都可以集成。</p>
+<p>Python就内置了SQLite3，所以，在Python中使用SQLite，不需要安装任何东西，直接使用。</p>
+<p>在使用SQLite前，我们先要搞清楚几个概念：</p>
+<p>表是数据库中存放关系数据的集合，一个数据库里面通常都包含多个表，比如学生的表，班级的表，学校的表，等等。表和表之间通过外键关联。</p>
+<p>要操作关系数据库，首先需要连接到数据库，一个数据库连接称为<code>Connection</code>；</p>
+<p>连接到数据库后，需要打开游标，称之为<code>Cursor</code>，通过<code>Cursor</code>执行SQL语句，然后，获得执行结果。</p>
+<p>Python定义了一套操作数据库的API接口，任何数据库要连接到Python，只需要提供符合Python标准的数据库驱动即可。</p>
+<p>由于SQLite的驱动内置在Python标准库中，所以我们可以直接来操作SQLite数据库。</p>
+<p>我们在Python交互式命令行实践一下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"># 导入SQLite驱动:</span><br><span class="line">&gt;&gt;&gt; import sqlite3</span><br><span class="line"># 连接到SQLite数据库</span><br><span class="line"># 数据库文件是test.db</span><br><span class="line"># 如果文件不存在，会自动在当前目录创建:</span><br><span class="line">&gt;&gt;&gt; conn = sqlite3.connect(&#x27;test.db&#x27;)</span><br><span class="line"># 创建一个Cursor:</span><br><span class="line">&gt;&gt;&gt; cursor = conn.cursor()</span><br><span class="line"># 执行一条SQL语句，创建user表:</span><br><span class="line">&gt;&gt;&gt; cursor.execute(&#x27;create table user (id varchar(20) primary key, name varchar(20))&#x27;)</span><br><span class="line">&lt;sqlite3.Cursor object at 0x10f8aa260&gt;</span><br><span class="line"># 继续执行一条SQL语句，插入一条记录:</span><br><span class="line">&gt;&gt;&gt; cursor.execute(&#x27;insert into user (id, name) values (\&#x27;1\&#x27;, \&#x27;Michael\&#x27;)&#x27;)</span><br><span class="line">&lt;sqlite3.Cursor object at 0x10f8aa260&gt;</span><br><span class="line"># 通过rowcount获得插入的行数:</span><br><span class="line">&gt;&gt;&gt; cursor.rowcount</span><br><span class="line">1</span><br><span class="line"># 提交事务:</span><br><span class="line">&gt;&gt;&gt; conn.commit()</span><br><span class="line"># 关闭Cursor:</span><br><span class="line">&gt;&gt;&gt; cursor.close()</span><br><span class="line"># 关闭Connection:</span><br><span class="line">&gt;&gt;&gt; conn.close()</span><br></pre></td></tr></table></figure>
+<p>我们再试试查询记录：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; conn = sqlite3.connect(&#x27;test.db&#x27;)</span><br><span class="line">&gt;&gt;&gt; cursor = conn.cursor()</span><br><span class="line"># 执行查询语句:</span><br><span class="line">&gt;&gt;&gt; cursor.execute(&#x27;select * from user where id=?&#x27;, (&#x27;1&#x27;,))</span><br><span class="line">&lt;sqlite3.Cursor object at 0x10f8aa340&gt;</span><br><span class="line"># 获得查询结果集:</span><br><span class="line">&gt;&gt;&gt; values = cursor.fetchall()</span><br><span class="line">&gt;&gt;&gt; values</span><br><span class="line">[(&#x27;1&#x27;, &#x27;Michael&#x27;)]</span><br><span class="line">&gt;&gt;&gt; cursor.close()</span><br><span class="line">&gt;&gt;&gt; conn.close()</span><br></pre></td></tr></table></figure>
+<p>使用Python的DB-API时，只要搞清楚<code>Connection</code>和<code>Cursor</code>对象，打开后一定记得关闭，就可以放心地使用。</p>
+<p>使用<code>Cursor</code>对象执行<code>insert</code>，<code>update</code>，<code>delete</code>语句时，执行结果由<code>rowcount</code>返回影响的行数，就可以拿到执行结果。</p>
+<p>使用<code>Cursor</code>对象执行<code>select</code>语句时，通过<code>fetchall()</code>可以拿到结果集。结果集是一个<code>list</code>，每个元素都是一个<code>tuple</code>，对应一行记录。</p>
+<p>如果SQL语句带有参数，那么需要把参数按照位置传递给<code>execute()</code>方法，有几个<code>?</code>占位符就必须对应几个参数，例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cursor.execute(&#x27;select * from user where name=? and pwd=?&#x27;, (&#x27;abc&#x27;, &#x27;password&#x27;))</span><br></pre></td></tr></table></figure>
+<p>SQLite支持常见的标准SQL语句以及几种常见的数据类型。具体文档请参阅SQLite官方网站。</p>
+<h3 id="小结">小结</h3>
+<p>在Python中操作数据库时，要先导入数据库对应的驱动，然后，通过<code>Connection</code>对象和<code>Cursor</code>对象操作数据。</p>
+<p>要确保打开的<code>Connection</code>对象和<code>Cursor</code>对象都正确地被关闭，否则，资源就会泄露。</p>
+<p>如何才能确保出错的情况下也关闭掉<code>Connection</code>对象和<code>Cursor</code>对象呢？请回忆<code>try:...except:...finally:...</code>的用法。</p>
+<h3 id="练习">练习</h3>
+<p>请编写函数，在Sqlite中根据分数段查找指定的名字：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os, sqlite3</span><br><span class="line"></span><br><span class="line">db_file = os.path.join(os.path.dirname(__file__), <span class="string">&#x27;test.db&#x27;</span>)</span><br><span class="line"><span class="keyword">if</span> os.path.isfile(db_file):</span><br><span class="line">    os.remove(db_file)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始数据:</span></span><br><span class="line">conn = sqlite3.connect(db_file)</span><br><span class="line">cursor = conn.cursor()</span><br><span class="line">cursor.execute(<span class="string">&#x27;create table user(id varchar(20) primary key, name varchar(20), score int)&#x27;</span>)</span><br><span class="line">cursor.execute(<span class="string">r&quot;insert into user values (&#x27;A-001&#x27;, &#x27;Adam&#x27;, 95)&quot;</span>)</span><br><span class="line">cursor.execute(<span class="string">r&quot;insert into user values (&#x27;A-002&#x27;, &#x27;Bart&#x27;, 62)&quot;</span>)</span><br><span class="line">cursor.execute(<span class="string">r&quot;insert into user values (&#x27;A-003&#x27;, &#x27;Lisa&#x27;, 78)&quot;</span>)</span><br><span class="line">conn.commit()</span><br><span class="line">cursor.close()</span><br><span class="line">conn.close()</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_score_in</span>(<span class="params">low, high</span>):</span><br><span class="line">    <span class="string">&#x27; 返回指定分数区间的名字，按分数从低到高排序 &#x27;</span></span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试:</span></span><br><span class="line"><span class="keyword">assert</span> get_score_in(<span class="number">80</span>, <span class="number">95</span>) == [<span class="string">&#x27;Adam&#x27;</span>], get_score_in(<span class="number">80</span>, <span class="number">95</span>)</span><br><span class="line"><span class="keyword">assert</span> get_score_in(<span class="number">60</span>, <span class="number">80</span>) == [<span class="string">&#x27;Bart&#x27;</span>, <span class="string">&#x27;Lisa&#x27;</span>], get_score_in(<span class="number">60</span>, <span class="number">80</span>)</span><br><span class="line"><span class="keyword">assert</span> get_score_in(<span class="number">60</span>, <span class="number">100</span>) == [<span class="string">&#x27;Bart&#x27;</span>, <span class="string">&#x27;Lisa&#x27;</span>, <span class="string">&#x27;Adam&#x27;</span>], get_score_in(<span class="number">60</span>, <span class="number">100</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;Pass&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="参考源码">参考源码</h3>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/python/database/sqlite/do_sqlite.py">do_sqlite.py</a></p>
+<p>MySQL是Web世界中使用最广泛的数据库服务器。SQLite的特点是轻量级、可嵌入，但不能承受高并发访问，适合桌面和移动应用。而MySQL是为服务器端设计的数据库，能承受高并发访问，同时占用的内存也远远大于SQLite。</p>
+<p>此外，MySQL内部有多种数据库引擎，最常用的引擎是支持数据库事务的InnoDB。</p>
+<h3 id="安装MySQL">安装MySQL</h3>
+<p>可以直接从MySQL官方网站下载最新的<a target="_blank" rel="noopener" href="https://dev.mysql.com/downloads/mysql/">Community Server 8.x</a>版本。MySQL是跨平台的，选择对应的平台下载安装文件，安装即可。</p>
+<p>安装时，MySQL会提示输入<code>root</code>用户的口令，请务必记清楚。如果怕记不住，就把口令设置为<code>password</code>。</p>
+<p>在Windows上，安装时请选择<code>UTF-8</code>编码，以便正确地处理中文。</p>
+<p>在Mac或Linux上，需要编辑MySQL的配置文件，把数据库默认的编码全部改为UTF-8。MySQL的配置文件默认存放在<code>/etc/my.cnf</code>或者<code>/etc/mysql/my.cnf</code>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[client]</span><br><span class="line">default-character-set = utf8mb4</span><br><span class="line"></span><br><span class="line">[mysqld]</span><br><span class="line">default-storage-engine = INNODB</span><br><span class="line">character-set-server = utf8mb4</span><br><span class="line">collation-server = utf8_general_ci</span><br></pre></td></tr></table></figure>
+<p>重启MySQL后，可以通过MySQL的客户端命令行检查编码：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">$ mysql -u root -p</span><br><span class="line">Enter password: </span><br><span class="line">Welcome to the MySQL monitor...</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">mysql&gt; show variables like &#x27;%char%&#x27;;</span><br><span class="line">+--------------------------+--------------------------------------+</span><br><span class="line">| Variable_name            | Value                                |</span><br><span class="line">+--------------------------+--------------------------------------+</span><br><span class="line">| character_set_client     | utf8mb4                              |</span><br><span class="line">| character_set_connection | utf8mb4                              |</span><br><span class="line">| character_set_database   | utf8mb4                              |</span><br><span class="line">| character_set_filesystem | binary                               |</span><br><span class="line">| character_set_results    | utf8mb4                              |</span><br><span class="line">| character_set_server     | utf8mb4                              |</span><br><span class="line">| character_set_system     | utf8mb3                              |</span><br><span class="line">| character_sets_dir       | /usr/local/mysql-8.x/share/charsets/ |</span><br><span class="line">+--------------------------+--------------------------------------+</span><br><span class="line">8 rows in set (0.00 sec)</span><br></pre></td></tr></table></figure>
+<p>看到<code>utf8mb4</code>字样就表示编码设置正确。</p>
+<p>注意</p>
+<p>如果MySQL的版本&lt;5.5.3，则只能把编码设置为<code>utf8</code>，<code>utf8mb4</code>支持最新的Unicode标准，可以显示emoji字符，但<code>utf8</code>无法显示emoji字符。</p>
+<h3 id="用Docker启动MySQL">用Docker启动MySQL</h3>
+<p>如果不想安装MySQL，还可以以Docker的方式快速启动MySQL。</p>
+<p>首先安装<a target="_blank" rel="noopener" href="https://www.docker.com/products/docker-desktop/">Docker Desktop</a>，然后在命令行输入：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker run -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 --name mysql-8.4 -v ./mysql-data:/var/lib/mysql mysql:8.4 --mysql-native-password=ON --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci</span><br></pre></td></tr></table></figure>
+<p>上述命令详细参数如下：</p>
+<ul>
+<li><code>-e MYSQL_ROOT_PASSWORD=password</code>：传入root用户口令的环境变量，密码是<code>password</code>；</li>
+<li><code>-p 3306:3306</code>：在本机<code>3306</code>端口监听；</li>
+<li><code>--name mysql-8.4</code>：启动后容器的名称为<code>mysql-8.4</code>，可任意设置；</li>
+<li><code>-v ./mysql-data:/var/lib/mysql</code>：把当前目录<code>./mysql-data</code>映射到容器目录<code>/var/lib/mysql</code>，此目录存放MySQL数据库文件，避免容器停止后数据丢失；</li>
+<li><code>mysql:8.4</code>：启动镜像名称为<code>mysql:8.4</code>；</li>
+<li><code>--mysql-native-password=ON</code>：表示启用明文口令；</li>
+<li><code>--character-set-server=utf8mb4</code>：表示启用<code>utf8mb4</code>作为字符集；</li>
+<li><code>--collation-server=utf8mb4_unicode_ci</code>：表示启用<code>utf8mb4</code>作为排序规则。</li>
+</ul>
+<p>运行命令后可看到如下输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">2024-07-11 02:44:05+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.4.1-1.el9 started.</span><br><span class="line">...</span><br><span class="line">2024-07-11T02:44:16.874162Z 0 [System] [MY-015015] [Server] MySQL Server - start.</span><br><span class="line">...</span><br><span class="line">2024-07-11T02:44:17.120017Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.</span><br><span class="line">2024-07-11T02:44:17.561242Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.</span><br><span class="line">...</span><br><span class="line">2024-07-11T02:44:17.868691Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: &#x27;8.4.1&#x27;  socket: &#x27;/var/run/mysqld/mysqld.sock&#x27;  port: 3306  MySQL Community Server - GPL.</span><br></pre></td></tr></table></figure>
+<p>看到最后一行<code>ready for connections</code>表示启动成功。</p>
+<h3 id="安装MySQL驱动">安装MySQL驱动</h3>
+<p>由于MySQL服务器以独立的进程运行，并通过网络对外服务，所以，需要支持Python的MySQL驱动来连接到MySQL服务器。MySQL官方提供了mysql-connector-python驱动：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ pip install mysql-connector-python </span><br></pre></td></tr></table></figure>
+<p>我们演示如何连接到MySQL服务器的test数据库：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"># 导入MySQL驱动:</span><br><span class="line">&gt;&gt;&gt; import mysql.connector</span><br><span class="line"># 注意把password设为你的root口令:</span><br><span class="line">&gt;&gt;&gt; conn = mysql.connector.connect(user=&#x27;root&#x27;, password=&#x27;password&#x27;, database=&#x27;test&#x27;)</span><br><span class="line">&gt;&gt;&gt; cursor = conn.cursor()</span><br><span class="line"># 创建user表:</span><br><span class="line">&gt;&gt;&gt; cursor.execute(&#x27;create table user (id varchar(20) primary key, name varchar(20))&#x27;)</span><br><span class="line"># 插入一行记录，注意MySQL的占位符是%s:</span><br><span class="line">&gt;&gt;&gt; cursor.execute(&#x27;insert into user (id, name) values (%s, %s)&#x27;, [&#x27;1&#x27;, &#x27;Michael&#x27;])</span><br><span class="line">&gt;&gt;&gt; cursor.rowcount</span><br><span class="line">1</span><br><span class="line"># 提交事务:</span><br><span class="line">&gt;&gt;&gt; conn.commit()</span><br><span class="line">&gt;&gt;&gt; cursor.close()</span><br><span class="line"># 运行查询:</span><br><span class="line">&gt;&gt;&gt; cursor = conn.cursor()</span><br><span class="line">&gt;&gt;&gt; cursor.execute(&#x27;select * from user where id = %s&#x27;, (&#x27;1&#x27;,))</span><br><span class="line">&gt;&gt;&gt; values = cursor.fetchall()</span><br><span class="line">&gt;&gt;&gt; values</span><br><span class="line">[(&#x27;1&#x27;, &#x27;Michael&#x27;)]</span><br><span class="line"># 关闭Cursor和Connection:</span><br><span class="line">&gt;&gt;&gt; cursor.close()</span><br><span class="line">True</span><br><span class="line">&gt;&gt;&gt; conn.close()</span><br></pre></td></tr></table></figure>
+<p>由于Python的DB-API定义都是通用的，所以，操作MySQL的数据库代码和SQLite类似。</p>
+<h3 id="小结-2">小结</h3>
+<ul>
+<li>执行INSERT等操作后要调用<code>commit()</code>提交事务；</li>
+<li>MySQL的SQL占位符是<code>%s</code>。</li>
+</ul>
+<h3 id="参考源码-2">参考源码</h3>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/python/database/mysql/do_mysql.py">do_mysql.py</a></p>
+<p>数据库表是一个二维表，包含多行多列。把一个表的内容用Python的数据结构表示出来的话，可以用一个<code>list</code>表示多行，<code>list</code>的每一个元素是<code>tuple</code>，表示一行记录，比如，包含<code>id</code>和<code>name</code>的<code>user</code>表：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[</span><br><span class="line">    (<span class="string">&#x27;1&#x27;</span>, <span class="string">&#x27;Michael&#x27;</span>),</span><br><span class="line">    (<span class="string">&#x27;2&#x27;</span>, <span class="string">&#x27;Bob&#x27;</span>),</span><br><span class="line">    (<span class="string">&#x27;3&#x27;</span>, <span class="string">&#x27;Adam&#x27;</span>)</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>Python的DB-API返回的数据结构就是像上面这样表示的。</p>
+<p>但是用<code>tuple</code>表示一行很难看出表的结构。如果把一个<code>tuple</code>用<code>class</code>实例来表示，就可以更容易地看出表的结构来：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(<span class="title class_ inherited__">object</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, <span class="built_in">id</span>, name</span>):</span><br><span class="line">        <span class="variable language_">self</span>.<span class="built_in">id</span> = <span class="built_in">id</span></span><br><span class="line">        <span class="variable language_">self</span>.name = name</span><br><span class="line"></span><br><span class="line">[</span><br><span class="line">    User(<span class="string">&#x27;1&#x27;</span>, <span class="string">&#x27;Michael&#x27;</span>),</span><br><span class="line">    User(<span class="string">&#x27;2&#x27;</span>, <span class="string">&#x27;Bob&#x27;</span>),</span><br><span class="line">    User(<span class="string">&#x27;3&#x27;</span>, <span class="string">&#x27;Adam&#x27;</span>)</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>这就是传说中的ORM技术：Object-Relational Mapping，把关系数据库的表结构映射到对象上。是不是很简单？</p>
+<p>但是由谁来做这个转换呢？所以ORM框架应运而生。</p>
+<p>在Python中，最有名的ORM框架是SQLAlchemy。我们来看看SQLAlchemy的用法。</p>
+<p>首先通过pip安装SQLAlchemy：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ pip install sqlalchemy</span><br></pre></td></tr></table></figure>
+<p>然后，利用上次我们在MySQL的test数据库中创建的<code>user</code>表，用SQLAlchemy来试试：</p>
+<p>第一步，导入SQLAlchemy，并初始化DBSession：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 导入:</span></span><br><span class="line"><span class="keyword">from</span> sqlalchemy <span class="keyword">import</span> Column, String, create_engine</span><br><span class="line"><span class="keyword">from</span> sqlalchemy.orm <span class="keyword">import</span> sessionmaker</span><br><span class="line"><span class="keyword">from</span> sqlalchemy.orm <span class="keyword">import</span> declarative_base</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建对象的基类:</span></span><br><span class="line">Base = declarative_base()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义User对象:</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(<span class="title class_ inherited__">Base</span>):</span><br><span class="line">    <span class="comment"># 表的名字:</span></span><br><span class="line">    __tablename__ = <span class="string">&#x27;user&#x27;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 表的结构:</span></span><br><span class="line">    <span class="built_in">id</span> = Column(String(<span class="number">20</span>), primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = Column(String(<span class="number">20</span>))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化数据库连接:</span></span><br><span class="line">engine = create_engine(<span class="string">&#x27;mysql+mysqlconnector://root:password@localhost:3306/test&#x27;</span>)</span><br><span class="line"><span class="comment"># 创建DBSession类型:</span></span><br><span class="line">DBSession = sessionmaker(bind=engine)</span><br></pre></td></tr></table></figure>
+<p>以上代码完成SQLAlchemy的初始化和具体每个表的<code>class</code>定义。如果有多个表，就继续定义其他<code>class</code>，例如School：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">School</span>(<span class="title class_ inherited__">Base</span>):</span><br><span class="line">    __tablename__ = <span class="string">&#x27;school&#x27;</span></span><br><span class="line">    <span class="built_in">id</span> = ...</span><br><span class="line">    name = ...</span><br></pre></td></tr></table></figure>
+<p><code>create_engine()</code>用来初始化数据库连接。SQLAlchemy用一个字符串表示连接信息：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#x27;数据库类型+数据库驱动名称://用户名:口令@机器地址:端口号/数据库名&#x27;</span><br></pre></td></tr></table></figure>
+<p>你只需要根据需要替换掉用户名、口令等信息即可。</p>
+<p>下面，我们看看如何向数据库表中添加一行记录。</p>
+<p>由于有了ORM，我们向数据库表中添加一行记录，可以视为添加一个<code>User</code>对象：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建session对象:</span></span><br><span class="line">session = DBSession()</span><br><span class="line"><span class="comment"># 创建新User对象:</span></span><br><span class="line">new_user = User(<span class="built_in">id</span>=<span class="string">&#x27;5&#x27;</span>, name=<span class="string">&#x27;Bob&#x27;</span>)</span><br><span class="line"><span class="comment"># 添加到session:</span></span><br><span class="line">session.add(new_user)</span><br><span class="line"><span class="comment"># 提交即保存到数据库:</span></span><br><span class="line">session.commit()</span><br><span class="line"><span class="comment"># 关闭session:</span></span><br><span class="line">session.close()</span><br></pre></td></tr></table></figure>
+<p>可见，关键是获取session，然后把对象添加到session，最后提交并关闭。<code>DBSession</code>对象可视为当前数据库连接。</p>
+<p>如何从数据库表中查询数据呢？有了ORM，查询出来的可以不再是<code>tuple</code>，而是<code>User</code>对象。SQLAlchemy提供的查询接口如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建Session:</span></span><br><span class="line">session = DBSession()</span><br><span class="line"><span class="comment"># 创建Query查询，filter是where条件，最后调用one()返回唯一行，如果调用all()则返回所有行:</span></span><br><span class="line">user = session.query(User).<span class="built_in">filter</span>(User.<span class="built_in">id</span>==<span class="string">&#x27;5&#x27;</span>).one()</span><br><span class="line"><span class="comment"># 打印类型和对象的name属性:</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;type:&#x27;</span>, <span class="built_in">type</span>(user))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;name:&#x27;</span>, user.name)</span><br><span class="line"><span class="comment"># 关闭Session:</span></span><br><span class="line">session.close()</span><br></pre></td></tr></table></figure>
+<p>运行结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">type: &lt;class &#x27;__main__.User&#x27;&gt;</span><br><span class="line">name: Bob</span><br></pre></td></tr></table></figure>
+<p>可见，ORM就是把数据库表的行与相应的对象建立关联，互相转换。</p>
+<p>由于关系数据库的多个表还可以用外键实现一对多、多对多等关联，相应地，ORM框架也可以提供两个对象之间的一对多、多对多等功能。</p>
+<p>例如，如果一个User拥有多个Book，就可以定义一对多关系如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(<span class="title class_ inherited__">Base</span>):</span><br><span class="line">    __tablename__ = <span class="string">&#x27;user&#x27;</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">id</span> = Column(String(<span class="number">20</span>), primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = Column(String(<span class="number">20</span>))</span><br><span class="line">    <span class="comment"># 一对多:</span></span><br><span class="line">    books = relationship(<span class="string">&#x27;Book&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Book</span>(<span class="title class_ inherited__">Base</span>):</span><br><span class="line">    __tablename__ = <span class="string">&#x27;book&#x27;</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">id</span> = Column(String(<span class="number">20</span>), primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = Column(String(<span class="number">20</span>))</span><br><span class="line">    <span class="comment"># “多”的一方的book表是通过外键关联到user表的:</span></span><br><span class="line">    user_id = Column(String(<span class="number">20</span>), ForeignKey(<span class="string">&#x27;user.id&#x27;</span>))</span><br></pre></td></tr></table></figure>
+<p>当我们查询一个User对象时，该对象的books属性将返回一个包含若干个Book对象的list。</p>
+<h3 id="小结-3">小结</h3>
+<p>ORM框架的作用就是把数据库表的一行记录与一个对象互相做自动转换。</p>
+<p>正确使用ORM的前提是了解关系数据库的原理。</p>
+<h3 id="参考源码-3">参考源码</h3>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/python/database/sqlalchemy/do_sqlalchemy.py">do_sqlalchemy.py</a></p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2016/04/30/python/17.python%E8%AE%BF%E9%97%AE%E6%95%B0%E6%8D%AE%E5%BA%93/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -2415,7 +2579,7 @@
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 235 篇文章
+                找到 234 篇文章
             </p>
         </div>
     </div>

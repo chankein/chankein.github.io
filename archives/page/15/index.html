@@ -302,267 +302,6 @@
                     
                         <a
                             class="link-unstyled"
-                            href="../../../2018/02/23/java/JAVA-Spring%E5%BC%80%E5%8F%91-AOP/"
-                            aria-label=": JAVA-Spring开发-AOP"
-                        >
-                            JAVA-Spring开发-AOP
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2018-02-23T16:20:21+08:00">
-	
-		    2018 年 2 月 23 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Java/">Java</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <p>AOP是Aspect Oriented Programming，即面向切面编程。</p>
-<p>那什么是AOP？</p>
-<p>我们先回顾一下OOP：Object Oriented Programming，OOP作为面向对象编程的模式，获得了巨大的成功，OOP的主要功能是数据封装、继承和多态。</p>
-<p>而AOP是一种新的编程方式，它和OOP不同，OOP把系统看作多个对象的交互，AOP把系统分解为不同的关注点，或者称之为切面（Aspect）。</p>
-<p>要理解AOP的概念，我们先用OOP举例，比如一个业务组件<code>BookService</code>，它有几个业务方法：</p>
-<ul>
-<li>createBook：添加新的Book；</li>
-<li>updateBook：修改Book；</li>
-<li>deleteBook：删除Book。</li>
-</ul>
-<p>对每个业务方法，例如，<code>createBook()</code>，除了业务逻辑，还需要安全检查、日志记录和事务处理，它的代码像这样：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BookService</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">createBook</span><span class="params">(Book book)</span> &#123;</span><br><span class="line">        securityCheck();</span><br><span class="line">        <span class="type">Transaction</span> <span class="variable">tx</span> <span class="operator">=</span> startTransaction();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 核心业务逻辑</span></span><br><span class="line">            tx.commit();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RuntimeException e) &#123;</span><br><span class="line">            tx.rollback();</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">        log(<span class="string">&quot;created book: &quot;</span> + book);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>继续编写<code>updateBook()</code>，代码如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BookService</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateBook</span><span class="params">(Book book)</span> &#123;</span><br><span class="line">        securityCheck();</span><br><span class="line">        <span class="type">Transaction</span> <span class="variable">tx</span> <span class="operator">=</span> startTransaction();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 核心业务逻辑</span></span><br><span class="line">            tx.commit();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RuntimeException e) &#123;</span><br><span class="line">            tx.rollback();</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">        log(<span class="string">&quot;updated book: &quot;</span> + book);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>对于安全检查、日志、事务等代码，它们会重复出现在每个业务方法中。使用OOP，我们很难将这些四处分散的代码模块化。</p>
-<p>考察业务模型可以发现，<code>BookService</code>关心的是自身的核心逻辑，但整个系统还要求关注安全检查、日志、事务等功能，这些功能实际上“横跨”多个业务方法，为了实现这些功能，不得不在每个业务方法上重复编写代码。</p>
-<p>一种可行的方式是使用<a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/design-patterns/structural/proxy/index.html">Proxy模式</a>，将某个功能，例如，权限检查，放入Proxy中：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SecurityCheckBookService</span> <span class="keyword">implements</span> <span class="title class_">BookService</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> BookService target;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">SecurityCheckBookService</span><span class="params">(BookService target)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.target = target;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">createBook</span><span class="params">(Book book)</span> &#123;</span><br><span class="line">        securityCheck();</span><br><span class="line">        target.createBook(book);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateBook</span><span class="params">(Book book)</span> &#123;</span><br><span class="line">        securityCheck();</span><br><span class="line">        target.updateBook(book);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">deleteBook</span><span class="params">(Book book)</span> &#123;</span><br><span class="line">        securityCheck();</span><br><span class="line">        target.deleteBook(book);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">securityCheck</span><span class="params">()</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这种方式的缺点是比较麻烦，必须先抽取接口，然后，针对每个方法实现Proxy。</p>
-<p>另一种方法是，既然<code>SecurityCheckBookService</code>的代码都是标准的Proxy样板代码，不如把权限检查视作一种切面（Aspect），把日志、事务也视为切面，然后，以某种自动化的方式，把切面织入到核心逻辑中，实现Proxy模式。</p>
-<p>如果我们以AOP的视角来编写上述业务，可以依次实现：</p>
-<ol>
-<li>核心逻辑，即BookService；</li>
-<li>切面逻辑，即：
-<ol>
-<li>权限检查的Aspect；</li>
-<li>日志的Aspect；</li>
-<li>事务的Aspect。</li>
-</ol>
-</li>
-</ol>
-<p>然后，以某种方式，让框架来把上述3个Aspect以Proxy的方式“织入”到<code>BookService</code>中，这样一来，就不必编写复杂而冗长的Proxy模式。</p>
-<h3 id="AOP原理">AOP原理</h3>
-<p>如何把切面织入到核心逻辑中？这正是AOP需要解决的问题。换句话说，如果客户端获得了<code>BookService</code>的引用，当调用<code>bookService.createBook()</code>时，如何对调用方法进行拦截，并在拦截前后进行安全检查、日志、事务等处理，就相当于完成了所有业务功能。</p>
-<p>在Java平台上，对于AOP的织入，有3种方式：</p>
-<ol>
-<li>编译期：在编译时，由编译器把切面调用编译进字节码，这种方式需要定义新的关键字并扩展编译器，AspectJ就扩展了Java编译器，使用关键字aspect来实现织入；</li>
-<li>类加载器：在目标类被装载到JVM时，通过一个特殊的类加载器，对目标类的字节码重新“增强”；</li>
-<li>运行期：目标对象和切面都是普通Java类，通过JVM的动态代理功能或者第三方库实现运行期动态织入。</li>
-</ol>
-<p>最简单的方式是第三种，Spring的AOP实现就是基于JVM的动态代理。由于JVM的动态代理要求必须实现接口，如果一个普通类没有业务接口，就需要通过<a target="_blank" rel="noopener" href="https://github.com/cglib/cglib">CGLIB</a>或者<a target="_blank" rel="noopener" href="https://www.javassist.org/">Javassist</a>这些第三方库实现。</p>
-<p>AOP技术看上去比较神秘，但实际上，它本质就是一个动态代理，让我们把一些常用功能如权限检查、日志、事务等，从每个业务方法中剥离出来。</p>
-<p>需要特别指出的是，AOP对于解决特定问题，例如事务管理非常有用，这是因为分散在各处的事务代码几乎是完全相同的，并且它们需要的参数（JDBC的Connection）也是固定的。另一些特定问题，如日志，就不那么容易实现，因为日志虽然简单，但打印日志的时候，经常需要捕获局部变量，如果使用AOP实现日志，我们只能输出固定格式的日志，因此，使用AOP时，必须适合特定的场景。</p>
-<p>在AOP编程中，我们经常会遇到下面的概念：</p>
-<ul>
-<li>Aspect：切面，即一个横跨多个核心逻辑的功能，或者称之为系统关注点；</li>
-<li>Joinpoint：连接点，即定义在应用程序流程的何处插入切面的执行；</li>
-<li>Pointcut：切入点，即一组连接点的集合；</li>
-<li>Advice：增强，指特定连接点上执行的动作；</li>
-<li>Introduction：引介，指为一个已有的Java对象动态地增加新的接口；</li>
-<li>Weaving：织入，指将切面整合到程序的执行流程中；</li>
-<li>Interceptor：拦截器，是一种实现增强的方式；</li>
-<li>Target Object：目标对象，即真正执行业务的核心逻辑对象；</li>
-<li>AOP Proxy：AOP代理，是客户端持有的增强后的对象引用。</li>
-</ul>
-<p>看完上述术语，是不是感觉对AOP有了进一步的困惑？其实，我们不用关心AOP创造的“术语”，只需要理解AOP本质上只是一种代理模式的实现方式，在Spring的容器中实现AOP特别方便。</p>
-<p>我们以<code>UserService</code>和<code>MailService</code>为例，这两个属于核心业务逻辑，现在，我们准备给<code>UserService</code>的每个业务方法执行前添加日志，给<code>MailService</code>的每个业务方法执行前后添加日志，在Spring中，需要以下步骤：</p>
-<p>首先，我们通过Maven引入Spring对AOP的支持：</p>
-<ul>
-<li>org.springframework:spring-aspects:6.0.0</li>
-</ul>
-<p>上述依赖会自动引入AspectJ，使用AspectJ实现AOP比较方便，因为它的定义比较简单。</p>
-<p>然后，我们定义一个<code>LoggingAspect</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LoggingAspect</span> &#123;</span><br><span class="line">    <span class="comment">// 在执行UserService的每个方法前执行:</span></span><br><span class="line">    <span class="meta">@Before(&quot;execution(public * com.itranswarp.learnjava.service.UserService.*(..))&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">doAccessCheck</span><span class="params">()</span> &#123;</span><br><span class="line">        System.err.println(<span class="string">&quot;[Before] do access check...&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 在执行MailService的每个方法前后执行:</span></span><br><span class="line">    <span class="meta">@Around(&quot;execution(public * com.itranswarp.learnjava.service.MailService.*(..))&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">doLogging</span><span class="params">(ProceedingJoinPoint pjp)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line">        System.err.println(<span class="string">&quot;[Around] start &quot;</span> + pjp.getSignature());</span><br><span class="line">        <span class="type">Object</span> <span class="variable">retVal</span> <span class="operator">=</span> pjp.proceed();</span><br><span class="line">        System.err.println(<span class="string">&quot;[Around] done &quot;</span> + pjp.getSignature());</span><br><span class="line">        <span class="keyword">return</span> retVal;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>观察<code>doAccessCheck()</code>方法，我们定义了一个<code>@Before</code>注解，后面的字符串是告诉AspectJ应该在何处执行该方法，这里写的意思是：执行<code>UserService</code>的每个<code>public</code>方法前执行<code>doAccessCheck()</code>代码。</p>
-<p>再观察<code>doLogging()</code>方法，我们定义了一个<code>@Around</code>注解，它和<code>@Before</code>不同，<code>@Around</code>可以决定是否执行目标方法，因此，我们在<code>doLogging()</code>内部先打印日志，再调用方法，最后打印日志后返回结果。</p>
-<p>在<code>LoggingAspect</code>类的声明处，除了用<code>@Component</code>表示它本身也是一个Bean外，我们再加上<code>@Aspect</code>注解，表示它的<code>@Before</code>标注的方法需要注入到<code>UserService</code>的每个<code>public</code>方法执行前，<code>@Around</code>标注的方法需要注入到<code>MailService</code>的每个<code>public</code>方法执行前后。</p>
-<p>紧接着，我们需要给<code>@Configuration</code>类加上一个<code>@EnableAspectJAutoProxy</code>注解：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@ComponentScan</span></span><br><span class="line"><span class="meta">@EnableAspectJAutoProxy</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">AppConfig</span> &#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>Spring的IoC容器看到这个注解，就会自动查找带有<code>@Aspect</code>的Bean，然后根据每个方法的<code>@Before</code>、<code>@Around</code>等注解把AOP注入到特定的Bean中。执行代码，我们可以看到以下输出：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[Before] do access check...</span><br><span class="line">[Around] start void com.itranswarp.learnjava.service.MailService.sendRegistrationMail(User)</span><br><span class="line">Welcome, test!</span><br><span class="line">[Around] done void com.itranswarp.learnjava.service.MailService.sendRegistrationMail(User)</span><br><span class="line">[Before] do access check...</span><br><span class="line">[Around] start void com.itranswarp.learnjava.service.MailService.sendLoginMail(User)</span><br><span class="line">Hi, Bob! You are logged in at 2020-02-14T23:13:52.167996+08:00[Asia/Shanghai]</span><br><span class="line">[Around] done void com.itranswarp.learnjava.service.MailService.sendLoginMail(User)</span><br></pre></td></tr></table></figure>
-<p>这说明执行业务逻辑前后，确实执行了我们定义的Aspect（即<code>LoggingAspect</code>的方法）。</p>
-<p>有些童鞋会问，<code>LoggingAspect</code>定义的方法，是如何注入到其他Bean的呢？</p>
-<p>其实AOP的原理非常简单。我们以<code>LoggingAspect.doAccessCheck()</code>为例，要把它注入到<code>UserService</code>的每个<code>public</code>方法中，最简单的方法是编写一个子类，并持有原始实例的引用：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> UserServiceAopProxy <span class="keyword">extends</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> UserService target;</span><br><span class="line">    <span class="keyword">private</span> LoggingAspect aspect;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">UserServiceAopProxy</span><span class="params">(UserService target, LoggingAspect aspect)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.target = target;</span><br><span class="line">        <span class="built_in">this</span>.aspect = aspect;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> User <span class="title function_">login</span><span class="params">(String email, String password)</span> &#123;</span><br><span class="line">        <span class="comment">// 先执行Aspect的代码:</span></span><br><span class="line">        aspect.doAccessCheck();</span><br><span class="line">        <span class="comment">// 再执行UserService的逻辑:</span></span><br><span class="line">        <span class="keyword">return</span> target.login(email, password);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> User <span class="title function_">register</span><span class="params">(String email, String password, String name)</span> &#123;</span><br><span class="line">        aspect.doAccessCheck();</span><br><span class="line">        <span class="keyword">return</span> target.register(email, password, name);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这些都是Spring容器启动时为我们自动创建的注入了Aspect的子类，它取代了原始的<code>UserService</code>（原始的<code>UserService</code>实例作为内部变量隐藏在<code>UserServiceAopProxy</code>中）。如果我们打印从Spring容器获取的<code>UserService</code>实例类型，它类似<code>UserService$$EnhancerBySpringCGLIB$$1f44e01c</code>，实际上是Spring使用CGLIB动态创建的子类，但对于调用方来说，感觉不到任何区别。</p>
-<p>注意</p>
-<p>Spring对接口类型使用JDK动态代理，对普通类使用CGLIB创建子类。如果一个Bean的class是final，Spring将无法为其创建子类。</p>
-<p>可见，虽然Spring容器内部实现AOP的逻辑比较复杂（需要使用AspectJ解析注解，并通过CGLIB实现代理类），但我们使用AOP非常简单，一共需要三步：</p>
-<ol>
-<li>定义执行方法，并在方法上通过AspectJ的注解告诉Spring应该在何处调用此方法；</li>
-<li>标记<code>@Component</code>和<code>@Aspect</code>；</li>
-<li>在<code>@Configuration</code>类上标注<code>@EnableAspectJAutoProxy</code>。</li>
-</ol>
-<p>至于AspectJ的注入语法则比较复杂，请参考<a target="_blank" rel="noopener" href="https://docs.spring.io/spring/docs/current/spring-framework-reference/core.html#aop-pointcuts-examples">Spring文档</a>。</p>
-<p>Spring也提供其他方法来装配AOP，但都没有使用AspectJ注解的方式来得简洁明了，所以我们不再作介绍。</p>
-<h3 id="拦截器类型">拦截器类型</h3>
-<p>顾名思义，拦截器有以下类型：</p>
-<ul>
-<li>@Before：这种拦截器先执行拦截代码，再执行目标代码。如果拦截器抛异常，那么目标代码就不执行了；</li>
-<li>@After：这种拦截器先执行目标代码，再执行拦截器代码。无论目标代码是否抛异常，拦截器代码都会执行；</li>
-<li>@AfterReturning：和@After不同的是，只有当目标代码正常返回时，才执行拦截器代码；</li>
-<li>@AfterThrowing：和@After不同的是，只有当目标代码抛出了异常时，才执行拦截器代码；</li>
-<li>@Around：能完全控制目标代码是否执行，并可以在执行前后、抛异常后执行任意拦截代码，可以说是包含了上面所有功能。</li>
-</ul>
-<h3 id="练习">练习</h3>
-<p>使用AOP实现日志。</p>
-<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/spring/aop/basic/spring-aop-logging.zip">下载练习</a></p>
-<h3 id="小结">小结</h3>
-<p>在Spring容器中使用AOP非常简单，只需要定义执行方法，并用AspectJ的注解标注应该在何处触发并执行。</p>
-<p>Spring通过CGLIB动态创建子类等方式来实现AOP代理模式，大大简化了代码。</p>
-<p>上一节我们讲解了使用AspectJ的注解，并配合一个复杂的<code>execution(* xxx.Xyz.*(..))</code>语法来定义应该如何装配AOP。</p>
-<p>在实际项目中，这种写法其实很少使用。假设你写了一个<code>SecurityAspect</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SecurityAspect</span> &#123;</span><br><span class="line">    <span class="meta">@Before(&quot;execution(public * com.itranswarp.learnjava.service.*.*(..))&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">check</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (SecurityContext.getCurrentUser() == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;check failed&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>基本能实现无差别全覆盖，即某个包下面的所有Bean的所有方法都会被这个<code>check()</code>方法拦截。</p>
-<p>还有的童鞋喜欢用方法名前缀进行拦截：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Around(&quot;execution(public * update*(..))&quot;)</span></span><br><span class="line"><span class="keyword">public</span> Object <span class="title function_">doLogging</span><span class="params">(ProceedingJoinPoint pjp)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line">    <span class="comment">// 对update开头的方法切换数据源:</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">old</span> <span class="operator">=</span> setCurrentDataSource(<span class="string">&quot;master&quot;</span>);</span><br><span class="line">    <span class="type">Object</span> <span class="variable">retVal</span> <span class="operator">=</span> pjp.proceed();</span><br><span class="line">    restoreCurrentDataSource(old);</span><br><span class="line">    <span class="keyword">return</span> retVal;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这种非精准打击误伤面更大，因为从方法前缀区分是否是数据库操作是非常不可取的。</p>
-<p>我们在使用AOP时，要注意到虽然Spring容器可以把指定的方法通过AOP规则装配到指定的Bean的指定方法前后，但是，如果自动装配时，因为不恰当的范围，容易导致意想不到的结果，即很多不需要AOP代理的Bean也被自动代理了，并且，后续新增的Bean，如果不清楚现有的AOP装配规则，容易被强迫装配。</p>
-<p>使用AOP时，被装配的Bean最好自己能清清楚楚地知道自己被安排了。例如，Spring提供的<code>@Transactional</code>就是一个非常好的例子。如果我们自己写的Bean希望在一个数据库事务中被调用，就标注上<code>@Transactional</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line">    <span class="comment">// 有事务:</span></span><br><span class="line">    <span class="meta">@Transactional</span></span><br><span class="line">    <span class="keyword">public</span> User <span class="title function_">createUser</span><span class="params">(String name)</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 无事务:</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">isValidName</span><span class="params">(String name)</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 有事务:</span></span><br><span class="line">    <span class="meta">@Transactional</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateUser</span><span class="params">(User user)</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>或者直接在class级别注解，表示“所有public方法都被安排了”：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@Transactional</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>通过<code>@Transactional</code>，某个方法是否启用了事务就一清二楚了。因此，装配AOP的时候，使用注解是最好的方式。</p>
-<p>我们以一个实际例子演示如何使用注解实现AOP装配。为了监控应用程序的性能，我们定义一个性能监控的注解：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Target(METHOD)</span></span><br><span class="line"><span class="meta">@Retention(RUNTIME)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> MetricTime &#123;</span><br><span class="line">    String <span class="title function_">value</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在需要被监控的关键方法上标注该注解：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line">    <span class="comment">// 监控register()方法性能:</span></span><br><span class="line">    <span class="meta">@MetricTime(&quot;register&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> User <span class="title function_">register</span><span class="params">(String email, String password, String name)</span> &#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>然后，我们定义<code>MetricAspect</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MetricAspect</span> &#123;</span><br><span class="line">    <span class="meta">@Around(&quot;@annotation(metricTime)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">metric</span><span class="params">(ProceedingJoinPoint joinPoint, MetricTime metricTime)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">name</span> <span class="operator">=</span> metricTime.value();</span><br><span class="line">        <span class="type">long</span> <span class="variable">start</span> <span class="operator">=</span> System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> joinPoint.proceed();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="type">long</span> <span class="variable">t</span> <span class="operator">=</span> System.currentTimeMillis() - start;</span><br><span class="line">            <span class="comment">// 写入日志或发送至JMX:</span></span><br><span class="line">            System.err.println(<span class="string">&quot;[Metrics] &quot;</span> + name + <span class="string">&quot;: &quot;</span> + t + <span class="string">&quot;ms&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注意<code>metric()</code>方法标注了<code>@Around(&quot;@annotation(metricTime)&quot;)</code>，它的意思是，符合条件的目标方法是带有<code>@MetricTime</code>注解的方法，因为<code>metric()</code>方法参数类型是<code>MetricTime</code>（注意参数名是<code>metricTime</code>不是<code>MetricTime</code>），我们通过它获取性能监控的名称。</p>
-<p>有了<code>@MetricTime</code>注解，再配合<code>MetricAspect</code>，任何Bean，只要方法标注了<code>@MetricTime</code>注解，就可以自动实现性能监控。运行代码，输出结果如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Welcome, Bob!</span><br><span class="line">[Metrics] register: 16ms</span><br></pre></td></tr></table></figure>
-<h3 id="练习-2">练习</h3>
-<p>使用注解+AOP实现性能监控。</p>
-<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/spring/aop/annotation-config/spring-aop-metrics.zip">下载练习</a></p>
-<h3 id="小结-2">小结</h3>
-<p>使用注解实现AOP需要先定义注解，然后使用<code>@Around(&quot;@annotation(name)&quot;)</code>实现装配；</p>
-<p>使用注解既简单，又能明确标识AOP装配，是使用AOP推荐的方式。</p>
-<p>无论是使用AspectJ语法，还是配合Annotation，使用AOP，实际上就是让Spring自动为我们创建一个Proxy，使得调用方能无感知地调用指定方法，但运行期却动态“织入”了其他逻辑，因此，AOP本质上就是一个<a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/design-patterns/structural/proxy/index.html">代理模式</a>。</p>
-<p>因为Spring使用了CGLIB来实现运行期动态创建Proxy，如果我们没能深入理解其运行原理和实现机制，就极有可能遇到各种诡异的问题。</p>
-<p>我们来看一个实际的例子。</p>
-<p>假设我们定义了一个<code>UserService</code>的Bean：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line">    <span class="comment">// 成员变量:</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="type">ZoneId</span> <span class="variable">zoneId</span> <span class="operator">=</span> ZoneId.systemDefault();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 构造方法:</span></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">UserService</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;UserService(): init...&quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;UserService(): zoneId = &quot;</span> + <span class="built_in">this</span>.zoneId);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// public方法:</span></span><br><span class="line">    <span class="keyword">public</span> ZoneId <span class="title function_">getZoneId</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> zoneId;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// public final方法:</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> ZoneId <span class="title function_">getFinalZoneId</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> zoneId;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>再写个<code>MailService</code>，并注入<code>UserService</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MailService</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    UserService userService;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">sendMail</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">ZoneId</span> <span class="variable">zoneId</span> <span class="operator">=</span> userService.zoneId;</span><br><span class="line">        <span class="type">String</span> <span class="variable">dt</span> <span class="operator">=</span> ZonedDateTime.now(zoneId).toString();</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;Hello, it is &quot;</span> + dt;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>最后用<code>main()</code>方法测试一下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@ComponentScan</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">AppConfig</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">ApplicationContext</span> <span class="variable">context</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AnnotationConfigApplicationContext</span>(AppConfig.class);</span><br><span class="line">        <span class="type">MailService</span> <span class="variable">mailService</span> <span class="operator">=</span> context.getBean(MailService.class);</span><br><span class="line">        System.out.println(mailService.sendMail());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>查看输出，一切正常：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">UserService(): init...</span><br><span class="line">UserService(): zoneId = Asia/Shanghai</span><br><span class="line">Hello, it is 2020-04-12T10:23:22.917721+08:00[Asia/Shanghai]</span><br></pre></td></tr></table></figure>
-<p>下一步，我们给<code>UserService</code>加上AOP支持，就添加一个最简单的<code>LoggingAspect</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LoggingAspect</span> &#123;</span><br><span class="line">    <span class="meta">@Before(&quot;execution(public * com..*.UserService.*(..))&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">doAccessCheck</span><span class="params">()</span> &#123;</span><br><span class="line">        System.err.println(<span class="string">&quot;[Before] do access check...&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>别忘了在<code>AppConfig</code>上加上<code>@EnableAspectJAutoProxy</code>。再次运行，不出意外的话，会得到一个<code>NullPointerException</code>：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Exception in thread &quot;main&quot; java.lang.NullPointerException: zone</span><br><span class="line">    at java.base/java.util.Objects.requireNonNull(Objects.java:246)</span><br><span class="line">    at java.base/java.time.Clock.system(Clock.java:203)</span><br><span class="line">    at java.base/java.time.ZonedDateTime.now(ZonedDateTime.java:216)</span><br><span class="line">    at com.itranswarp.learnjava.service.MailService.sendMail(MailService.java:19)</span><br><span class="line">    at com.itranswarp.learnjava.AppConfig.main(AppConfig.java:21)</span><br></pre></td></tr></table></figure>
-<p>仔细跟踪代码，会发现<code>null</code>值出现在<code>MailService.sendMail()</code>内部的这一行代码：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MailService</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    UserService userService;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">sendMail</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">ZoneId</span> <span class="variable">zoneId</span> <span class="operator">=</span> userService.zoneId;</span><br><span class="line">        System.out.println(zoneId); <span class="comment">// null</span></span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>我们还故意在<code>UserService</code>中特意用<code>final</code>修饰了一下成员变量：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="type">ZoneId</span> <span class="variable">zoneId</span> <span class="operator">=</span> ZoneId.systemDefault();</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>用<code>final</code>标注的成员变量为<code>null</code>？逗我呢？</p>
-<h3 id="怎么肥四？">怎么肥四？</h3>
-<p>为什么加了AOP就报NPE，去了AOP就一切正常？<code>final</code>字段不执行，难道JVM有问题？为了解答这个诡异的问题，我们需要深入理解Spring使用CGLIB生成Proxy的原理：</p>
-<p>第一步，正常创建一个<code>UserService</code>的原始实例，这是通过反射调用构造方法实现的，它的行为和我们预期的完全一致；</p>
-<p>第二步，通过CGLIB创建一个<code>UserService</code>的子类，并引用了原始实例和<code>LoggingAspect</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> UserService$$EnhancerBySpringCGLIB <span class="keyword">extends</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line">    UserService target;</span><br><span class="line">    LoggingAspect aspect;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> UserService$$EnhancerBySpringCGLIB() &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> ZoneId <span class="title function_">getZoneId</span><span class="params">()</span> &#123;</span><br><span class="line">        aspect.doAccessCheck();</span><br><span class="line">        <span class="keyword">return</span> target.getZoneId();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果我们观察Spring创建的AOP代理，它的类名总是类似<code>UserService$$EnhancerBySpringCGLIB$$1c76af9d</code>（你没看错，Java的类名实际上允许<code>$</code>字符）。为了让调用方获得<code>UserService</code>的引用，它必须继承自<code>UserService</code>。然后，该代理类会覆写所有<code>public</code>和<code>protected</code>方法，并在内部将调用委托给原始的<code>UserService</code>实例。</p>
-<p>这里出现了两个<code>UserService</code>实例：</p>
-<p>一个是我们代码中定义的<em>原始实例</em>，它的成员变量已经按照我们预期的方式被初始化完成：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">UserService</span> <span class="variable">original</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">UserService</span>();</span><br></pre></td></tr></table></figure>
-<p>第二个<code>UserService</code>实例实际上类型是<code>UserService$$EnhancerBySpringCGLIB</code>，它引用了原始的<code>UserService</code>实例：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">UserService$$EnhancerBySpringCGLIB</span> <span class="variable">proxy</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">UserService$$EnhancerBySpringCGLIB</span>();</span><br><span class="line">proxy.target = original;</span><br><span class="line">proxy.aspect = ...</span><br></pre></td></tr></table></figure>
-<p>注意到这种情况仅出现在启用了AOP的情况，此刻，从<code>ApplicationContext</code>中获取的<code>UserService</code>实例是proxy，注入到<code>MailService</code>中的<code>UserService</code>实例也是proxy。</p>
-<p>那么最终的问题来了：proxy实例的成员变量，也就是从<code>UserService</code>继承的<code>zoneId</code>，它的值是<code>null</code>。</p>
-<p>原因在于，<code>UserService</code>成员变量的初始化：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="type">ZoneId</span> <span class="variable">zoneId</span> <span class="operator">=</span> ZoneId.systemDefault();</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在<code>UserService$$EnhancerBySpringCGLIB</code>中，并未执行。原因是，没必要初始化proxy的成员变量，因为proxy的目的是代理方法。</p>
-<p>实际上，成员变量的初始化是在构造方法中完成的。这是我们看到的代码：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="type">ZoneId</span> <span class="variable">zoneId</span> <span class="operator">=</span> ZoneId.systemDefault();</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">UserService</span><span class="params">()</span> &#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这是编译器实际编译的代码：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> ZoneId zoneId;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">UserService</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>(); <span class="comment">// 构造方法的第一行代码总是调用super()</span></span><br><span class="line">        zoneId = ZoneId.systemDefault(); <span class="comment">// 继续初始化成员变量</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>然而，对于Spring通过CGLIB动态创建的<code>UserService$$EnhancerBySpringCGLIB</code>代理类，它的构造方法中，并未调用<code>super()</code>，因此，从父类继承的成员变量，包括<code>final</code>类型的成员变量，统统都没有初始化。</p>
-<p>有的童鞋会问：Java语言规定，任何类的构造方法，第一行必须调用<code>super()</code>，如果没有，编译器会自动加上，怎么Spring的CGLIB就可以搞特殊？</p>
-<p>这是因为自动加<code>super()</code>的功能是Java编译器实现的，它发现你没加，就自动给加上，发现你加错了，就报编译错误。但实际上，如果直接构造字节码，一个类的构造方法中，不一定非要调用<code>super()</code>。Spring使用CGLIB构造的Proxy类，是直接生成字节码，并没有源码-编译-字节码这个步骤，因此：</p>
-<p>注意</p>
-<p>Spring通过CGLIB创建的代理类，不会初始化代理类自身继承的任何成员变量，包括final类型的成员变量！</p>
-<p>再考察<code>MailService</code>的代码：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MailService</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    UserService userService;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">sendMail</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">ZoneId</span> <span class="variable">zoneId</span> <span class="operator">=</span> userService.zoneId;</span><br><span class="line">        System.out.println(zoneId); <span class="comment">// null</span></span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果没有启用AOP，注入的是原始的<code>UserService</code>实例，那么一切正常，因为<code>UserService</code>实例的<code>zoneId</code>字段已经被正确初始化了。</p>
-<p>如果启动了AOP，注入的是代理后的<code>UserService$$EnhancerBySpringCGLIB</code>实例，那么问题大了：获取的<code>UserService$$EnhancerBySpringCGLIB</code>实例的<code>zoneId</code>字段，永远为<code>null</code>。</p>
-<p>那么问题来了：启用了AOP，如何修复？</p>
-<p>修复很简单，只需要把直接访问字段的代码，改为通过方法访问：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MailService</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    UserService userService;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">sendMail</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="comment">// 不要直接访问UserService的字段:</span></span><br><span class="line">        <span class="type">ZoneId</span> <span class="variable">zoneId</span> <span class="operator">=</span> userService.getZoneId();</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>无论注入的<code>UserService</code>是原始实例还是代理实例，<code>getZoneId()</code>都能正常工作，因为代理类会覆写<code>getZoneId()</code>方法，并将其委托给原始实例：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> UserService$$EnhancerBySpringCGLIB <span class="keyword">extends</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line">    <span class="type">UserService</span> <span class="variable">target</span> <span class="operator">=</span> ...</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> ZoneId <span class="title function_">getZoneId</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> target.getZoneId();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注意到我们还给<code>UserService</code>添加了一个<code>public</code>+<code>final</code>的方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserService</span> &#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> ZoneId <span class="title function_">getFinalZoneId</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> zoneId;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果在<code>MailService</code>中，调用的不是<code>getZoneId()</code>，而是<code>getFinalZoneId()</code>，又会出现<code>NullPointerException</code>，这是因为，代理类无法覆写<code>final</code>方法（这一点绕不过JVM的ClassLoader检查），该方法返回的是代理类的<code>zoneId</code>字段，即<code>null</code>。</p>
-<p>实际上，如果我们加上日志，Spring在启动时会打印一个警告：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">10:43:09.929 [main] DEBUG org.springframework.aop.framework.CglibAopProxy - Final method [public final java.time.ZoneId xxx.UserService.getFinalZoneId()] cannot get proxied via CGLIB: Calls to this method will NOT be routed to the target instance and might lead to NPEs against uninitialized fields in the proxy instance.</span><br></pre></td></tr></table></figure>
-<p>上面的日志大意就是，因为被代理的<code>UserService</code>有一个<code>final</code>方法<code>getFinalZoneId()</code>，这会导致其他Bean如果调用此方法，无法将其代理到真正的原始实例，从而可能发生NPE异常。</p>
-<p>因此，正确使用AOP，我们需要一个避坑指南：</p>
-<ol>
-<li>访问被注入的Bean时，总是调用方法而非直接访问字段；</li>
-<li>编写Bean时，如果可能会被代理，就不要编写<code>public final</code>方法。</li>
-</ol>
-<p>这样才能保证有没有AOP，代码都能正常工作。</p>
-<h3 id="思考">思考</h3>
-<p>为什么Spring刻意不初始化Proxy继承的字段？</p>
-<p>如果一个Bean不允许任何AOP代理，应该怎么做来“保护”自己在运行期不会被代理？</p>
-<h3 id="练习-3">练习</h3>
-<p>修复启用AOP导致的NPE。</p>
-<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/spring/aop/notice/spring-aop-field.zip">下载练习</a></p>
-<h3 id="小结-3">小结</h3>
-<p>由于Spring通过CGLIB实现代理类，我们要避免直接访问Bean的字段，以及由<code>final</code>方法带来的“未代理”问题。</p>
-<p>遇到CglibAopProxy的相关日志，务必要仔细检查，防止因为AOP出现NPE异常。</p>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../../2018/02/23/java/JAVA-Spring%E5%BC%80%E5%8F%91-AOP/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
                             href="../../../2018/02/22/java/JAVA-Spring%E5%BC%80%E5%8F%91-IoC/"
                             aria-label=": JAVA-Spring开发-IoC"
                         >
@@ -3682,6 +3421,287 @@
         
     </article>
     
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
+                            href="../../../2018/02/15/java/JAVA-XML%E4%B8%8EJSON/"
+                            aria-label=": JAVA-XML与JSON"
+                        >
+                            JAVA-XML与JSON
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2018-02-15T17:23:30+08:00">
+	
+		    2018 年 2 月 15 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Java/">Java</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <h2 id="XML简介">XML简介</h2>
+<p>XML是可扩展标记语言（eXtensible Markup Language）的缩写，它是一种数据表示格式，可以描述非常复杂的数据结构，常用于传输和存储数据。</p>
+<p>例如，一个描述书籍的XML文档可能如下：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=<span class="string">&quot;1.0&quot;</span> encoding=<span class="string">&quot;UTF-8&quot;</span> ?&gt;</span></span><br><span class="line"><span class="meta">&lt;!DOCTYPE <span class="keyword">note</span> <span class="keyword">SYSTEM</span> <span class="string">&quot;book.dtd&quot;</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">book</span> <span class="attr">id</span>=<span class="string">&quot;1&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>Java核心技术<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">author</span>&gt;</span>Cay S. Horstmann<span class="tag">&lt;/<span class="name">author</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">isbn</span> <span class="attr">lang</span>=<span class="string">&quot;CN&quot;</span>&gt;</span>1234567<span class="tag">&lt;/<span class="name">isbn</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">tags</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">tag</span>&gt;</span>Java<span class="tag">&lt;/<span class="name">tag</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">tag</span>&gt;</span>Network<span class="tag">&lt;/<span class="name">tag</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tags</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">pubDate</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">book</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>XML有几个特点：一是纯文本，默认使用UTF-8编码，二是可嵌套，适合表示结构化数据。如果把XML内容存为文件，那么它就是一个XML文件，例如<code>book.xml</code>。此外，XML内容经常通过网络作为消息传输。</p>
+<h3 id="XML的结构">XML的结构</h3>
+<p>XML有固定的结构，首行必定是<code>&lt;?xml version=&quot;1.0&quot;?&gt;</code>，可以加上可选的编码。紧接着，如果以类似<code>&lt;!DOCTYPE note SYSTEM &quot;book.dtd&quot;&gt;</code>声明的是文档定义类型（DTD：Document Type Definition），DTD是可选的。接下来是XML的文档内容，一个XML文档有且仅有一个根元素，根元素可以包含任意个子元素，元素可以包含属性，例如，<code>&lt;isbn lang=&quot;CN&quot;&gt;1234567&lt;/isbn&gt;</code>包含一个属性<code>lang=&quot;CN&quot;</code>，且元素必须正确嵌套。如果是空元素，可以用<code>&lt;tag/&gt;</code>表示。</p>
+<p>由于使用了<code>&lt;</code>、<code>&gt;</code>以及引号等标识符，如果内容出现了特殊符号，需要使用<code>&amp;???;</code>表示转义。例如，<code>Java&lt;tm&gt;</code>必须写成：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>Java<span class="symbol">&amp;lt;</span>tm<span class="symbol">&amp;gt;</span><span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>常见的特殊字符如下：</p>
+<table>
+<thead>
+<tr>
+<th>字符</th>
+<th>表示</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>&lt;</td>
+<td>&lt;</td>
+</tr>
+<tr>
+<td>&gt;</td>
+<td>&gt;</td>
+</tr>
+<tr>
+<td>&amp;</td>
+<td>&amp;</td>
+</tr>
+<tr>
+<td>&quot;</td>
+<td>&quot;</td>
+</tr>
+<tr>
+<td>’</td>
+<td>'</td>
+</tr>
+</tbody>
+</table>
+<p>格式正确的XML（Well Formed）是指XML的格式是正确的，可以被解析器正常读取。而合法的XML是指，不但XML格式正确，而且它的数据结构可以被DTD或者XSD验证。</p>
+<p>DTD文档可以指定一系列规则，例如：</p>
+<ul>
+<li>根元素必须是<code>book</code></li>
+<li><code>book</code>元素必须包含<code>name</code>，<code>author</code>等指定元素</li>
+<li><code>isbn</code>元素必须包含属性<code>lang</code></li>
+<li>…</li>
+</ul>
+<p>如何验证XML文件的正确性呢？最简单的方式是通过浏览器验证。可以直接把XML文件拖拽到浏览器窗口，如果格式错误，浏览器会报错。</p>
+<p>和结构类似的HTML不同，浏览器对HTML有一定的“容错性”，缺少关闭标签也可以被解析，但XML要求严格的格式，任何没有正确嵌套的标签都会导致错误。</p>
+<p>XML是一个技术体系，除了我们经常用到的XML文档本身外，XML还支持：</p>
+<ul>
+<li>DTD和XSD：验证XML结构和数据是否有效；</li>
+<li>Namespace：XML节点和属性的名字空间；</li>
+<li>XSLT：把XML转化为另一种文本；</li>
+<li>XPath：一种XML节点查询语言；</li>
+<li>…</li>
+</ul>
+<p>实际上，XML的这些相关技术实现起来非常复杂，在实际应用中很少用到，通常了解一下就可以了。</p>
+<h3 id="小结">小结</h3>
+<p>XML使用嵌套结构的数据表示方式，支持格式验证；</p>
+<p>XML常用于配置文件、网络消息传输等。</p>
+<hr>
+<hr>
+<h2 id="使用DOM">使用DOM</h2>
+<p>因为XML是一种树形结构的文档，它有两种标准的解析API：</p>
+<ul>
+<li>DOM：一次性读取XML，并在内存中表示为树形结构；</li>
+<li>SAX：以流的形式读取XML，使用事件回调。</li>
+</ul>
+<p>我们先来看如何使用DOM来读取XML。</p>
+<p>DOM是Document Object Model的缩写，DOM模型就是把XML结构作为一个树形结构处理，从根节点开始，每个节点都可以包含任意个子节点。</p>
+<p>我们以下面的XML为例：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=<span class="string">&quot;1.0&quot;</span> encoding=<span class="string">&quot;UTF-8&quot;</span> ?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">book</span> <span class="attr">id</span>=<span class="string">&quot;1&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>Java核心技术<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">author</span>&gt;</span>Cay S. Horstmann<span class="tag">&lt;/<span class="name">author</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">isbn</span> <span class="attr">lang</span>=<span class="string">&quot;CN&quot;</span>&gt;</span>1234567<span class="tag">&lt;/<span class="name">isbn</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">tags</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">tag</span>&gt;</span>Java<span class="tag">&lt;/<span class="name">tag</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">tag</span>&gt;</span>Network<span class="tag">&lt;/<span class="name">tag</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tags</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">pubDate</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">book</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>如果解析为DOM结构，它大概长这样：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">                      ┌─────────┐</span><br><span class="line">                      │document │</span><br><span class="line">                      └─────────┘</span><br><span class="line">                           │</span><br><span class="line">                           ▼</span><br><span class="line">                      ┌─────────┐</span><br><span class="line">                      │  book   │</span><br><span class="line">                      └─────────┘</span><br><span class="line">                           │</span><br><span class="line">     ┌──────────┬──────────┼──────────┬──────────┐</span><br><span class="line">     ▼          ▼          ▼          ▼          ▼</span><br><span class="line">┌─────────┐┌─────────┐┌─────────┐┌─────────┐┌─────────┐</span><br><span class="line">│  name   ││ author  ││  isbn   ││  tags   ││ pubDate │</span><br><span class="line">└─────────┘└─────────┘└─────────┘└─────────┘└─────────┘</span><br><span class="line">                                      │</span><br><span class="line">                                 ┌────┴────┐</span><br><span class="line">                                 ▼         ▼</span><br><span class="line">                             ┌───────┐ ┌───────┐</span><br><span class="line">                             │  tag  │ │  tag  │</span><br><span class="line">                             └───────┘ └───────┘</span><br></pre></td></tr></table></figure>
+<p>注意到最顶层的document代表XML文档，它是真正的“根”，而<code>&lt;book&gt;</code>虽然是根元素，但它是<code>document</code>的一个子节点。</p>
+<p>Java提供了DOM API来解析XML，它使用下面的对象来表示XML的内容：</p>
+<ul>
+<li>Document：代表整个XML文档；</li>
+<li>Element：代表一个XML元素；</li>
+<li>Attribute：代表一个元素的某个属性。</li>
+</ul>
+<p>使用DOM API解析一个XML文档的代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">InputStream</span> <span class="variable">input</span> <span class="operator">=</span> Main.class.getResourceAsStream(<span class="string">&quot;/book.xml&quot;</span>);</span><br><span class="line"><span class="type">DocumentBuilderFactory</span> <span class="variable">dbf</span> <span class="operator">=</span> DocumentBuilderFactory.newInstance();</span><br><span class="line"><span class="type">DocumentBuilder</span> <span class="variable">db</span> <span class="operator">=</span> dbf.newDocumentBuilder();</span><br><span class="line"><span class="type">Document</span> <span class="variable">doc</span> <span class="operator">=</span> db.parse(input);</span><br></pre></td></tr></table></figure>
+<p><code>DocumentBuilder.parse()</code>用于解析一个XML，它可以接收InputStream，File或者URL，如果解析无误，我们将获得一个Document对象，这个对象代表了整个XML文档的树形结构，需要遍历以便读取指定元素的值：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">printNode</span><span class="params">(Node n, <span class="type">int</span> indent)</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; indent; i++) &#123;</span><br><span class="line">        System.out.print(<span class="string">&#x27; &#x27;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">switch</span> (n.getNodeType()) &#123;</span><br><span class="line">    <span class="keyword">case</span> Node.DOCUMENT_NODE: <span class="comment">// Document节点</span></span><br><span class="line">        System.out.println(<span class="string">&quot;Document: &quot;</span> + n.getNodeName());</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> Node.ELEMENT_NODE: <span class="comment">// 元素节点</span></span><br><span class="line">        System.out.println(<span class="string">&quot;Element: &quot;</span> + n.getNodeName());</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> Node.TEXT_NODE: <span class="comment">// 文本</span></span><br><span class="line">        System.out.println(<span class="string">&quot;Text: &quot;</span> + n.getNodeName() + <span class="string">&quot; = &quot;</span> + n.getNodeValue());</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> Node.ATTRIBUTE_NODE: <span class="comment">// 属性</span></span><br><span class="line">        System.out.println(<span class="string">&quot;Attr: &quot;</span> + n.getNodeName() + <span class="string">&quot; = &quot;</span> + n.getNodeValue());</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">default</span>: <span class="comment">// 其他</span></span><br><span class="line">        System.out.println(<span class="string">&quot;NodeType: &quot;</span> + n.getNodeType() + <span class="string">&quot;, NodeName: &quot;</span> + n.getNodeName());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">Node</span> <span class="variable">child</span> <span class="operator">=</span> n.getFirstChild(); child != <span class="literal">null</span>; child = child.getNextSibling()) &#123;</span><br><span class="line">        printNode(child, indent + <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>解析结构如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Document: #document</span><br><span class="line"> Element: book</span><br><span class="line">  Text: #text = </span><br><span class="line">    </span><br><span class="line">  Element: name</span><br><span class="line">   Text: #text = Java核心技术</span><br><span class="line">  Text: #text = </span><br><span class="line">    </span><br><span class="line">  Element: author</span><br><span class="line">   Text: #text = Cay S. Horstmann</span><br><span class="line">  Text: #text = </span><br><span class="line">  ...</span><br></pre></td></tr></table></figure>
+<p>对于DOM API解析出来的结构，我们从根节点Document出发，可以遍历所有子节点，获取所有元素、属性、文本数据，还可以包括注释，这些节点被统称为Node，每个Node都有自己的Type，根据Type来区分一个Node到底是元素，还是属性，还是文本，等等。</p>
+<p>使用DOM API时，如果要读取某个元素的文本，需要访问它的Text类型的子节点，所以使用起来还是比较繁琐的。</p>
+<h3 id="练习">练习</h3>
+<p>使用DOM解析XML。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/xml-json/dom/xml-dom.zip">下载练习</a></p>
+<h3 id="小结-2">小结</h3>
+<p>Java提供的DOM API可以将XML解析为DOM结构，以Document对象表示；</p>
+<p>DOM可在内存中完整表示XML数据结构；</p>
+<p>DOM解析速度慢，内存占用大。</p>
+<hr>
+<hr>
+<h2 id="使用SAX">使用SAX</h2>
+<p>使用DOM解析XML的优点是用起来省事，但它的主要缺点是内存占用太大。</p>
+<p>另一种解析XML的方式是SAX。SAX是Simple API for XML的缩写，它是一种基于流的解析方式，边读取XML边解析，并以事件回调的方式让调用者获取数据。因为是一边读一边解析，所以无论XML有多大，占用的内存都很小。</p>
+<p>SAX解析会触发一系列事件：</p>
+<ul>
+<li>startDocument：开始读取XML文档；</li>
+<li>startElement：读取到了一个元素，例如<code>&lt;book&gt;</code>；</li>
+<li>characters：读取到了字符；</li>
+<li>endElement：读取到了一个结束的元素，例如<code>&lt;/book&gt;</code>；</li>
+<li>endDocument：读取XML文档结束。</li>
+</ul>
+<p>如果我们用SAX API解析XML，Java代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">InputStream</span> <span class="variable">input</span> <span class="operator">=</span> Main.class.getResourceAsStream(<span class="string">&quot;/book.xml&quot;</span>);</span><br><span class="line"><span class="type">SAXParserFactory</span> <span class="variable">spf</span> <span class="operator">=</span> SAXParserFactory.newInstance();</span><br><span class="line"><span class="type">SAXParser</span> <span class="variable">saxParser</span> <span class="operator">=</span> spf.newSAXParser();</span><br><span class="line">saxParser.parse(input, <span class="keyword">new</span> <span class="title class_">MyHandler</span>());</span><br></pre></td></tr></table></figure>
+<p>关键代码<code>SAXParser.parse()</code>除了需要传入一个<code>InputStream</code>外，还需要传入一个回调对象，这个对象要继承自<code>DefaultHandler</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MyHandler</span> <span class="keyword">extends</span> <span class="title class_">DefaultHandler</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">startDocument</span><span class="params">()</span> <span class="keyword">throws</span> SAXException &#123;</span><br><span class="line">        print(<span class="string">&quot;start document&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">endDocument</span><span class="params">()</span> <span class="keyword">throws</span> SAXException &#123;</span><br><span class="line">        print(<span class="string">&quot;end document&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">startElement</span><span class="params">(String uri, String localName, String qName, Attributes attributes)</span> <span class="keyword">throws</span> SAXException &#123;</span><br><span class="line">        print(<span class="string">&quot;start element:&quot;</span>, localName, qName);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">endElement</span><span class="params">(String uri, String localName, String qName)</span> <span class="keyword">throws</span> SAXException &#123;</span><br><span class="line">        print(<span class="string">&quot;end element:&quot;</span>, localName, qName);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">characters</span><span class="params">(<span class="type">char</span>[] ch, <span class="type">int</span> start, <span class="type">int</span> length)</span> <span class="keyword">throws</span> SAXException &#123;</span><br><span class="line">        print(<span class="string">&quot;characters:&quot;</span>, <span class="keyword">new</span> <span class="title class_">String</span>(ch, start, length));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">error</span><span class="params">(SAXParseException e)</span> <span class="keyword">throws</span> SAXException &#123;</span><br><span class="line">        print(<span class="string">&quot;error:&quot;</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">print</span><span class="params">(Object... objs)</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (Object obj : objs) &#123;</span><br><span class="line">            System.out.print(obj);</span><br><span class="line">            System.out.print(<span class="string">&quot; &quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行SAX解析代码，可以打印出下面的结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">start document</span><br><span class="line">start element:  book</span><br><span class="line">characters:</span><br><span class="line">     </span><br><span class="line">start element:  name</span><br><span class="line">characters: Java核心技术</span><br><span class="line">end element:  name</span><br><span class="line">characters:</span><br><span class="line">     </span><br><span class="line">start element:  author</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>如果要读取<code>&lt;name&gt;</code>节点的文本，我们就必须在解析过程中根据<code>startElement()</code>和<code>endElement()</code>定位当前正在读取的节点，可以使用栈结构保存，每遇到一个<code>startElement()</code>入栈，每遇到一个<code>endElement()</code>出栈，这样，读到<code>characters()</code>时我们才知道当前读取的文本是哪个节点的。可见，使用SAX API仍然比较麻烦。</p>
+<h3 id="练习-2">练习</h3>
+<p>使用SAX解析XML。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/xml-json/sax/xml-sax.zip">下载练习</a></p>
+<h3 id="小结-3">小结</h3>
+<p>SAX是一种流式解析XML的API；</p>
+<p>SAX通过事件触发，读取速度快，消耗内存少；</p>
+<p>调用方必须通过回调方法获得解析过程中的数据。</p>
+<hr>
+<hr>
+<h2 id="使用Jackson">使用Jackson</h2>
+<p>前面我们介绍了DOM和SAX两种解析XML的标准接口。但是，无论是DOM还是SAX，使用起来都不直观。</p>
+<p>观察XML文档的结构：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=<span class="string">&quot;1.0&quot;</span> encoding=<span class="string">&quot;UTF-8&quot;</span> ?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">book</span> <span class="attr">id</span>=<span class="string">&quot;1&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>Java核心技术<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">author</span>&gt;</span>Cay S. Horstmann<span class="tag">&lt;/<span class="name">author</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">isbn</span> <span class="attr">lang</span>=<span class="string">&quot;CN&quot;</span>&gt;</span>1234567<span class="tag">&lt;/<span class="name">isbn</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">tags</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">tag</span>&gt;</span>Java<span class="tag">&lt;/<span class="name">tag</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">tag</span>&gt;</span>Network<span class="tag">&lt;/<span class="name">tag</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">tags</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">pubDate</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">book</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>我们发现，它完全可以对应到一个定义好的JavaBean中：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Book</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> id;</span><br><span class="line">    <span class="keyword">public</span> String name;</span><br><span class="line">    <span class="keyword">public</span> String author;</span><br><span class="line">    <span class="keyword">public</span> String isbn;</span><br><span class="line">    <span class="keyword">public</span> List&lt;String&gt; tags;</span><br><span class="line">    <span class="keyword">public</span> String pubDate;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果能直接从XML文档解析成一个JavaBean，那比DOM或者SAX不知道容易到哪里去了。</p>
+<p>幸运的是，一个名叫Jackson的开源的第三方库可以轻松做到XML到JavaBean的转换。我们要使用Jackson，先添加一个Maven的依赖：</p>
+<ul>
+<li>com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.10.1</li>
+</ul>
+<p>然后，定义好JavaBean，就可以用下面几行代码解析：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">InputStream</span> <span class="variable">input</span> <span class="operator">=</span> Main.class.getResourceAsStream(<span class="string">&quot;/book.xml&quot;</span>);</span><br><span class="line"><span class="type">JacksonXmlModule</span> <span class="variable">module</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">JacksonXmlModule</span>();</span><br><span class="line"><span class="type">XmlMapper</span> <span class="variable">mapper</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">XmlMapper</span>(<span class="keyword">module</span>);</span><br><span class="line"><span class="type">Book</span> <span class="variable">book</span> <span class="operator">=</span> mapper.readValue(input, Book.class);</span><br><span class="line">System.out.println(book.id);</span><br><span class="line">System.out.println(book.name);</span><br><span class="line">System.out.println(book.author);</span><br><span class="line">System.out.println(book.isbn);</span><br><span class="line">System.out.println(book.tags);</span><br><span class="line">System.out.println(book.pubDate);</span><br></pre></td></tr></table></figure>
+<p>注意到<code>XmlMapper</code>就是我们需要创建的核心对象，可以用<code>readValue(InputStream, Class)</code>直接读取XML并返回一个JavaBean。运行上述代码，就可以直接从Book对象中拿到数据：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">1</span><br><span class="line">Java核心技术</span><br><span class="line">Cay S. Horstmann</span><br><span class="line">1234567</span><br><span class="line">[Java, Network]</span><br><span class="line">null</span><br></pre></td></tr></table></figure>
+<p>如果要解析的数据格式不是Jackson内置的标准格式，那么需要编写一点额外的扩展来告诉Jackson如何自定义解析。这里我们不做深入讨论，可以参考Jackson的<a target="_blank" rel="noopener" href="https://github.com/FasterXML/jackson">官方文档</a>。</p>
+<h3 id="练习-3">练习</h3>
+<p>使用Jackson解析XML。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/xml-json/jackson/xml-jackson.zip">下载练习</a></p>
+<h3 id="小结-4">小结</h3>
+<p>使用Jackson解析XML，可以直接把XML解析为JavaBean，十分方便。</p>
+<hr>
+<hr>
+<p>前面我们讨论了XML这种数据格式。XML的特点是功能全面，但标签繁琐，格式复杂。在Web上使用XML现在越来越少，取而代之的是JSON这种数据结构。</p>
+<p>JSON是JavaScript Object Notation的缩写，它去除了所有JavaScript执行代码，只保留JavaScript的对象格式。一个典型的JSON如下：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;id&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Java核心技术&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;author&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;firstName&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Abc&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;lastName&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Xyz&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;isbn&quot;</span><span class="punctuation">:</span> <span class="string">&quot;1234567&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;tags&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;Java&quot;</span><span class="punctuation">,</span> <span class="string">&quot;Network&quot;</span><span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>JSON作为数据传输的格式，有几个显著的优点：</p>
+<ul>
+<li>JSON只允许使用UTF-8编码，不存在编码问题；</li>
+<li>JSON只允许使用双引号作为key，特殊字符用<code>\</code>转义，格式简单；</li>
+<li>浏览器内置JSON支持，如果把数据用JSON发送给浏览器，可以用JavaScript直接处理。</li>
+</ul>
+<p>因此，JSON适合表示层次结构，因为它格式简单，仅支持以下几种数据类型：</p>
+<ul>
+<li>键值对：<code>&#123;&quot;key&quot;: value&#125;</code></li>
+<li>数组：<code>[1, 2, 3]</code></li>
+<li>字符串：<code>&quot;abc&quot;</code></li>
+<li>数值（整数和浮点数）：<code>12.34</code></li>
+<li>布尔值：<code>true</code>或<code>false</code></li>
+<li>空值：<code>null</code></li>
+</ul>
+<p>浏览器直接支持使用JavaScript对JSON进行读写：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// JSON string to JavaScript object:</span></span><br><span class="line">jsObj = <span class="title class_">JSON</span>.<span class="title function_">parse</span>(jsonStr);</span><br><span class="line"></span><br><span class="line"><span class="comment">// JavaScript object to JSON string:</span></span><br><span class="line">jsonStr = <span class="title class_">JSON</span>.<span class="title function_">stringify</span>(jsObj);</span><br></pre></td></tr></table></figure>
+<p>所以，开发Web应用的时候，使用JSON作为数据传输，在浏览器端非常方便。因为JSON天生适合JavaScript处理，所以，绝大多数REST API都选择JSON作为数据传输格式。</p>
+<p>现在问题来了：使用Java如何对JSON进行读写？</p>
+<p>在Java中，针对JSON也有标准的JSR 353 API，但是我们在前面讲XML的时候发现，如果能直接在XML和JavaBean之间互相转换是最好的。类似的，如果能直接在JSON和JavaBean之间转换，那么用起来就简单多了。</p>
+<p>常用的用于解析JSON的第三方库有：</p>
+<ul>
+<li>Jackson</li>
+<li>GSON</li>
+<li>JSON-lib</li>
+<li>…</li>
+</ul>
+<p>注意到上一节提到的那个可以解析XML的浓眉大眼的Jackson也可以解析JSON！因此我们只需要引入以下Maven依赖：</p>
+<ul>
+<li>com.fasterxml.jackson.core:jackson-databind:2.12.0</li>
+</ul>
+<p>就可以使用下面的代码解析一个JSON文件：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">InputStream</span> <span class="variable">input</span> <span class="operator">=</span> Main.class.getResourceAsStream(<span class="string">&quot;/book.json&quot;</span>);</span><br><span class="line"><span class="type">ObjectMapper</span> <span class="variable">mapper</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectMapper</span>();</span><br><span class="line"><span class="comment">// 反序列化时忽略不存在的JavaBean属性:</span></span><br><span class="line">mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, <span class="literal">false</span>);</span><br><span class="line"><span class="type">Book</span> <span class="variable">book</span> <span class="operator">=</span> mapper.readValue(input, Book.class);</span><br></pre></td></tr></table></figure>
+<p>核心代码是创建一个<code>ObjectMapper</code>对象。关闭<code>DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES</code>功能使得解析时如果JavaBean不存在该属性时解析不会报错。</p>
+<p>把JSON解析为JavaBean的过程称为反序列化。如果把JavaBean变为JSON，那就是序列化。要实现JavaBean到JSON的序列化，只需要一行代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">json</span> <span class="operator">=</span> mapper.writeValueAsString(book);</span><br></pre></td></tr></table></figure>
+<p>要把JSON的某些值解析为特定的Java对象，例如<code>LocalDate</code>，也是完全可以的。例如：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Java核心技术&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;pubDate&quot;</span><span class="punctuation">:</span> <span class="string">&quot;2016-09-01&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>要解析为：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Book</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> String name;</span><br><span class="line">    <span class="keyword">public</span> LocalDate pubDate;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>只需要引入标准的JSR 310关于JavaTime的数据格式定义至Maven：</p>
+<ul>
+<li>com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.0</li>
+</ul>
+<p>然后，在创建<code>ObjectMapper</code>时，注册一个新的<code>JavaTimeModule</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">ObjectMapper</span> <span class="variable">mapper</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectMapper</span>().registerModule(<span class="keyword">new</span> <span class="title class_">JavaTimeModule</span>());</span><br></pre></td></tr></table></figure>
+<p>有些时候，内置的解析规则和扩展的解析规则如果都不满足我们的需求，还可以自定义解析。</p>
+<p>举个例子，假设<code>Book</code>类的<code>isbn</code>是一个<code>BigInteger</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Book</span> &#123;</span><br><span class="line">	<span class="keyword">public</span> String name;</span><br><span class="line">	<span class="keyword">public</span> BigInteger isbn;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但JSON数据并不是标准的整形格式：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Java核心技术&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;isbn&quot;</span><span class="punctuation">:</span> <span class="string">&quot;978-7-111-54742-6&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>直接解析，肯定报错。这时，我们需要自定义一个<code>IsbnDeserializer</code>，用于解析含有非数字的字符串：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">IsbnDeserializer</span> <span class="keyword">extends</span> <span class="title class_">JsonDeserializer</span>&lt;BigInteger&gt; &#123;</span><br><span class="line">    <span class="keyword">public</span> BigInteger <span class="title function_">deserialize</span><span class="params">(JsonParser p, DeserializationContext ctxt)</span> <span class="keyword">throws</span> IOException, JsonProcessingException &#123;</span><br><span class="line">        <span class="comment">// 读取原始的JSON字符串内容:</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">s</span> <span class="operator">=</span> p.getValueAsString();</span><br><span class="line">        <span class="keyword">if</span> (s != <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">BigInteger</span>(s.replace(<span class="string">&quot;-&quot;</span>, <span class="string">&quot;&quot;</span>));</span><br><span class="line">            &#125; <span class="keyword">catch</span> (NumberFormatException e) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">JsonParseException</span>(p, s, e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后，在<code>Book</code>类中使用注解标注：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Book</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> String name;</span><br><span class="line">    <span class="comment">// 表示反序列化isbn时使用自定义的IsbnDeserializer:</span></span><br><span class="line">    <span class="meta">@JsonDeserialize(using = IsbnDeserializer.class)</span></span><br><span class="line">    <span class="keyword">public</span> BigInteger isbn;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>类似的，自定义序列化时我们需要自定义一个<code>IsbnSerializer</code>，然后在<code>Book</code>类中标注<code>@JsonSerialize(using = ...)</code>即可。</p>
+<h3 id="反序列化">反序列化</h3>
+<p>在反序列化时，Jackson要求Java类需要一个默认的无参数构造方法，否则，无法直接实例化此类。存在带参数构造方法的类，如果要反序列化，注意再提供一个无参数构造方法。</p>
+<p>对于<code>enum</code>字段，Jackson按String类型处理，即：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Book</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">DayOfWeek</span> <span class="variable">start</span> <span class="operator">=</span> MONDAY;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>序列化为：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;start&quot;</span><span class="punctuation">:</span> <span class="string">&quot;MONDAY&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>对于<code>record</code>类型，Jackson会自动找出它的带参数构造方法，并根据JSON的key进行匹配，可直接反序列化。对<code>record</code>类型的支持需要版本<code>2.12.0</code>以上。</p>
+<h3 id="练习-4">练习</h3>
+<p>使用Jackson解析JSON。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/xml-json/json/json-jackson.zip">下载练习</a></p>
+<h3 id="小结-5">小结</h3>
+<p>JSON是轻量级的数据表示方式，常用于Web应用；</p>
+<p>Jackson可以实现JavaBean和JSON之间的转换；</p>
+<p>可以通过Module扩展Jackson能处理的数据类型；</p>
+<p>可以自定义<code>JsonSerializer</code>和<code>JsonDeserializer</code>来定制序列化和反序列化。</p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../../2018/02/15/java/JAVA-XML%E4%B8%8EJSON/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
     <div class="pagination-bar">
     <ul class="pagination">
         
@@ -4020,7 +4040,7 @@
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 235 篇文章
+                找到 234 篇文章
             </p>
         </div>
     </div>
