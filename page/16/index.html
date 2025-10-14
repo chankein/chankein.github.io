@@ -301,6 +301,437 @@
                     
                         <a
                             class="link-unstyled"
+                            href="../../2018/02/16/java/JAVA-JDBC%E7%BC%96%E7%A8%8B/"
+                            aria-label=": JAVA-JDBC编程"
+                        >
+                            JAVA-JDBC编程
+                        </a>
+                    
+                </h1>
+                <div class="postShorten-meta">
+    <time datetime="2018-02-16T18:34:24+09:00">
+	
+		    2018 年 2 月 16 日
+    	
+    </time>
+    
+        <span>分類 </span>
+        
+    <a class="category-link" href="../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Java/">Java</a>
+
+
+    
+</div>
+
+            </div>
+            
+                <div class="postShorten-content">
+                    <p>在介绍JDBC之前，我们先简单介绍一下关系数据库。</p>
+<p>程序运行的时候，数据都是在内存中的。当程序终止的时候，通常都需要将数据保存到磁盘上，无论是保存到本地磁盘，还是通过网络保存到服务器上，最终都会将数据写入磁盘文件。</p>
+<p>而如何定义数据的存储格式就是一个大问题。如果我们自己来定义存储格式，比如保存一个班级所有学生的成绩单：</p>
+<table>
+<thead>
+<tr>
+<th>名字</th>
+<th>成绩</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Michael</td>
+<td>99</td>
+</tr>
+<tr>
+<td>Bob</td>
+<td>85</td>
+</tr>
+<tr>
+<td>Bart</td>
+<td>59</td>
+</tr>
+<tr>
+<td>Lisa</td>
+<td>87</td>
+</tr>
+</tbody>
+</table>
+<p>你可以用一个文本文件保存，一行保存一个学生，用<code>,</code>隔开：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Michael,99</span><br><span class="line">Bob,85</span><br><span class="line">Bart,59</span><br><span class="line">Lisa,87</span><br></pre></td></tr></table></figure>
+<p>你还可以用JSON格式保存，也是文本文件：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Michael&quot;</span><span class="punctuation">,</span><span class="attr">&quot;score&quot;</span><span class="punctuation">:</span><span class="number">99</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Bob&quot;</span><span class="punctuation">,</span><span class="attr">&quot;score&quot;</span><span class="punctuation">:</span><span class="number">85</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Bart&quot;</span><span class="punctuation">,</span><span class="attr">&quot;score&quot;</span><span class="punctuation">:</span><span class="number">59</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span><span class="string">&quot;Lisa&quot;</span><span class="punctuation">,</span><span class="attr">&quot;score&quot;</span><span class="punctuation">:</span><span class="number">87</span><span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">]</span></span><br></pre></td></tr></table></figure>
+<p>你还可以定义各种保存格式，但是问题来了：</p>
+<p>存储和读取需要自己实现，JSON还是标准，自己定义的格式就各式各样了；</p>
+<p>不能做快速查询，只有把数据全部读到内存中才能自己遍历，但有时候数据的大小远远超过了内存（比如蓝光电影，40GB的数据），根本无法全部读入内存。</p>
+<p>为了便于程序保存和读取数据，而且，能直接通过条件快速查询到指定的数据，就出现了数据库（Database）这种专门用于集中存储和查询的软件。</p>
+<p>数据库软件诞生的历史非常久远，早在1950年数据库就诞生了。经历了网状数据库，层次数据库，我们现在广泛使用的关系数据库是20世纪70年代基于关系模型的基础上诞生的。</p>
+<p>关系模型有一套复杂的数学理论，但是从概念上是十分容易理解的。举个学校的例子：</p>
+<p>假设某个XX省YY市ZZ县第一实验小学有3个年级，要表示出这3个年级，可以在Excel中用一个表格画出来：</p>
+<p><img src="https://liaoxuefeng.com/books/java/jdbc/basic/table_grade.jpg" alt="grade"></p>
+<p>每个年级又有若干个班级，要把所有班级表示出来，可以在Excel中再画一个表格：</p>
+<p><img src="https://liaoxuefeng.com/books/java/jdbc/basic/table_class.jpg" alt="class"></p>
+<p>这两个表格有个映射关系，就是根据Grade_ID可以在班级表中查找到对应的所有班级：</p>
+<p><img src="https://liaoxuefeng.com/books/java/jdbc/basic/table_relationship.jpg" alt="grade-classes"></p>
+<p>也就是Grade表的每一行对应Class表的多行，在关系数据库中，这种基于表（Table）的一对多的关系就是关系数据库的基础。</p>
+<p>根据某个年级的ID就可以查找所有班级的行，这种查询语句在关系数据库中称为SQL语句，可以写成：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> classes <span class="keyword">WHERE</span> grade_id <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span>;</span><br></pre></td></tr></table></figure>
+<p>结果也是一个表：</p>
+<table>
+<thead>
+<tr>
+<th>grade_id</th>
+<th>class_id</th>
+<th>name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>11</td>
+<td>一年级一班</td>
+</tr>
+<tr>
+<td>1</td>
+<td>12</td>
+<td>一年级二班</td>
+</tr>
+<tr>
+<td>1</td>
+<td>13</td>
+<td>一年级三班</td>
+</tr>
+</tbody>
+</table>
+<p>类似的，Class表的一行记录又可以关联到Student表的多行记录：</p>
+<p><img src="https://liaoxuefeng.com/books/java/jdbc/basic/table_relationship2.jpg" alt="class-students"></p>
+<p>由于本教程不涉及到关系数据库的详细内容，如果你想从零学习关系数据库和基本的SQL语句，请参考<a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/sql/index.html">SQL课程</a>。</p>
+<h3 id="NoSQL">NoSQL</h3>
+<p>你也许还听说过NoSQL数据库，很多NoSQL宣传其速度和规模远远超过关系数据库，所以很多同学觉得有了NoSQL是否就不需要SQL了呢？千万不要被他们忽悠了，连SQL都不明白怎么可能搞明白NoSQL呢？</p>
+<h3 id="数据库类别">数据库类别</h3>
+<p>既然我们要使用关系数据库，就必须选择一个关系数据库。目前广泛使用的关系数据库也就这么几种：</p>
+<p>付费的商用数据库：</p>
+<ul>
+<li>Oracle，典型的高富帅；</li>
+<li>SQL Server，微软自家产品，Windows定制专款；</li>
+<li>DB2，IBM的产品，听起来挺高端；</li>
+<li>Sybase，曾经跟微软是好基友，后来关系破裂，现在家境惨淡。</li>
+</ul>
+<p>这些数据库都是不开源而且付费的，最大的好处是花了钱出了问题可以找厂家解决，不过在Web的世界里，常常需要部署成千上万的数据库服务器，当然不能把大把大把的银子扔给厂家，所以，无论是Google、Facebook，还是国内的BAT，无一例外都选择了免费的开源数据库：</p>
+<ul>
+<li>MySQL，大家都在用，一般错不了；</li>
+<li>PostgreSQL，学术气息有点重，其实挺不错，但知名度没有MySQL高；</li>
+<li>sqlite，嵌入式数据库，适合桌面和移动应用。</li>
+</ul>
+<p>作为一个Java工程师，选择哪个免费数据库呢？当然是MySQL。因为MySQL普及率最高，出了错，可以很容易找到解决方法。而且，围绕MySQL有一大堆监控和运维的工具，安装和使用很方便。</p>
+<h3 id="安装MySQL">安装MySQL</h3>
+<p>为了能继续后面的学习，你需要从MySQL官方网站下载并安装<a target="_blank" rel="noopener" href="https://dev.mysql.com/downloads/mysql/">MySQL Community Server</a>，这个版本是免费的，其他高级版本是要收钱的（请放心，收钱的功能我们用不上）。MySQL是跨平台的，选择对应的平台下载安装文件，安装即可。</p>
+<p>安装时，MySQL会提示输入<code>root</code>用户的口令，请务必记清楚。如果怕记不住，就把口令设置为<code>password</code>。</p>
+<p>在Windows上，安装时请选择<code>UTF-8</code>编码，以便正确地处理中文。</p>
+<p>在Mac或Linux上，需要编辑MySQL的配置文件，把数据库默认的编码全部改为UTF-8。MySQL的配置文件默认存放在<code>/etc/my.cnf</code>或者<code>/etc/mysql/my.cnf</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[client]</span><br><span class="line">default-character-set = utf8</span><br><span class="line"></span><br><span class="line">[mysqld]</span><br><span class="line">default-storage-engine = INNODB</span><br><span class="line">character-set-server = utf8</span><br><span class="line">collation-server = utf8_general_ci</span><br></pre></td></tr></table></figure>
+<p>重启MySQL后，可以通过MySQL的客户端命令行检查编码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">$ mysql -u root -p</span><br><span class="line">Enter password: </span><br><span class="line">Welcome to the MySQL monitor...</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">mysql&gt; show variables like &#x27;%char%&#x27;;</span><br><span class="line">+--------------------------+--------------------------------------------------------+</span><br><span class="line">| Variable_name            | Value                                                  |</span><br><span class="line">+--------------------------+--------------------------------------------------------+</span><br><span class="line">| character_set_client     | utf8                                                   |</span><br><span class="line">| character_set_connection | utf8                                                   |</span><br><span class="line">| character_set_database   | utf8                                                   |</span><br><span class="line">| character_set_filesystem | binary                                                 |</span><br><span class="line">| character_set_results    | utf8                                                   |</span><br><span class="line">| character_set_server     | utf8                                                   |</span><br><span class="line">| character_set_system     | utf8                                                   |</span><br><span class="line">| character_sets_dir       | /usr/local/mysql-5.1.65-osx10.6-x86_64/share/charsets/ |</span><br><span class="line">+--------------------------+--------------------------------------------------------+</span><br><span class="line">8 rows in set (0.00 sec)</span><br></pre></td></tr></table></figure>
+<p>看到<code>utf8</code>字样就表示编码设置正确。</p>
+<p><em>注</em>：如果MySQL的版本≥5.5.3，可以把编码设置为<code>utf8mb4</code>，<code>utf8mb4</code>和<code>utf8</code>完全兼容，但它支持最新的Unicode标准，可以显示emoji字符。</p>
+<h3 id="JDBC">JDBC</h3>
+<p>什么是JDBC？JDBC是Java DataBase Connectivity的缩写，它是Java程序访问数据库的标准接口。</p>
+<p>使用Java程序访问数据库时，Java代码并不是直接通过TCP连接去访问数据库，而是通过JDBC接口来访问，而JDBC接口则通过JDBC驱动来实现真正对数据库的访问。</p>
+<p>例如，我们在Java代码中如果要访问MySQL，那么必须编写代码操作JDBC接口。注意到JDBC接口是Java标准库自带的，所以可以直接编译。而具体的JDBC驱动是由数据库厂商提供的，例如，MySQL的JDBC驱动由Oracle提供。因此，访问某个具体的数据库，我们只需要引入该厂商提供的JDBC驱动，就可以通过JDBC接口来访问，这样保证了Java程序编写的是一套数据库访问代码，却可以访问各种不同的数据库，因为他们都提供了标准的JDBC驱动：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐</span><br><span class="line"></span><br><span class="line">│  ┌───────────────┐  │</span><br><span class="line">   │   Java App    │</span><br><span class="line">│  └───────────────┘  │</span><br><span class="line">           │</span><br><span class="line">│          ▼          │</span><br><span class="line">   ┌───────────────┐</span><br><span class="line">│  │JDBC Interface │◀─┼─── JDK</span><br><span class="line">   └───────────────┘</span><br><span class="line">│          │          │</span><br><span class="line">           ▼</span><br><span class="line">│  ┌───────────────┐  │</span><br><span class="line">   │  JDBC Driver  │◀───── Vendor</span><br><span class="line">│  └───────────────┘  │</span><br><span class="line">           │</span><br><span class="line">└ ─ ─ ─ ─ ─│─ ─ ─ ─ ─ ┘</span><br><span class="line">           ▼</span><br><span class="line">   ┌───────────────┐</span><br><span class="line">   │   Database    │</span><br><span class="line">   └───────────────┘</span><br></pre></td></tr></table></figure>
+<p>从代码来看，Java标准库自带的JDBC接口其实就是定义了一组接口，而某个具体的JDBC驱动其实就是实现了这些接口的类：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐</span><br><span class="line"></span><br><span class="line">│  ┌───────────────┐  │</span><br><span class="line">   │   Java App    │</span><br><span class="line">│  └───────────────┘  │</span><br><span class="line">           │</span><br><span class="line">│          ▼          │</span><br><span class="line">   ┌───────────────┐</span><br><span class="line">│  │JDBC Interface │◀─┼─── JDK</span><br><span class="line">   └───────────────┘</span><br><span class="line">│          │          │</span><br><span class="line">           ▼</span><br><span class="line">│  ┌───────────────┐  │</span><br><span class="line">   │ MySQL Driver  │◀───── Oracle</span><br><span class="line">│  └───────────────┘  │</span><br><span class="line">           │</span><br><span class="line">└ ─ ─ ─ ─ ─│─ ─ ─ ─ ─ ┘</span><br><span class="line">           ▼</span><br><span class="line">   ┌───────────────┐</span><br><span class="line">   │     MySQL     │</span><br><span class="line">   └───────────────┘</span><br></pre></td></tr></table></figure>
+<p>实际上，一个MySQL的JDBC的驱动就是一个jar包，它本身也是纯Java编写的。我们自己编写的代码只需要引用Java标准库提供的java.sql包下面的相关接口，由此再间接地通过MySQL驱动的jar包通过网络访问MySQL服务器，所有复杂的网络通讯都被封装到JDBC驱动中，因此，Java程序本身只需要引入一个MySQL驱动的jar包就可以正常访问MySQL服务器：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐</span><br><span class="line">   ┌───────────────┐</span><br><span class="line">│  │   App.class   │  │</span><br><span class="line">   └───────────────┘</span><br><span class="line">│          │          │</span><br><span class="line">           ▼</span><br><span class="line">│  ┌───────────────┐  │</span><br><span class="line">   │  java.sql.*   │</span><br><span class="line">│  └───────────────┘  │</span><br><span class="line">           │</span><br><span class="line">│          ▼          │</span><br><span class="line">   ┌───────────────┐     TCP    ┌───────────────┐</span><br><span class="line">│  │ mysql-xxx.jar │──┼────────▶│     MySQL     │</span><br><span class="line">   └───────────────┘            └───────────────┘</span><br><span class="line">└ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘</span><br><span class="line">          JVM</span><br></pre></td></tr></table></figure>
+<h3 id="小结">小结</h3>
+<p>使用JDBC的好处是：</p>
+<ul>
+<li>各数据库厂商使用相同的接口，Java代码不需要针对不同数据库分别开发；</li>
+<li>Java程序编译期仅依赖java.sql包，不依赖具体数据库的jar包；</li>
+<li>可随时替换底层数据库，访问数据库的Java代码基本不变。</li>
+</ul>
+<p>前面我们讲了Java程序要通过JDBC接口来查询数据库。JDBC是一套接口规范，它在哪呢？就在Java的标准库<code>java.sql</code>里放着，不过这里面大部分都是接口。接口并不能直接实例化，而是必须实例化对应的实现类，然后通过接口引用这个实例。那么问题来了：JDBC接口的实现类在哪？</p>
+<p>因为JDBC接口并不知道我们要使用哪个数据库，所以，用哪个数据库，我们就去使用哪个数据库的“实现类”，我们把某个数据库实现了JDBC接口的jar包称为JDBC驱动。</p>
+<p>因为我们选择了MySQL 5.x作为数据库，所以我们首先得找一个MySQL的JDBC驱动。所谓JDBC驱动，其实就是一个第三方jar包，我们直接添加一个Maven依赖就可以了：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>mysql<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>mysql-connector-java<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>5.1.47<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scope</span>&gt;</span>runtime<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>注意到这里添加依赖的<code>scope</code>是<code>runtime</code>，因为编译Java程序并不需要MySQL的这个jar包，只有在运行期才需要使用。如果把<code>runtime</code>改成<code>compile</code>，虽然也能正常编译，但是在IDE里写程序的时候，会多出来一大堆类似<code>com.mysql.jdbc.Connection</code>这样的类，非常容易与Java标准库的JDBC接口混淆，所以坚决不要设置为<code>compile</code>。</p>
+<p>有了驱动，我们还要确保MySQL在本机正常运行，并且还需要准备一点数据。这里我们用一个脚本创建数据库和表，然后插入一些数据：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 创建数据库learjdbc:</span></span><br><span class="line"><span class="keyword">DROP</span> DATABASE IF <span class="keyword">EXISTS</span> learnjdbc;</span><br><span class="line"><span class="keyword">CREATE</span> DATABASE learnjdbc;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 创建登录用户learn/口令learnpassword</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span> learn@<span class="string">&#x27;%&#x27;</span> IDENTIFIED <span class="keyword">BY</span> <span class="string">&#x27;learnpassword&#x27;</span>;</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> PRIVILEGES <span class="keyword">ON</span> learnjdbc.<span class="operator">*</span> <span class="keyword">TO</span> learn@<span class="string">&#x27;%&#x27;</span> <span class="keyword">WITH</span> <span class="keyword">GRANT</span> OPTION;</span><br><span class="line">FLUSH PRIVILEGES;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 创建表students:</span></span><br><span class="line">USE learnjdbc;</span><br><span class="line"><span class="keyword">CREATE TABLE</span> students (</span><br><span class="line">  id <span class="type">BIGINT</span> AUTO_INCREMENT <span class="keyword">NOT NULL</span>,</span><br><span class="line">  name <span class="type">VARCHAR</span>(<span class="number">50</span>) <span class="keyword">NOT NULL</span>,</span><br><span class="line">  gender TINYINT(<span class="number">1</span>) <span class="keyword">NOT NULL</span>,</span><br><span class="line">  grade <span class="type">INT</span> <span class="keyword">NOT NULL</span>,</span><br><span class="line">  score <span class="type">INT</span> <span class="keyword">NOT NULL</span>,</span><br><span class="line">  <span class="keyword">PRIMARY KEY</span>(id)</span><br><span class="line">) Engine<span class="operator">=</span>INNODB <span class="keyword">DEFAULT</span> CHARSET<span class="operator">=</span>UTF8;</span><br><span class="line"></span><br><span class="line"><span class="comment">-- 插入初始数据:</span></span><br><span class="line"><span class="keyword">INSERT INTO</span> students (name, gender, grade, score) <span class="keyword">VALUES</span> (<span class="string">&#x27;小明&#x27;</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">88</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> students (name, gender, grade, score) <span class="keyword">VALUES</span> (<span class="string">&#x27;小红&#x27;</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">95</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> students (name, gender, grade, score) <span class="keyword">VALUES</span> (<span class="string">&#x27;小军&#x27;</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">93</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> students (name, gender, grade, score) <span class="keyword">VALUES</span> (<span class="string">&#x27;小白&#x27;</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">100</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> students (name, gender, grade, score) <span class="keyword">VALUES</span> (<span class="string">&#x27;小牛&#x27;</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">96</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> students (name, gender, grade, score) <span class="keyword">VALUES</span> (<span class="string">&#x27;小兵&#x27;</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">99</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> students (name, gender, grade, score) <span class="keyword">VALUES</span> (<span class="string">&#x27;小强&#x27;</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">86</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> students (name, gender, grade, score) <span class="keyword">VALUES</span> (<span class="string">&#x27;小乔&#x27;</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">79</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> students (name, gender, grade, score) <span class="keyword">VALUES</span> (<span class="string">&#x27;小青&#x27;</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">85</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> students (name, gender, grade, score) <span class="keyword">VALUES</span> (<span class="string">&#x27;小王&#x27;</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">90</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> students (name, gender, grade, score) <span class="keyword">VALUES</span> (<span class="string">&#x27;小林&#x27;</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">91</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> students (name, gender, grade, score) <span class="keyword">VALUES</span> (<span class="string">&#x27;小贝&#x27;</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">77</span>);</span><br></pre></td></tr></table></figure>
+<p>在控制台输入<code>mysql -u root -p</code>，输入<code>root</code>口令后以<code>root</code>身份，把上述SQL贴到控制台执行一遍就行。如果你运行的是最新版MySQL 8.x，需要调整一下<code>CREATE USER</code>语句。</p>
+<h3 id="JDBC连接">JDBC连接</h3>
+<p>使用JDBC时，我们先了解什么是Connection。Connection代表一个JDBC连接，它相当于Java程序到数据库的连接（通常是TCP连接）。打开一个Connection时，需要准备URL、用户名和口令，才能成功连接到数据库。</p>
+<p>URL是由数据库厂商指定的格式，例如，MySQL的URL是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jdbc:mysql://&lt;hostname&gt;:&lt;port&gt;/&lt;db&gt;?key1=value1&amp;key2=value2</span><br></pre></td></tr></table></figure>
+<p>假设数据库运行在本机<code>localhost</code>，端口使用标准的<code>3306</code>，数据库名称是<code>learnjdbc</code>，那么URL如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jdbc:mysql://localhost:3306/learnjdbc?useSSL=false&amp;characterEncoding=utf8</span><br></pre></td></tr></table></figure>
+<p>后面的两个参数表示不使用SSL加密，使用UTF-8作为字符编码（注意MySQL的UTF-8是<code>utf8</code>）。</p>
+<p>要获取数据库连接，使用如下代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// JDBC连接的URL, 不同数据库有不同的格式:</span></span><br><span class="line"><span class="type">String</span> <span class="variable">JDBC_URL</span> <span class="operator">=</span> <span class="string">&quot;jdbc:mysql://localhost:3306/test&quot;</span>;</span><br><span class="line"><span class="type">String</span> <span class="variable">JDBC_USER</span> <span class="operator">=</span> <span class="string">&quot;root&quot;</span>;</span><br><span class="line"><span class="type">String</span> <span class="variable">JDBC_PASSWORD</span> <span class="operator">=</span> <span class="string">&quot;password&quot;</span>;</span><br><span class="line"><span class="comment">// 获取连接:</span></span><br><span class="line"><span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);</span><br><span class="line"><span class="comment">// <span class="doctag">TODO:</span> 访问数据库...</span></span><br><span class="line"><span class="comment">// 关闭连接:</span></span><br><span class="line">conn.close();</span><br></pre></td></tr></table></figure>
+<p>核心代码是<code>DriverManager</code>提供的静态方法<code>getConnection()</code>。<code>DriverManager</code>会自动扫描classpath，找到所有的JDBC驱动，然后根据我们传入的URL自动挑选一个合适的驱动。</p>
+<p>因为JDBC连接是一种昂贵的资源，所以使用后要及时释放。使用<code>try (resource)</code>来自动释放JDBC连接是一个好方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> (<span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) &#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="JDBC查询">JDBC查询</h3>
+<p>获取到JDBC连接后，下一步我们就可以查询数据库了。查询数据库分以下几步：</p>
+<p>第一步，通过<code>Connection</code>提供的<code>createStatement()</code>方法创建一个<code>Statement</code>对象，用于执行一个查询；</p>
+<p>第二步，执行<code>Statement</code>对象提供的<code>executeQuery(&quot;SELECT * FROM students&quot;)</code>并传入SQL语句，执行查询并获得返回的结果集，使用<code>ResultSet</code>来引用这个结果集；</p>
+<p>第三步，反复调用<code>ResultSet</code>的<code>next()</code>方法并读取每一行结果。</p>
+<p>完整查询代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> (<span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) &#123;</span><br><span class="line">    <span class="keyword">try</span> (<span class="type">Statement</span> <span class="variable">stmt</span> <span class="operator">=</span> conn.createStatement()) &#123;</span><br><span class="line">        <span class="keyword">try</span> (<span class="type">ResultSet</span> <span class="variable">rs</span> <span class="operator">=</span> stmt.executeQuery(<span class="string">&quot;SELECT id, grade, name, gender FROM students WHERE gender=1&quot;</span>)) &#123;</span><br><span class="line">            <span class="keyword">while</span> (rs.next()) &#123;</span><br><span class="line">                <span class="type">long</span> <span class="variable">id</span> <span class="operator">=</span> rs.getLong(<span class="number">1</span>); <span class="comment">// 注意：索引从1开始</span></span><br><span class="line">                <span class="type">long</span> <span class="variable">grade</span> <span class="operator">=</span> rs.getLong(<span class="number">2</span>);</span><br><span class="line">                <span class="type">String</span> <span class="variable">name</span> <span class="operator">=</span> rs.getString(<span class="number">3</span>);</span><br><span class="line">                <span class="type">int</span> <span class="variable">gender</span> <span class="operator">=</span> rs.getInt(<span class="number">4</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意要点：</p>
+<p><code>Statement</code>和<code>ResultSet</code>都是需要关闭的资源，因此嵌套使用<code>try (resource)</code>确保及时关闭；</p>
+<p><code>rs.next()</code>用于判断是否有下一行记录，如果有，将自动把当前行移动到下一行（一开始获得<code>ResultSet</code>时当前行不是第一行）；</p>
+<p><code>ResultSet</code>获取列时，索引从<code>1</code>开始而不是<code>0</code>；</p>
+<p>必须根据<code>SELECT</code>的列的对应位置来调用<code>getLong(1)</code>，<code>getString(2)</code>这些方法，否则对应位置的数据类型不对，将报错。</p>
+<h3 id="SQL注入">SQL注入</h3>
+<p>使用<code>Statement</code>拼字符串非常容易引发SQL注入的问题，这是因为SQL参数往往是从方法参数传入的。</p>
+<p>我们来看一个例子：假设用户登录的验证方法如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">User <span class="title function_">login</span><span class="params">(String name, String pass)</span> &#123;</span><br><span class="line">    ...</span><br><span class="line">    stmt.executeQuery(<span class="string">&quot;SELECT * FROM user WHERE login=&#x27;&quot;</span> + name + <span class="string">&quot;&#x27; AND pass=&#x27;&quot;</span> + pass + <span class="string">&quot;&#x27;&quot;</span>);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中，参数<code>name</code>和<code>pass</code>通常都是Web页面输入后由程序接收到的。</p>
+<p>如果用户的输入是程序期待的值，就可以拼出正确的SQL。例如：name = <code>&quot;bob&quot;</code>，pass = <code>&quot;1234&quot;</code>：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> <span class="keyword">user</span> <span class="keyword">WHERE</span> login<span class="operator">=</span><span class="string">&#x27;bob&#x27;</span> <span class="keyword">AND</span> pass<span class="operator">=</span><span class="string">&#x27;1234&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>但是，如果用户的输入是一个精心构造的字符串，就可以拼出意想不到的SQL，这个SQL也是正确的，但它查询的条件不是程序设计的意图。例如：name = <code>&quot;bob' OR pass=&quot;</code>, pass = <code>&quot; OR pass='&quot;</code>：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> <span class="keyword">user</span> <span class="keyword">WHERE</span> login<span class="operator">=</span><span class="string">&#x27;bob&#x27;</span> <span class="keyword">OR</span> pass<span class="operator">=</span><span class="string">&#x27; AND pass=&#x27;</span> <span class="keyword">OR</span> pass<span class="operator">=</span><span class="string">&#x27;&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>这个SQL语句执行的时候，根本不用判断口令是否正确，这样一来，登录就形同虚设。</p>
+<p>要避免SQL注入攻击，一个办法是针对所有字符串参数进行转义，但是转义很麻烦，而且需要在任何使用SQL的地方增加转义代码。</p>
+<p>还有一个办法就是使用<code>PreparedStatement</code>。使用<code>PreparedStatement</code>可以<em>完全避免SQL注入</em>的问题，因为<code>PreparedStatement</code>始终使用<code>?</code>作为占位符，并且把数据连同SQL本身传给数据库，这样可以保证每次传给数据库的SQL语句是相同的，只是占位符的数据不同，还能高效利用数据库本身对查询的缓存。上述登录SQL如果用<code>PreparedStatement</code>可以改写如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">User <span class="title function_">login</span><span class="params">(String name, String pass)</span> &#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="type">String</span> <span class="variable">sql</span> <span class="operator">=</span> <span class="string">&quot;SELECT * FROM user WHERE login=? AND pass=?&quot;</span>;</span><br><span class="line">    <span class="type">PreparedStatement</span> <span class="variable">ps</span> <span class="operator">=</span> conn.prepareStatement(sql);</span><br><span class="line">    ps.setObject(<span class="number">1</span>, name);</span><br><span class="line">    ps.setObject(<span class="number">2</span>, pass);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以，<code>PreparedStatement</code>比<code>Statement</code>更安全，而且更快。</p>
+<p>注意</p>
+<p>使用Java对数据库进行操作时，必须使用PreparedStatement，严禁任何通过参数拼字符串的代码！</p>
+<p>我们把上面使用<code>Statement</code>的代码改为使用<code>PreparedStatement</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> (<span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) &#123;</span><br><span class="line">    <span class="keyword">try</span> (<span class="type">PreparedStatement</span> <span class="variable">ps</span> <span class="operator">=</span> conn.prepareStatement(<span class="string">&quot;SELECT id, grade, name, gender FROM students WHERE gender=? AND grade=?&quot;</span>)) &#123;</span><br><span class="line">        ps.setObject(<span class="number">1</span>, <span class="string">&quot;M&quot;</span>); <span class="comment">// 注意：索引从1开始</span></span><br><span class="line">        ps.setObject(<span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line">        <span class="keyword">try</span> (<span class="type">ResultSet</span> <span class="variable">rs</span> <span class="operator">=</span> ps.executeQuery()) &#123;</span><br><span class="line">            <span class="keyword">while</span> (rs.next()) &#123;</span><br><span class="line">                <span class="type">long</span> <span class="variable">id</span> <span class="operator">=</span> rs.getLong(<span class="string">&quot;id&quot;</span>);</span><br><span class="line">                <span class="type">long</span> <span class="variable">grade</span> <span class="operator">=</span> rs.getLong(<span class="string">&quot;grade&quot;</span>);</span><br><span class="line">                <span class="type">String</span> <span class="variable">name</span> <span class="operator">=</span> rs.getString(<span class="string">&quot;name&quot;</span>);</span><br><span class="line">                <span class="type">String</span> <span class="variable">gender</span> <span class="operator">=</span> rs.getString(<span class="string">&quot;gender&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用<code>PreparedStatement</code>和<code>Statement</code>稍有不同，必须首先调用<code>setObject()</code>设置每个占位符<code>?</code>的值，最后获取的仍然是<code>ResultSet</code>对象。</p>
+<p>另外注意到从结果集读取列时，使用<code>String</code>类型的列名比索引要易读，而且不易出错。</p>
+<p>注意到JDBC查询的返回值总是<code>ResultSet</code>，即使我们写这样的聚合查询<code>SELECT SUM(score) FROM ...</code>，也需要按结果集读取：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">ResultSet</span> <span class="variable">rs</span> <span class="operator">=</span> ...</span><br><span class="line"><span class="keyword">if</span> (rs.next()) &#123;</span><br><span class="line">    <span class="type">double</span> <span class="variable">sum</span> <span class="operator">=</span> rs.getDouble(<span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="数据类型">数据类型</h3>
+<p>有的童鞋可能注意到了，使用JDBC的时候，我们需要在Java数据类型和SQL数据类型之间进行转换。JDBC在<code>java.sql.Types</code>定义了一组常量来表示如何映射SQL数据类型，但是平时我们使用的类型通常也就以下几种：</p>
+<table>
+<thead>
+<tr>
+<th>SQL数据类型</th>
+<th>Java数据类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BIT, BOOL</td>
+<td>boolean</td>
+</tr>
+<tr>
+<td>INTEGER</td>
+<td>int</td>
+</tr>
+<tr>
+<td>BIGINT</td>
+<td>long</td>
+</tr>
+<tr>
+<td>REAL</td>
+<td>float</td>
+</tr>
+<tr>
+<td>FLOAT, DOUBLE</td>
+<td>double</td>
+</tr>
+<tr>
+<td>CHAR, VARCHAR</td>
+<td>String</td>
+</tr>
+<tr>
+<td>DECIMAL</td>
+<td>BigDecimal</td>
+</tr>
+<tr>
+<td>DATE</td>
+<td>java.sql.Date, LocalDate</td>
+</tr>
+<tr>
+<td>TIME</td>
+<td>java.sql.Time, LocalTime</td>
+</tr>
+</tbody>
+</table>
+<p>注意：只有最新的JDBC驱动才支持<code>LocalDate</code>和<code>LocalTime</code>。</p>
+<h3 id="练习">练习</h3>
+<p>使用JDBC查询数据库。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/jdbc/query/jdbc-query.zip">下载练习</a></p>
+<h3 id="小结-2">小结</h3>
+<p>JDBC接口的<code>Connection</code>代表一个JDBC连接；</p>
+<p>使用JDBC查询时，总是使用<code>PreparedStatement</code>进行查询而不是<code>Statement</code>；</p>
+<p>查询结果总是<code>ResultSet</code>，即使使用聚合查询也不例外。</p>
+<p>数据库操作总结起来就四个字：增删改查，行话叫CRUD：Create，Retrieve，Update和Delete。</p>
+<p>查就是查询，我们已经讲过了，就是使用<code>PreparedStatement</code>进行各种<code>SELECT</code>，然后处理结果集。现在我们来看看如何使用JDBC进行增删改。</p>
+<h3 id="插入">插入</h3>
+<p>插入操作是<code>INSERT</code>，即插入一条新记录。通过JDBC进行插入，本质上也是用<code>PreparedStatement</code>执行一条SQL语句，不过最后执行的不是<code>executeQuery()</code>，而是<code>executeUpdate()</code>。示例代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> (<span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) &#123;</span><br><span class="line">    <span class="keyword">try</span> (<span class="type">PreparedStatement</span> <span class="variable">ps</span> <span class="operator">=</span> conn.prepareStatement(</span><br><span class="line">            <span class="string">&quot;INSERT INTO students (id, grade, name, gender) VALUES (?,?,?,?)&quot;</span>)) &#123;</span><br><span class="line">        ps.setObject(<span class="number">1</span>, <span class="number">999</span>); <span class="comment">// 注意：索引从1开始</span></span><br><span class="line">        ps.setObject(<span class="number">2</span>, <span class="number">1</span>); <span class="comment">// grade</span></span><br><span class="line">        ps.setObject(<span class="number">3</span>, <span class="string">&quot;Bob&quot;</span>); <span class="comment">// name</span></span><br><span class="line">        ps.setObject(<span class="number">4</span>, <span class="string">&quot;M&quot;</span>); <span class="comment">// gender</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> ps.executeUpdate(); <span class="comment">// 1</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>设置参数与查询是一样的，有几个<code>?</code>占位符就必须设置对应的参数。虽然<code>Statement</code>也可以执行插入操作，但我们仍然要严格遵循<em>绝不能手动拼SQL字符串</em>的原则，以避免安全漏洞。</p>
+<p>当成功执行<code>executeUpdate()</code>后，返回值是<code>int</code>，表示插入的记录数量。此处总是<code>1</code>，因为只插入了一条记录。</p>
+<h3 id="插入并获取主键">插入并获取主键</h3>
+<p>如果数据库的表设置了自增主键，那么在执行<code>INSERT</code>语句时，并不需要指定主键，数据库会自动分配主键。对于使用自增主键的程序，有个额外的步骤，就是如何获取插入后的自增主键的值。</p>
+<p>要获取自增主键，不能先插入，再查询。因为两条SQL执行期间可能有别的程序也插入了同一个表。获取自增主键的正确写法是在创建<code>PreparedStatement</code>的时候，指定一个<code>RETURN_GENERATED_KEYS</code>标志位，表示JDBC驱动必须返回插入的自增主键。示例代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> (<span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) &#123;</span><br><span class="line">    <span class="keyword">try</span> (<span class="type">PreparedStatement</span> <span class="variable">ps</span> <span class="operator">=</span> conn.prepareStatement(</span><br><span class="line">            <span class="string">&quot;INSERT INTO students (grade, name, gender) VALUES (?,?,?)&quot;</span>,</span><br><span class="line">            Statement.RETURN_GENERATED_KEYS)) &#123;</span><br><span class="line">        ps.setObject(<span class="number">1</span>, <span class="number">1</span>); <span class="comment">// grade</span></span><br><span class="line">        ps.setObject(<span class="number">2</span>, <span class="string">&quot;Bob&quot;</span>); <span class="comment">// name</span></span><br><span class="line">        ps.setObject(<span class="number">3</span>, <span class="string">&quot;M&quot;</span>); <span class="comment">// gender</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> ps.executeUpdate(); <span class="comment">// 1</span></span><br><span class="line">        <span class="keyword">try</span> (<span class="type">ResultSet</span> <span class="variable">rs</span> <span class="operator">=</span> ps.getGeneratedKeys()) &#123;</span><br><span class="line">            <span class="keyword">if</span> (rs.next()) &#123;</span><br><span class="line">                <span class="type">long</span> <span class="variable">id</span> <span class="operator">=</span> rs.getLong(<span class="number">1</span>); <span class="comment">// 注意：索引从1开始</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>观察上述代码，有两点注意事项：</p>
+<p>一是调用<code>prepareStatement()</code>时，第二个参数必须传入常量<code>Statement.RETURN_GENERATED_KEYS</code>，否则JDBC驱动不会返回自增主键；</p>
+<p>二是执行<code>executeUpdate()</code>方法后，必须调用<code>getGeneratedKeys()</code>获取一个<code>ResultSet</code>对象，这个对象包含了数据库自动生成的主键的值，读取该对象的每一行来获取自增主键的值。如果一次插入多条记录，那么这个<code>ResultSet</code>对象就会有多行返回值。如果插入时有多列自增，那么<code>ResultSet</code>对象的每一行都会对应多个自增值（自增列不一定必须是主键）。</p>
+<h3 id="更新">更新</h3>
+<p>更新操作是<code>UPDATE</code>语句，它可以一次更新若干列的记录。更新操作和插入操作在JDBC代码的层面上实际上没有区别，除了SQL语句不同：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> (<span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) &#123;</span><br><span class="line">    <span class="keyword">try</span> (<span class="type">PreparedStatement</span> <span class="variable">ps</span> <span class="operator">=</span> conn.prepareStatement(<span class="string">&quot;UPDATE students SET name=? WHERE id=?&quot;</span>)) &#123;</span><br><span class="line">        ps.setObject(<span class="number">1</span>, <span class="string">&quot;Bob&quot;</span>); <span class="comment">// 注意：索引从1开始</span></span><br><span class="line">        ps.setObject(<span class="number">2</span>, <span class="number">999</span>);</span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> ps.executeUpdate(); <span class="comment">// 返回更新的行数</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>executeUpdate()</code>返回数据库实际更新的行数。返回结果可能是正数，也可能是0（表示没有任何记录更新）。</p>
+<h3 id="删除">删除</h3>
+<p>删除操作是<code>DELETE</code>语句，它可以一次删除若干行。和更新一样，除了SQL语句不同外，JDBC代码都是相同的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> (<span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) &#123;</span><br><span class="line">    <span class="keyword">try</span> (<span class="type">PreparedStatement</span> <span class="variable">ps</span> <span class="operator">=</span> conn.prepareStatement(<span class="string">&quot;DELETE FROM students WHERE id=?&quot;</span>)) &#123;</span><br><span class="line">        ps.setObject(<span class="number">1</span>, <span class="number">999</span>); <span class="comment">// 注意：索引从1开始</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> ps.executeUpdate(); <span class="comment">// 删除的行数</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="练习-2">练习</h3>
+<p>使用JDBC更新数据库。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/jdbc/update/jdbc-update.zip">下载练习</a></p>
+<h3 id="小结-3">小结</h3>
+<p>使用JDBC执行<code>INSERT</code>、<code>UPDATE</code>和<code>DELETE</code>都可视为更新操作；</p>
+<p>更新操作使用<code>PreparedStatement</code>的<code>executeUpdate()</code>进行，返回受影响的行数。</p>
+<h2 id="JDBC事务">JDBC事务</h2>
+<p>数据库事务（Transaction）是由若干个SQL语句构成的一个操作序列，有点类似于Java的<code>synchronized</code>同步。数据库系统保证在一个事务中的所有SQL要么全部执行成功，要么全部不执行，即数据库事务具有ACID特性：</p>
+<ul>
+<li>Atomicity：原子性</li>
+<li>Consistency：一致性</li>
+<li>Isolation：隔离性</li>
+<li>Durability：持久性</li>
+</ul>
+<p>数据库事务可以并发执行，而数据库系统从效率考虑，对事务定义了不同的隔离级别。SQL标准定义了4种隔离级别，分别对应可能出现的数据不一致的情况：</p>
+<table>
+<thead>
+<tr>
+<th>Isolation Level</th>
+<th>脏读（Dirty Read）</th>
+<th>不可重复读（Non Repeatable Read）</th>
+<th>幻读（Phantom Read）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Read Uncommitted</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Read Committed</td>
+<td>-</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Repeatable Read</td>
+<td>-</td>
+<td>-</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Serializable</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<p>对应用程序来说，数据库事务非常重要，很多运行着关键任务的应用程序，都必须依赖数据库事务保证程序的结果正常。</p>
+<p>举个例子：假设小明准备给小红支付100，两人在数据库中的记录主键分别是<code>123</code>和<code>456</code>，那么用两条SQL语句操作如下：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> accounts <span class="keyword">SET</span> balance <span class="operator">=</span> balance <span class="operator">-</span> <span class="number">100</span> <span class="keyword">WHERE</span> id <span class="operator">=</span> <span class="number">123</span> <span class="keyword">AND</span> balance <span class="operator">&gt;=</span> <span class="number">100</span>;</span><br><span class="line"><span class="keyword">UPDATE</span> accounts <span class="keyword">SET</span> balance <span class="operator">=</span> balance <span class="operator">+</span> <span class="number">100</span> <span class="keyword">WHERE</span> id <span class="operator">=</span> <span class="number">456</span>;</span><br></pre></td></tr></table></figure>
+<p>这两条语句必须以事务方式执行才能保证业务的正确性，因为一旦第一条SQL执行成功而第二条SQL失败的话，系统的钱就会凭空减少100，而有了事务，要么这笔转账成功，要么转账失败，双方账户的钱都不变。</p>
+<p>这里我们不讨论详细的SQL事务，如果对SQL事务不熟悉，请参考<a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/sql/transaction/index.html">SQL事务</a>。</p>
+<p>要在JDBC中执行事务，本质上就是如何把多条SQL包裹在一个数据库事务中执行。我们来看JDBC的事务代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> openConnection();</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">// 关闭自动提交:</span></span><br><span class="line">    conn.setAutoCommit(<span class="literal">false</span>);</span><br><span class="line">    <span class="comment">// 执行多条SQL语句:</span></span><br><span class="line">    insert(); update(); delete();</span><br><span class="line">    <span class="comment">// 提交事务:</span></span><br><span class="line">    conn.commit();</span><br><span class="line">&#125; <span class="keyword">catch</span> (SQLException e) &#123;</span><br><span class="line">    <span class="comment">// 回滚事务:</span></span><br><span class="line">    conn.rollback();</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    conn.setAutoCommit(<span class="literal">true</span>);</span><br><span class="line">    conn.close();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中，开启事务的关键代码是<code>conn.setAutoCommit(false)</code>，表示关闭自动提交。提交事务的代码在执行完指定的若干条SQL语句后，调用<code>conn.commit()</code>。要注意事务不是总能成功，如果事务提交失败，会抛出SQL异常（也可能在执行SQL语句的时候就抛出了），此时我们必须捕获并调用<code>conn.rollback()</code>回滚事务。最后，在<code>finally</code>中通过<code>conn.setAutoCommit(true)</code>把<code>Connection</code>对象的状态恢复到初始值。</p>
+<p>实际上，默认情况下，我们获取到<code>Connection</code>连接后，总是处于“自动提交”模式，也就是每执行一条SQL都是作为事务自动执行的，这也是为什么前面几节我们的更新操作总能成功的原因：因为默认有这种“隐式事务”。只要关闭了<code>Connection</code>的<code>autoCommit</code>，那么就可以在一个事务中执行多条语句，事务以<code>commit()</code>方法结束。</p>
+<p>如果要设定事务的隔离级别，可以使用如下代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 设定隔离级别为READ COMMITTED:</span></span><br><span class="line">conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);</span><br></pre></td></tr></table></figure>
+<p>如果没有调用上述方法，那么会使用数据库的默认隔离级别。MySQL的默认隔离级别是<code>REPEATABLE_READ</code>。</p>
+<h3 id="练习-3">练习</h3>
+<p>使用数据库事务。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/jdbc/tx/jdbc-transaction.zip">下载练习</a></p>
+<h3 id="小结-4">小结</h3>
+<p>数据库事务（Transaction）具有ACID特性：</p>
+<ul>
+<li>Atomicity：原子性</li>
+<li>Consistency：一致性</li>
+<li>Isolation：隔离性</li>
+<li>Durability：持久性</li>
+</ul>
+<p>JDBC提供了事务的支持，使用Connection可以开启、提交或回滚事务。</p>
+<hr>
+<hr>
+<p>使用JDBC操作数据库的时候，经常会执行一些批量操作。</p>
+<p>例如，一次性给会员增加可用优惠券若干，我们可以执行以下SQL代码：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT INTO</span> coupons (user_id, type, expires) <span class="keyword">VALUES</span> (<span class="number">123</span>, <span class="string">&#x27;DISCOUNT&#x27;</span>, <span class="string">&#x27;2030-12-31&#x27;</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> coupons (user_id, type, expires) <span class="keyword">VALUES</span> (<span class="number">234</span>, <span class="string">&#x27;DISCOUNT&#x27;</span>, <span class="string">&#x27;2030-12-31&#x27;</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> coupons (user_id, type, expires) <span class="keyword">VALUES</span> (<span class="number">345</span>, <span class="string">&#x27;DISCOUNT&#x27;</span>, <span class="string">&#x27;2030-12-31&#x27;</span>);</span><br><span class="line"><span class="keyword">INSERT INTO</span> coupons (user_id, type, expires) <span class="keyword">VALUES</span> (<span class="number">456</span>, <span class="string">&#x27;DISCOUNT&#x27;</span>, <span class="string">&#x27;2030-12-31&#x27;</span>);</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>实际上执行JDBC时，因为只有占位符参数不同，所以SQL实际上是一样的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="keyword">var</span> params : paramsList) &#123;</span><br><span class="line">    <span class="type">PreparedStatement</span> <span class="variable">ps</span> <span class="operator">=</span> conn.preparedStatement(<span class="string">&quot;INSERT INTO coupons (user_id, type, expires) VALUES (?,?,?)&quot;</span>);</span><br><span class="line">    ps.setLong(params.get(<span class="number">0</span>));</span><br><span class="line">    ps.setString(params.get(<span class="number">1</span>));</span><br><span class="line">    ps.setString(params.get(<span class="number">2</span>));</span><br><span class="line">    ps.executeUpdate();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>类似的还有，给每个员工薪水增加10%～30%：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> employees <span class="keyword">SET</span> salary <span class="operator">=</span> salary <span class="operator">*</span> ? <span class="keyword">WHERE</span> id <span class="operator">=</span> ?</span><br></pre></td></tr></table></figure>
+<p>通过一个循环来执行每个<code>PreparedStatement</code>虽然可行，但是性能很低。SQL数据库对SQL语句相同，但只有参数不同的若干语句可以作为batch执行，即批量执行，这种操作有特别优化，速度远远快于循环执行每个SQL。</p>
+<p>在JDBC代码中，我们可以利用SQL数据库的这一特性，把同一个SQL但参数不同的若干次操作合并为一个batch执行。我们以批量插入为例，示例代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> (<span class="type">PreparedStatement</span> <span class="variable">ps</span> <span class="operator">=</span> conn.prepareStatement(<span class="string">&quot;INSERT INTO students (name, gender, grade, score) VALUES (?, ?, ?, ?)&quot;</span>)) &#123;</span><br><span class="line">    <span class="comment">// 对同一个PreparedStatement反复设置参数并调用addBatch():</span></span><br><span class="line">    <span class="keyword">for</span> (Student s : students) &#123;</span><br><span class="line">        ps.setString(<span class="number">1</span>, s.name);</span><br><span class="line">        ps.setBoolean(<span class="number">2</span>, s.gender);</span><br><span class="line">        ps.setInt(<span class="number">3</span>, s.grade);</span><br><span class="line">        ps.setInt(<span class="number">4</span>, s.score);</span><br><span class="line">        ps.addBatch(); <span class="comment">// 添加到batch</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 执行batch:</span></span><br><span class="line">    <span class="type">int</span>[] ns = ps.executeBatch();</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> n : ns) &#123;</span><br><span class="line">        System.out.println(n + <span class="string">&quot; inserted.&quot;</span>); <span class="comment">// batch中每个SQL执行的结果数量</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行batch和执行一个SQL不同点在于，需要对同一个<code>PreparedStatement</code>反复设置参数并调用<code>addBatch()</code>，这样就相当于给一个SQL加上了多组参数，相当于变成了“多行”SQL。</p>
+<p>第二个不同点是调用的不是<code>executeUpdate()</code>，而是<code>executeBatch()</code>，因为我们设置了多组参数，相应地，返回结果也是多个<code>int</code>值，因此返回类型是<code>int[]</code>，循环<code>int[]</code>数组即可获取每组参数执行后影响的结果数量。</p>
+<h3 id="练习-4">练习</h3>
+<p>使用Batch操作。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/jdbc/batch/jdbc-batch.zip">下载练习</a></p>
+<h3 id="小结-5">小结</h3>
+<p>使用JDBC的batch操作会大大提高执行效率，对内容相同，参数不同的SQL，要优先考虑batch操作。</p>
+<p>我们在讲多线程的时候说过，创建线程是一个昂贵的操作，如果有大量的小任务需要执行，并且频繁地创建和销毁线程，实际上会消耗大量的系统资源，往往创建和消耗线程所耗费的时间比执行任务的时间还长，所以，为了提高效率，可以用线程池。</p>
+<p>类似的，在执行JDBC的增删改查的操作时，如果每一次操作都来一次打开连接，操作，关闭连接，那么创建和销毁JDBC连接的开销就太大了。为了避免频繁地创建和销毁JDBC连接，我们可以通过连接池（Connection Pool）复用已经创建好的连接。</p>
+<p>JDBC连接池有一个标准的接口<code>javax.sql.DataSource</code>，注意这个类位于Java标准库中，但仅仅是接口。要使用JDBC连接池，我们必须选择一个JDBC连接池的实现。常用的JDBC连接池有：</p>
+<ul>
+<li>HikariCP</li>
+<li>C3P0</li>
+<li>BoneCP</li>
+<li>Druid</li>
+</ul>
+<p>目前使用最广泛的是HikariCP。我们以HikariCP为例，要使用JDBC连接池，先添加HikariCP的依赖如下：</p>
+<ul>
+<li>com.zaxxer:HikariCP:2.7.1</li>
+</ul>
+<p>紧接着，我们需要创建一个<code>DataSource</code>实例，这个实例就是连接池：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">HikariConfig</span> <span class="variable">config</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HikariConfig</span>();</span><br><span class="line">config.setJdbcUrl(<span class="string">&quot;jdbc:mysql://localhost:3306/test&quot;</span>);</span><br><span class="line">config.setUsername(<span class="string">&quot;root&quot;</span>);</span><br><span class="line">config.setPassword(<span class="string">&quot;password&quot;</span>);</span><br><span class="line">config.addDataSourceProperty(<span class="string">&quot;connectionTimeout&quot;</span>, <span class="string">&quot;1000&quot;</span>); <span class="comment">// 连接超时：1秒</span></span><br><span class="line">config.addDataSourceProperty(<span class="string">&quot;idleTimeout&quot;</span>, <span class="string">&quot;60000&quot;</span>); <span class="comment">// 空闲超时：60秒</span></span><br><span class="line">config.addDataSourceProperty(<span class="string">&quot;maximumPoolSize&quot;</span>, <span class="string">&quot;10&quot;</span>); <span class="comment">// 最大连接数：10</span></span><br><span class="line"><span class="type">DataSource</span> <span class="variable">ds</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HikariDataSource</span>(config);</span><br></pre></td></tr></table></figure>
+<p>注意创建<code>DataSource</code>也是一个非常昂贵的操作，所以通常<code>DataSource</code>实例总是作为一个全局变量存储，并贯穿整个应用程序的生命周期。</p>
+<p>有了连接池以后，我们如何使用它呢？和前面的代码类似，只是获取<code>Connection</code>时，把<code>DriverManage.getConnection()</code>改为<code>ds.getConnection()</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> (<span class="type">Connection</span> <span class="variable">conn</span> <span class="operator">=</span> ds.getConnection()) &#123; <span class="comment">// 在此获取连接</span></span><br><span class="line">    ...</span><br><span class="line">&#125; <span class="comment">// 在此“关闭”连接</span></span><br></pre></td></tr></table></figure>
+<p>通过连接池获取连接时，并不需要指定JDBC的相关URL、用户名、口令等信息，因为这些信息已经存储在连接池内部了（创建<code>HikariDataSource</code>时传入的<code>HikariConfig</code>持有这些信息）。一开始，连接池内部并没有连接，所以，第一次调用<code>ds.getConnection()</code>，会迫使连接池内部先创建一个<code>Connection</code>，再返回给客户端使用。当我们调用<code>conn.close()</code>方法时（<code>在try(resource)&#123;...&#125;</code>结束处），不是真正“关闭”连接，而是释放到连接池中，以便下次获取连接时能直接返回。</p>
+<p>因此，连接池内部维护了若干个<code>Connection</code>实例，如果调用<code>ds.getConnection()</code>，就选择一个空闲连接，并标记它为“正在使用”然后返回，如果对<code>Connection</code>调用<code>close()</code>，那么就把连接再次标记为“空闲”从而等待下次调用。这样一来，我们就通过连接池维护了少量连接，但可以频繁地执行大量的SQL语句。</p>
+<p>通常连接池提供了大量的参数可以配置，例如，维护的最小、最大活动连接数，指定一个连接在空闲一段时间后自动关闭等，需要根据应用程序的负载合理地配置这些参数。此外，大多数连接池都提供了详细的实时状态以便进行监控。</p>
+<h3 id="练习-5">练习</h3>
+<p>使用JDBC连接池。</p>
+<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/jdbc/pool/jdbc-pool.zip">下载练习</a></p>
+<h3 id="小结-6">小结</h3>
+<p>数据库连接池是一种复用<code>Connection</code>的组件，它可以避免反复创建新连接，提高JDBC代码的运行效率；</p>
+<p>可以配置连接池的详细参数并监控连接池。</p>
+
+                    
+                        
+
+
+                    
+                    
+                        <p>
+                            <a
+                                href="../../2018/02/16/java/JAVA-JDBC%E7%BC%96%E7%A8%8B/#post-footer"
+                                class="postShorten-excerpt_link link"
+                                aria-label=""
+                            >
+                                留言與分享
+                            </a>
+                        </p>
+                    
+                </div>
+            
+        </div>
+        
+    </article>
+    
+    
+    <article class="postShorten postShorten--thumbnailimg-bottom">
+        <div class="postShorten-wrap">
+            
+            <div class="postShorten-header">
+                <h1 class="postShorten-title">
+                    
+                        <a
+                            class="link-unstyled"
                             href="../../2018/02/15/java/JAVA-XML%E4%B8%8EJSON/"
                             aria-label=": JAVA-XML与JSON"
                         >
@@ -309,7 +740,7 @@
                     
                 </h1>
                 <div class="postShorten-meta">
-    <time datetime="2018-02-15T17:23:30+08:00">
+    <time datetime="2018-02-15T18:23:30+09:00">
 	
 		    2018 年 2 月 15 日
     	
@@ -590,7 +1021,7 @@
                     
                 </h1>
                 <div class="postShorten-meta">
-    <time datetime="2018-02-14T17:16:36+08:00">
+    <time datetime="2018-02-14T18:16:36+09:00">
 	
 		    2018 年 2 月 14 日
     	
@@ -1034,7 +1465,7 @@
                     
                 </h1>
                 <div class="postShorten-meta">
-    <time datetime="2018-02-13T16:42:16+08:00">
+    <time datetime="2018-02-13T17:42:16+09:00">
 	
 		    2018 年 2 月 13 日
     	
@@ -1523,7 +1954,7 @@
                     
                 </h1>
                 <div class="postShorten-meta">
-    <time datetime="2018-02-12T15:55:43+08:00">
+    <time datetime="2018-02-12T16:55:43+09:00">
 	
 		    2018 年 2 月 12 日
     	
@@ -1817,7 +2248,7 @@
                     
                 </h1>
                 <div class="postShorten-meta">
-    <time datetime="2018-02-11T15:55:43+08:00">
+    <time datetime="2018-02-11T16:55:43+09:00">
 	
 		    2018 年 2 月 11 日
     	
@@ -2280,7 +2711,7 @@
                     
                 </h1>
                 <div class="postShorten-meta">
-    <time datetime="2018-02-10T15:55:43+08:00">
+    <time datetime="2018-02-10T16:55:43+09:00">
 	
 		    2018 年 2 月 10 日
     	
@@ -2502,7 +2933,7 @@
                     
                 </h1>
                 <div class="postShorten-meta">
-    <time datetime="2018-02-09T15:49:06+08:00">
+    <time datetime="2018-02-09T16:49:06+09:00">
 	
 		    2018 年 2 月 9 日
     	
@@ -3161,7 +3592,7 @@
                     
                 </h1>
                 <div class="postShorten-meta">
-    <time datetime="2018-02-08T15:45:59+08:00">
+    <time datetime="2018-02-08T16:45:59+09:00">
 	
 		    2018 年 2 月 8 日
     	
@@ -3658,7 +4089,7 @@
                     
                 </h1>
                 <div class="postShorten-meta">
-    <time datetime="2018-02-07T15:44:16+08:00">
+    <time datetime="2018-02-07T16:44:16+09:00">
 	
 		    2018 年 2 月 7 日
     	
@@ -3850,472 +4281,6 @@
                         <p>
                             <a
                                 href="../../2018/02/07/java/JAVA-%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/#post-footer"
-                                class="postShorten-excerpt_link link"
-                                aria-label=""
-                            >
-                                留言與分享
-                            </a>
-                        </p>
-                    
-                </div>
-            
-        </div>
-        
-    </article>
-    
-    
-    <article class="postShorten postShorten--thumbnailimg-bottom">
-        <div class="postShorten-wrap">
-            
-            <div class="postShorten-header">
-                <h1 class="postShorten-title">
-                    
-                        <a
-                            class="link-unstyled"
-                            href="../../2018/02/06/java/JAVA-%E6%97%A5%E6%9C%9F%E4%B8%8E%E6%97%B6%E9%97%B4/"
-                            aria-label=": JAVA-日期与时间"
-                        >
-                            JAVA-日期与时间
-                        </a>
-                    
-                </h1>
-                <div class="postShorten-meta">
-    <time datetime="2018-02-06T15:15:10+08:00">
-	
-		    2018 年 2 月 6 日
-    	
-    </time>
-    
-        <span>分類 </span>
-        
-    <a class="category-link" href="../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a>, <a class="category-link" href="../../categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Java/">Java</a>
-
-
-    
-</div>
-
-            </div>
-            
-                <div class="postShorten-content">
-                    <p>在计算机中，我们经常需要处理日期和时间。</p>
-<p>这是日期：</p>
-<ul>
-<li>2019-11-20</li>
-<li>2020-1-1</li>
-</ul>
-<p>这是时间：</p>
-<ul>
-<li>12:30:59</li>
-<li>2020-1-1 20:21:59</li>
-</ul>
-<p>日期是指某一天，它不是连续变化的，而是应该被看成离散的。</p>
-<p>而时间有两种概念，一种是不带日期的时间，例如，12:30:59。另一种是带日期的时间，例如，2020-1-1 20:21:59，只有这种带日期的时间能唯一确定某个时刻，不带日期的时间是无法确定一个唯一时刻的。</p>
-<h3 id="本地时间">本地时间</h3>
-<p>当我们说当前时刻是2019年11月20日早上8:15的时候，我们说的实际上是本地时间。在国内就是北京时间。在这个时刻，如果地球上不同地方的人们同时看一眼手表，他们各自的本地时间是不同的：</p>
-<p><img src="https://liaoxuefeng.com/books/java/datetime/concept/localtime.jpg" alt="localtime"></p>
-<p>所以，不同的时区，在同一时刻，本地时间是不同的。全球一共分为24个时区，伦敦所在的时区称为标准时区，其他时区按东／西偏移的小时区分，北京所在的时区是东八区。</p>
-<h3 id="时区">时区</h3>
-<p>因为光靠本地时间还无法唯一确定一个准确的时刻，所以我们还需要给本地时间加上一个时区。时区有好几种表示方式。</p>
-<p>一种是以<code>GMT</code>或者<code>UTC</code>加时区偏移表示，例如：<code>GMT+08:00</code>或者<code>UTC+08:00</code>表示东八区。</p>
-<p><code>GMT</code>和<code>UTC</code>可以认为基本是等价的，只是<code>UTC</code>使用更精确的原子钟计时，每隔几年会有一个闰秒，我们在开发程序的时候可以忽略两者的误差，因为计算机的时钟在联网的时候会自动与时间服务器同步时间。</p>
-<p>另一种是缩写，例如，<code>CST</code>表示<code>China Standard Time</code>，也就是中国标准时间。但是<code>CST</code>也可以表示美国中部时间<code>Central Standard Time USA</code>，因此，缩写容易产生混淆，我们尽量不要使用缩写。</p>
-<p>最后一种是以洲／城市表示，例如，<code>Asia/Shanghai</code>，表示上海所在地的时区。特别注意城市名称不是任意的城市，而是由国际标准组织规定的城市。</p>
-<p>因为时区的存在，东八区的2019年11月20日早上8:15，和西五区的2019年11月19日晚上19:15，他们的时刻是相同的：</p>
-<p><img src="https://liaoxuefeng.com/books/java/datetime/concept/same-time.jpg" alt="timezone"></p>
-<p>时刻相同的意思就是，分别在两个时区的两个人，如果在这一刻通电话，他们各自报出自己手表上的时间，虽然本地时间是不同的，但是这两个时间表示的时刻是相同的。</p>
-<h3 id="夏令时">夏令时</h3>
-<p>时区还不是最复杂的，更复杂的是夏令时。所谓夏令时，就是夏天开始的时候，把时间往后拨1小时，夏天结束的时候，再把时间往前拨1小时。我们国家实行过一段时间夏令时，1992年就废除了，但是矫情的美国人到现在还在使用，所以时间换算更加复杂。</p>
-<p><img src="https://liaoxuefeng.com/books/java/datetime/concept/dst-time.jpg" alt="daynight-saving"></p>
-<p>因为涉及到夏令时，相同的时区，如果表示的方式不同，转换出的时间是不同的。我们举个栗子：</p>
-<p>对于2019-11-20和2019-6-20两个日期来说，假设北京人在纽约：</p>
-<ul>
-<li>如果以<code>GMT</code>或者<code>UTC</code>作为时区，无论日期是多少，时间都是<code>19:00</code>；</li>
-<li>如果以国家／城市表示，例如<code>America／NewYork</code>，虽然纽约也在西五区，但是，因为夏令时的存在，在不同的日期，<code>GMT</code>时间和纽约时间可能是不一样的：</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>时区</th>
-<th>2019-11-20</th>
-<th>2019-6-20</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>GMT-05:00</td>
-<td>19:00</td>
-<td>19:00</td>
-</tr>
-<tr>
-<td>UTC-05:00</td>
-<td>19:00</td>
-<td>19:00</td>
-</tr>
-<tr>
-<td>America/New_York</td>
-<td>19:00</td>
-<td>20:00</td>
-</tr>
-</tbody>
-</table>
-<p>实行夏令时的不同地区，进入和退出夏令时的时间很可能是不同的。同一个地区，根据历史上是否实行过夏令时，标准时间在不同年份换算成当地时间也是不同的。因此，计算夏令时，没有统一的公式，必须按照一组给定的规则来算，并且，该规则要定期更新。</p>
-<p>注意</p>
-<p>计算夏令时请使用标准库提供的相关类，不要试图自己计算夏令时。</p>
-<h3 id="本地化">本地化</h3>
-<p>在计算机中，通常使用<code>Locale</code>表示一个国家或地区的日期、时间、数字、货币等格式。<code>Locale</code>由<code>语言_国家</code>的字母缩写构成，例如，<code>zh_CN</code>表示中文+中国，<code>en_US</code>表示英文+美国。语言使用小写，国家使用大写。</p>
-<p>对于日期来说，不同的Locale，例如，中国和美国的表示方式如下：</p>
-<ul>
-<li>zh_CN：2016-11-30</li>
-<li>en_US：11/30/2016</li>
-</ul>
-<p>计算机用<code>Locale</code>在日期、时间、货币和字符串之间进行转换。一个电商网站会根据用户所在的<code>Locale</code>对用户显示如下：</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>中国用户</th>
-<th>美国用户</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>购买价格</td>
-<td>12000.00</td>
-<td>12,000.00</td>
-</tr>
-<tr>
-<td>购买日期</td>
-<td>2016-11-30</td>
-<td>11/30/2016</td>
-</tr>
-</tbody>
-</table>
-<h3 id="小结">小结</h3>
-<p>在编写日期和时间的程序前，我们要准确理解日期、时间和时刻的概念；</p>
-<p>由于存在本地时间，我们需要理解时区的概念，并且必须牢记由于夏令时的存在，同一地区用<code>GMT/UTC</code>和城市表示的时区可能导致时间不同；</p>
-<p>计算机通过<code>Locale</code>来针对当地用户习惯格式化日期、时间、数字、货币等。</p>
-<p>在计算机中，应该如何表示日期和时间呢？</p>
-<p>我们经常看到的日期和时间表示方式如下：</p>
-<ul>
-<li>2019-11-20 0:15:00 GMT+00:00</li>
-<li>2019年11月20日8:15:00</li>
-<li>11/19/2019 19:15:00 America/New_York</li>
-</ul>
-<p>如果直接以字符串的形式存储，那么不同的格式，不同的语言会让表示方式非常繁琐。</p>
-<p>在理解日期和时间的表示方式之前，我们先要理解数据的存储和展示。</p>
-<p>当我们定义一个整型变量并赋值时：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> <span class="number">123400</span>;</span><br></pre></td></tr></table></figure>
-<p>编译器会把上述字符串（程序源码就是一个字符串）编译成字节码。在程序的运行期，变量<code>n</code>指向的内存实际上是一个4字节区域：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">┌──┬──┬──┬──┐</span><br><span class="line">│00│01│e2│08│</span><br><span class="line">└──┴──┴──┴──┘</span><br></pre></td></tr></table></figure>
-<p>注意到计算机内存除了二进制的<code>0</code>/<code>1</code>外没有其他任何格式。上述十六进制是为了简化表示。</p>
-<p>当我们用<code>System.out.println(n)</code>打印这个整数的时候，实际上<code>println()</code>这个方法在内部把<code>int</code>类型转换成<code>String</code>类型，然后打印出字符串<code>123400</code>。</p>
-<p>类似的，我们也可以以十六进制的形式打印这个整数，或者，如果<code>n</code>表示一个价格，我们就以<code>$123,400.00</code>的形式来打印它：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.text.*;</span><br><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> <span class="number">123400</span>;</span><br><span class="line">        <span class="comment">// 123400</span></span><br><span class="line">        System.out.println(n);</span><br><span class="line">        <span class="comment">// 1e208</span></span><br><span class="line">        System.out.println(Integer.toHexString(n));</span><br><span class="line">        <span class="comment">// $123,400.00</span></span><br><span class="line">        System.out.println(NumberFormat.getCurrencyInstance(Locale.US).format(n));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>可见，整数<code>123400</code>是数据的存储格式，它的存储格式非常简单。而我们打印的各种各样的字符串，则是数据的展示格式。展示格式有多种形式，但本质上它就是一个转换方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">String <span class="title function_">toDisplay</span><span class="params">(<span class="type">int</span> n)</span> &#123; ... &#125;</span><br></pre></td></tr></table></figure>
-<p>理解了数据的存储和展示，我们回头看看以下几种日期和时间：</p>
-<ul>
-<li>2019-11-20 0:15:01 GMT+00:00</li>
-<li>2019年11月20日8:15:01</li>
-<li>11/19/2019 19:15:01 America/New_York</li>
-</ul>
-<p>它们实际上是数据的展示格式，分别按英国时区、中国时区、纽约时区对同一个时刻进行展示。而这个“同一个时刻”在计算机中存储的本质上只是一个整数，我们称它为<code>Epoch Time</code>。</p>
-<p><code>Epoch Time</code>是计算从1970年1月1日零点（格林威治时区／GMT+00:00）到现在所经历的秒数，例如：</p>
-<p><code>1574208900</code>表示从1970年1月1日零点GMT时区到该时刻一共经历了1574208900秒，换算成伦敦、北京和纽约时间分别是：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1574208900 = 北京时间2019-11-20 8:15:00</span><br><span class="line">           = 伦敦时间2019-11-20 0:15:00</span><br><span class="line">           = 纽约时间2019-11-19 19:15:00</span><br></pre></td></tr></table></figure>
-<p><img src="https://liaoxuefeng.com/books/java/datetime/date-calendar/localtime.jpg" alt="localtime"></p>
-<p>因此，在计算机中，只需要存储一个整数<code>1574208900</code>表示某一时刻。当需要显示为某一地区的当地时间时，我们就把它格式化为一个字符串：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">String <span class="title function_">displayDateTime</span><span class="params">(<span class="type">int</span> n, String timezone)</span> &#123; ... &#125;</span><br></pre></td></tr></table></figure>
-<p><code>Epoch Time</code>又称为时间戳，在不同的编程语言中，会有几种存储方式：</p>
-<ul>
-<li>以秒为单位的整数：1574208900，缺点是精度只能到秒；</li>
-<li>以毫秒为单位的整数：1574208900123，最后3位表示毫秒数；</li>
-<li>以秒为单位的浮点数：1574208900.123，小数点后面表示零点几秒。</li>
-</ul>
-<p>它们之间转换非常简单。而在Java程序中，时间戳通常是用<code>long</code>表示的毫秒数，即：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">long</span> <span class="variable">t</span> <span class="operator">=</span> <span class="number">1574208900123L</span>;</span><br></pre></td></tr></table></figure>
-<p>转换成北京时间就是<code>2019-11-20T8:15:00.123</code>。要获取当前时间戳，可以使用<code>System.currentTimeMillis()</code>，这是Java程序获取时间戳最常用的方法。</p>
-<h3 id="标准库API">标准库API</h3>
-<p>我们再来看一下Java标准库提供的API。Java标准库有两套处理日期和时间的API：</p>
-<ul>
-<li>一套定义在<code>java.util</code>这个包里面，主要包括<code>Date</code>、<code>Calendar</code>和<code>TimeZone</code>这几个类；</li>
-<li>一套新的API是在Java 8引入的，定义在<code>java.time</code>这个包里面，主要包括<code>LocalDateTime</code>、<code>ZonedDateTime</code>、<code>ZoneId</code>等。</li>
-</ul>
-<p>为什么会有新旧两套API呢？因为历史遗留原因，旧的API存在很多问题，所以引入了新的API。</p>
-<p>那么我们能不能跳过旧的API直接用新的API呢？如果涉及到遗留代码就不行，因为很多遗留代码仍然使用旧的API，所以目前仍然需要对旧的API有一定了解，很多时候还需要在新旧两种对象之间进行转换。</p>
-<p>本节我们快速讲解旧API的常用类型和方法。</p>
-<h3 id="Date">Date</h3>
-<p><code>java.util.Date</code>是用于表示一个日期和时间的对象，注意与<code>java.sql.Date</code>区分，后者用在数据库中。如果观察<code>Date</code>的源码，可以发现它实际上存储了一个<code>long</code>类型的以毫秒表示的时间戳：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Date</span> <span class="keyword">implements</span> <span class="title class_">Serializable</span>, Cloneable, Comparable&lt;Date&gt; &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">transient</span> <span class="type">long</span> fastTime;</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>我们来看Date的基本用法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 获取当前时间:</span></span><br><span class="line">        <span class="type">Date</span> <span class="variable">date</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Date</span>();</span><br><span class="line">        System.out.println(date.getYear() + <span class="number">1900</span>); <span class="comment">// 必须加上1900</span></span><br><span class="line">        System.out.println(date.getMonth() + <span class="number">1</span>); <span class="comment">// 0~11，必须加上1</span></span><br><span class="line">        System.out.println(date.getDate()); <span class="comment">// 1~31，不能加1</span></span><br><span class="line">        <span class="comment">// 转换为String:</span></span><br><span class="line">        System.out.println(date.toString());</span><br><span class="line">        <span class="comment">// 转换为GMT时区:</span></span><br><span class="line">        System.out.println(date.toGMTString());</span><br><span class="line">        <span class="comment">// 转换为本地时区:</span></span><br><span class="line">        System.out.println(date.toLocaleString());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注意<code>getYear()</code>返回的年份必须加上<code>1900</code>，<code>getMonth()</code>返回的月份是<code>0</code>~<code>11</code>分别表示1~12月，所以要加1，而<code>getDate()</code>返回的日期范围是<code>1</code>~<code>31</code>，又不能加1。</p>
-<p>打印本地时区表示的日期和时间时，不同的计算机可能会有不同的结果。如果我们想要针对用户的偏好精确地控制日期和时间的格式，就可以使用<code>SimpleDateFormat</code>对一个<code>Date</code>进行转换。它用预定义的字符串表示格式化：</p>
-<ul>
-<li>yyyy：年</li>
-<li>MM：月</li>
-<li>dd: 日</li>
-<li>HH: 小时</li>
-<li>mm: 分钟</li>
-<li>ss: 秒</li>
-</ul>
-<p>我们来看如何以自定义的格式输出：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.text.*;</span><br><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 获取当前时间:</span></span><br><span class="line">        <span class="type">Date</span> <span class="variable">date</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Date</span>();</span><br><span class="line">        <span class="type">var</span> <span class="variable">sdf</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SimpleDateFormat</span>(<span class="string">&quot;yyyy-MM-dd HH:mm:ss&quot;</span>);</span><br><span class="line">        System.out.println(sdf.format(date));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>Java的格式化预定义了许多不同的格式，我们以<code>MMM</code>和<code>E</code>为例：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.text.*;</span><br><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 获取当前时间:</span></span><br><span class="line">        <span class="type">Date</span> <span class="variable">date</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Date</span>();</span><br><span class="line">        <span class="type">var</span> <span class="variable">sdf</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SimpleDateFormat</span>(<span class="string">&quot;E MMM dd, yyyy&quot;</span>);</span><br><span class="line">        System.out.println(sdf.format(date));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>上述代码在不同的语言环境会打印出类似<code>Sun Sep 15, 2019</code>这样的日期。可以从<a target="_blank" rel="noopener" href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/text/SimpleDateFormat.html">JDK文档</a>查看详细的格式说明。一般来说，字母越长，输出越长。以<code>M</code>为例，假设当前月份是9月：</p>
-<ul>
-<li><code>M</code>：输出<code>9</code></li>
-<li><code>MM</code>：输出<code>09</code></li>
-<li><code>MMM</code>：输出<code>Sep</code></li>
-<li><code>MMMM</code>：输出<code>September</code></li>
-</ul>
-<p><code>Date</code>对象有几个严重的问题：它不能转换时区，除了<code>toGMTString()</code>可以按<code>GMT+0:00</code>输出外，<code>Date</code>总是以当前计算机系统的默认时区为基础进行输出。此外，我们也很难对日期和时间进行加减，计算两个日期相差多少天，计算某个月第一个星期一的日期等。</p>
-<h3 id="Calendar">Calendar</h3>
-<p><code>Calendar</code>可以用于获取并设置年、月、日、时、分、秒，它和<code>Date</code>比，主要多了一个可以做简单的日期和时间运算的功能。</p>
-<p>我们来看<code>Calendar</code>的基本用法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 获取当前时间:</span></span><br><span class="line">        <span class="type">Calendar</span> <span class="variable">c</span> <span class="operator">=</span> Calendar.getInstance();</span><br><span class="line">        <span class="type">int</span> <span class="variable">y</span> <span class="operator">=</span> c.get(Calendar.YEAR);</span><br><span class="line">        <span class="type">int</span> <span class="variable">m</span> <span class="operator">=</span> <span class="number">1</span> + c.get(Calendar.MONTH);</span><br><span class="line">        <span class="type">int</span> <span class="variable">d</span> <span class="operator">=</span> c.get(Calendar.DAY_OF_MONTH);</span><br><span class="line">        <span class="type">int</span> <span class="variable">w</span> <span class="operator">=</span> c.get(Calendar.DAY_OF_WEEK);</span><br><span class="line">        <span class="type">int</span> <span class="variable">hh</span> <span class="operator">=</span> c.get(Calendar.HOUR_OF_DAY);</span><br><span class="line">        <span class="type">int</span> <span class="variable">mm</span> <span class="operator">=</span> c.get(Calendar.MINUTE);</span><br><span class="line">        <span class="type">int</span> <span class="variable">ss</span> <span class="operator">=</span> c.get(Calendar.SECOND);</span><br><span class="line">        <span class="type">int</span> <span class="variable">ms</span> <span class="operator">=</span> c.get(Calendar.MILLISECOND);</span><br><span class="line">        System.out.println(y + <span class="string">&quot;-&quot;</span> + m + <span class="string">&quot;-&quot;</span> + d + <span class="string">&quot; &quot;</span> + w + <span class="string">&quot; &quot;</span> + hh + <span class="string">&quot;:&quot;</span> + mm + <span class="string">&quot;:&quot;</span> + ss + <span class="string">&quot;.&quot;</span> + ms);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注意到<code>Calendar</code>获取年月日这些信息变成了<code>get(int field)</code>，返回的年份不必转换，返回的月份仍然要加1，返回的星期要特别注意，<code>1</code>~<code>7</code>分别表示周日，周一，……，周六。</p>
-<p><code>Calendar</code>只有一种方式获取，即<code>Calendar.getInstance()</code>，而且一获取到就是当前时间。如果我们想给它设置成特定的一个日期和时间，就必须先清除所有字段：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.text.*;</span><br><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 当前时间:</span></span><br><span class="line">        <span class="type">Calendar</span> <span class="variable">c</span> <span class="operator">=</span> Calendar.getInstance();</span><br><span class="line">        <span class="comment">// 清除所有:</span></span><br><span class="line">        c.clear();</span><br><span class="line">        <span class="comment">// 设置2019年:</span></span><br><span class="line">        c.set(Calendar.YEAR, <span class="number">2019</span>);</span><br><span class="line">        <span class="comment">// 设置9月:注意8表示9月:</span></span><br><span class="line">        c.set(Calendar.MONTH, <span class="number">8</span>);</span><br><span class="line">        <span class="comment">// 设置2日:</span></span><br><span class="line">        c.set(Calendar.DATE, <span class="number">2</span>);</span><br><span class="line">        <span class="comment">// 设置时间:</span></span><br><span class="line">        c.set(Calendar.HOUR_OF_DAY, <span class="number">21</span>);</span><br><span class="line">        c.set(Calendar.MINUTE, <span class="number">22</span>);</span><br><span class="line">        c.set(Calendar.SECOND, <span class="number">23</span>);</span><br><span class="line">        System.out.println(<span class="keyword">new</span> <span class="title class_">SimpleDateFormat</span>(<span class="string">&quot;yyyy-MM-dd HH:mm:ss&quot;</span>).format(c.getTime()));</span><br><span class="line">        <span class="comment">// 2019-09-02 21:22:23</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>利用<code>Calendar.getTime()</code>可以将一个<code>Calendar</code>对象转换成<code>Date</code>对象，然后就可以用<code>SimpleDateFormat</code>进行格式化了。</p>
-<h3 id="TimeZone">TimeZone</h3>
-<p><code>Calendar</code>和<code>Date</code>相比，它提供了时区转换的功能。时区用<code>TimeZone</code>对象表示：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">TimeZone</span> <span class="variable">tzDefault</span> <span class="operator">=</span> TimeZone.getDefault(); <span class="comment">// 当前时区</span></span><br><span class="line">        <span class="type">TimeZone</span> <span class="variable">tzGMT9</span> <span class="operator">=</span> TimeZone.getTimeZone(<span class="string">&quot;GMT+09:00&quot;</span>); <span class="comment">// GMT+9:00时区</span></span><br><span class="line">        <span class="type">TimeZone</span> <span class="variable">tzNY</span> <span class="operator">=</span> TimeZone.getTimeZone(<span class="string">&quot;America/New_York&quot;</span>); <span class="comment">// 纽约时区</span></span><br><span class="line">        System.out.println(tzDefault.getID()); <span class="comment">// Asia/Shanghai</span></span><br><span class="line">        System.out.println(tzGMT9.getID()); <span class="comment">// GMT+09:00</span></span><br><span class="line">        System.out.println(tzNY.getID()); <span class="comment">// America/New_York</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>时区的唯一标识是以字符串表示的ID，我们获取指定<code>TimeZone</code>对象也是以这个ID为参数获取，<code>GMT+09:00</code>、<code>Asia/Shanghai</code>都是有效的时区ID。要列出系统支持的所有ID，请使用<code>TimeZone.getAvailableIDs()</code>。</p>
-<p>有了时区，我们就可以对指定时间进行转换。例如，下面的例子演示了如何将北京时间<code>2019-11-20 8:15:00</code>转换为纽约时间：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.text.*;</span><br><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 当前时间:</span></span><br><span class="line">        <span class="type">Calendar</span> <span class="variable">c</span> <span class="operator">=</span> Calendar.getInstance();</span><br><span class="line">        <span class="comment">// 清除所有:</span></span><br><span class="line">        c.clear();</span><br><span class="line">        <span class="comment">// 设置为北京时区:</span></span><br><span class="line">        c.setTimeZone(TimeZone.getTimeZone(<span class="string">&quot;Asia/Shanghai&quot;</span>));</span><br><span class="line">        <span class="comment">// 设置年月日时分秒:</span></span><br><span class="line">        c.set(<span class="number">2019</span>, <span class="number">10</span> <span class="comment">/* 11月 */</span>, <span class="number">20</span>, <span class="number">8</span>, <span class="number">15</span>, <span class="number">0</span>);</span><br><span class="line">        <span class="comment">// 显示时间:</span></span><br><span class="line">        <span class="type">var</span> <span class="variable">sdf</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SimpleDateFormat</span>(<span class="string">&quot;yyyy-MM-dd HH:mm:ss&quot;</span>);</span><br><span class="line">        sdf.setTimeZone(TimeZone.getTimeZone(<span class="string">&quot;America/New_York&quot;</span>));</span><br><span class="line">        System.out.println(sdf.format(c.getTime()));</span><br><span class="line">        <span class="comment">// 2019-11-19 19:15:00</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>可见，利用<code>Calendar</code>进行时区转换的步骤是：</p>
-<ol>
-<li>清除所有字段；</li>
-<li>设定指定时区；</li>
-<li>设定日期和时间；</li>
-<li>创建<code>SimpleDateFormat</code>并设定目标时区；</li>
-<li>格式化获取的<code>Date</code>对象（注意<code>Date</code>对象无时区信息，时区信息存储在<code>SimpleDateFormat</code>中）。</li>
-</ol>
-<p>因此，本质上时区转换只能通过<code>SimpleDateFormat</code>在显示的时候完成。</p>
-<p><code>Calendar</code>也可以对日期和时间进行简单的加减：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.text.*;</span><br><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 当前时间:</span></span><br><span class="line">        <span class="type">Calendar</span> <span class="variable">c</span> <span class="operator">=</span> Calendar.getInstance();</span><br><span class="line">        <span class="comment">// 清除所有:</span></span><br><span class="line">        c.clear();</span><br><span class="line">        <span class="comment">// 设置年月日时分秒:</span></span><br><span class="line">        c.set(<span class="number">2019</span>, <span class="number">10</span> <span class="comment">/* 11月 */</span>, <span class="number">20</span>, <span class="number">8</span>, <span class="number">15</span>, <span class="number">0</span>);</span><br><span class="line">        <span class="comment">// 加5天并减去2小时:</span></span><br><span class="line">        c.add(Calendar.DAY_OF_MONTH, <span class="number">5</span>);</span><br><span class="line">        c.add(Calendar.HOUR_OF_DAY, -<span class="number">2</span>);</span><br><span class="line">        <span class="comment">// 显示时间:</span></span><br><span class="line">        <span class="type">var</span> <span class="variable">sdf</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SimpleDateFormat</span>(<span class="string">&quot;yyyy-MM-dd HH:mm:ss&quot;</span>);</span><br><span class="line">        <span class="type">Date</span> <span class="variable">d</span> <span class="operator">=</span> c.getTime();</span><br><span class="line">        System.out.println(sdf.format(d));</span><br><span class="line">        <span class="comment">// 2019-11-25 6:15:00</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="小结-2">小结</h3>
-<p>计算机表示的时间是以整数表示的时间戳存储的，即Epoch Time，Java使用<code>long</code>型来表示以毫秒为单位的时间戳，通过<code>System.currentTimeMillis()</code>获取当前时间戳。</p>
-<p>Java有两套日期和时间的API：</p>
-<ul>
-<li>旧的Date、Calendar和TimeZone；</li>
-<li>新的LocalDateTime、ZonedDateTime、ZoneId等。</li>
-</ul>
-<p>分别位于<code>java.util</code>和<code>java.time</code>包中。</p>
-<p>从Java 8开始，<code>java.time</code>包提供了新的日期和时间API，主要涉及的类型有：</p>
-<ul>
-<li>本地日期和时间：<code>LocalDateTime</code>，<code>LocalDate</code>，<code>LocalTime</code>；</li>
-<li>带时区的日期和时间：<code>ZonedDateTime</code>；</li>
-<li>时刻：<code>Instant</code>；</li>
-<li>时区：<code>ZoneId</code>，<code>ZoneOffset</code>；</li>
-<li>时间间隔：<code>Duration</code>。</li>
-</ul>
-<p>以及一套新的用于取代<code>SimpleDateFormat</code>的格式化类型<code>DateTimeFormatter</code>。</p>
-<p>和旧的API相比，新API严格区分了时刻、本地日期、本地时间和带时区的日期时间，并且，对日期和时间进行运算更加方便。</p>
-<p>此外，新API修正了旧API不合理的常量设计：</p>
-<ul>
-<li>Month的范围用1~12表示1月到12月；</li>
-<li>Week的范围用1~7表示周一到周日。</li>
-</ul>
-<p>最后，新API的类型几乎全部是不变类型（和String类似），可以放心使用不必担心被修改。</p>
-<h3 id="LocalDateTime">LocalDateTime</h3>
-<p>我们首先来看最常用的<code>LocalDateTime</code>，它表示一个本地日期和时间：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">LocalDate</span> <span class="variable">d</span> <span class="operator">=</span> LocalDate.now(); <span class="comment">// 当前日期</span></span><br><span class="line">        <span class="type">LocalTime</span> <span class="variable">t</span> <span class="operator">=</span> LocalTime.now(); <span class="comment">// 当前时间</span></span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">dt</span> <span class="operator">=</span> LocalDateTime.now(); <span class="comment">// 当前日期和时间</span></span><br><span class="line">        System.out.println(d); <span class="comment">// 严格按照ISO 8601格式打印</span></span><br><span class="line">        System.out.println(t); <span class="comment">// 严格按照ISO 8601格式打印</span></span><br><span class="line">        System.out.println(dt); <span class="comment">// 严格按照ISO 8601格式打印</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>本地日期和时间通过now()获取到的总是以当前默认时区返回的，和旧API不同，<code>LocalDateTime</code>、<code>LocalDate</code>和<code>LocalTime</code>默认严格按照<a target="_blank" rel="noopener" href="https://www.iso.org/iso-8601-date-and-time-format.html">ISO 8601</a>规定的日期和时间格式进行打印。</p>
-<p>上述代码其实有一个小问题，在获取3个类型的时候，由于执行一行代码总会消耗一点时间，因此，3个类型的日期和时间很可能对不上（时间的毫秒数基本上不同）。为了保证获取到同一时刻的日期和时间，可以改写如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">LocalDateTime</span> <span class="variable">dt</span> <span class="operator">=</span> LocalDateTime.now(); <span class="comment">// 当前日期和时间</span></span><br><span class="line"><span class="type">LocalDate</span> <span class="variable">d</span> <span class="operator">=</span> dt.toLocalDate(); <span class="comment">// 转换到当前日期</span></span><br><span class="line"><span class="type">LocalTime</span> <span class="variable">t</span> <span class="operator">=</span> dt.toLocalTime(); <span class="comment">// 转换到当前时间</span></span><br></pre></td></tr></table></figure>
-<p>反过来，通过指定的日期和时间创建<code>LocalDateTime</code>可以通过<code>of()</code>方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 指定日期和时间:</span></span><br><span class="line"><span class="type">LocalDate</span> <span class="variable">d2</span> <span class="operator">=</span> LocalDate.of(<span class="number">2019</span>, <span class="number">11</span>, <span class="number">30</span>); <span class="comment">// 2019-11-30, 注意11=11月</span></span><br><span class="line"><span class="type">LocalTime</span> <span class="variable">t2</span> <span class="operator">=</span> LocalTime.of(<span class="number">15</span>, <span class="number">16</span>, <span class="number">17</span>); <span class="comment">// 15:16:17</span></span><br><span class="line"><span class="type">LocalDateTime</span> <span class="variable">dt2</span> <span class="operator">=</span> LocalDateTime.of(<span class="number">2019</span>, <span class="number">11</span>, <span class="number">30</span>, <span class="number">15</span>, <span class="number">16</span>, <span class="number">17</span>);</span><br><span class="line"><span class="type">LocalDateTime</span> <span class="variable">dt3</span> <span class="operator">=</span> LocalDateTime.of(d2, t2);</span><br></pre></td></tr></table></figure>
-<p>因为严格按照ISO 8601的格式，因此，将字符串转换为<code>LocalDateTime</code>就可以传入标准格式：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">LocalDateTime</span> <span class="variable">dt</span> <span class="operator">=</span> LocalDateTime.parse(<span class="string">&quot;2019-11-19T15:16:17&quot;</span>);</span><br><span class="line"><span class="type">LocalDate</span> <span class="variable">d</span> <span class="operator">=</span> LocalDate.parse(<span class="string">&quot;2019-11-19&quot;</span>);</span><br><span class="line"><span class="type">LocalTime</span> <span class="variable">t</span> <span class="operator">=</span> LocalTime.parse(<span class="string">&quot;15:16:17&quot;</span>);</span><br></pre></td></tr></table></figure>
-<p>注意ISO 8601规定的日期和时间分隔符是<code>T</code>。标准格式如下：</p>
-<ul>
-<li>日期：yyyy-MM-dd</li>
-<li>时间：HH:mm:ss</li>
-<li>带毫秒的时间：HH:mm:ss.SSS</li>
-<li>日期和时间：yyyy-MM-dd’T’HH:mm:ss</li>
-<li>带毫秒的日期和时间：yyyy-MM-dd’T’HH:mm:ss.SSS</li>
-</ul>
-<h3 id="DateTimeFormatter">DateTimeFormatter</h3>
-<p>如果要自定义输出的格式，或者要把一个非ISO 8601格式的字符串解析成<code>LocalDateTime</code>，可以使用新的<code>DateTimeFormatter</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"><span class="keyword">import</span> java.time.format.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 自定义格式化:</span></span><br><span class="line">        <span class="type">DateTimeFormatter</span> <span class="variable">dtf</span> <span class="operator">=</span> DateTimeFormatter.ofPattern(<span class="string">&quot;yyyy/MM/dd HH:mm:ss&quot;</span>);</span><br><span class="line">        System.out.println(dtf.format(LocalDateTime.now()));</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 用自定义格式解析:</span></span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">dt2</span> <span class="operator">=</span> LocalDateTime.parse(<span class="string">&quot;2019/11/30 15:16:17&quot;</span>, dtf);</span><br><span class="line">        System.out.println(dt2);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>LocalDateTime</code>提供了对日期和时间进行加减的非常简单的链式调用：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">dt</span> <span class="operator">=</span> LocalDateTime.of(<span class="number">2019</span>, <span class="number">10</span>, <span class="number">26</span>, <span class="number">20</span>, <span class="number">30</span>, <span class="number">59</span>);</span><br><span class="line">        System.out.println(dt);</span><br><span class="line">        <span class="comment">// 加5天减3小时:</span></span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">dt2</span> <span class="operator">=</span> dt.plusDays(<span class="number">5</span>).minusHours(<span class="number">3</span>);</span><br><span class="line">        System.out.println(dt2); <span class="comment">// 2019-10-31T17:30:59</span></span><br><span class="line">        <span class="comment">// 减1月:</span></span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">dt3</span> <span class="operator">=</span> dt2.minusMonths(<span class="number">1</span>);</span><br><span class="line">        System.out.println(dt3); <span class="comment">// 2019-09-30T17:30:59</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注意到月份加减会自动调整日期，例如从<code>2019-10-31</code>减去1个月得到的结果是<code>2019-09-30</code>，因为9月没有31日。</p>
-<p>对日期和时间进行调整则使用<code>withXxx()</code>方法，例如：<code>withHour(15)</code>会把<code>10:11:12</code>变为<code>15:11:12</code>：</p>
-<ul>
-<li>调整年：withYear()</li>
-<li>调整月：withMonth()</li>
-<li>调整日：withDayOfMonth()</li>
-<li>调整时：withHour()</li>
-<li>调整分：withMinute()</li>
-<li>调整秒：withSecond()</li>
-</ul>
-<p>示例代码如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">dt</span> <span class="operator">=</span> LocalDateTime.of(<span class="number">2019</span>, <span class="number">10</span>, <span class="number">26</span>, <span class="number">20</span>, <span class="number">30</span>, <span class="number">59</span>);</span><br><span class="line">        System.out.println(dt);</span><br><span class="line">        <span class="comment">// 日期变为31日:</span></span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">dt2</span> <span class="operator">=</span> dt.withDayOfMonth(<span class="number">31</span>);</span><br><span class="line">        System.out.println(dt2); <span class="comment">// 2019-10-31T20:30:59</span></span><br><span class="line">        <span class="comment">// 月份变为9:</span></span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">dt3</span> <span class="operator">=</span> dt2.withMonth(<span class="number">9</span>);</span><br><span class="line">        System.out.println(dt3); <span class="comment">// 2019-09-30T20:30:59</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>同样注意到调整月份时，会相应地调整日期，即把<code>2019-10-31</code>的月份调整为<code>9</code>时，日期也自动变为<code>30</code>。</p>
-<p>实际上，<code>LocalDateTime</code>还有一个通用的<code>with()</code>方法允许我们做更复杂的运算。例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"><span class="keyword">import</span> java.time.temporal.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 本月第一天0:00时刻:</span></span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">firstDay</span> <span class="operator">=</span> LocalDate.now().withDayOfMonth(<span class="number">1</span>).atStartOfDay();</span><br><span class="line">        System.out.println(firstDay);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 本月最后1天:</span></span><br><span class="line">        <span class="type">LocalDate</span> <span class="variable">lastDay</span> <span class="operator">=</span> LocalDate.now().with(TemporalAdjusters.lastDayOfMonth());</span><br><span class="line">        System.out.println(lastDay);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 下月第1天:</span></span><br><span class="line">        <span class="type">LocalDate</span> <span class="variable">nextMonthFirstDay</span> <span class="operator">=</span> LocalDate.now().with(TemporalAdjusters.firstDayOfNextMonth());</span><br><span class="line">        System.out.println(nextMonthFirstDay);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 本月第1个周一:</span></span><br><span class="line">        <span class="type">LocalDate</span> <span class="variable">firstWeekday</span> <span class="operator">=</span> LocalDate.now().with(TemporalAdjusters.firstInMonth(DayOfWeek.MONDAY));</span><br><span class="line">        System.out.println(firstWeekday);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>对于计算某个月第1个周日这样的问题，新的API可以轻松完成。</p>
-<p>要判断两个<code>LocalDateTime</code>的先后，可以使用<code>isBefore()</code>、<code>isAfter()</code>方法，对于<code>LocalDate</code>和<code>LocalTime</code>类似：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">now</span> <span class="operator">=</span> LocalDateTime.now();</span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">target</span> <span class="operator">=</span> LocalDateTime.of(<span class="number">2019</span>, <span class="number">11</span>, <span class="number">19</span>, <span class="number">8</span>, <span class="number">15</span>, <span class="number">0</span>);</span><br><span class="line">        System.out.println(now.isBefore(target));</span><br><span class="line">        System.out.println(LocalDate.now().isBefore(LocalDate.of(<span class="number">2019</span>, <span class="number">11</span>, <span class="number">19</span>)));</span><br><span class="line">        System.out.println(LocalTime.now().isAfter(LocalTime.parse(<span class="string">&quot;08:15:00&quot;</span>)));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注意到<code>LocalDateTime</code>无法与时间戳进行转换，因为<code>LocalDateTime</code>没有时区，无法确定某一时刻。后面我们要介绍的<code>ZonedDateTime</code>相当于<code>LocalDateTime</code>加时区的组合，它具有时区，可以与<code>long</code>表示的时间戳进行转换。</p>
-<h3 id="Duration和Period">Duration和Period</h3>
-<p><code>Duration</code>表示两个时刻之间的时间间隔。另一个类似的<code>Period</code>表示两个日期之间的天数：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">start</span> <span class="operator">=</span> LocalDateTime.of(<span class="number">2019</span>, <span class="number">11</span>, <span class="number">19</span>, <span class="number">8</span>, <span class="number">15</span>, <span class="number">0</span>);</span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">end</span> <span class="operator">=</span> LocalDateTime.of(<span class="number">2020</span>, <span class="number">1</span>, <span class="number">9</span>, <span class="number">19</span>, <span class="number">25</span>, <span class="number">30</span>);</span><br><span class="line">        <span class="type">Duration</span> <span class="variable">d</span> <span class="operator">=</span> Duration.between(start, end);</span><br><span class="line">        System.out.println(d); <span class="comment">// PT1235H10M30S</span></span><br><span class="line"></span><br><span class="line">        <span class="type">Period</span> <span class="variable">p</span> <span class="operator">=</span> LocalDate.of(<span class="number">2019</span>, <span class="number">11</span>, <span class="number">19</span>).until(LocalDate.of(<span class="number">2020</span>, <span class="number">1</span>, <span class="number">9</span>));</span><br><span class="line">        System.out.println(p); <span class="comment">// P1M21D</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注意到两个<code>LocalDateTime</code>之间的差值使用<code>Duration</code>表示，类似<code>PT1235H10M30S</code>，表示1235小时10分钟30秒。而两个<code>LocalDate</code>之间的差值用<code>Period</code>表示，类似<code>P1M21D</code>，表示1个月21天。</p>
-<p><code>Duration</code>和<code>Period</code>的表示方法也符合ISO 8601的格式，它以<code>P...T...</code>的形式表示，<code>P...T</code>之间表示日期间隔，<code>T</code>后面表示时间间隔。如果是<code>PT...</code>的格式表示仅有时间间隔。利用<code>ofXxx()</code>或者<code>parse()</code>方法也可以直接创建<code>Duration</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Duration</span> <span class="variable">d1</span> <span class="operator">=</span> Duration.ofHours(<span class="number">10</span>); <span class="comment">// 10 hours</span></span><br><span class="line"><span class="type">Duration</span> <span class="variable">d2</span> <span class="operator">=</span> Duration.parse(<span class="string">&quot;P1DT2H3M&quot;</span>); <span class="comment">// 1 day, 2 hours, 3 minutes</span></span><br></pre></td></tr></table></figure>
-<p>有的童鞋可能发现Java 8引入的<code>java.time</code>API。怎么和一个开源的<a target="_blank" rel="noopener" href="https://www.joda.org/">Joda Time</a>很像？难道JDK也开始抄袭开源了？其实正是因为开源的Joda Time设计很好，应用广泛，所以JDK团队邀请Joda Time的作者Stephen Colebourne共同设计了<code>java.time</code>API。</p>
-<h3 id="小结-3">小结</h3>
-<p>Java 8引入了新的日期和时间API，它们是不变类，默认按ISO 8601标准格式化和解析；</p>
-<p>使用<code>LocalDateTime</code>可以非常方便地对日期和时间进行加减，或者调整日期和时间，它总是返回新对象；</p>
-<p>使用<code>isBefore()</code>和<code>isAfter()</code>可以判断日期和时间的先后；</p>
-<p>使用<code>Duration</code>和<code>Period</code>可以表示两个日期和时间的“区间间隔”。</p>
-<p><code>LocalDateTime</code>总是表示本地日期和时间，要表示一个带时区的日期和时间，我们就需要<code>ZonedDateTime</code>。</p>
-<p>可以简单地把<code>ZonedDateTime</code>理解成<code>LocalDateTime</code>加<code>ZoneId</code>。<code>ZoneId</code>是<code>java.time</code>引入的新的时区类，注意和旧的<code>java.util.TimeZone</code>区别。</p>
-<p>要创建一个<code>ZonedDateTime</code>对象，有以下几种方法，一种是通过<code>now()</code>方法返回当前时间：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">ZonedDateTime</span> <span class="variable">zbj</span> <span class="operator">=</span> ZonedDateTime.now(); <span class="comment">// 默认时区</span></span><br><span class="line">        <span class="type">ZonedDateTime</span> <span class="variable">zny</span> <span class="operator">=</span> ZonedDateTime.now(ZoneId.of(<span class="string">&quot;America/New_York&quot;</span>)); <span class="comment">// 用指定时区获取当前时间</span></span><br><span class="line">        System.out.println(zbj);</span><br><span class="line">        System.out.println(zny);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>观察打印的两个<code>ZonedDateTime</code>，发现它们时区不同，但表示的时间都是同一时刻（毫秒数不同是执行语句时的时间差）：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2019-09-15T20:58:18.786182+08:00[Asia/Shanghai]</span><br><span class="line">2019-09-15T08:58:18.788860-04:00[America/New_York]</span><br></pre></td></tr></table></figure>
-<p>另一种方式是通过给一个<code>LocalDateTime</code>附加一个<code>ZoneId</code>，就可以变成<code>ZonedDateTime</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">ldt</span> <span class="operator">=</span> LocalDateTime.of(<span class="number">2019</span>, <span class="number">9</span>, <span class="number">15</span>, <span class="number">15</span>, <span class="number">16</span>, <span class="number">17</span>);</span><br><span class="line">        <span class="type">ZonedDateTime</span> <span class="variable">zbj</span> <span class="operator">=</span> ldt.atZone(ZoneId.systemDefault());</span><br><span class="line">        <span class="type">ZonedDateTime</span> <span class="variable">zny</span> <span class="operator">=</span> ldt.atZone(ZoneId.of(<span class="string">&quot;America/New_York&quot;</span>));</span><br><span class="line">        System.out.println(zbj);</span><br><span class="line">        System.out.println(zny);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>以这种方式创建的<code>ZonedDateTime</code>，它的日期和时间与<code>LocalDateTime</code>相同，但附加的时区不同，因此是两个不同的时刻：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2019-09-15T15:16:17+08:00[Asia/Shanghai]</span><br><span class="line">2019-09-15T15:16:17-04:00[America/New_York]</span><br></pre></td></tr></table></figure>
-<h3 id="时区转换">时区转换</h3>
-<p>要转换时区，首先我们需要有一个<code>ZonedDateTime</code>对象，然后，通过<code>withZoneSameInstant()</code>将关联时区转换到另一个时区，转换后日期和时间都会相应调整。</p>
-<p>下面的代码演示了如何将北京时间转换为纽约时间：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 以中国时区获取当前时间:</span></span><br><span class="line">        <span class="type">ZonedDateTime</span> <span class="variable">zbj</span> <span class="operator">=</span> ZonedDateTime.now(ZoneId.of(<span class="string">&quot;Asia/Shanghai&quot;</span>));</span><br><span class="line">        <span class="comment">// 转换为纽约时间:</span></span><br><span class="line">        <span class="type">ZonedDateTime</span> <span class="variable">zny</span> <span class="operator">=</span> zbj.withZoneSameInstant(ZoneId.of(<span class="string">&quot;America/New_York&quot;</span>));</span><br><span class="line">        System.out.println(zbj);</span><br><span class="line">        System.out.println(zny);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>要特别注意，时区转换的时候，由于夏令时的存在，不同的日期转换的结果很可能是不同的。这是北京时间9月15日的转换结果：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2019-09-15T21:05:50.187697+08:00[Asia/Shanghai]</span><br><span class="line">2019-09-15T09:05:50.187697-04:00[America/New_York]</span><br></pre></td></tr></table></figure>
-<p>这是北京时间11月15日的转换结果：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2019-11-15T21:05:50.187697+08:00[Asia/Shanghai]</span><br><span class="line">2019-11-15T08:05:50.187697-05:00[America/New_York]</span><br></pre></td></tr></table></figure>
-<p>两次转换后的纽约时间有1小时的夏令时时差。</p>
-<p>注意</p>
-<p>涉及到时区时，千万不要自己计算时差，否则难以正确处理夏令时。</p>
-<p>有了<code>ZonedDateTime</code>，将其转换为本地时间就非常简单：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">ZonedDateTime</span> <span class="variable">zdt</span> <span class="operator">=</span> ...</span><br><span class="line"><span class="type">LocalDateTime</span> <span class="variable">ldt</span> <span class="operator">=</span> zdt.toLocalDateTime();</span><br></pre></td></tr></table></figure>
-<p>转换为<code>LocalDateTime</code>时，直接丢弃了时区信息。</p>
-<h3 id="练习">练习</h3>
-<p>某航线从北京飞到纽约需要13小时20分钟，请根据北京起飞日期和时间计算到达纽约的当地日期和时间。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">departureAtBeijing</span> <span class="operator">=</span> LocalDateTime.of(<span class="number">2019</span>, <span class="number">9</span>, <span class="number">15</span>, <span class="number">13</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">        <span class="type">int</span> <span class="variable">hours</span> <span class="operator">=</span> <span class="number">13</span>;</span><br><span class="line">        <span class="type">int</span> <span class="variable">minutes</span> <span class="operator">=</span> <span class="number">20</span>;</span><br><span class="line">        <span class="type">LocalDateTime</span> <span class="variable">arrivalAtNewYork</span> <span class="operator">=</span> calculateArrivalAtNY(departureAtBeijing, hours, minutes);</span><br><span class="line">        System.out.println(departureAtBeijing + <span class="string">&quot; -&gt; &quot;</span> + arrivalAtNewYork);</span><br><span class="line">        <span class="comment">// test:</span></span><br><span class="line">        <span class="keyword">if</span> (!LocalDateTime.of(<span class="number">2019</span>, <span class="number">10</span>, <span class="number">15</span>, <span class="number">14</span>, <span class="number">20</span>, <span class="number">0</span>)</span><br><span class="line">                .equals(calculateArrivalAtNY(LocalDateTime.of(<span class="number">2019</span>, <span class="number">10</span>, <span class="number">15</span>, <span class="number">13</span>, <span class="number">0</span>, <span class="number">0</span>), <span class="number">13</span>, <span class="number">20</span>))) &#123;</span><br><span class="line">            System.err.println(<span class="string">&quot;测试失败!&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!LocalDateTime.of(<span class="number">2019</span>, <span class="number">11</span>, <span class="number">15</span>, <span class="number">13</span>, <span class="number">20</span>, <span class="number">0</span>)</span><br><span class="line">                .equals(calculateArrivalAtNY(LocalDateTime.of(<span class="number">2019</span>, <span class="number">11</span>, <span class="number">15</span>, <span class="number">13</span>, <span class="number">0</span>, <span class="number">0</span>), <span class="number">13</span>, <span class="number">20</span>))) &#123;</span><br><span class="line">            System.err.println(<span class="string">&quot;测试失败!&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> LocalDateTime <span class="title function_">calculateArrivalAtNY</span><span class="params">(LocalDateTime bj, <span class="type">int</span> h, <span class="type">int</span> m)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> bj;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>提示：<code>ZonedDateTime</code>仍然提供了<code>plusDays()</code>等加减操作。</p>
-<p><a target="_blank" rel="noopener" href="https://liaoxuefeng.com/books/java/datetime/zoned-datetime/datetime-flight.zip">下载练习</a></p>
-<h3 id="小结-4">小结</h3>
-<p><code>ZonedDateTime</code>是带时区的日期和时间，可用于时区转换；</p>
-<p><code>ZonedDateTime</code>和<code>LocalDateTime</code>可以相互转换。</p>
-<h2 id="DateTimeFormatter-2">DateTimeFormatter</h2>
-<p>使用旧的<code>Date</code>对象时，我们用<code>SimpleDateFormat</code>进行格式化显示。使用新的<code>LocalDateTime</code>或<code>ZonedDateTime</code>时，我们要进行格式化显示，就要使用<code>DateTimeFormatter</code>。</p>
-<p>和<code>SimpleDateFormat</code>不同的是，<code>DateTimeFormatter</code>不但是不变对象，它还是线程安全的。线程的概念我们会在后面涉及到。现在我们只需要记住：因为<code>SimpleDateFormat</code>不是线程安全的，使用的时候，只能在方法内部创建新的局部变量。而<code>DateTimeFormatter</code>可以只创建一个实例，到处引用。</p>
-<p>创建<code>DateTimeFormatter</code>时，我们仍然通过传入格式化字符串实现：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">DateTimeFormatter</span> <span class="variable">formatter</span> <span class="operator">=</span> DateTimeFormatter.ofPattern(<span class="string">&quot;yyyy-MM-dd HH:mm&quot;</span>);</span><br></pre></td></tr></table></figure>
-<p>格式化字符串的使用方式与<code>SimpleDateFormat</code>完全一致。</p>
-<p>另一种创建<code>DateTimeFormatter</code>的方法是，传入格式化字符串时，同时指定<code>Locale</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">DateTimeFormatter</span> <span class="variable">formatter</span> <span class="operator">=</span> DateTimeFormatter.ofPattern(<span class="string">&quot;E, yyyy-MMMM-dd HH:mm&quot;</span>, Locale.US);</span><br></pre></td></tr></table></figure>
-<p>这种方式可以按照<code>Locale</code>默认习惯格式化。我们来看实际效果：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"><span class="keyword">import</span> java.time.format.*;</span><br><span class="line"><span class="keyword">import</span> java.util.Locale;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">ZonedDateTime</span> <span class="variable">zdt</span> <span class="operator">=</span> ZonedDateTime.now();</span><br><span class="line">        <span class="type">var</span> <span class="variable">formatter</span> <span class="operator">=</span> DateTimeFormatter.ofPattern(<span class="string">&quot;yyyy-MM-dd&#x27;T&#x27;HH:mm ZZZZ&quot;</span>);</span><br><span class="line">        System.out.println(formatter.format(zdt));</span><br><span class="line"></span><br><span class="line">        <span class="type">var</span> <span class="variable">zhFormatter</span> <span class="operator">=</span> DateTimeFormatter.ofPattern(<span class="string">&quot;yyyy MMM dd EE HH:mm&quot;</span>, Locale.CHINA);</span><br><span class="line">        System.out.println(zhFormatter.format(zdt));</span><br><span class="line"></span><br><span class="line">        <span class="type">var</span> <span class="variable">usFormatter</span> <span class="operator">=</span> DateTimeFormatter.ofPattern(<span class="string">&quot;E, MMMM/dd/yyyy HH:mm&quot;</span>, Locale.US);</span><br><span class="line">        System.out.println(usFormatter.format(zdt));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在格式化字符串中，如果需要输出固定字符，可以用<code>'xxx'</code>表示。</p>
-<p>运行上述代码，分别以默认方式、中国地区和美国地区对当前时间进行显示，结果如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">2019-09-15T23:16 GMT+08:00</span><br><span class="line">2019 9月 15 周日 23:16</span><br><span class="line">Sun, September/15/2019 23:16</span><br></pre></td></tr></table></figure>
-<p>当我们直接调用<code>System.out.println()</code>对一个<code>ZonedDateTime</code>或者<code>LocalDateTime</code>实例进行打印的时候，实际上，调用的是它们的<code>toString()</code>方法，默认的<code>toString()</code>方法显示的字符串就是按照<code>ISO 8601</code>格式显示的，我们可以通过<code>DateTimeFormatter</code>预定义的几个静态变量来引用：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">var</span> <span class="variable">ldt</span> <span class="operator">=</span> LocalDateTime.now();</span><br><span class="line">System.out.println(DateTimeFormatter.ISO_DATE.format(ldt));</span><br><span class="line">System.out.println(DateTimeFormatter.ISO_DATE_TIME.format(ldt));</span><br></pre></td></tr></table></figure>
-<p>得到的输出和<code>toString()</code>类似：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2019-09-15</span><br><span class="line">2019-09-15T23:16:51.56217</span><br></pre></td></tr></table></figure>
-<h3 id="小结-5">小结</h3>
-<p>对<code>ZonedDateTime</code>或<code>LocalDateTime</code>进行格式化，需要使用<code>DateTimeFormatter</code>类；</p>
-<p><code>DateTimeFormatter</code>可以通过格式化字符串和<code>Locale</code>对日期和时间进行定制输出。</p>
-<hr>
-<hr>
-<h2 id="Instant">Instant</h2>
-<p>我们已经讲过，计算机存储的当前时间，本质上只是一个不断递增的整数。Java提供的<code>System.currentTimeMillis()</code>返回的就是以毫秒表示的当前时间戳。</p>
-<p>这个当前时间戳在<code>java.time</code>中以<code>Instant</code>类型表示，我们用<code>Instant.now()</code>获取当前时间戳，效果和<code>System.currentTimeMillis()</code>类似：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Instant</span> <span class="variable">now</span> <span class="operator">=</span> Instant.now();</span><br><span class="line">        System.out.println(now.getEpochSecond()); <span class="comment">// 秒</span></span><br><span class="line">        System.out.println(now.toEpochMilli()); <span class="comment">// 毫秒</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>打印的结果类似：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1568568760</span><br><span class="line">1568568760316</span><br></pre></td></tr></table></figure>
-<p>实际上，<code>Instant</code>内部只有两个核心字段：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">Instant</span> implements ... &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">long</span> seconds;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">int</span> nanos;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>一个是以秒为单位的时间戳，一个是更精确的纳秒精度。它和<code>System.currentTimeMillis()</code>返回的<code>long</code>相比，只是多了更高精度的纳秒。</p>
-<p>既然<code>Instant</code>就是时间戳，那么，给它附加上一个时区，就可以创建出<code>ZonedDateTime</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 以指定时间戳创建Instant:</span></span><br><span class="line"><span class="type">Instant</span> <span class="variable">ins</span> <span class="operator">=</span> Instant.ofEpochSecond(<span class="number">1568568760</span>);</span><br><span class="line"><span class="type">ZonedDateTime</span> <span class="variable">zdt</span> <span class="operator">=</span> ins.atZone(ZoneId.systemDefault());</span><br><span class="line">System.out.println(zdt); <span class="comment">// 2019-09-16T01:32:40+08:00[Asia/Shanghai]</span></span><br></pre></td></tr></table></figure>
-<p>可见，对于某一个时间戳，给它关联上指定的<code>ZoneId</code>，就得到了<code>ZonedDateTime</code>，继而可以获得了对应时区的<code>LocalDateTime</code>。</p>
-<p>所以，<code>LocalDateTime</code>，<code>ZoneId</code>，<code>Instant</code>，<code>ZonedDateTime</code>和<code>long</code>都可以互相转换：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────┐</span><br><span class="line">│LocalDateTime│────┐</span><br><span class="line">└─────────────┘    │    ┌─────────────┐</span><br><span class="line">                   ├───▶│ZonedDateTime│</span><br><span class="line">┌─────────────┐    │    └─────────────┘</span><br><span class="line">│   ZoneId    │────┘           ▲</span><br><span class="line">└─────────────┘      ┌─────────┴─────────┐</span><br><span class="line">                     │                   │</span><br><span class="line">                     ▼                   ▼</span><br><span class="line">              ┌─────────────┐     ┌─────────────┐</span><br><span class="line">              │   Instant   │◀───▶│    long     │</span><br><span class="line">              └─────────────┘     └─────────────┘</span><br></pre></td></tr></table></figure>
-<p>转换的时候，只需要留意<code>long</code>类型以毫秒还是秒为单位即可。</p>
-<h3 id="小结-6">小结</h3>
-<p><code>Instant</code>表示高精度时间戳，它可以和<code>ZonedDateTime</code>以及<code>long</code>互相转换。</p>
-<hr>
-<hr>
-<p>由于Java提供了新旧两套日期和时间的API，除非涉及到遗留代码，否则我们应该坚持使用新的API。</p>
-<p>如果需要与遗留代码打交道，如何在新旧API之间互相转换呢？</p>
-<h3 id="旧API转新API">旧API转新API</h3>
-<p>如果要把旧式的<code>Date</code>或<code>Calendar</code>转换为新API对象，可以通过<code>toInstant()</code>方法转换为<code>Instant</code>对象，再继续转换为<code>ZonedDateTime</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Date -&gt; Instant:</span></span><br><span class="line"><span class="type">Instant</span> <span class="variable">ins1</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Date</span>().toInstant();</span><br><span class="line"></span><br><span class="line"><span class="comment">// Calendar -&gt; Instant -&gt; ZonedDateTime:</span></span><br><span class="line"><span class="type">Calendar</span> <span class="variable">calendar</span> <span class="operator">=</span> Calendar.getInstance();</span><br><span class="line"><span class="type">Instant</span> <span class="variable">ins2</span> <span class="operator">=</span> calendar.toInstant();</span><br><span class="line"><span class="type">ZonedDateTime</span> <span class="variable">zdt</span> <span class="operator">=</span> ins2.atZone(calendar.getTimeZone().toZoneId());</span><br></pre></td></tr></table></figure>
-<p>从上面的代码还可以看到，旧的<code>TimeZone</code>提供了一个<code>toZoneId()</code>，可以把自己变成新的<code>ZoneId</code>。</p>
-<h3 id="新API转旧API">新API转旧API</h3>
-<p>如果要把新的<code>ZonedDateTime</code>转换为旧的API对象，只能借助<code>long</code>型时间戳做一个“中转”：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ZonedDateTime -&gt; long:</span></span><br><span class="line"><span class="type">ZonedDateTime</span> <span class="variable">zdt</span> <span class="operator">=</span> ZonedDateTime.now();</span><br><span class="line"><span class="type">long</span> <span class="variable">ts</span> <span class="operator">=</span> zdt.toEpochSecond() * <span class="number">1000</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// long -&gt; Date:</span></span><br><span class="line"><span class="type">Date</span> <span class="variable">date</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Date</span>(ts);</span><br><span class="line"></span><br><span class="line"><span class="comment">// long -&gt; Calendar:</span></span><br><span class="line"><span class="type">Calendar</span> <span class="variable">calendar</span> <span class="operator">=</span> Calendar.getInstance();</span><br><span class="line">calendar.clear();</span><br><span class="line">calendar.setTimeZone(TimeZone.getTimeZone(zdt.getZone().getId()));</span><br><span class="line">calendar.setTimeInMillis(zdt.toEpochSecond() * <span class="number">1000</span>);</span><br></pre></td></tr></table></figure>
-<p>从上面的代码还可以看到，新的<code>ZoneId</code>转换为旧的<code>TimeZone</code>，需要借助<code>ZoneId.getId()</code>返回的<code>String</code>完成。</p>
-<h3 id="在数据库中存储日期和时间">在数据库中存储日期和时间</h3>
-<p>除了旧式的<code>java.util.Date</code>，我们还可以找到另一个<code>java.sql.Date</code>，它继承自<code>java.util.Date</code>，但会自动忽略所有时间相关信息。这个奇葩的设计原因要追溯到数据库的日期与时间类型。</p>
-<p>在数据库中，也存在几种日期和时间类型：</p>
-<ul>
-<li><code>DATETIME</code>：表示日期和时间；</li>
-<li><code>DATE</code>：仅表示日期；</li>
-<li><code>TIME</code>：仅表示时间；</li>
-<li><code>TIMESTAMP</code>：和<code>DATETIME</code>类似，但是数据库会在创建或者更新记录的时候同时修改<code>TIMESTAMP</code>。</li>
-</ul>
-<p>在使用Java程序操作数据库时，我们需要把数据库类型与Java类型映射起来。下表是数据库类型与Java新旧API的映射关系：</p>
-<table>
-<thead>
-<tr>
-<th>数据库</th>
-<th>对应Java类（旧）</th>
-<th>对应Java类（新）</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>DATETIME</td>
-<td>java.util.Date</td>
-<td>LocalDateTime</td>
-</tr>
-<tr>
-<td>DATE</td>
-<td>java.sql.Date</td>
-<td>LocalDate</td>
-</tr>
-<tr>
-<td>TIME</td>
-<td>java.sql.Time</td>
-<td>LocalTime</td>
-</tr>
-<tr>
-<td>TIMESTAMP</td>
-<td>java.sql.Timestamp</td>
-<td>LocalDateTime</td>
-</tr>
-</tbody>
-</table>
-<p>实际上，在数据库中，我们需要存储的最常用的是时刻（<code>Instant</code>），因为有了时刻信息，就可以根据用户自己选择的时区，显示出正确的本地时间。所以，最好的方法是直接用长整数<code>long</code>表示，在数据库中存储为<code>BIGINT</code>类型。</p>
-<p>通过存储一个<code>long</code>型时间戳，我们可以编写一个<code>timestampToString()</code>的方法，非常简单地为不同用户以不同的偏好来显示不同的本地时间：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.time.*;</span><br><span class="line"><span class="keyword">import</span> java.time.format.*;</span><br><span class="line"><span class="keyword">import</span> java.util.Locale;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">long</span> <span class="variable">ts</span> <span class="operator">=</span> <span class="number">1574208900000L</span>;</span><br><span class="line">        System.out.println(timestampToString(ts, Locale.CHINA, <span class="string">&quot;Asia/Shanghai&quot;</span>));</span><br><span class="line">        System.out.println(timestampToString(ts, Locale.US, <span class="string">&quot;America/New_York&quot;</span>));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> String <span class="title function_">timestampToString</span><span class="params">(<span class="type">long</span> epochMilli, Locale lo, String zoneId)</span> &#123;</span><br><span class="line">        <span class="type">Instant</span> <span class="variable">ins</span> <span class="operator">=</span> Instant.ofEpochMilli(epochMilli);</span><br><span class="line">        <span class="type">DateTimeFormatter</span> <span class="variable">f</span> <span class="operator">=</span> DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT);</span><br><span class="line">        <span class="keyword">return</span> f.withLocale(lo).format(ZonedDateTime.ofInstant(ins, ZoneId.of(zoneId)));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>对上述方法进行调用，结果如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2019年11月20日 上午8:15</span><br><span class="line">Nov 19, 2019, 7:15 PM</span><br></pre></td></tr></table></figure>
-<h3 id="小结-7">小结</h3>
-<p>处理日期和时间时，尽量使用新的<code>java.time</code>包；</p>
-<p>在数据库中存储时间戳时，尽量使用<code>long</code>型时间戳，它具有省空间，效率高，不依赖数据库的优点。</p>
-
-                    
-                        
-
-
-                    
-                    
-                        <p>
-                            <a
-                                href="../../2018/02/06/java/JAVA-%E6%97%A5%E6%9C%9F%E4%B8%8E%E6%97%B6%E9%97%B4/#post-footer"
                                 class="postShorten-excerpt_link link"
                                 aria-label=""
                             >
@@ -4666,7 +4631,7 @@
                 data-message-zero="沒有找到文章"
                 data-message-one="找到 1 篇文章"
                 data-message-other="找到 {n} 篇文章">
-                找到 235 篇文章
+                找到 236 篇文章
             </p>
         </div>
     </div>
